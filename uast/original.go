@@ -33,6 +33,10 @@ type BaseOriginalToNoder struct {
 	// InternalTypeKey is a key in the source AST that can be used to get the
 	// InternalType of a node.
 	InternalTypeKey string
+	// OffsetKey is a key that indicates the position offset.
+	OffsetKey string
+	// LineKey is a key that indicates the line number.
+	LineKey string
 }
 
 func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node, error) {
@@ -89,11 +93,42 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				n.Children = append(n.Children, child)
 			}
 		default:
-			s := c.toString(o)
 			switch k {
 			case c.InternalTypeKey:
+				s, err := toString(o)
+				if err != nil {
+					return nil, err
+				}
+
 				n.InternalType = s
+			case c.OffsetKey:
+				i, err := toUint32(o)
+				if err != nil {
+					return nil, err
+				}
+
+				if n.StartPosition == nil {
+					n.StartPosition = &Position{}
+				}
+
+				n.StartPosition.Offset = &i
+			case c.LineKey:
+				i, err := toUint32(o)
+				if err != nil {
+					return nil, err
+				}
+
+				if n.StartPosition == nil {
+					n.StartPosition = &Position{}
+				}
+
+				n.StartPosition.Line = &i
 			default:
+				s, err := toString(o)
+				if err != nil {
+					return nil, err
+				}
+
 				n.Properties[k] = s
 			}
 		}
@@ -102,15 +137,37 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 	return n, nil
 }
 
-func (c *BaseOriginalToNoder) toString(v interface{}) string {
+func toString(v interface{}) (string, error) {
 	switch o := v.(type) {
 	case string:
-		return o
+		return o, nil
 	case fmt.Stringer:
-		return o.String()
+		return o.String(), nil
 	case int:
-		return strconv.Itoa(o)
+		return strconv.Itoa(o), nil
 	default:
-		panic(fmt.Errorf("toString error: %#v", v))
+		return "", fmt.Errorf("toString error: %#v", v)
+	}
+}
+
+func toUint32(v interface{}) (uint32, error) {
+	switch o := v.(type) {
+	case string:
+		i, err := strconv.ParseUint(o, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+
+		return uint32(i), nil
+	case uint32:
+		return o, nil
+	case int:
+		return uint32(o), nil
+	case int32:
+		return uint32(o), nil
+	case int64:
+		return uint32(o), nil
+	default:
+		return 0, fmt.Errorf("toUint32 error: %#v", v)
 	}
 }

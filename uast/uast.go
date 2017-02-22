@@ -46,9 +46,12 @@ type Node struct {
 	Properties map[string]string
 	// Children are the children nodes of this node.
 	Children []*Node
-	// Token represents a token from the original source code. If this node
-	// represents a token, it is set, otherwise, it is nil.
-	Token *Token
+	// Token is the token content if this node represents a token from the
+	// original source file. Otherwise, it is nil.
+	Token *string
+	// StartPosition is the position where this node starts in the original
+	// source code file.
+	StartPosition *Position
 	// Roles is a list of Role that this node has. It is a language-independent
 	// annotation.
 	Roles []Role
@@ -122,6 +125,27 @@ func printNode(w io.Writer, indent int, n *Node) error {
 		}
 	}
 
+	if n.Token != nil {
+		if _, err := fmt.Fprintf(w, "%sTOKEN \"%s\"\n",
+			istr, *n.Token); err != nil {
+			return err
+		}
+	}
+
+	if n.StartPosition != nil {
+		if _, err := fmt.Fprintf(w, "%sStartPosition: {\n", istr); err != nil {
+			return err
+		}
+
+		if err := printPosition(w, indent+2, n.StartPosition); err != nil {
+			return err
+		}
+
+		if _, err := fmt.Fprintf(w, "%s}\n", istr); err != nil {
+			return err
+		}
+	}
+
 	//TODO: print properties
 	//TODO: print token
 	return nil
@@ -160,6 +184,33 @@ func printProperties(w io.Writer, indent int, props map[string]string) error {
 	return nil
 }
 
+func printPosition(w io.Writer, indent int, pos *Position) error {
+	istr := strings.Repeat(".  ", indent)
+
+	if pos.Offset != nil {
+		_, err := fmt.Fprintf(w, "%sOffset: %d\n", istr, *pos.Offset)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pos.Line != nil {
+		_, err := fmt.Fprintf(w, "%sLine: %d\n", istr, *pos.Line)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pos.Col != nil {
+		_, err := fmt.Fprintf(w, "%sCol: %d\n", istr, *pos.Col)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func rolesToString(roles ...Role) string {
 	var strs []string
 	for _, r := range roles {
@@ -190,16 +241,6 @@ func (n *Node) Hash() Hash {
 func (n *Node) HashWith(includes ...IncludeFields) Hash {
 	//TODO
 	return 0
-}
-
-// Token represents a token in the original source code.
-//
-//proteus:generate
-type Token struct {
-	// Position is the position of the token in the original source code.
-	Position *Position
-	// Content is the token literal content itself.
-	Content string
 }
 
 // Position represents a position in a source code file.
