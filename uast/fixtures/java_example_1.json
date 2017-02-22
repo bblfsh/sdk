@@ -2,123 +2,343 @@
   "CompilationUnit" : {
     "types" : [
       {
-        "typeParameters" : [
-          {
-            "SimpleName/name" : {
-              "identifier" : "T"
-            }
-          }
-        ],
-        "bodyDeclarations" : [
-          {
-            "PrimitiveType/returnType2" : {
-              "primitiveTypeCode" : "void"
-            },
-            "constructor" : "false",
-            "SimpleName/name" : {
-              "identifier" : "staticMethod"
-            },
-            "Block/body" : {},
-            "modifiers" : [
-              {
-                "keyword" : "public"
-              },
-              {
-                "keyword" : "static"
-              }
-            ]
-          },
-          {
-            "SimpleName/name" : {
-              "identifier" : "myMethod"
-            },
-            "modifiers" : [
-              {
-                "keyword" : "public"
-              }
-            ],
-            "Block/body" : {},
-            "PrimitiveType/returnType2" : {
-              "primitiveTypeCode" : "int"
-            },
-            "parameters" : [
-              {
-                "SimpleType/type" : {
-                  "SimpleName/name" : {
-                    "identifier" : "Integer"
-                  }
-                },
-                "varargs" : "false",
-                "modifiers" : [
-                  {
-                    "keyword" : "final"
-                  }
-                ],
-                "SimpleName/name" : {
-                  "identifier" : "arg"
-                }
-              }
-            ],
-            "constructor" : "false"
-          }
-        ],
         "modifiers" : [
           {
-            "keyword" : "public"
+            "startPosition" : "0",
+            "internalClass" : "Modifier",
+            "keyword" : "public",
+            "line" : "1"
           }
         ],
-        "SimpleType/superclassType" : {
-          "SimpleName/name" : {
-            "identifier" : "BaseClass"
-          }
-        },
-        "SimpleName/name" : {
-          "identifier" : "MyClass"
-        },
         "interface" : "false",
-        "superInterfaceTypes" : [
+        "internalClass" : "TypeDeclaration",
+        "bodyDeclarations" : [
           {
-            "typeArguments" : [
-              {
-                "SimpleName/name" : {
-                  "identifier" : "T"
+            "returnType2" : {
+              "line" : "2",
+              "startPosition" : "46",
+              "primitiveTypeCode" : "void",
+              "internalClass" : "PrimitiveType"
+            },
+            "internalClass" : "MethodDeclaration",
+            "body" : {
+              "statements" : [
+                {
+                  "internalClass" : "ExpressionStatement",
+                  "expression" : {
+                    "expression" : {
+                      "internalClass" : "QualifiedName",
+                      "qualifier" : {
+                        "startPosition" : "82",
+                        "internalClass" : "SimpleName",
+                        "identifier" : "System",
+                        "line" : "4"
+                      },
+                      "name" : {
+                        "internalClass" : "SimpleName",
+                        "startPosition" : "89",
+                        "identifier" : "out",
+                        "line" : "4"
+                      }
+                    },
+                    "arguments" : [
+                      {
+                        "escapedValue" : "\"=== RunnableTest ===\"",
+                        "line" : "4",
+                        "startPosition" : "101",
+                        "internalClass" : "StringLiteral"
+                      }
+                    ],
+                    "internalClass" : "MethodInvocation",
+                    "name" : {
+                      "internalClass" : "SimpleName",
+                      "startPosition" : "93",
+                      "identifier" : "println",
+                      "line" : "4"
+                    }
+                  }
+                },
+                {
+                  "internalClass" : "VariableDeclarationStatement",
+                  "type" : {
+                    "internalClass" : "SimpleType",
+                    "name" : {
+                      "line" : "7",
+                      "identifier" : "Runnable",
+                      "internalClass" : "SimpleName",
+                      "startPosition" : "165"
+                    }
+                  },
+                  "fragments" : [
+                    {
+                      "initializer" : {
+                        "anonymousClassDeclaration" : {
+                          "internalClass" : "AnonymousClassDeclaration",
+                          "bodyDeclarations" : [
+                            {
+                              "returnType2" : {
+                                "primitiveTypeCode" : "void",
+                                "internalClass" : "PrimitiveType",
+                                "startPosition" : "238",
+                                "line" : "10"
+                              },
+                              "internalClass" : "MethodDeclaration",
+                              "body" : {
+                                "statements" : [
+                                  {
+                                    "internalClass" : "ExpressionStatement",
+                                    "expression" : {
+                                      "name" : {
+                                        "line" : "11",
+                                        "startPosition" : "278",
+                                        "internalClass" : "SimpleName",
+                                        "identifier" : "println"
+                                      },
+                                      "arguments" : [
+                                        {
+                                          "internalClass" : "StringLiteral",
+                                          "startPosition" : "286",
+                                          "line" : "11",
+                                          "escapedValue" : "\"Hello world one!\""
+                                        }
+                                      ],
+                                      "expression" : {
+                                        "internalClass" : "QualifiedName",
+                                        "qualifier" : {
+                                          "line" : "11",
+                                          "identifier" : "System",
+                                          "internalClass" : "SimpleName",
+                                          "startPosition" : "267"
+                                        },
+                                        "name" : {
+                                          "line" : "11",
+                                          "identifier" : "out",
+                                          "internalClass" : "SimpleName",
+                                          "startPosition" : "274"
+                                        }
+                                      },
+                                      "internalClass" : "MethodInvocation"
+                                    }
+                                  }
+                                ],
+                                "internalClass" : "Block"
+                              },
+                              "startPosition" : "209",
+                              "name" : {
+                                "identifier" : "run",
+                                "internalClass" : "SimpleName",
+                                "startPosition" : "243",
+                                "line" : "10"
+                              },
+                              "line" : "9",
+                              "constructor" : "false",
+                              "modifiers" : [
+                                {
+                                  "typeName" : {
+                                    "identifier" : "Override",
+                                    "startPosition" : "210",
+                                    "internalClass" : "SimpleName",
+                                    "line" : "9"
+                                  },
+                                  "internalClass" : "MarkerAnnotation"
+                                },
+                                {
+                                  "line" : "10",
+                                  "startPosition" : "231",
+                                  "internalClass" : "Modifier",
+                                  "keyword" : "public"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "type" : {
+                          "internalClass" : "SimpleType",
+                          "name" : {
+                            "line" : "7",
+                            "identifier" : "Runnable",
+                            "startPosition" : "183",
+                            "internalClass" : "SimpleName"
+                          }
+                        },
+                        "internalClass" : "ClassInstanceCreation"
+                      },
+                      "internalClass" : "VariableDeclarationFragment",
+                      "name" : {
+                        "line" : "7",
+                        "identifier" : "r1",
+                        "startPosition" : "174",
+                        "internalClass" : "SimpleName"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "internalClass" : "VariableDeclarationStatement",
+                  "type" : {
+                    "internalClass" : "SimpleType",
+                    "name" : {
+                      "identifier" : "Runnable",
+                      "internalClass" : "SimpleName",
+                      "startPosition" : "370",
+                      "line" : "18"
+                    }
+                  },
+                  "fragments" : [
+                    {
+                      "internalClass" : "VariableDeclarationFragment",
+                      "initializer" : {
+                        "startPosition" : "384",
+                        "body" : {
+                          "name" : {
+                            "line" : "18",
+                            "startPosition" : "401",
+                            "internalClass" : "SimpleName",
+                            "identifier" : "println"
+                          },
+                          "arguments" : [
+                            {
+                              "escapedValue" : "\"Hello world two!\"",
+                              "line" : "18",
+                              "startPosition" : "409",
+                              "internalClass" : "StringLiteral"
+                            }
+                          ],
+                          "expression" : {
+                            "name" : {
+                              "line" : "18",
+                              "identifier" : "out",
+                              "internalClass" : "SimpleName",
+                              "startPosition" : "397"
+                            },
+                            "qualifier" : {
+                              "identifier" : "System",
+                              "startPosition" : "390",
+                              "internalClass" : "SimpleName",
+                              "line" : "18"
+                            },
+                            "internalClass" : "QualifiedName"
+                          },
+                          "internalClass" : "MethodInvocation"
+                        },
+                        "internalClass" : "LambdaExpression",
+                        "parentheses" : "true",
+                        "line" : "18"
+                      },
+                      "name" : {
+                        "line" : "18",
+                        "internalClass" : "SimpleName",
+                        "startPosition" : "379",
+                        "identifier" : "r2"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expression" : {
+                    "expression" : {
+                      "line" : "21",
+                      "identifier" : "r1",
+                      "internalClass" : "SimpleName",
+                      "startPosition" : "458"
+                    },
+                    "internalClass" : "MethodInvocation",
+                    "name" : {
+                      "identifier" : "run",
+                      "startPosition" : "461",
+                      "internalClass" : "SimpleName",
+                      "line" : "21"
+                    }
+                  },
+                  "internalClass" : "ExpressionStatement"
+                },
+                {
+                  "internalClass" : "ExpressionStatement",
+                  "expression" : {
+                    "internalClass" : "MethodInvocation",
+                    "expression" : {
+                      "startPosition" : "476",
+                      "internalClass" : "SimpleName",
+                      "identifier" : "r2",
+                      "line" : "22"
+                    },
+                    "name" : {
+                      "line" : "22",
+                      "identifier" : "run",
+                      "internalClass" : "SimpleName",
+                      "startPosition" : "479"
+                    }
+                  }
                 }
+              ],
+              "internalClass" : "Block"
+            },
+            "startPosition" : "32",
+            "name" : {
+              "line" : "2",
+              "internalClass" : "SimpleName",
+              "startPosition" : "51",
+              "identifier" : "main"
+            },
+            "line" : "2",
+            "parameters" : [
+              {
+                "name" : {
+                  "line" : "2",
+                  "identifier" : "args",
+                  "startPosition" : "65",
+                  "internalClass" : "SimpleName"
+                },
+                "line" : "2",
+                "type" : {
+                  "elementType" : {
+                    "name" : {
+                      "line" : "2",
+                      "startPosition" : "56",
+                      "internalClass" : "SimpleName",
+                      "identifier" : "String"
+                    },
+                    "internalClass" : "SimpleType"
+                  },
+                  "dimensions" : [
+                    {
+                      "internalClass" : "Dimension"
+                    }
+                  ],
+                  "internalClass" : "ArrayType"
+                },
+                "varargs" : "false",
+                "internalClass" : "SingleVariableDeclaration",
+                "startPosition" : "56"
               }
             ],
-            "SimpleType/type" : {
-              "SimpleName/name" : {
-                "identifier" : "GenericInterface"
+            "constructor" : "false",
+            "modifiers" : [
+              {
+                "keyword" : "public",
+                "internalClass" : "Modifier",
+                "startPosition" : "32",
+                "line" : "2"
+              },
+              {
+                "startPosition" : "39",
+                "keyword" : "static",
+                "internalClass" : "Modifier",
+                "line" : "2"
               }
-            }
+            ]
           }
-        ]
+        ],
+        "startPosition" : "0",
+        "name" : {
+          "line" : "1",
+          "identifier" : "RunnableTest",
+          "startPosition" : "13",
+          "internalClass" : "SimpleName"
+        },
+        "line" : "1"
       }
     ],
-    "imports" : [
-      {
-        "SimpleName/name" : {
-          "identifier" : "otherpackage"
-        },
-        "static" : "false",
-        "onDemand" : "true"
-      },
-      {
-        "QualifiedName/name" : {
-          "SimpleName/name" : {
-            "identifier" : "OtherClass"
-          },
-          "SimpleName/qualifier" : {
-            "identifier" : "otherpackage"
-          }
-        },
-        "onDemand" : "false",
-        "static" : "false"
-      }
-    ],
-    "PackageDeclaration/package" : {
-      "SimpleName/name" : {
-        "identifier" : "mypackage"
-      }
-    }
+    "internalClass" : "CompilationUnit"
   }
 }

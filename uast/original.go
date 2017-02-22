@@ -26,6 +26,9 @@ const (
 )
 
 type BaseOriginalToNoder struct {
+	// InternalTypeKey is a key in the source AST that can be used to get the
+	// InternalType of a node.
+	InternalTypeKey string
 }
 
 func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node, error) {
@@ -82,7 +85,13 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				n.Children = append(n.Children, child)
 			}
 		default:
-			n.Properties[k] = c.toString(o)
+			s := c.toString(o)
+			switch k {
+			case c.InternalTypeKey:
+				n.InternalType = s
+			default:
+				n.Properties[k] = s
+			}
 		}
 	}
 

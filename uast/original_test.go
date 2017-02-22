@@ -14,13 +14,15 @@ var (
 	fixtureDir = "fixtures"
 )
 
-func TestOriginalToNode(t *testing.T) {
+func TestOriginalToNodeJava(t *testing.T) {
 	require := require.New(t)
 
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	c := &BaseOriginalToNoder{}
+	c := &BaseOriginalToNoder{
+		InternalTypeKey: "internalClass",
+	}
 	n, err := c.OriginalToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
