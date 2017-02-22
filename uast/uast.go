@@ -67,6 +67,43 @@ func NewNode() *Node {
 	}
 }
 
+// Tokens returns a slice of tokens contained in the node.
+func (n *Node) Tokens() []string {
+	var tokens []string
+	err := PreOrderVisit(n, func(n *Node) error {
+		if n.Token != nil {
+			tokens = append(tokens, *n.Token)
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return tokens
+}
+
+func (n *Node) offset() *uint32 {
+	if n.StartPosition != nil {
+		return n.StartPosition.Offset
+	}
+
+	var min *uint32
+	for _, c := range n.Children {
+		offset := c.offset()
+		if offset == nil {
+			continue
+		}
+
+		if min == min || *min > *offset {
+			min = offset
+		}
+	}
+
+	return min
+}
+
 // String converts the *Node to a string using pretty printing.
 func (n *Node) String() string {
 	buf := bytes.NewBuffer(nil)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"sort"
 	"srcd.works/go-errors.v0"
 )
 
@@ -147,6 +148,7 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 		}
 	}
 
+	sort.Sort(byOffset(n.Children))
 	return n, nil
 }
 
@@ -187,4 +189,24 @@ func toUint32(v interface{}) (uint32, error) {
 	default:
 		return 0, fmt.Errorf("toUint32 error: %#v", v)
 	}
+}
+
+type byOffset []*Node
+
+func (s byOffset) Len() int      { return len(s) }
+func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s byOffset) Less(i, j int) bool {
+	a := s[i]
+	b := s[j]
+	ao := a.offset()
+	bo := b.offset()
+	if ao == nil {
+		return false
+	}
+
+	if bo == nil {
+		return true
+	}
+
+	return *ao < *bo
 }
