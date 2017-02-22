@@ -1,3 +1,5 @@
+// Package uast defines a UAST (Universal Abstract Syntax Tree) representation
+// and operations to manipulate them.
 package uast
 
 import (
@@ -7,6 +9,12 @@ import (
 	"strings"
 )
 
+// Hash is a hash value.
+type Hash uint32
+
+// Role is the main UAST annotation. It indicates that a node in an AST can
+// be interpreted as acting with certain language-independent role.
+//
 //proteus:generate
 type Role int8
 
@@ -26,23 +34,34 @@ func (r Role) String() string {
 	}
 }
 
+// Node is a node in a UAST.
+//
 //proteus:generate
 type Node struct {
 	// InternalType is the internal type of the node in the AST, in the source
 	// language.
 	InternalType string
-	Roles        []Role
-	Properties   map[string]string
-	Children     []*Node
-	Token        *Token
+	// Properties are arbitrary, language-dependent, metadata of the
+	// original AST.
+	Properties map[string]string
+	// Children are the children nodes of this node.
+	Children []*Node
+	// Token represents a token from the original source code. If this node
+	// represents a token, it is set, otherwise, it is nil.
+	Token *Token
+	// Roles is a list of Role that this node has. It is a language-independent
+	// annotation.
+	Roles []Role
 }
 
+// NewNode creates a new empty *Node.
 func NewNode() *Node {
 	return &Node{
 		Properties: make(map[string]string, 0),
 	}
 }
 
+// String converts the *Node to a string using pretty printing.
 func (n *Node) String() string {
 	buf := bytes.NewBuffer(nil)
 	err := n.Pretty(buf)
@@ -53,6 +72,7 @@ func (n *Node) String() string {
 	return buf.String()
 }
 
+// Pretty writes a pretty string representation of the *Node to a writer.
 func (n *Node) Pretty(w io.Writer) error {
 	return printNode(w, 0, n)
 }
@@ -149,33 +169,46 @@ func rolesToString(roles ...Role) string {
 	return strings.Join(strs, ",")
 }
 
-//proteus:generate
-type Token struct {
-	Position *Position
-	Content  string
-}
-
-type Position struct {
-	Offset *uint32
-	Line   *uint32
-	Col    *uint32
-}
-
+// IncludeFields represents a set of fields to be included in a Hash.
 type IncludeFields int8
 
 const (
+	// IncludeChildren includes all children of the node.
 	IncludeChildren IncludeFields = iota
+	// IncludeAnnotations includes UAST annotations.
 	IncludeAnnotations
+	// IncludePositions includes token positions.
 	IncludePositions
 )
 
-type Hash uint32
-
+// Hash returns the hash of the node.
 func (n *Node) Hash() Hash {
 	return n.HashWith(IncludeChildren)
 }
 
+// HashWith returns the hash of the node, computed with the given set of fields.
 func (n *Node) HashWith(includes ...IncludeFields) Hash {
 	//TODO
 	return 0
+}
+
+// Token represents a token in the original source code.
+//
+//proteus:generate
+type Token struct {
+	// Position is the position of the token in the original source code.
+	Position *Position
+	// Content is the token literal content itself.
+	Content string
+}
+
+// Position represents a position in a source code file.
+type Position struct {
+	// Offset is the position as an absolute byte offset.
+	Offset *uint32
+	// Line is the line number.
+	Line *uint32
+	// Col is the column number (the byte offset of the position relative to
+	// a line.
+	Col *uint32
 }

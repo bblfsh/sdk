@@ -14,7 +14,9 @@ var (
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
 )
 
+// OriginalToNoder is a converter of source ASTs to *Node.
 type OriginalToNoder interface {
+	// OriginalToNode converts the source AST to a *Node.
 	OriginalToNode(src map[interface{}]interface{}) (*Node, error)
 }
 
@@ -25,6 +27,8 @@ const (
 	topLevelIsRootNode = false
 )
 
+// BaseOriginalToNoder is an implementation of OriginalToNoder that aims to work
+// for the most common source ASTs.
 type BaseOriginalToNoder struct {
 	// InternalTypeKey is a key in the source AST that can be used to get the
 	// InternalType of a node.
