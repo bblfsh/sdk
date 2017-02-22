@@ -24,6 +24,9 @@ const (
 	ImportDeclaration
 	ImportPath
 	ImportAlias
+	QualifiedIdentifier
+	SimpleIdentifier
+	IfStatement
 )
 
 func (r Role) String() string {
@@ -32,6 +35,18 @@ func (r Role) String() string {
 		return "PackageDeclaration"
 	case FunctionDeclaration:
 		return "FunctionDeclaration"
+	case ImportDeclaration:
+		return "ImportDeclaration"
+	case ImportPath:
+		return "ImportPath"
+	case ImportAlias:
+		return "ImportAlias"
+	case QualifiedIdentifier:
+		return "QualifiedIdentifier"
+	case SimpleIdentifier:
+		return "SimpleIdentifier"
+	case IfStatement:
+		return "IfStatement"
 	default:
 		return fmt.Sprintf("UnknownRole:%d", r)
 	}
