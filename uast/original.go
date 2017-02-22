@@ -17,7 +17,7 @@ var (
 // OriginalToNoder is a converter of source ASTs to *Node.
 type OriginalToNoder interface {
 	// OriginalToNode converts the source AST to a *Node.
-	OriginalToNode(src map[interface{}]interface{}) (*Node, error)
+	OriginalToNode(src map[string]interface{}) (*Node, error)
 }
 
 // topLevelIsRootNode is true if the top level object is the root node

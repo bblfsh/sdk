@@ -20,7 +20,7 @@ func TestOriginalToNodeJava(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	c := &BaseOriginalToNoder{
+	var c OriginalToNoder = &BaseOriginalToNoder{
 		InternalTypeKey: "internalClass",
 	}
 	n, err := c.OriginalToNode(f)
