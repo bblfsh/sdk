@@ -21,6 +21,9 @@ type Role int8
 const (
 	PackageDeclaration Role = iota
 	FunctionDeclaration
+	ImportDeclaration
+	ImportPath
+	ImportAlias
 )
 
 func (r Role) String() string {
