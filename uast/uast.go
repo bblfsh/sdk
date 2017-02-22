@@ -85,7 +85,8 @@ func NewNode() *Node {
 // Tokens returns a slice of tokens contained in the node.
 func (n *Node) Tokens() []string {
 	var tokens []string
-	err := PreOrderVisit(n, func(n *Node) error {
+	err := PreOrderVisit(n, func(path ...*Node) error {
+		n := path[len(path)-1]
 		if n.Token != nil {
 			tokens = append(tokens, *n.Token)
 		}

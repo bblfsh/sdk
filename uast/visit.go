@@ -9,12 +9,12 @@ var (
 )
 
 // PreOrderVisit visits a tree in pre-order and applies the given
-// function to every node. If the function returns an error, iteration will
+// function to every node path. If the function returns an error, iteration will
 // stop and PreOrderVisit will return that error.
 // If the fu nction returns ErrStop, iteration will stop and PreOrderVisit will
 // not return an error.
-func PreOrderVisit(n *Node, f func(*Node) error) error {
-	err := preOrderVisit(n, f)
+func PreOrderVisit(n *Node, f func(...*Node) error) error {
+	err := preOrderVisit(f, n)
 	if err == ErrStop {
 		return nil
 	}
@@ -22,13 +22,14 @@ func PreOrderVisit(n *Node, f func(*Node) error) error {
 	return err
 }
 
-func preOrderVisit(n *Node, f func(*Node) error) error {
-	if err := f(n); err != nil {
+func preOrderVisit(f func(...*Node) error, ns ...*Node) error {
+	if err := f(ns...); err != nil {
 		return err
 	}
 
+	n := ns[len(ns)-1]
 	for _, c := range n.Children {
-		if err := preOrderVisit(c, f); err != nil {
+		if err := preOrderVisit(f, append(ns, c)...); err != nil {
 			return err
 		}
 	}
