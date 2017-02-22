@@ -40,6 +40,9 @@ type BaseOriginalToNoder struct {
 	LineKey string
 	// TokenKeys is a slice of keys used to extract token content.
 	TokenKeys map[string]bool
+	// SyntheticTokens is a map of InternalType to string used to add
+	// synthetic tokens to nodes depending on its InternalType.
+	SyntheticTokens map[string]string
 }
 
 func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node, error) {
@@ -104,7 +107,7 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				}
 
 				if n.Token != nil {
-					return nil, fmt.Errorf("two token keys for same node: %s", key)
+					return nil, fmt.Errorf("two token keys for same node: %s", k)
 				}
 
 				n.Token = &s
@@ -115,6 +118,13 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				}
 
 				n.InternalType = s
+
+				tk := c.syntheticToken(s)
+				if tk != nil && n.Token != nil {
+					return nil, fmt.Errorf("two token keys for same node: %s", k)
+				}
+
+				n.Token = tk
 			case c.OffsetKey == k:
 				i, err := toUint32(o)
 				if err != nil {
@@ -154,6 +164,19 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 
 func (c *BaseOriginalToNoder) isTokenKey(key string) bool {
 	return c.TokenKeys != nil && c.TokenKeys[key]
+}
+
+func (c *BaseOriginalToNoder) syntheticToken(key string) *string {
+	if c.SyntheticTokens == nil {
+		return nil
+	}
+
+	t, ok := c.SyntheticTokens[key]
+	if !ok {
+		return nil
+	}
+
+	return &t
 }
 
 func toString(v interface{}) (string, error) {
