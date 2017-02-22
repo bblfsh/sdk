@@ -1,0 +1,124 @@
+{
+  "CompilationUnit" : {
+    "types" : [
+      {
+        "typeParameters" : [
+          {
+            "SimpleName/name" : {
+              "identifier" : "T"
+            }
+          }
+        ],
+        "bodyDeclarations" : [
+          {
+            "PrimitiveType/returnType2" : {
+              "primitiveTypeCode" : "void"
+            },
+            "constructor" : "false",
+            "SimpleName/name" : {
+              "identifier" : "staticMethod"
+            },
+            "Block/body" : {},
+            "modifiers" : [
+              {
+                "keyword" : "public"
+              },
+              {
+                "keyword" : "static"
+              }
+            ]
+          },
+          {
+            "SimpleName/name" : {
+              "identifier" : "myMethod"
+            },
+            "modifiers" : [
+              {
+                "keyword" : "public"
+              }
+            ],
+            "Block/body" : {},
+            "PrimitiveType/returnType2" : {
+              "primitiveTypeCode" : "int"
+            },
+            "parameters" : [
+              {
+                "SimpleType/type" : {
+                  "SimpleName/name" : {
+                    "identifier" : "Integer"
+                  }
+                },
+                "varargs" : "false",
+                "modifiers" : [
+                  {
+                    "keyword" : "final"
+                  }
+                ],
+                "SimpleName/name" : {
+                  "identifier" : "arg"
+                }
+              }
+            ],
+            "constructor" : "false"
+          }
+        ],
+        "modifiers" : [
+          {
+            "keyword" : "public"
+          }
+        ],
+        "SimpleType/superclassType" : {
+          "SimpleName/name" : {
+            "identifier" : "BaseClass"
+          }
+        },
+        "SimpleName/name" : {
+          "identifier" : "MyClass"
+        },
+        "interface" : "false",
+        "superInterfaceTypes" : [
+          {
+            "typeArguments" : [
+              {
+                "SimpleName/name" : {
+                  "identifier" : "T"
+                }
+              }
+            ],
+            "SimpleType/type" : {
+              "SimpleName/name" : {
+                "identifier" : "GenericInterface"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "imports" : [
+      {
+        "SimpleName/name" : {
+          "identifier" : "otherpackage"
+        },
+        "static" : "false",
+        "onDemand" : "true"
+      },
+      {
+        "QualifiedName/name" : {
+          "SimpleName/name" : {
+            "identifier" : "OtherClass"
+          },
+          "SimpleName/qualifier" : {
+            "identifier" : "otherpackage"
+          }
+        },
+        "onDemand" : "false",
+        "static" : "false"
+      }
+    ],
+    "PackageDeclaration/package" : {
+      "SimpleName/name" : {
+        "identifier" : "mypackage"
+      }
+    }
+  }
+}
