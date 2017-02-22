@@ -37,6 +37,8 @@ type BaseOriginalToNoder struct {
 	OffsetKey string
 	// LineKey is a key that indicates the line number.
 	LineKey string
+	// TokenKeys is a slice of keys used to extract token content.
+	TokenKeys map[string]bool
 }
 
 func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node, error) {
@@ -93,15 +95,26 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				n.Children = append(n.Children, child)
 			}
 		default:
-			switch k {
-			case c.InternalTypeKey:
+			switch {
+			case c.isTokenKey(k):
+				s, err := toString(o)
+				if err != nil {
+					return nil, err
+				}
+
+				if n.Token != nil {
+					return nil, fmt.Errorf("two token keys for same node: %s", key)
+				}
+
+				n.Token = &s
+			case c.InternalTypeKey == k:
 				s, err := toString(o)
 				if err != nil {
 					return nil, err
 				}
 
 				n.InternalType = s
-			case c.OffsetKey:
+			case c.OffsetKey == k:
 				i, err := toUint32(o)
 				if err != nil {
 					return nil, err
@@ -112,7 +125,7 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				}
 
 				n.StartPosition.Offset = &i
-			case c.LineKey:
+			case c.LineKey == k:
 				i, err := toUint32(o)
 				if err != nil {
 					return nil, err
@@ -135,6 +148,10 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 	}
 
 	return n, nil
+}
+
+func (c *BaseOriginalToNoder) isTokenKey(key string) bool {
+	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
 func toString(v interface{}) (string, error) {
