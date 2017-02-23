@@ -1,13 +1,13 @@
-ASSETS_FOLDER := assets
-ASSETS := $(shell ls $(ASSETS_FOLDER))
+ASSETS_PATH := etc
+ASSETS_PACKAGE := assets
+ASSETS := $(shell ls $(ASSETS_PATH))
 BINDATA_CMD := go-bindata
-BINDATA_FILE := bindata.go
 
 bindata: $(ASSETS)
 
 $(ASSETS):
 	$(BINDATA_CMD) \
-		-pkg $@ -ignore $(BINDATA_FILE) \
-		-prefix $(ASSETS_FOLDER)/$@ \
-		-o $(ASSETS_FOLDER)/$@/$(BINDATA_FILE) \
-		assets/$@/...
+		-pkg $@ \
+		-prefix $(ASSETS_PATH)/$@ \
+		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
+		$(ASSETS_PATH)/$@/...
