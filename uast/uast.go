@@ -19,14 +19,74 @@ type Hash uint32
 type Role int8
 
 const (
-	PackageDeclaration Role = iota
-	FunctionDeclaration
-	ImportDeclaration
-	ImportPath
-	ImportAlias
+	// SimpleIdentifier is the most basic form of identifier, used for variable
+	// names, functions, packages, etc.
+	SimpleIdentifier Role = iota
+	// QualifiedIdentifier is form of identifier composed of multiple
+	// SimpleIdentifier. One main identifier (usually the last one) and one
+	// or more qualifiers.
 	QualifiedIdentifier
-	SimpleIdentifier
-	IfStatement
+
+	Expression
+	Statement
+
+	// PackageDeclaration identifies the package that all its children
+	// belong to. Its children include, at least, QualifiedIdentifier or
+	// SimpleIdentifier with the package name.
+	PackageDeclaration
+
+	// ImportDeclaration represents the import of another package in the
+	// current scope. Its children may include an ImportPath and ImportInclude.
+	ImportDeclaration
+	// ImportPath is the (usually) fully qualified package name to import.
+	ImportPath
+	// ImportAlias is an identifier used as an alias for an imported package
+	// in a certain scope.
+	ImportAlias
+
+	// If is used for if-then[-else] statements or expressions.
+	// An if-then tree will look like:
+	//
+	// 	IfStatement {
+	//		**[non-If nodes] {
+	//			IfCondition {
+	//				[...]
+	//                      }
+	//		}
+	//		**[non-If* nodes] {
+	//			IfBody {
+	//				[...]
+	//			}
+	//		}
+	//		**[non-If* nodes] {
+	//			IfElse {
+	//				[...]
+	//			}
+	//		}
+	//	}
+	//
+	// The IfElse node is optional. The order of IfCondition, IfBody and
+	// IfElse is not defined.
+	If
+	// IfCondition is a condition in an IfStatement or IfExpression.
+	IfCondition
+	// IfBody is the code following a then clause in an IfStatement or
+	// IfExpression.
+	IfBody
+	// IfBody is the code following a else clause in an IfStatement or
+	// IfExpression.
+	IfElse
+
+	// FunctionDeclaration
+	// TODO: arguments, return value, body, etc
+	FunctionDeclaration
+
+	// TODO: types
+	// TODO: references/pointers
+	// TODO: variable declarations
+	// TODO: assignments
+	// TODO: expressions
+	// TODO: type parameters
 )
 
 func (r Role) String() string {
@@ -45,8 +105,18 @@ func (r Role) String() string {
 		return "QualifiedIdentifier"
 	case SimpleIdentifier:
 		return "SimpleIdentifier"
-	case IfStatement:
-		return "IfStatement"
+	case If:
+		return "If"
+	case IfCondition:
+		return "IfCondition"
+	case IfBody:
+		return "IfBody"
+	case IfElse:
+		return "IfElse"
+	case Statement:
+		return "Statement"
+	case Expression:
+		return "Expression"
 	default:
 		return fmt.Sprintf("UnknownRole:%d", r)
 	}
