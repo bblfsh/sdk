@@ -21,11 +21,14 @@ type OriginalToNoder interface {
 	OriginalToNode(src map[string]interface{}) (*Node, error)
 }
 
-// topLevelIsRootNode is true if the top level object is the root node
-// of the AST. If false, top level object should have a single key, that
-// being the root node.
 const (
+	// topLevelIsRootNode is true if the top level object is the root node
+	// of the AST. If false, top level object should have a single key, that
+	// being the root node.
 	topLevelIsRootNode = false
+	// InternalRoleKey is a key string uses in properties to use the internal
+	// role of a node in the AST, if any.
+	InternalRoleKey = "internalRole"
 )
 
 // BaseOriginalToNoder is an implementation of OriginalToNoder that aims to work
@@ -88,6 +91,8 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				return nil, err
 			}
 
+			child.Properties[InternalRoleKey] = k
+
 			n.Children = append(n.Children, child)
 		case []interface{}:
 			for _, v := range ov {
@@ -95,6 +100,8 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 				if err != nil {
 					return nil, err
 				}
+
+				child.Properties[InternalRoleKey] = k
 
 				n.Children = append(n.Children, child)
 			}
