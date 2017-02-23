@@ -6,13 +6,15 @@ import (
 	"github.com/bblfsh/sdk/assets/build"
 )
 
-type BuildSystemCommand struct {
+const sdkPath = ".sdk"
+
+type PrepareBuildCommand struct {
 	Args struct {
 		Root string `positional-arg-name:"project-root" default:"."`
 	} `positional-args:"yes"`
 }
 
-func (c *BuildSystemCommand) Execute(args []string) error {
-	sdkFolder := filepath.Join(c.Args.Root, ".sdk")
+func (c *PrepareBuildCommand) Execute(args []string) error {
+	sdkFolder := filepath.Join(c.Args.Root, sdkPath)
 	return build.RestoreAssets(sdkFolder, "")
 }
