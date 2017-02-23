@@ -81,6 +81,8 @@ const (
 	// TODO: arguments, return value, body, etc
 	FunctionDeclaration
 
+	Noop
+
 	// TODO: types
 	// TODO: references/pointers
 	// TODO: variable declarations
@@ -117,6 +119,8 @@ func (r Role) String() string {
 		return "Statement"
 	case Expression:
 		return "Expression"
+	case Noop:
+		return "Noop"
 	default:
 		return fmt.Sprintf("UnknownRole:%d", r)
 	}
