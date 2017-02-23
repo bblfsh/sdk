@@ -61,32 +61,25 @@ func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node,
 		return nil, ErrUnexpectedObjectSize.New(1, len(src))
 	}
 
-	for key, obj := range src {
-		return c.toNode(key, obj)
+	for _, obj := range src {
+		return c.toNode(obj)
 	}
 
 	panic("not reachable")
 }
 
-func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, error) {
-	skey, ok := key.(string)
-	if !ok {
-		return nil, ErrUnexpectedObject.New("string", key)
-	}
-
+func (c *BaseOriginalToNoder) toNode(obj interface{}) (*Node, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnexpectedObject.New("map[string]interface{}", obj)
 	}
 
 	n := NewNode()
-	//TODO: More flexibility here
-	n.InternalType = skey
 	for k, o := range m {
 
 		switch ov := o.(type) {
 		case map[string]interface{}:
-			child, err := c.toNode(k, o)
+			child, err := c.toNode(o)
 			if err != nil {
 				return nil, err
 			}
@@ -96,7 +89,7 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 			n.Children = append(n.Children, child)
 		case []interface{}:
 			for _, v := range ov {
-				child, err := c.toNode("", v)
+				child, err := c.toNode(v)
 				if err != nil {
 					return nil, err
 				}
@@ -124,14 +117,18 @@ func (c *BaseOriginalToNoder) toNode(key interface{}, obj interface{}) (*Node, e
 					return nil, err
 				}
 
-				n.InternalType = s
-
-				tk := c.syntheticToken(s)
-				if tk != nil && n.Token != nil {
-					return nil, fmt.Errorf("two token keys for same node: %s", k)
+				if err := c.setInternalKey(n, s); err != nil {
+					return nil, err
 				}
 
-				n.Token = tk
+				tk := c.syntheticToken(s)
+				if tk != nil {
+					if n.Token != nil {
+						return nil, fmt.Errorf("two token keys for same node: %s", k)
+					}
+
+					n.Token = tk
+				}
 			case c.OffsetKey == k:
 				i, err := toUint32(o)
 				if err != nil {
@@ -184,6 +181,16 @@ func (c *BaseOriginalToNoder) syntheticToken(key string) *string {
 	}
 
 	return &t
+}
+
+func (c *BaseOriginalToNoder) setInternalKey(n *Node, k string) error {
+	if n.InternalType != "" {
+		return fmt.Errorf("two internal keys for same node: %s, %s",
+			n.InternalType, k)
+	}
+
+	n.InternalType = k
+	return nil
 }
 
 func toString(v interface{}) (string, error) {
