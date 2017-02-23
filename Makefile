@@ -1,7 +1,10 @@
 ASSETS_PATH := etc
-ASSETS_PACKAGE := assets
 ASSETS := $(shell ls $(ASSETS_PATH))
+ASSETS_PACKAGE := assets
+BINDATA_FILE := bindata.go
 BINDATA_CMD := go-bindata
+
+all: bindata
 
 bindata: $(ASSETS)
 

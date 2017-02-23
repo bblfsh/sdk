@@ -14,7 +14,7 @@ var build string
 
 func main() {
 	parser := flags.NewNamedParser("bblfsh-sdk", flags.Default)
-	parser.AddCommand("build-system", "", "", &cmd.PrepareBuildCommand{})
+	parser.AddCommand("prepare-build", "", "", &cmd.PrepareBuildCommand{})
 	parser.AddCommand("bootstrap", "", "", &cmd.BootstrapCommand{})
 	parser.AddCommand("manifest", "", "", &cmd.ManifestCommand{})
 

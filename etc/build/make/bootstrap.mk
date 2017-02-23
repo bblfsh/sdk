@@ -1,6 +1,11 @@
+# variables being included from the `manifest.mk`
+LANGUAGE ?=
+RUNTIME_NATIVE_VERSION ?=
+
+# optional variables
 DRIVER_DEV_PREFIX := dev
 DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
-GO_RUNTIME_VERSION = $(go version)
+RUNTIME_GO_VERSION = $(go version)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
 DOCKER_BUILD_IMAGE ?= $(DOCKER_IMAGE)-build
