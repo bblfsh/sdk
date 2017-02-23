@@ -53,3 +53,31 @@ func OnInternalType(path ...string) Selector {
 		return true
 	}
 }
+
+func OnInternalRole(path ...string) Selector {
+	return func(ns ...*Node) bool {
+		if len(path) == 0 {
+			return false
+		}
+
+		if len(path) > len(ns) {
+			return false
+		}
+
+		i := len(path) - 1
+		j := len(ns) - 1
+		for i >= 0 && j >= 0 {
+			p := path[i]
+			n := ns[j]
+			r, ok := n.Properties[InternalRoleKey]
+			if !ok || r != p {
+				return false
+			}
+
+			i--
+			j--
+		}
+
+		return true
+	}
+}
