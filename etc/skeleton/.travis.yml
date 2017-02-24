@@ -1,0 +1,17 @@
+language: go
+
+go:
+  - 1.8
+
+services:
+  - docker
+
+before_script:
+  - go get -v github.com/bblfsh/sdk/...
+  - bblfsh-sdk prepare-build .
+
+script:
+  - make test
+
+after_success:
+  - make push

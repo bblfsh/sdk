@@ -27,13 +27,7 @@ func (c *ManifestCommand) Execute(args []string) error {
 }
 
 func (c *ManifestCommand) readManifest() (*manifest.Manifest, error) {
-	f, err := os.Open(filepath.Join(c.Args.Root, manifest.Filename))
-	if err != nil {
-		return nil, err
-	}
-
-	m := &manifest.Manifest{}
-	return m, m.Decode(f)
+	return manifest.Load(filepath.Join(c.Args.Root, manifest.Filename))
 }
 
 func (c *ManifestCommand) processManifest(m *manifest.Manifest) error {
