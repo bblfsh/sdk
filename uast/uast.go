@@ -30,6 +30,9 @@ const (
 	Expression
 	Statement
 
+	// File is the root node of a single file AST.
+	File
+
 	// PackageDeclaration identifies the package that all its children
 	// belong to. Its children include, at least, QualifiedIdentifier or
 	// SimpleIdentifier with the package name.
@@ -43,6 +46,14 @@ const (
 	// ImportAlias is an identifier used as an alias for an imported package
 	// in a certain scope.
 	ImportAlias
+
+
+	// TODO: arguments, return value, body, etc
+	FunctionDeclaration
+
+	// TypeDeclaration is the declaration of a type. It could be a class or
+	// interface in Java, a struct, interface or alias in Go, etc.
+	TypeDeclaration
 
 	// If is used for if-then[-else] statements or expressions.
 	// An if-then tree will look like:
@@ -77,11 +88,104 @@ const (
 	// IfExpression.
 	IfElse
 
-	// FunctionDeclaration
-	// TODO: arguments, return value, body, etc
-	FunctionDeclaration
+	// Switch is used to represent a broad of switch flavors. An expression
+	// is evaluated and then compared to the values returned by different
+	// case expressions, executing a body associated to the first case that
+	// matches. Similar constructions that go beyond expression comparison
+	// (such as pattern matching in Scala's match) should not be annotated
+	// with Switch.
+	//
+	// TODO: We still have to decide how to annotate fallthrough and
+	//      non-fallthrough variants. As well as crazy variants such as Perl
+	//      and Bash with its optional fallthrough.
+	Switch
+	SwitchCase
+	SwitchCaseCondition
+	SwitchCaseBody
+	SwitchDefault
+
+	For
+	ForInit
+	ForExpression
+	ForUpdate
+	ForBody
+
+	ForEach
+
+	While
+	WhileCondition
+	WhileBody
+
+	DoWhile
+	DoWhileCondition
+	DoWhileBody
+
+	Break
+	Continue
+
+	// Block is a group of statements. If the source language has block scope,
+	// it should be annotated both with Block and BlockScope.
+	Block
+	// BlockScope is a block with its own block scope.
+	// TODO: Should we replace BlockScope with a more general Scope role that
+	//       can be combined with Block?
+	BlockScope
+
+	// Return is a return statement. It might have a child expression or not
+	// as with naked returns in Go or return in void methods in Java.
+	Return
+
+	Try
+	TryBody
+	TryCatch
+	TryFinally
+
+	Throw
+
+	// Assert checks if an expression is true and if it is not, it signals
+	// an error/exception, possibly stopping the execution.
+	Assert
+
+	// MethodInvocation is the invocation of a method as present in OO
+	// languages.
+	MethodInvocation
+	// MethodInvocationObject is the object where whose method is being
+	// invoked.
+	MethodInvocationObject
+	// MethodInvocationName is the name of the method being invoked.
+	MethodInvocationName
+	MethodInvocationArgument
 
 	Noop
+
+	// TODO: should we differentiate literal types with specialized literal
+	// annotations or combined with other type roles?
+	Literal
+	NullLiteral
+	StringLiteral
+	NumberLiteral
+	TypeLiteral
+
+	Type
+	// TODO: should we distinguist between primitive and builtin types?
+	PrimitiveType
+
+	// This represents the self-reference of an object instance in
+	// one of its methods. This corresponds to the `this` keyword
+	// (e.g. Java, C++, PHP), `self` (e.g. Smalltalk, Perl, Swift) and `Me`
+	// (e.g. Visual Basic).
+	This
+
+	Comment
+
+	// Documentation is a node that represents documentation of another node,
+	// such as function or package. Documentation is usually in the form of
+	// a string in certain position (e.g. Python docstring) or comment
+	// (e.g. Javadoc, godoc).
+	Documentation
+
+	// Whitespace
+	Whitespace
 
 	// TODO: types
 	// TODO: references/pointers
@@ -89,6 +193,15 @@ const (
 	// TODO: assignments
 	// TODO: expressions
 	// TODO: type parameters
+
+	// TODO: missing mappings from:
+	//       Java - try-with-resources
+	//       Java - synchronized
+	//       Java - class/interface distinction
+	//       Go   - goroutines
+	//       Go   - defer
+	//       Go   - select
+	//       Go   - channel operations
 )
 
 func (r Role) String() string {

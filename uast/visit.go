@@ -8,6 +8,23 @@ var (
 	ErrStop = errors.New("stop iteration")
 )
 
+// FindAll finds all nodes that satisfy a predicate.
+func FindAll(n *Node, f func(...*Node) bool) []*Node {
+	var nodes []*Node
+	err := PreOrderVisit(n, func(ns ...*Node) error {
+		if f(ns...) {
+			nodes = append(nodes, ns[len(ns) - 1])
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return nodes
+}
+
 // PreOrderVisit visits a tree in pre-order and applies the given
 // function to every node path. If the function returns an error, iteration will
 // stop and PreOrderVisit will return that error.

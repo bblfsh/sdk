@@ -27,6 +27,15 @@ func (s Selector) Role(roles ...Role) Rule {
 	}
 }
 
+var OnNoRole Selector = func(ns ...*Node) bool {
+	if len(ns) == 0 {
+		return false
+	}
+
+	n := ns[len(ns) - 1]
+	return len(n.Roles) == 0
+}
+
 func OnInternalType(path ...string) Selector {
 	return func(ns ...*Node) bool {
 		if len(path) == 0 {
