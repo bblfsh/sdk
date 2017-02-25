@@ -3,6 +3,7 @@ package manifest
 import (
 	"io"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -51,9 +52,15 @@ type Manifest struct {
 		Caveats     string `toml:"caveats,omitempty"`
 	} `toml:"documentation"`
 	Runtime struct {
-		NativeVersion []string `toml:"native_version"`
-		GoVersion     string   `toml:"go_version,omitempty"`
+		NativeVersion Versions `toml:"native_version"`
+		GoVersion     string   `toml:"go_version"`
 	} `toml:"runtime"`
+}
+
+type Versions []string
+
+func (v Versions) String() string {
+	return strings.Join(v, ":")
 }
 
 // Load reads a manifest and decode the content into a new Manifest struct

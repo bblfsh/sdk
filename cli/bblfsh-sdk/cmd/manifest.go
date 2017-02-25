@@ -40,6 +40,10 @@ func (c *ManifestCommand) processManifest(m *manifest.Manifest) error {
 		return err
 	}
 
+	if err := c.processValue("RUNTIME_GO_VERSION", m.Runtime.GoVersion); err != nil {
+		return err
+	}
+
 	return nil
 }
 

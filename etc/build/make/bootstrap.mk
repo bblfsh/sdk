@@ -1,14 +1,16 @@
 # variables being included from the `manifest.mk`
 LANGUAGE ?=
 RUNTIME_NATIVE_VERSION ?=
+RUNTIME_GO_VERSION ?=
 
 # optional variables
 DRIVER_DEV_PREFIX := dev
 DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
-RUNTIME_GO_VERSION = $(go version)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
-DOCKER_BUILD_IMAGE ?= $(DOCKER_IMAGE)-build
+DOCKER_IMAGE_VERSIONED ?= $(DOCKER_IMAGE)\:$(DRIVER_VERSION)
+DOCKER_BUILD_NATIVE_IMAGE ?= $(DOCKER_IMAGE)-build
+DOCKER_BUILD_DRIVER_IMAGE ?= bblfsh/sdk-go-build-musl
 
 # defined behaviour for builds inside travis-ci
 ifneq ($(origin CI), undefined)
