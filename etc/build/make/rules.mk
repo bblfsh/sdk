@@ -80,9 +80,6 @@ test-driver-internal: build-native-internal
 	$(GO_TEST) ./...
 
 build: | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
-	$(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
-		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
-
 build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 	$(BUILD_NATIVE_CMD) make build-native-internal
 
@@ -93,12 +90,14 @@ build-driver-internal:
 	cd driver; \
 	$(GO_CMD) build --ldflags '$(GO_LDFLAGS)' -o $(BUILD_PATH)/driver .; \
 
-push: build-image
+push: build
 	@if [ $(pushdisabled) ]; then \
 		echo -e "$(ccred)$(pushdisabled)$(ccreset)"; \
 		exit 1; \
 	fi
 
+	$(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
+		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 	$(DOCKER_PUSH) $(DOCKER_IMAGE_VERSIONED)
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):latest
 
