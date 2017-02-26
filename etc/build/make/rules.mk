@@ -4,7 +4,7 @@ BUILD_PATH := $(location)/build
 # docker runtime commands
 DOCKER_CMD ?= docker
 DOCKER_BUILD ?= $(DOCKER_CMD) build
-DOCKER_RUN ?= $(DOCKER_CMD) run --rm
+DOCKER_RUN ?= $(DOCKER_CMD) run --rm -t
 DOCKER_TAG ?= $(DOCKER_CMD) tag
 DOCKER_PUSH ?= $(DOCKER_CMD) push
 
@@ -72,7 +72,7 @@ test: | test-native test-driver
 test-native: $(DOCKER_BUILD_NATIVE_IMAGE)
 	$(BUILD_NATIVE_CMD) make test-native-internal
 
-test-driver: | $(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE)
+test-driver: | $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE)
 	$(BUILD_DRIVER_CMD) make test-driver-internal
 
 test-driver-internal: build-native-internal

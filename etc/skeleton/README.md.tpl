@@ -1,4 +1,4 @@
-# {{.Manifest.Language}}-driver  ![Driver Status](https://img.shields.io/badge/status-{{.Manifest.Status}}-{{template "color-status" .}}.svg) [![Build Status](https://travis-ci.org/bblfsh/{{.Manifest.Language}}-driver.svg?branch=master)](https://travis-ci.org/bblfsh/{{.Manifest.Language}}-driver) ![Native Version](https://img.shields.io/badge/{{.Manifest.Language}}%20version-{{.Manifest.Runtime.NativeVersion}}-aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-{{.Manifest.Runtime.GoVersion}}-63afbf.svg)
+# {{.Manifest.Language}}-driver  ![Driver Status](https://img.shields.io/badge/status-{{.Manifest.Status | escape_shield}}-{{template "color-status" .}}.svg) [![Build Status](https://travis-ci.org/bblfsh/{{.Manifest.Language}}-driver.svg?branch=master)](https://travis-ci.org/bblfsh/{{.Manifest.Language | escape_shield }}-driver) ![Native Version](https://img.shields.io/badge/{{.Manifest.Language}}%20version-{{.Manifest.Runtime.NativeVersion | escape_shield}}-aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-{{.Manifest.Runtime.GoVersion | escape_shield}}-63afbf.svg)
 
 {{.Manifest.Documentation.Description}}
 
@@ -18,6 +18,8 @@ GPLv3, see [LICENSE](LICENSE)
 {{define "color-status" -}}
 {{if eq .Manifest.Status "planning" -}}
 e08dd1
+{{- else if eq .Manifest.Status "pre-alpha" -}}
+d6ae86
 {{- else if eq .Manifest.Status "alpha" -}}
 db975c
 {{- else if eq .Manifest.Status "beta" -}}

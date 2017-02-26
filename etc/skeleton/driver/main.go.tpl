@@ -6,7 +6,7 @@ import (
 
 	"github.com/bblfsh/sdk"
 
-	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer/"
+	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
 
 var version string

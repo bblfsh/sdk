@@ -97,9 +97,13 @@ func (c *BootstrapCommand) processFileAsset(name string, overwrite bool) error {
 	return c.writeTemplate(filepath.Join(c.Root, name), content, overwrite)
 }
 
+var funcs = map[string]interface{}{
+	"escape_shield": escapeShield,
+}
+
 func (c *BootstrapCommand) processTemplateAsset(name string, v interface{}, overwrite bool) error {
 	tpl := string(skeleton.MustAsset(name))
-	t, err := template.New(name).Parse(tpl)
+	t, err := template.New(name).Funcs(funcs).Parse(tpl)
 	if err != nil {
 		return err
 	}
@@ -164,4 +168,8 @@ func (c *BootstrapCommand) doWriteTemplate(file string, content []byte) error {
 
 func (c *BootstrapCommand) readManifest() (*manifest.Manifest, error) {
 	return manifest.Load(filepath.Join(c.Root, manifest.Filename))
+}
+
+func escapeShield(text interface{}) string {
+	return strings.Replace(fmt.Sprintf("%s", text), "-", "--", -1)
 }
