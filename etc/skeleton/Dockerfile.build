@@ -11,18 +11,13 @@ FROM alpine:3.5
 # The following commands are defined to use in busybox based distributions,
 # if you are using a standard distributions, replace the `adduser` command with:
 #   `useradd --uid $BUILD_UID --home /opt/driver $BUILD_USER`
-ARG BUILD_USER
-ARG BUILD_UID
 RUN mkdir -p /opt/driver/src && \
-    adduser $BUILD_USER -u $BUILD_UID -D -h /opt/driver/src
+    adduser ${BUILD_USER} -u ${BUILD_UID} -D -h /opt/driver/src
 
-ARG RUNTIME_NATIVE_VERSION
-ENV RUNTIME_NATIVE_VERSION $RUNTIME_NATIVE_VERSION
-
-# As minimal build tools you need: make and git, install using the same command
-# the specific tools required to build the driver.
-RUN apk add --no-cache make git
+# As minimal build tools you need: make, curl and git, install using the same
+# command the specific tools required to build the driver.
+RUN apk add --no-cache make curl git
 
 # The volume with the full source code is mounted at `/opt/driver/src` so, we
 # set the workdir to this path.
-WORKDIR /opt/driver/sr
+WORKDIR /opt/driver/src

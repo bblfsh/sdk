@@ -4,9 +4,11 @@
 # `manifest.toml` at the root and the project translating it to a make include
 # at `manifest` using `bblfsh-sdk manifest` tool.
 
-localtion = $(shell pwd)
-sdklocation = $(localtion)/.sdk
+location = $(shell pwd)
+sdklocation = $(location)/.sdk
 manifest = $(sdklocation)/make/manifest.mk
+tmplocation = $(sdklocation)/tmp
+$(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
 ifdef bblfsh-sdk
@@ -14,5 +16,6 @@ ifdef bblfsh-sdk
 endif
 
 include $(sdklocation)/make/manifest.mk
+include $(sdklocation)/make/functions.mk
 include $(sdklocation)/make/bootstrap.mk
 include $(sdklocation)/make/rules.mk

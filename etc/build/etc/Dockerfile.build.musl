@@ -1,7 +1,0 @@
-FROM golang:${RUNTIME_GO_VERSION}-alpine
-
-RUN mkdir -p /opt/driver/src && \
-    adduser -u ${BUILD_UID} -D -h /opt/driver/src ${BUILD_USER} && \
-    apk add --no-cache git make musl-dev musl-utils gcc lvm2-dev
-
-WORKDIR /opt/driver/src/
