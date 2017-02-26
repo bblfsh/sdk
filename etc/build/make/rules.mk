@@ -79,11 +79,10 @@ test-driver-internal: build-native-internal
 	cd driver; \
 	$(GO_TEST) ./...
 
-build-image: | build $(DOCKER_IMAGE_VERSIONED)
+build: | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
 	$(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
 		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 
-build: | build-native build-driver
 build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 	$(BUILD_NATIVE_CMD) make build-native-internal
 
