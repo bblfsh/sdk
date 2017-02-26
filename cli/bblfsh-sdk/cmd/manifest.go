@@ -12,9 +12,7 @@ import (
 type ManifestCommand struct {
 	SetEnv   bool `long:"set-env" description:"sets the variables in the environment"`
 	PrintEnv bool `long:"print-env" description:"prints the manifest as env variables"`
-	Args     struct {
-		Root string `positional-arg-name:"project-root" default:"."`
-	} `positional-args:"yes"`
+	command
 }
 
 func (c *ManifestCommand) Execute(args []string) error {
@@ -27,11 +25,15 @@ func (c *ManifestCommand) Execute(args []string) error {
 }
 
 func (c *ManifestCommand) readManifest() (*manifest.Manifest, error) {
-	return manifest.Load(filepath.Join(c.Args.Root, manifest.Filename))
+	return manifest.Load(filepath.Join(c.Root, manifest.Filename))
 }
 
 func (c *ManifestCommand) processManifest(m *manifest.Manifest) error {
 	if err := c.processValue("LANGUAGE", m.Language); err != nil {
+		return err
+	}
+
+	if err := c.processValue("RUNTIME_OS", string(m.Runtime.OS)); err != nil {
 		return err
 	}
 

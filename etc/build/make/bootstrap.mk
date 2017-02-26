@@ -1,5 +1,6 @@
 # variables being included from the `manifest.mk`
 LANGUAGE ?=
+RUNTIME_OS ?=
 RUNTIME_NATIVE_VERSION ?=
 RUNTIME_GO_VERSION ?=
 

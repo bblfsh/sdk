@@ -12,7 +12,7 @@ BUILD_VOLUME_TARGET ?= /opt/driver/src/
 BUILD_VOLUME_PATH ?= $(location)
 
 DOCKER_FILE_$(DOCKER_IMAGE_VERSIONED) ?= $(location)/Dockerfile
-DOCKER_FILE_$(DOCKER_BUILD_DRIVER_IMAGE) ?= $(sdklocation)/etc/Dockerfile.build.debian
+DOCKER_FILE_$(DOCKER_BUILD_DRIVER_IMAGE) ?= $(sdklocation)/etc/Dockerfile.build.$(RUNTIME_OS)
 DOCKER_FILE_$(DOCKER_BUILD_NATIVE_IMAGE) ?= $(location)/Dockerfile.build
 
 # list of images to build
@@ -22,7 +22,6 @@ BUILD_IMAGE=$(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE) $(DOCKER_I
 GO_CMD = go
 GO_TEST = $(GO_CMD) test -v
 GO_LDFLAGS = -X main.version=$(DRIVER_VERSION) -X main.build=$(BUILD_ID)
-
 
 # build enviroment variables
 BUILD_USER ?= bblfsh

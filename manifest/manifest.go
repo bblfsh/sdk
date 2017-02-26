@@ -42,6 +42,24 @@ const (
 	CommentLoss InformationLoss = "formating-loss"
 )
 
+type OS string
+
+const (
+	Alpine OS = "alpine"
+	Debian OS = "debian"
+)
+
+func (os OS) AsImage() string {
+	switch os {
+	case Alpine:
+		return "alpine:3.5"
+	case Debian:
+		return "debian:jessie-slim"
+	default:
+		return ""
+	}
+}
+
 type Manifest struct {
 	Language        string            `toml:"language"`
 	Version         string            `toml:"version,omitempty"`
@@ -50,8 +68,9 @@ type Manifest struct {
 	Documentation   struct {
 		Description string `toml:"description,omitempty"`
 		Caveats     string `toml:"caveats,omitempty"`
-	} `toml:"documentation"`
+	} `toml:"documentation,omitempty"`
 	Runtime struct {
+		OS            OS       `toml:"os"`
 		NativeVersion Versions `toml:"native_version"`
 		GoVersion     string   `toml:"go_version"`
 	} `toml:"runtime"`

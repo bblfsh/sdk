@@ -9,12 +9,10 @@ import (
 const sdkPath = ".sdk"
 
 type PrepareBuildCommand struct {
-	Args struct {
-		Root string `positional-arg-name:"project-root" default:"."`
-	} `positional-args:"yes"`
+	command
 }
 
 func (c *PrepareBuildCommand) Execute(args []string) error {
-	sdkFolder := filepath.Join(c.Args.Root, sdkPath)
+	sdkFolder := filepath.Join(c.Root, sdkPath)
 	return build.RestoreAssets(sdkFolder, "")
 }

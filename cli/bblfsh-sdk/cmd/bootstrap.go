@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fmt"
+
 	"github.com/bblfsh/sdk/assets/skeleton"
 	"github.com/bblfsh/sdk/manifest"
 )
@@ -26,13 +28,14 @@ var managedFiles = map[string]bool{
 }
 
 type BootstrapCommand struct {
-	Verbose      bool   `short:"v" description:"show verbose debug information"`
-	InitLanguage string `long:"init-lang" description:"create an initial manifest.toml, based on the given lang"`
-	Args         struct {
-		Root string `positional-arg-name:"project-root" default:"."`
+	Init bool `long:"init" description:"creates an initial manifest.toml, based on the given lang"`
+	Args struct {
+		Language string `positional-arg-name:"language"  description:"target langunge of the driver"`
+		OS       string `positional-arg-name:"os" description:"distribution used to run the runtime. (Values: alpine or debian)"`
 	} `positional-args:"yes"`
 
 	context map[string]interface{}
+	command
 }
 
 func (c *BootstrapCommand) Execute(args []string) error {
@@ -63,18 +66,20 @@ func (c *BootstrapCommand) Execute(args []string) error {
 }
 
 func (c *BootstrapCommand) processManifest() error {
-	if c.InitLanguage == "" {
+	if !c.Init {
 		return nil
 	}
 
-	notice.Printf("initializing driver %q, creating new manifest\n", c.InitLanguage)
+	if c.Args.Language == "" || c.Args.OS == "" {
+		return fmt.Errorf("`language` and `os` arguments are mandatory in combination with --init")
+	}
+
+	notice.Printf("initializing driver %q, creating new manifest\n", c.Args.Language)
 	if _, err := c.readManifest(); err == nil {
 		warning.Printf("driver already initialized. %q detected\n", manifest.Filename)
 	}
 
-	return c.processTemplateAsset(manifestTpl, map[string]interface{}{
-		"Language": c.InitLanguage,
-	}, false)
+	return c.processTemplateAsset(manifestTpl, c.Args, false)
 
 }
 
@@ -89,17 +94,17 @@ func (c *BootstrapCommand) processAsset(name string) error {
 }
 func (c *BootstrapCommand) processFileAsset(name string, overwrite bool) error {
 	content := skeleton.MustAsset(name)
-	return c.writeTemplate(filepath.Join(c.Args.Root, name), content, overwrite)
+	return c.writeTemplate(filepath.Join(c.Root, name), content, overwrite)
 }
 
-func (c *BootstrapCommand) processTemplateAsset(name string, v map[string]interface{}, overwrite bool) error {
+func (c *BootstrapCommand) processTemplateAsset(name string, v interface{}, overwrite bool) error {
 	tpl := string(skeleton.MustAsset(name))
 	t, err := template.New(name).Parse(tpl)
 	if err != nil {
 		return err
 	}
 
-	file := filepath.Join(c.Args.Root, name[:len(name)-len(tplExtension)])
+	file := filepath.Join(c.Root, name[:len(name)-len(tplExtension)])
 
 	buf := bytes.NewBuffer(nil)
 	if err := t.Execute(buf, v); err != nil {
@@ -158,5 +163,5 @@ func (c *BootstrapCommand) doWriteTemplate(file string, content []byte) error {
 }
 
 func (c *BootstrapCommand) readManifest() (*manifest.Manifest, error) {
-	return manifest.Load(filepath.Join(c.Args.Root, manifest.Filename))
+	return manifest.Load(filepath.Join(c.Root, manifest.Filename))
 }
