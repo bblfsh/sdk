@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"fmt"
 
 	"github.com/bblfsh/sdk/assets/skeleton"
 	"github.com/bblfsh/sdk/manifest"
@@ -110,8 +109,6 @@ func (c *BootstrapCommand) processFileAsset(name string, overwrite bool) error {
 	return c.writeFile(filepath.Join(c.Root, name), content, info.Mode(), overwrite)
 }
 
-//	rel, _ := filepath.Rel(c.Root, file)
-
 var funcs = map[string]interface{}{
 	"escape_shield": escapeShield,
 }
@@ -193,24 +190,28 @@ func (c *BootstrapCommand) readManifest() (*manifest.Manifest, error) {
 }
 
 func (c *BootstrapCommand) notifyMissingFile(file string) {
-	c.changes++
 
 	if !c.DryRun {
 		notice.Printf("creating file %q\n", file)
 		return
 	}
 
+	if isDotGit(file) {
+		return
+	}
+
+	c.changes++
 	warning.Printf("missing file %q\n", file)
 }
 
 func (c *BootstrapCommand) notifyChangedFile(file string) {
-	c.changes++
-
 	if !c.DryRun {
 		warning.Printf("managed file %q has changed, discarding changes\n", file)
 		return
+
 	}
 
+	c.changes++
 	warning.Printf("managed file changed %q\n", file)
 }
 
@@ -220,4 +221,8 @@ func escapeShield(text interface{}) string {
 
 func fixGitFolder(path string) string {
 	return strings.Replace(path, "git/", ".git/", 1)
+}
+
+func isDotGit(path string) bool {
+	return strings.Contains(path, ".git/")
 }
