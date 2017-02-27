@@ -27,12 +27,39 @@ func (s Selector) Role(roles ...Role) Rule {
 	}
 }
 
+func OnPath(selectors ...Selector) Selector {
+	return func(ns ...*Node) bool {
+		stack := selectors
+
+		if len(ns) == 0 || len(stack) == 0 {
+			return false
+		}
+
+		for i := len(ns) - 1; i >= 0; i-- {
+			path := ns[i:]
+			selector := stack[len(stack)-1]
+			if !selector(path...) {
+				continue
+			}
+
+			if len(stack) == 1 {
+				return true
+			}
+
+			stack = stack[:len(stack)-1]
+			ns = ns[:i]
+		}
+
+		return false
+	}
+}
+
 var OnNoRole Selector = func(ns ...*Node) bool {
 	if len(ns) == 0 {
 		return false
 	}
 
-	n := ns[len(ns) - 1]
+	n := ns[len(ns)-1]
 	return len(n.Roles) == 0
 }
 

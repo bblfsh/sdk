@@ -36,3 +36,24 @@ func TestOnInternalType(t *testing.T) {
 		&Node{InternalType: "bar"},
 	))
 }
+
+func TestOnPath(t *testing.T) {
+	require := require.New(t)
+
+	require.True(OnPath(OnInternalType("foo"))(
+		&Node{InternalType: "foo"},
+	))
+	require.False(OnPath(OnInternalType("foo"))(
+		&Node{InternalType: "other"},
+	))
+
+	require.True(OnPath(OnInternalType("foo"), OnInternalType("bar"))(
+		&Node{InternalType: "foo"},
+		&Node{InternalType: "bar"},
+	))
+	require.False(OnPath(OnInternalType("foo"), OnInternalType("bar"))(
+		&Node{InternalType: "foo"},
+		&Node{InternalType: "other"},
+		&Node{InternalType: "bar"},
+	))
+}
