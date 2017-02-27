@@ -28,17 +28,23 @@ var managedFiles = map[string]bool{
 }
 
 type BootstrapCommand struct {
-	Init bool `long:"init" description:"creates an initial manifest.toml, based on the given lang"`
-	Args struct {
+	Init   bool `long:"init" description:"creates an initial manifest.toml, based on the given lang"`
+	DryRun bool `long:"dry-run" description:"don't writes nothing just checks if something should be written"`
+	Args   struct {
 		Language string `positional-arg-name:"language"  description:"target langunge of the driver"`
 		OS       string `positional-arg-name:"os" description:"distribution used to run the runtime. (Values: alpine or debian)"`
 	} `positional-args:"yes"`
 
+	changes int
 	context map[string]interface{}
 	command
 }
 
 func (c *BootstrapCommand) Execute(args []string) error {
+	if c.Init && c.DryRun {
+		return fmt.Errorf("can't use --init and --dry-run at the same time")
+	}
+
 	if err := c.processManifest(); err != nil {
 		return err
 	}
@@ -62,6 +68,10 @@ func (c *BootstrapCommand) Execute(args []string) error {
 		}
 	}
 
+	if c.DryRun && c.changes > 0 {
+		return fmt.Errorf("changes are required")
+	}
+
 	return nil
 }
 
@@ -80,7 +90,6 @@ func (c *BootstrapCommand) processManifest() error {
 	}
 
 	return c.processTemplateAsset(manifestTpl, c.Args, false)
-
 }
 
 func (c *BootstrapCommand) processAsset(name string) error {
@@ -92,10 +101,16 @@ func (c *BootstrapCommand) processAsset(name string) error {
 
 	return c.processFileAsset(name, overwrite)
 }
+
 func (c *BootstrapCommand) processFileAsset(name string, overwrite bool) error {
 	content := skeleton.MustAsset(name)
-	return c.writeTemplate(filepath.Join(c.Root, name), content, overwrite)
+	info, _ := skeleton.AssetInfo(name)
+
+	name = fixGitFolder(name)
+	return c.writeFile(filepath.Join(c.Root, name), content, info.Mode(), overwrite)
 }
+
+//	rel, _ := filepath.Rel(c.Root, file)
 
 var funcs = map[string]interface{}{
 	"escape_shield": escapeShield,
@@ -103,11 +118,13 @@ var funcs = map[string]interface{}{
 
 func (c *BootstrapCommand) processTemplateAsset(name string, v interface{}, overwrite bool) error {
 	tpl := string(skeleton.MustAsset(name))
+
 	t, err := template.New(name).Funcs(funcs).Parse(tpl)
 	if err != nil {
 		return err
 	}
 
+	name = fixGitFolder(name)
 	file := filepath.Join(c.Root, name[:len(name)-len(tplExtension)])
 
 	buf := bytes.NewBuffer(nil)
@@ -115,18 +132,19 @@ func (c *BootstrapCommand) processTemplateAsset(name string, v interface{}, over
 		return err
 	}
 
-	return c.writeTemplate(file, buf.Bytes(), overwrite)
+	info, _ := skeleton.AssetInfo(name)
+	return c.writeFile(file, buf.Bytes(), info.Mode(), overwrite)
 }
 
-func (c *BootstrapCommand) writeTemplate(file string, content []byte, overwrite bool) error {
+func (c *BootstrapCommand) writeFile(file string, content []byte, m os.FileMode, overwrite bool) error {
 	f, err := os.Open(file)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	if f == nil {
-		notice.Printf("creating file %q\n", file)
-		return c.doWriteTemplate(file, content)
+		c.notifyMissingFile(file)
+		return c.doWriteFile(file, content, m)
 	}
 
 	if !overwrite {
@@ -142,16 +160,20 @@ func (c *BootstrapCommand) writeTemplate(file string, content []byte, overwrite 
 		return nil
 	}
 
-	warning.Printf("managed file %q has changed, discarding changes\n", file)
-	return c.doWriteTemplate(file, content)
+	c.notifyChangedFile(file)
+	return c.doWriteFile(file, content, m)
 }
 
-func (c *BootstrapCommand) doWriteTemplate(file string, content []byte) error {
+func (c *BootstrapCommand) doWriteFile(file string, content []byte, m os.FileMode) error {
+	if c.DryRun {
+		return nil
+	}
+
 	if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
 		return err
 	}
 
-	f, err := os.Create(file)
+	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, m)
 	if err != nil {
 		return err
 	}
@@ -170,6 +192,32 @@ func (c *BootstrapCommand) readManifest() (*manifest.Manifest, error) {
 	return manifest.Load(filepath.Join(c.Root, manifest.Filename))
 }
 
+func (c *BootstrapCommand) notifyMissingFile(file string) {
+	c.changes++
+
+	if !c.DryRun {
+		notice.Printf("creating file %q\n", file)
+		return
+	}
+
+	warning.Printf("missing file %q\n", file)
+}
+
+func (c *BootstrapCommand) notifyChangedFile(file string) {
+	c.changes++
+
+	if !c.DryRun {
+		warning.Printf("managed file %q has changed, discarding changes\n", file)
+		return
+	}
+
+	warning.Printf("managed file changed %q\n", file)
+}
+
 func escapeShield(text interface{}) string {
 	return strings.Replace(fmt.Sprintf("%s", text), "-", "--", -1)
+}
+
+func fixGitFolder(path string) string {
+	return strings.Replace(path, "git/", ".git/", 1)
 }

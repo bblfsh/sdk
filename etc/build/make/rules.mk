@@ -68,7 +68,7 @@ $(BUILD_IMAGE):
 	@eval "envsubst '$(foreach v,$(ALLOWED_IN_DOCKERFILE),\$${$(v)})' < $(DOCKER_FILE_$@) > $(TEMP_FILE)"
 	$(DOCKER_BUILD) $(BUILD_ARGS) -t $(call unescape_docker_tag,$@) -f $(TEMP_FILE) .
 
-test: | test-native test-driver
+test: | validate test-native test-driver
 test-native: $(DOCKER_BUILD_NATIVE_IMAGE)
 	$(BUILD_NATIVE_CMD) make test-native-internal
 
@@ -100,6 +100,9 @@ push: build
 		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 	$(DOCKER_PUSH) $(DOCKER_IMAGE_VERSIONED)
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):latest
+
+validate:
+	$(bblfsh-sdk) bootstrap --dry-run
 
 clean:
 	rm -rf $(BUILD_PATH)

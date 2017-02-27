@@ -1,0 +1,2 @@
+#!/bin/bash
+bblfsh-sdk bootstrap --root `git rev-parse --show-toplevel` --dry-run
