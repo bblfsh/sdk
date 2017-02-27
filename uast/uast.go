@@ -16,6 +16,7 @@ type Hash uint32
 // be interpreted as acting with certain language-independent role.
 //
 //proteus:generate
+//go:generate stringer -type=Role
 type Role int8
 
 const (
@@ -203,41 +204,6 @@ const (
 	//       Go   - select
 	//       Go   - channel operations
 )
-
-func (r Role) String() string {
-	switch r {
-	case PackageDeclaration:
-		return "PackageDeclaration"
-	case FunctionDeclaration:
-		return "FunctionDeclaration"
-	case ImportDeclaration:
-		return "ImportDeclaration"
-	case ImportPath:
-		return "ImportPath"
-	case ImportAlias:
-		return "ImportAlias"
-	case QualifiedIdentifier:
-		return "QualifiedIdentifier"
-	case SimpleIdentifier:
-		return "SimpleIdentifier"
-	case If:
-		return "If"
-	case IfCondition:
-		return "IfCondition"
-	case IfBody:
-		return "IfBody"
-	case IfElse:
-		return "IfElse"
-	case Statement:
-		return "Statement"
-	case Expression:
-		return "Expression"
-	case Noop:
-		return "Noop"
-	default:
-		return fmt.Sprintf("UnknownRole:%d", r)
-	}
-}
 
 // Node is a node in a UAST.
 //
