@@ -48,7 +48,6 @@ const (
 	// in a certain scope.
 	ImportAlias
 
-
 	// TODO: arguments, return value, body, etc
 	FunctionDeclaration
 
@@ -171,6 +170,14 @@ const (
 	// TODO: should we distinguist between primitive and builtin types?
 	PrimitiveType
 
+	// Assignment represents a variable assignment or binding.
+	// The variable that is being assigned to is annotated with the
+	// AssignmentVariable role, while the value is annotated with
+	// AssignmentValue.
+	Assignment
+	AssignmentVariable
+	AssignmentValue
+
 	// This represents the self-reference of an object instance in
 	// one of its methods. This corresponds to the `this` keyword
 	// (e.g. Java, C++, PHP), `self` (e.g. Smalltalk, Perl, Swift) and `Me`
@@ -191,7 +198,6 @@ const (
 	// TODO: types
 	// TODO: references/pointers
 	// TODO: variable declarations
-	// TODO: assignments
 	// TODO: expressions
 	// TODO: type parameters
 

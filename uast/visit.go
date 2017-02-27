@@ -13,7 +13,7 @@ func FindAll(n *Node, f func(...*Node) bool) []*Node {
 	var nodes []*Node
 	err := PreOrderVisit(n, func(ns ...*Node) error {
 		if f(ns...) {
-			nodes = append(nodes, ns[len(ns) - 1])
+			nodes = append(nodes, ns[len(ns)-1])
 		}
 
 		return nil

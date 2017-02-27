@@ -4,9 +4,9 @@ package uast
 
 import "fmt"
 
-const _Role_name = "SimpleIdentifierQualifiedIdentifierExpressionStatementFilePackageDeclarationImportDeclarationImportPathImportAliasFunctionDeclarationTypeDeclarationIfIfConditionIfBodyIfElseSwitchSwitchCaseSwitchCaseConditionSwitchCaseBodySwitchDefaultForForInitForExpressionForUpdateForBodyForEachWhileWhileConditionWhileBodyDoWhileDoWhileConditionDoWhileBodyBreakContinueBlockBlockScopeReturnTryTryBodyTryCatchTryFinallyThrowAssertMethodInvocationMethodInvocationObjectMethodInvocationNameMethodInvocationArgumentNoopLiteralNullLiteralStringLiteralNumberLiteralTypeLiteralTypePrimitiveTypeThisCommentDocumentationWhitespace"
+const _Role_name = "SimpleIdentifierQualifiedIdentifierExpressionStatementFilePackageDeclarationImportDeclarationImportPathImportAliasFunctionDeclarationTypeDeclarationIfIfConditionIfBodyIfElseSwitchSwitchCaseSwitchCaseConditionSwitchCaseBodySwitchDefaultForForInitForExpressionForUpdateForBodyForEachWhileWhileConditionWhileBodyDoWhileDoWhileConditionDoWhileBodyBreakContinueBlockBlockScopeReturnTryTryBodyTryCatchTryFinallyThrowAssertMethodInvocationMethodInvocationObjectMethodInvocationNameMethodInvocationArgumentNoopLiteralNullLiteralStringLiteralNumberLiteralTypeLiteralTypePrimitiveTypeAssignmentAssignmentVariableAssignmentValueThisCommentDocumentationWhitespace"
 
-var _Role_index = [...]uint16{0, 16, 35, 45, 54, 58, 76, 93, 103, 114, 133, 148, 150, 161, 167, 173, 179, 189, 208, 222, 235, 238, 245, 258, 267, 274, 281, 286, 300, 309, 316, 332, 343, 348, 356, 361, 371, 377, 380, 387, 395, 405, 410, 416, 432, 454, 474, 498, 502, 509, 520, 533, 546, 557, 561, 574, 578, 585, 598, 608}
+var _Role_index = [...]uint16{0, 16, 35, 45, 54, 58, 76, 93, 103, 114, 133, 148, 150, 161, 167, 173, 179, 189, 208, 222, 235, 238, 245, 258, 267, 274, 281, 286, 300, 309, 316, 332, 343, 348, 356, 361, 371, 377, 380, 387, 395, 405, 410, 416, 432, 454, 474, 498, 502, 509, 520, 533, 546, 557, 561, 574, 584, 602, 617, 621, 628, 641, 651}
 
 func (i Role) String() string {
 	if i < 0 || i >= Role(len(_Role_index)-1) {
