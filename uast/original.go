@@ -79,91 +79,118 @@ func (c *BaseOriginalToNoder) toNode(obj interface{}) (*Node, error) {
 
 		switch ov := o.(type) {
 		case map[string]interface{}:
-			child, err := c.toNode(o)
+			child, err := c.mapToNode(k, ov)
 			if err != nil {
 				return nil, err
 			}
 
-			child.Properties[InternalRoleKey] = k
-
 			n.Children = append(n.Children, child)
 		case []interface{}:
-			for _, v := range ov {
-				child, err := c.toNode(v)
-				if err != nil {
-					return nil, err
-				}
-
-				child.Properties[InternalRoleKey] = k
-
-				n.Children = append(n.Children, child)
+			children, err := c.sliceToNodes(k, ov)
+			if err != nil {
+				return nil, err
 			}
+
+			n.Children = append(n.Children, children...)
 		default:
-			switch {
-			case c.isTokenKey(k):
-				s, err := toString(o)
-				if err != nil {
-					return nil, err
-				}
-
-				if n.Token != nil {
-					return nil, fmt.Errorf("two token keys for same node: %s", k)
-				}
-
-				n.Token = &s
-			case c.InternalTypeKey == k:
-				s, err := toString(o)
-				if err != nil {
-					return nil, err
-				}
-
-				if err := c.setInternalKey(n, s); err != nil {
-					return nil, err
-				}
-
-				tk := c.syntheticToken(s)
-				if tk != nil {
-					if n.Token != nil {
-						return nil, fmt.Errorf("two token keys for same node: %s", k)
-					}
-
-					n.Token = tk
-				}
-			case c.OffsetKey == k:
-				i, err := toUint32(o)
-				if err != nil {
-					return nil, err
-				}
-
-				if n.StartPosition == nil {
-					n.StartPosition = &Position{}
-				}
-
-				n.StartPosition.Offset = &i
-			case c.LineKey == k:
-				i, err := toUint32(o)
-				if err != nil {
-					return nil, err
-				}
-
-				if n.StartPosition == nil {
-					n.StartPosition = &Position{}
-				}
-
-				n.StartPosition.Line = &i
-			default:
-				s, err := toString(o)
-				if err != nil {
-					return nil, err
-				}
-
-				n.Properties[k] = s
+			if err := c.addProperty(n, k, o); err != nil {
+				return nil, err
 			}
 		}
 	}
 
 	sort.Sort(byOffset(n.Children))
 	return n, nil
+}
+
+func (c *BaseOriginalToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
+	n, err := c.toNode(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	n.Properties[InternalRoleKey] = k
+	return n, nil
+}
+
+func (c *BaseOriginalToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, error) {
+	var ns []*Node
+	for _, v := range s {
+		n, err := c.toNode(v)
+		if err != nil {
+			return nil, err
+		}
+
+		n.Properties[InternalRoleKey] = k
+		ns = append(ns, n)
+	}
+
+	return ns, nil
+}
+
+func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) error {
+	switch {
+	case c.isTokenKey(k):
+		s, err := toString(o)
+		if err != nil {
+			return err
+		}
+
+		if n.Token != nil {
+			return fmt.Errorf("two token keys for same node: %s", k)
+		}
+
+		n.Token = &s
+	case c.InternalTypeKey == k:
+		s, err := toString(o)
+		if err != nil {
+			return err
+		}
+
+		if err := c.setInternalKey(n, s); err != nil {
+			return err
+		}
+
+		tk := c.syntheticToken(s)
+		if tk != nil {
+			if n.Token != nil {
+				return fmt.Errorf("two token keys for same node: %s", k)
+			}
+
+			n.Token = tk
+		}
+	case c.OffsetKey == k:
+		i, err := toUint32(o)
+		if err != nil {
+			return err
+		}
+
+		if n.StartPosition == nil {
+			n.StartPosition = &Position{}
+		}
+
+		n.StartPosition.Offset = &i
+	case c.LineKey == k:
+		i, err := toUint32(o)
+		if err != nil {
+			return err
+		}
+
+		if n.StartPosition == nil {
+			n.StartPosition = &Position{}
+		}
+
+		n.StartPosition.Line = &i
+	default:
+		s, err := toString(o)
+		if err != nil {
+			return err
+		}
+
+		n.Properties[k] = s
+	}
+
+	return nil
 }
 
 func (c *BaseOriginalToNoder) isTokenKey(key string) bool {
