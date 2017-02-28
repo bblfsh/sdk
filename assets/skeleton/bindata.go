@@ -194,7 +194,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 227, mode: os.FileMode(420), modTime: time.Unix(1488075264, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 227, mode: os.FileMode(420), modTime: time.Unix(1488301444, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

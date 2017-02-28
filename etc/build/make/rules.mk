@@ -1,6 +1,9 @@
 BUILD_ID := $(shell date +"%m-%d-%Y_%H_%M_%S")
 BUILD_PATH := $(location)/build
 
+RUN := $(sdklocation)/etc/run.sh
+RUN_VERBOSE := VERBOSE=1 $(RUN)
+
 # docker runtime commands
 DOCKER_CMD ?= docker
 DOCKER_BUILD ?= $(DOCKER_CMD) build
@@ -30,12 +33,14 @@ BUILD_ARGS ?=
 BUILD_NATIVE_CMD ?= $(DOCKER_RUN) \
 	-u $(BUILD_USER):$(BUILD_UID) \
 	-v $(BUILD_VOLUME_PATH):$(BUILD_VOLUME_TARGET) \
+	-e ENVIRONMENT=$(DOCKER_BUILD_NATIVE_IMAGE) \
 	$(DOCKER_BUILD_NATIVE_IMAGE)
 
 BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
 	-u $(BUILD_USER):$(BUILD_UID) \
 	-v $(BUILD_VOLUME_PATH):$(BUILD_VOLUME_TARGET) \
 	-v $(GOPATH):/go \
+	-e ENVIRONMENT=$(DOCKER_BUILD_DRIVER_IMAGE) \
 	$(DOCKER_BUILD_DRIVER_IMAGE)
 
 # if VERBOSE is unset docker build is executed in quite mode
@@ -61,34 +66,35 @@ export
 all: build
 
 $(BUILD_PATH):
-	mkdir -p $(BUILD_PATH)
+	@$(RUN) mkdir -p $(BUILD_PATH)
 
 $(BUILD_IMAGE):
 	@$(eval TEMP_FILE := $(shell mktemp -p $(tmplocation)))
 	@eval "envsubst '$(foreach v,$(ALLOWED_IN_DOCKERFILE),\$${$(v)})' < $(DOCKER_FILE_$@) > $(TEMP_FILE)"
-	$(DOCKER_BUILD) $(BUILD_ARGS) -t $(call unescape_docker_tag,$@) -f $(TEMP_FILE) .
+	@$(RUN) $(DOCKER_BUILD) $(BUILD_ARGS) -t $(call unescape_docker_tag,$@) -f $(TEMP_FILE) .
+	@rm $(TEMP_FILE)
 
 test: | validate test-native test-driver
 test-native: $(DOCKER_BUILD_NATIVE_IMAGE)
-	$(BUILD_NATIVE_CMD) make test-native-internal
+	@$(RUN_VERBOSE) $(BUILD_NATIVE_CMD) make test-native-internal
 
 test-driver: | $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE)
-	$(BUILD_DRIVER_CMD) make test-driver-internal
+	@$(RUN_VERBOSE) $(BUILD_DRIVER_CMD) make test-driver-internal
 
 test-driver-internal: build-native-internal
-	cd driver; \
-	$(GO_TEST) ./...
+	@cd driver; \
+	$(RUN_VERBOSE) $(GO_TEST) ./...
 
 build: | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
 build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
-	$(BUILD_NATIVE_CMD) make build-native-internal
+	@$(RUN) $(BUILD_NATIVE_CMD) make build-native-internal
 
 build-driver: | $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
-	$(BUILD_DRIVER_CMD) make build-driver-internal
+	@$(RUN) $(BUILD_DRIVER_CMD) make build-driver-internal
 
 build-driver-internal:
-	cd driver; \
-	$(GO_CMD) build --ldflags '$(GO_LDFLAGS)' -o $(BUILD_PATH)/driver .; \
+	@cd driver; \
+	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
 
 push: build
 	@if [ $(pushdisabled) ]; then \
@@ -96,13 +102,13 @@ push: build
 		exit 1; \
 	fi
 
-	$(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
+	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
 		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
-	$(DOCKER_PUSH) $(DOCKER_IMAGE_VERSIONED)
-	$(DOCKER_PUSH) $(DOCKER_IMAGE):latest
+	@$(RUN) $(DOCKER_PUSH) $(DOCKER_IMAGE_VERSIONED)
+	@$(RUN) $(DOCKER_PUSH) $(DOCKER_IMAGE):latest
 
 validate:
-	$(bblfsh-sdk) bootstrap --dry-run
+	@$(RUN) $(bblfsh-sdk) bootstrap --dry-run
 
 clean:
-	rm -rf $(BUILD_PATH)
+	@$(RUN) rm -rf $(BUILD_PATH)
