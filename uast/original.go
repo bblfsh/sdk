@@ -157,22 +157,14 @@ func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) erro
 			return err
 		}
 
-		if n.StartPosition == nil {
-			n.StartPosition = &Position{}
-		}
-
-		n.StartPosition.Offset = &i
+		n.StartPosition.Offset = i
 	case c.LineKey == k:
 		i, err := toUint32(o)
 		if err != nil {
 			return err
 		}
 
-		if n.StartPosition == nil {
-			n.StartPosition = &Position{}
-		}
-
-		n.StartPosition.Line = &i
+		n.StartPosition.Line = i
 	default:
 		n.Properties[k] = fmt.Sprint(0)
 	}
@@ -236,15 +228,15 @@ func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s byOffset) Less(i, j int) bool {
 	a := s[i]
 	b := s[j]
-	ao := a.offset()
-	bo := b.offset()
-	if ao == nil {
+	apos := a.startPosition()
+	bpos := b.startPosition()
+	if apos.IsEmpty() {
 		return false
 	}
 
-	if bo == nil {
+	if bpos.IsEmpty() {
 		return true
 	}
 
-	return *ao < *bo
+	return apos.Offset < bpos.Offset
 }

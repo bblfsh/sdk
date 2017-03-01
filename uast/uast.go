@@ -228,7 +228,10 @@ type Node struct {
 	Token *string
 	// StartPosition is the position where this node starts in the original
 	// source code file.
-	StartPosition *Position
+	StartPosition Position
+	// EndPosition is the position where this node ends in the original
+	// source code file.
+	EndPosition Position
 	// Roles is a list of Role that this node has. It is a language-independent
 	// annotation.
 	Roles []Role
@@ -259,20 +262,16 @@ func (n *Node) Tokens() []string {
 	return tokens
 }
 
-func (n *Node) offset() *uint32 {
-	if n.StartPosition != nil {
-		return n.StartPosition.Offset
+func (n *Node) startPosition() Position {
+	if !n.StartPosition.IsEmpty() {
+		return n.StartPosition
 	}
 
-	var min *uint32
+	var min Position
 	for _, c := range n.Children {
-		offset := c.offset()
-		if offset == nil {
-			continue
-		}
-
-		if min == min || *min > *offset {
-			min = offset
+		other := c.startPosition()
+		if min.IsEmpty() || other.Offset < min.Offset {
+			min = other
 		}
 	}
 
@@ -324,12 +323,26 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludePositions) && n.StartPosition != nil {
+	if includes.Is(IncludePositions) && !n.StartPosition.IsEmpty() {
 		if _, err := fmt.Fprintf(w, "%sStartPosition: {\n", istr); err != nil {
 			return err
 		}
 
 		if err := printPosition(w, indent+2, n.StartPosition); err != nil {
+			return err
+		}
+
+		if _, err := fmt.Fprintf(w, "%s}\n", istr); err != nil {
+			return err
+		}
+	}
+
+	if includes.Is(IncludePositions) && !n.EndPosition.IsEmpty() {
+		if _, err := fmt.Fprintf(w, "%EndPosition: {\n", istr); err != nil {
+			return err
+		}
+
+		if err := printPosition(w, indent+2, n.EndPosition); err != nil {
 			return err
 		}
 
@@ -406,31 +419,23 @@ func printProperties(w io.Writer, indent int, props map[string]string) error {
 	return nil
 }
 
-func printPosition(w io.Writer, indent int, pos *Position) error {
+func printPosition(w io.Writer, indent int, pos Position) error {
+	if pos.IsEmpty() {
+		return nil
+	}
+
 	istr := strings.Repeat(".  ", indent)
 
-	if pos.Offset != nil {
-		_, err := fmt.Fprintf(w, "%sOffset: %d\n", istr, *pos.Offset)
-		if err != nil {
-			return err
-		}
+	if _, err := fmt.Fprintf(w, "%sOffset: %d\n", istr, pos.Offset); err != nil {
+		return err
 	}
 
-	if pos.Line != nil {
-		_, err := fmt.Fprintf(w, "%sLine: %d\n", istr, *pos.Line)
-		if err != nil {
-			return err
-		}
+	if _, err := fmt.Fprintf(w, "%sLine: %d\n", istr, pos.Line); err != nil {
+		return err
 	}
 
-	if pos.Col != nil {
-		_, err := fmt.Fprintf(w, "%sCol: %d\n", istr, *pos.Col)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	_, err := fmt.Fprintf(w, "%sCol: %d\n", istr, pos.Col)
+	return err
 }
 
 func rolesToString(roles ...Role) string {
@@ -486,11 +491,16 @@ func (n *Node) HashWith(includes IncludeFlag) Hash {
 
 // Position represents a position in a source code file.
 type Position struct {
-	// Offset is the position as an absolute byte offset.
-	Offset *uint32
-	// Line is the line number.
-	Line *uint32
+	// Offset is the position as an absolute byte offset. It is a 0-based
+	// index.
+	Offset uint32
+	// Line is the line number. It is a 1-based index.
+	Line uint32
 	// Col is the column number (the byte offset of the position relative to
-	// a line.
-	Col *uint32
+	// a line. It is a 1-based index.
+	Col uint32
+}
+
+func (p Position) IsEmpty() bool {
+	return p.Offset == 0 && p.Line == 0 && p.Col == 0
 }
