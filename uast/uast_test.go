@@ -13,7 +13,7 @@ func TestNodeTokens(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c OriginalToNoder = &BaseOriginalToNoder{
+	var c ToNoder = &BaseToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		OffsetKey:       "startPosition",
@@ -24,7 +24,7 @@ func TestNodeTokens(t *testing.T) {
 			"primitiveTypeCode": true, // ?
 		},
 	}
-	n, err := c.OriginalToNode(f)
+	n, err := c.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 

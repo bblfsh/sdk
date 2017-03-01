@@ -15,10 +15,10 @@ var (
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
 )
 
-// OriginalToNoder is a converter of source ASTs to *Node.
-type OriginalToNoder interface {
-	// OriginalToNode converts the source AST to a *Node.
-	OriginalToNode(src map[string]interface{}) (*Node, error)
+// ToNoder is a converter of source ASTs to *Node.
+type ToNoder interface {
+	// ToNode converts the source AST to a *Node.
+	ToNode(src interface{}) (*Node, error)
 }
 
 const (
@@ -33,7 +33,7 @@ const (
 
 // BaseOriginalToNoder is an implementation of OriginalToNoder that aims to work
 // for the most common source ASTs.
-type BaseOriginalToNoder struct {
+type BaseToNoder struct {
 	// InternalTypeKey is a key in the source AST that can be used to get the
 	// InternalType of a node.
 	InternalTypeKey string
@@ -48,7 +48,12 @@ type BaseOriginalToNoder struct {
 	SyntheticTokens map[string]string
 }
 
-func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node, error) {
+func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
+	src, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, ErrUnsupported.New("non-object root node")
+	}
+
 	if len(src) == 0 {
 		return nil, ErrEmptyAST.New()
 	}
@@ -68,7 +73,7 @@ func (c *BaseOriginalToNoder) OriginalToNode(src map[string]interface{}) (*Node,
 	panic("not reachable")
 }
 
-func (c *BaseOriginalToNoder) toNode(obj interface{}) (*Node, error) {
+func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnexpectedObject.New("map[string]interface{}", obj)
@@ -103,7 +108,7 @@ func (c *BaseOriginalToNoder) toNode(obj interface{}) (*Node, error) {
 	return n, nil
 }
 
-func (c *BaseOriginalToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
+func (c *BaseToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
 	n, err := c.toNode(obj)
 	if err != nil {
 		return nil, err
@@ -113,7 +118,7 @@ func (c *BaseOriginalToNoder) mapToNode(k string, obj map[string]interface{}) (*
 	return n, nil
 }
 
-func (c *BaseOriginalToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, error) {
+func (c *BaseToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, error) {
 	var ns []*Node
 	for _, v := range s {
 		n, err := c.toNode(v)
@@ -128,7 +133,7 @@ func (c *BaseOriginalToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, 
 	return ns, nil
 }
 
-func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) error {
+func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
 		if n.Token != "" {
@@ -171,11 +176,11 @@ func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) erro
 	return nil
 }
 
-func (c *BaseOriginalToNoder) isTokenKey(key string) bool {
+func (c *BaseToNoder) isTokenKey(key string) bool {
 	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
-func (c *BaseOriginalToNoder) syntheticToken(key string) string {
+func (c *BaseToNoder) syntheticToken(key string) string {
 	if c.SyntheticTokens == nil {
 		return ""
 	}
@@ -183,7 +188,7 @@ func (c *BaseOriginalToNoder) syntheticToken(key string) string {
 	return c.SyntheticTokens[key]
 }
 
-func (c *BaseOriginalToNoder) setInternalKey(n *Node, k string) error {
+func (c *BaseToNoder) setInternalKey(n *Node, k string) error {
 	if n.InternalType != "" {
 		return fmt.Errorf("two internal keys for same node: %s, %s",
 			n.InternalType, k)
