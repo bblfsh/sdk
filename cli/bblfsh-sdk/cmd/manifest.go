@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -10,8 +9,6 @@ import (
 )
 
 type ManifestCommand struct {
-	SetEnv   bool `long:"set-env" description:"sets the variables in the environment"`
-	PrintEnv bool `long:"print-env" description:"prints the manifest as env variables"`
 	command
 }
 
@@ -21,42 +18,23 @@ func (c *ManifestCommand) Execute(args []string) error {
 		return err
 	}
 
-	return c.processManifest(m)
+	c.processManifest(m)
+	return nil
 }
 
 func (c *ManifestCommand) readManifest() (*manifest.Manifest, error) {
 	return manifest.Load(filepath.Join(c.Root, manifest.Filename))
 }
 
-func (c *ManifestCommand) processManifest(m *manifest.Manifest) error {
-	if err := c.processValue("LANGUAGE", m.Language); err != nil {
-		return err
-	}
-
-	if err := c.processValue("RUNTIME_OS", string(m.Runtime.OS)); err != nil {
-		return err
-	}
+func (c *ManifestCommand) processManifest(m *manifest.Manifest) {
+	c.processValue("LANGUAGE", m.Language)
+	c.processValue("RUNTIME_OS", string(m.Runtime.OS))
 
 	nv := strings.Join(m.Runtime.NativeVersion, ":")
-	if err := c.processValue("RUNTIME_NATIVE_VERSION", nv); err != nil {
-		return err
-	}
-
-	if err := c.processValue("RUNTIME_GO_VERSION", m.Runtime.GoVersion); err != nil {
-		return err
-	}
-
-	return nil
+	c.processValue("RUNTIME_NATIVE_VERSION", nv)
+	c.processValue("RUNTIME_GO_VERSION", m.Runtime.GoVersion)
 }
 
 func (c *ManifestCommand) processValue(key, value string) error {
-	if c.PrintEnv {
-		fmt.Printf("%s=%s\n", key, value)
-	}
-
-	if c.SetEnv {
-		return os.Setenv(key, value)
-	}
-
-	return nil
+	fmt.Printf("%s=%s\n", key, value)
 }
