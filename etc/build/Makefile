@@ -12,7 +12,7 @@ $(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
 ifdef bblfsh-sdk
-    $(shell $(bblfsh-sdk) manifest --print-env > $(manifest))
+    $(shell $(bblfsh-sdk) manifest > $(manifest))
 endif
 
 include $(sdklocation)/make/manifest.mk

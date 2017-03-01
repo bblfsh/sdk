@@ -14,9 +14,9 @@ DOCKER_PUSH ?= $(DOCKER_CMD) push
 BUILD_VOLUME_TARGET ?= /opt/driver/src/
 BUILD_VOLUME_PATH ?= $(location)
 
-DOCKER_FILE_$(DOCKER_IMAGE_VERSIONED) ?= $(location)/Dockerfile
-DOCKER_FILE_$(DOCKER_BUILD_DRIVER_IMAGE) ?= $(sdklocation)/etc/Dockerfile.build.$(RUNTIME_OS)
-DOCKER_FILE_$(DOCKER_BUILD_NATIVE_IMAGE) ?= $(location)/Dockerfile.build
+DOCKER_FILE_$(DOCKER_IMAGE_VERSIONED) ?= $(location)/Dockerfile.tpl
+DOCKER_FILE_$(DOCKER_BUILD_DRIVER_IMAGE) ?= $(sdklocation)/etc/build/Dockerfile.build.$(RUNTIME_OS).tpl
+DOCKER_FILE_$(DOCKER_BUILD_NATIVE_IMAGE) ?= $(location)/Dockerfile.build.tpl
 
 # list of images to build
 BUILD_IMAGE=$(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE) $(DOCKER_IMAGE_VERSIONED)
@@ -53,11 +53,6 @@ ALLOWED_IN_DOCKERFILE = \
 	RUNTIME_NATIVE_VERSION RUNTIME_GO_VERSION \
 	BUILD_USER BUILD_UID BUILD_PATH \
 	DOCKER_IMAGE DOCKER_IMAGE_VERSIONED DOCKER_BUILD_NATIVE_IMAGE
-
-# term colors helpers
-ccred= \e[0;31m
-ccyellow= \e[0;33m
-ccreset= \e[0m
 
 # we export the variable to allow envsubst, substitute the vars in the
 # Dockerfiles
@@ -98,8 +93,7 @@ build-driver-internal:
 
 push: build
 	@if [ $(pushdisabled) ]; then \
-		echo -e "$(ccred)$(pushdisabled)$(ccreset)"; \
-		exit 1; \
+		$(error $(pushdisabled))
 	fi
 
 	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
