@@ -18,5 +18,6 @@ endif
 include $(sdklocation)/make/manifest.mk
 include $(sdklocation)/make/functions.mk
 include $(sdklocation)/make/bootstrap.mk
+include $(sdklocation)/make/help.mk
 include $(sdklocation)/make/rules.mk
 sdkloaded = true

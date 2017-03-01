@@ -58,7 +58,7 @@ ALLOWED_IN_DOCKERFILE = \
 # Dockerfiles
 export
 
-all: build
+all: help
 
 $(BUILD_PATH):
 	@$(RUN) mkdir -p $(BUILD_PATH)
