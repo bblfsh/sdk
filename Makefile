@@ -50,4 +50,8 @@ test-coverage:
 		fi; \
 	done; \
 
-
+validate-commit: bindata
+	if git status --untracked-files=no --porcelain | grep -qe '..*' ; then \
+		 echo >&2 "generated bindata is out of sync"; \
+	         exit 2; \
+	fi
