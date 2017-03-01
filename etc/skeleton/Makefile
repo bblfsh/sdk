@@ -1,4 +1,6 @@
-include .sdk/Makefile
+-include .sdk/Makefile
+
+$(if $(filter 42,$(bblfsh_loaded)),,$(error You must install bblfsh-sdk))
 
 test-native:
 	cd native; \
