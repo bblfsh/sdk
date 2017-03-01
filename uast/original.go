@@ -131,12 +131,11 @@ func (c *BaseOriginalToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, 
 func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
-		if n.Token != nil {
+		if n.Token != "" {
 			return fmt.Errorf("two token keys for same node: %s", k)
 		}
 
-		s := fmt.Sprint(o)
-		n.Token = &s
+		n.Token = fmt.Sprint(o)
 	case c.InternalTypeKey == k:
 		s := fmt.Sprint(o)
 		if err := c.setInternalKey(n, s); err != nil {
@@ -144,8 +143,8 @@ func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) erro
 		}
 
 		tk := c.syntheticToken(s)
-		if tk != nil {
-			if n.Token != nil {
+		if tk != "" {
+			if n.Token != "" {
 				return fmt.Errorf("two token keys for same node: %s", k)
 			}
 
@@ -176,17 +175,12 @@ func (c *BaseOriginalToNoder) isTokenKey(key string) bool {
 	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
-func (c *BaseOriginalToNoder) syntheticToken(key string) *string {
+func (c *BaseOriginalToNoder) syntheticToken(key string) string {
 	if c.SyntheticTokens == nil {
-		return nil
+		return ""
 	}
 
-	t, ok := c.SyntheticTokens[key]
-	if !ok {
-		return nil
-	}
-
-	return &t
+	return c.SyntheticTokens[key]
 }
 
 func (c *BaseOriginalToNoder) setInternalKey(n *Node, k string) error {

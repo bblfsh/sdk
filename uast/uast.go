@@ -224,8 +224,8 @@ type Node struct {
 	// Children are the children nodes of this node.
 	Children []*Node
 	// Token is the token content if this node represents a token from the
-	// original source file. Otherwise, it is nil.
-	Token *string
+	// original source file. If it is empty, there is no token attached.
+	Token string
 	// StartPosition is the position where this node starts in the original
 	// source code file.
 	StartPosition Position
@@ -249,8 +249,8 @@ func (n *Node) Tokens() []string {
 	var tokens []string
 	err := PreOrderVisit(n, func(path ...*Node) error {
 		n := path[len(path)-1]
-		if n.Token != nil {
-			tokens = append(tokens, *n.Token)
+		if n.Token != "" {
+			tokens = append(tokens, n.Token)
 		}
 
 		return nil
@@ -316,9 +316,9 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludeTokens) && n.Token != nil {
+	if includes.Is(IncludeTokens) && n.Token != "" {
 		if _, err := fmt.Fprintf(w, "%sTOKEN \"%s\"\n",
-			istr, *n.Token); err != nil {
+			istr, n.Token); err != nil {
 			return err
 		}
 	}
