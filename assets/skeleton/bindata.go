@@ -930,7 +930,7 @@ To initialize the build system execute: `+"`"+`bblfsh-sdk prepare-build`+"`"+`, 
 To execute the tests just execute `+"`"+`make test`+"`"+`, this will execute the test over the native and the go components of the driver. Use `+"`"+`make test-native`+"`"+` to run the test only over the native component or `+"`"+`make test-driver`+"`"+` to run the test just over the go component.
 
 The build is done executing `+"`"+`make build`+"`"+`. To evaluate the result, a docker container, execute:
-`+"`"+`docker run -it bblfsh/java-driver:dev-<commit[:6]>`+"`"+`
+`+"`"+`docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:6]>`+"`"+`
 
 
 License
@@ -955,7 +955,8 @@ dbd25c
 {{- else -}}
 d1d1d1
 {{- end}}
-{{- end}}`)
+{{- end}}
+`)
 
 func readmeMdTplBytes() ([]byte, error) {
 	return _readmeMdTpl, nil
@@ -967,7 +968,7 @@ func readmeMdTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "README.md.tpl", size: 1889, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "README.md.tpl", size: 1908, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -979,6 +980,7 @@ import (
 	"os"
 
 	"github.com/bblfsh/sdk"
+	"github.com/bblfsh/sdk/protocol"
 
 	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
@@ -987,16 +989,9 @@ var version string
 var build string
 
 func main() {
-	fmt.Printf("version: %s\nbuild: %s\n", version, build)
-
-	_, err := os.Stat(sdk.NativeBin)
-	if err == nil {
-		fmt.Println("native: ok")
-		return
-	}
-
-	fmt.Printf("native: %s\n", err)
-}`)
+    protocol.DriverMain(version, build)
+}
+`)
 
 func driverMainGoTplBytes() ([]byte, error) {
 	return _driverMainGoTpl, nil
@@ -1008,7 +1003,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 371, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 264, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
