@@ -2,9 +2,9 @@ package uast
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
-	"sort"
 	"srcd.works/go-errors.v0"
 )
 
@@ -131,22 +131,14 @@ func (c *BaseOriginalToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, 
 func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
-		s, err := toString(o)
-		if err != nil {
-			return err
-		}
-
 		if n.Token != nil {
 			return fmt.Errorf("two token keys for same node: %s", k)
 		}
 
+		s := fmt.Sprint(o)
 		n.Token = &s
 	case c.InternalTypeKey == k:
-		s, err := toString(o)
-		if err != nil {
-			return err
-		}
-
+		s := fmt.Sprint(o)
 		if err := c.setInternalKey(n, s); err != nil {
 			return err
 		}
@@ -182,12 +174,7 @@ func (c *BaseOriginalToNoder) addProperty(n *Node, k string, o interface{}) erro
 
 		n.StartPosition.Line = &i
 	default:
-		s, err := toString(o)
-		if err != nil {
-			return err
-		}
-
-		n.Properties[k] = s
+		n.Properties[k] = fmt.Sprint(0)
 	}
 
 	return nil
@@ -218,19 +205,6 @@ func (c *BaseOriginalToNoder) setInternalKey(n *Node, k string) error {
 
 	n.InternalType = k
 	return nil
-}
-
-func toString(v interface{}) (string, error) {
-	switch o := v.(type) {
-	case string:
-		return o, nil
-	case fmt.Stringer:
-		return o.String(), nil
-	case int:
-		return strconv.Itoa(o), nil
-	default:
-		return "", fmt.Errorf("toString error: %#v", v)
-	}
 }
 
 func toUint32(v interface{}) (uint32, error) {
