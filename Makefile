@@ -3,6 +3,8 @@ ASSETS := $(shell ls $(ASSETS_PATH))
 ASSETS_PACKAGE := assets
 BINDATA_FILE := bindata.go
 BINDATA_CMD := go-bindata
+BINDATA_URL := github.com/jteeuwen/go-bindata
+BINDATA_EXISTS := $(shell command -v $(BINDATA_CMD) 2> /dev/null)
 
 # General
 WORKDIR = $(PWD)
@@ -18,7 +20,12 @@ COVERAGE_MODE = atomic
 
 all: bindata
 
-bindata: $(ASSETS)
+install_bindata:
+ifndef BINDATA_EXISTS
+	go get $(BINDATA_URL)/...
+endif
+
+bindata: install_bindata $(ASSETS)
 
 $(ASSETS):
 	$(BINDATA_CMD) \
