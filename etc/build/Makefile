@@ -8,7 +8,6 @@ location = $(shell pwd)
 sdklocation = $(location)/.sdk
 manifest = $(sdklocation)/make/manifest.mk
 tmplocation = $(sdklocation)/tmp
-bblfsh_loaded = 42
 $(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
@@ -20,3 +19,4 @@ include $(sdklocation)/make/manifest.mk
 include $(sdklocation)/make/functions.mk
 include $(sdklocation)/make/bootstrap.mk
 include $(sdklocation)/make/rules.mk
+sdkloaded = true

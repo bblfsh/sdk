@@ -94,7 +94,7 @@ func Gitignore() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".gitignore", size: 10, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: ".gitignore", size: 10, mode: os.FileMode(420), modTime: time.Unix(1488111293, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -114,7 +114,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 210, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 210, mode: os.FileMode(420), modTime: time.Unix(1488136360, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -134,7 +134,7 @@ func dockerfileBuildTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.build.tpl", size: 1493, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "Dockerfile.build.tpl", size: 1493, mode: os.FileMode(420), modTime: time.Unix(1488110276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -154,7 +154,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 568, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 568, mode: os.FileMode(420), modTime: time.Unix(1488108905, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -174,12 +174,12 @@ func license() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "LICENSE", size: 35141, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "LICENSE", size: 35141, mode: os.FileMode(420), modTime: time.Unix(1487893786, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _makefile = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x94\x8d\xc1\x4a\xc6\x30\x10\x84\xcf\xdd\xa7\x58\x6b\xe0\x4f\xb0\xb5\x20\x9e\x14\x04\xc5\x83\x82\x82\x07\x3d\x08\x3f\x94\xa4\xbb\xa5\x4b\xb7\x89\x34\xa9\xf8\xf8\x82\xbd\x89\x17\x6f\xc3\x37\xdf\x30\xad\xc4\x41\x37\x62\x3c\xcf\x34\x77\xcf\x7e\xe6\x51\x94\x01\x8c\x95\x11\x8d\x1d\x45\x0b\xaf\x78\x79\xd1\x18\x1b\x82\x8e\x79\xea\x35\x79\x62\x72\xae\x69\x8c\xe5\x75\x4d\x2b\xbe\xa7\x0d\x97\x2d\x17\x94\x98\x8b\x57\xc5\xdd\x6c\x33\xcd\xce\x01\x14\xce\xa5\x8d\xbe\xc8\x27\x5f\x41\x35\x10\xee\xf9\x1a\x8f\x50\xf1\x30\x25\xac\x63\x2a\x28\xcb\x87\xf2\xc2\xb1\x30\xd5\x00\x61\x13\xa5\x7f\x8e\x76\xde\x32\xd6\xa7\x27\x5d\x90\xd8\x05\x9f\xa7\x63\xfc\xa1\x87\x5f\xf6\xa1\xc6\x1b\x34\xf6\xee\xed\xf1\xe9\xbe\x7f\xb9\x7d\x7d\x70\xdd\x7e\x00\xd5\x30\x2d\x89\xf0\xec\xeb\xef\xfa\x3b\x00\x00\xff\xff\xce\x06\x27\xc4\x30\x01\x00\x00")
+var _makefile = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x94\x8d\x41\x4b\xc5\x30\x10\x84\xcf\xcd\xaf\x58\x6b\xe1\x25\xd8\xda\xbb\x82\xa0\x78\x50\x50\xf0\xa0\x07\xe1\x81\x24\xdd\x2d\x5d\xba\x4d\x24\xd9\x88\x3f\x5f\xb0\x37\xf1\xf2\x6e\xc3\x37\x33\x7c\x03\xc7\x49\x2a\x12\x5c\x16\x5c\xc7\x67\xbf\xd2\xcc\x42\xc6\x74\x96\x67\xe8\xec\xcc\xa2\x94\x41\x73\xa5\xbe\xb3\x05\x57\x49\x1e\x09\x9d\xeb\xfb\xce\x52\xce\x29\xc3\x7b\xaa\xb0\xd5\xa2\xc0\xb1\xa8\x17\x81\x10\x64\x2e\xcb\x50\x70\x75\xce\x18\xa5\xa2\x43\xf4\xca\x5f\x74\x65\x9a\x09\x61\xcf\xd7\x70\x34\x0d\x4d\x4b\x82\x36\x26\x05\xde\x3e\x85\x36\x8a\x4a\xd8\x1a\x13\x2a\x0b\x9e\x78\xda\xf9\x40\xd0\x9e\x9f\x8d\x81\xe3\x18\x7c\x59\x8e\xf1\x97\x1e\xfe\xac\x0f\x2d\xdc\x40\x67\xef\xde\x1e\x9f\xee\x3f\x5e\x6e\x5f\x1f\xdc\xb8\x0b\x4c\x33\x2d\x5b\x42\xb8\xf8\xfe\xbf\xfe\x09\x00\x00\xff\xff\xe2\x9b\xc6\x97\x2e\x01\x00\x00")
 
 func makefileBytes() ([]byte, error) {
 	return bindataRead(
@@ -194,7 +194,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 304, mode: os.FileMode(420), modTime: time.Unix(1488391747, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 302, mode: os.FileMode(420), modTime: time.Unix(1488401821, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -214,7 +214,7 @@ func readmeMdTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "README.md.tpl", size: 1889, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "README.md.tpl", size: 1889, mode: os.FileMode(420), modTime: time.Unix(1488157294, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -234,7 +234,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 371, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 371, mode: os.FileMode(420), modTime: time.Unix(1488126191, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -254,7 +254,7 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 19, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 19, mode: os.FileMode(420), modTime: time.Unix(1488075037, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -274,7 +274,7 @@ func driverNormalizerNormalizer_testGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer_test.go", size: 326, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer_test.go", size: 326, mode: os.FileMode(420), modTime: time.Unix(1488075037, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -294,7 +294,7 @@ func gitHooksPreCommit() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "git/hooks/pre-commit", size: 81, mode: os.FileMode(493), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "git/hooks/pre-commit", size: 81, mode: os.FileMode(493), modTime: time.Unix(1488152994, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -314,7 +314,7 @@ func manifestTomlTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "manifest.toml.tpl", size: 1131, mode: os.FileMode(420), modTime: time.Unix(1488389408, 0)}
+	info := bindataFileInfo{name: "manifest.toml.tpl", size: 1131, mode: os.FileMode(420), modTime: time.Unix(1488114017, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
