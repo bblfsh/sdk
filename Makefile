@@ -26,6 +26,7 @@ bindata: | dependencies $(ASSETS)
 
 $(ASSETS):
 	$(BINDATA_CMD) \
+		-modtime 1 \
 		-pkg $@ \
 		-prefix $(ASSETS_PATH)/$@ \
 		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
