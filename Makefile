@@ -30,6 +30,7 @@ $(BINDATA_CMD):
 $(ASSETS_PACKAGE)/%/bindata.go: $(ASSETS_PATH)/% $(ASSETS_PATH)/%/* $(ASSETS_PATH)/%/*/* $(ASSETS_PATH)/%/*/*/* $(BINDATA_CMD)
 	$(BINDATA_CMD) \
 		-modtime 1 \
+		-nocompress \
 		-pkg $* \
 		-prefix $(ASSETS_PATH)/$* \
 		-o $@ \
