@@ -178,7 +178,7 @@ func (c *BootstrapCommand) doWriteFile(file string, content []byte, m os.FileMod
 	defer f.Close()
 
 	if c.Verbose {
-		debug.Printf("file %q has be written\n", file)
+		debug.Printf("file %q has been written\n", file)
 	}
 
 	_, err = f.Write(content)
