@@ -28,7 +28,7 @@ func TestNodeTokens(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(n)
 
-	tokens := n.Tokens()
+	tokens := Tokens(n)
 	require.True(len(tokens) > 0)
 	for _, tk := range tokens {
 		fmt.Println("TOKEN", tk)
