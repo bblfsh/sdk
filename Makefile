@@ -1,50 +1,49 @@
-ASSETS_PATH := etc
+# Package configuration
+PROJECT := bblfsh-sdk
+DEPENDENCIES := github.com/jteeuwen/go-bindata
+
+# Environment
+BASE_PATH := $(shell pwd)
+
+# Assets configuration
+ASSETS_PATH := $(BASE_PATH)/etc
 ASSETS := $(shell ls $(ASSETS_PATH))
 ASSETS_PACKAGE := assets
 BINDATA_FILE := bindata.go
-BINDATA_CMD := $(GOPATH)/bin/go-bindata
-BINDATA_URL := github.com/jteeuwen/go-bindata
-
-# General
-WORKDIR = $(PWD)
+BINDATA_CMD := go-bindata
 
 # Go parameters
-GOCMD = go
-GOTEST = $(GOCMD) test -v
+GO_CMD = go
+GO_TEST = $(GO_CMD) test -v
+GO_GET = $(GO_CMD) get -v -u
 
 # Coverage
 COVERAGE_REPORT = coverage.txt
 COVERAGE_PROFILE = profile.out
 COVERAGE_MODE = atomic
 
-.PHONY: all bindata test test-coverage validate-commit
-
 all: bindata
 
-bindata: $(addsuffix /bindata.go,$(addprefix $(ASSETS_PACKAGE)/,$(ASSETS)))
+bindata: $(ASSETS)
 
-$(BINDATA_CMD):
-	go get $(BINDATA_URL)/...
+$(DEPENDENCIES):
+	$(GO_GET) $@/...
 
-
-$(ASSETS_PACKAGE)/%/bindata.go: $(ASSETS_PATH)/% $(ASSETS_PATH)/%/* $(ASSETS_PATH)/%/*/* $(ASSETS_PATH)/%/*/*/* $(BINDATA_CMD)
+$(ASSETS): $(DEPENDENCIES)
 	$(BINDATA_CMD) \
 		-modtime 1 \
-		-nocompress \
-		-pkg $* \
-		-prefix $(ASSETS_PATH)/$* \
-		-o $@ \
-		$(ASSETS_PATH)/$*/...
+		-pkg $@ \
+		-prefix $(ASSETS_PATH)/$@ \
+		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
+		$(ASSETS_PATH)/$@/...
 
 test:
-	cd $(WORKDIR); \
-	$(GOTEST) ./...
+	$(GO_TEST) ./...
 
 test-coverage:
-	cd $(WORKDIR); \
 	echo "" > $(COVERAGE_REPORT); \
-	for dir in `$(GOCMD) list ./... | egrep -v '/(vendor|etc)/'`; do \
-		$(GOTEST) $$dir -coverprofile=$(COVERAGE_PROFILE) -covermode=$(COVERAGE_MODE); \
+	for dir in `$(GO_CMD) list ./... | egrep -v '/(vendor|etc)/'`; do \
+		$(GO_TEST) $$dir -coverprofile=$(COVERAGE_PROFILE) -covermode=$(COVERAGE_MODE); \
 		if [ $$? != 0 ]; then \
 			exit 2; \
 		fi; \
@@ -52,10 +51,9 @@ test-coverage:
 			cat $(COVERAGE_PROFILE) >> $(COVERAGE_REPORT); \
 			rm $(COVERAGE_PROFILE); \
 		fi; \
-	done; \
+	done
 
 validate-commit: bindata
 	if git status --untracked-files=no --porcelain | grep -qe '..*' ; then \
-		 echo >&2 "generated bindata is out of sync"; \
-	         exit 2; \
+		$(error generated bindata is out of sync); \
 	fi
