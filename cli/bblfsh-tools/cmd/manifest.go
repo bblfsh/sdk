@@ -5,11 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bblfsh/sdk/cli"
 	"github.com/bblfsh/sdk/manifest"
 )
 
+const ManifestCommandDescription = "" +
+	"prints the manifest as a list of variables ready to be evaluated by bash or make"
+
 type ManifestCommand struct {
-	command
+	cli.Command
 }
 
 func (c *ManifestCommand) Execute(args []string) error {

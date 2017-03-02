@@ -58,7 +58,7 @@ ALLOWED_IN_DOCKERFILE = \
 # Dockerfiles
 export
 
-all: help
+all: build
 
 $(BUILD_PATH):
 	@$(RUN) mkdir -p $(BUILD_PATH)
@@ -102,7 +102,7 @@ push: build
 	@$(RUN) $(DOCKER_PUSH) $(DOCKER_IMAGE):latest
 
 validate:
-	@$(RUN) $(bblfsh-sdk) bootstrap --dry-run
+	@$(RUN) $(bblfsh-sdk) update --dry-run
 
 clean:
 	@$(RUN) rm -rf $(BUILD_PATH)

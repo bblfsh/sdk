@@ -1,14 +1,14 @@
-package cmd
+package cli
 
 import "github.com/fatih/color"
 
 var (
-	warning = color.New(color.FgRed)
-	notice  = color.New(color.FgGreen)
-	debug   = color.New(color.FgBlue)
+	Warning = color.New(color.FgRed)
+	Notice  = color.New(color.FgGreen)
+	Debug   = color.New(color.FgBlue)
 )
 
-type command struct {
+type Command struct {
 	Verbose bool   `long:"verbose" description:"show verbose debug information"`
 	Root    string `long:"root" default:"." description:"root of the driver"`
 }

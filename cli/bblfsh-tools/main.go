@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bblfsh/sdk/cli/bblfsh-sdk/cmd"
+	"github.com/bblfsh/sdk/cli/bblfsh-tools/cmd"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -14,9 +14,7 @@ var build string
 
 func main() {
 	parser := flags.NewNamedParser("bblfsh-sdk", flags.Default)
-	parser.AddCommand("prepare-build", cmd.PrepareBuildCommandDescription, "", &cmd.PrepareBuildCommand{})
-	parser.AddCommand("update", cmd.UpdateCommandDescription, "", &cmd.UpdateCommand{})
-	parser.AddCommand("init", cmd.InitCommandDescription, "", &cmd.InitCommand{})
+	parser.AddCommand("manifest", cmd.ManifestCommandDescription, "", &cmd.ManifestCommand{})
 
 	if _, err := parser.Parse(); err != nil {
 		if _, ok := err.(*flags.Error); ok {

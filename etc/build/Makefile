@@ -11,10 +11,16 @@ tmplocation = $(sdklocation)/tmp
 $(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
-ifdef bblfsh-sdk
-    $(shell $(bblfsh-sdk) manifest > $(manifest))
+ifeq ($(strip $(bblfsh-sdk)),)
+    $(error `bblfsh-sdk` should be available from the PATH)
 endif
 
+bblfsh-tools := $(shell command -v bblfsh-tools 2> /dev/null)
+ifeq ($(strip $(bblfsh-tools)),)
+    $(error `bblfsh-tools` should be available from the PATH)
+endif
+
+$(shell $(bblfsh-tools) manifest > $(manifest))
 include $(sdklocation)/make/manifest.mk
 include $(sdklocation)/make/functions.mk
 include $(sdklocation)/make/bootstrap.mk

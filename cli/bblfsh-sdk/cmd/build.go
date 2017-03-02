@@ -4,12 +4,15 @@ import (
 	"path/filepath"
 
 	"github.com/bblfsh/sdk/assets/build"
+	"github.com/bblfsh/sdk/cli"
 )
 
 const sdkPath = ".sdk"
 
+const PrepareBuildCommandDescription = "installs locally the build system for a driver"
+
 type PrepareBuildCommand struct {
-	command
+	cli.Command
 }
 
 func (c *PrepareBuildCommand) Execute(args []string) error {
