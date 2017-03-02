@@ -35,6 +35,6 @@ func (c *ManifestCommand) processManifest(m *manifest.Manifest) {
 	c.processValue("RUNTIME_GO_VERSION", m.Runtime.GoVersion)
 }
 
-func (c *ManifestCommand) processValue(key, value string) error {
+func (c *ManifestCommand) processValue(key, value string) {
 	fmt.Printf("%s=%s\n", key, value)
 }
