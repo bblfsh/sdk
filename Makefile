@@ -2,7 +2,8 @@ ASSETS_PATH := etc
 ASSETS := $(shell ls $(ASSETS_PATH))
 ASSETS_PACKAGE := assets
 BINDATA_FILE := bindata.go
-BINDATA_CMD := go-bindata
+BINDATA_CMD := $(GOPATH)/bin/go-bindata
+BINDATA_URL := github.com/jteeuwen/go-bindata
 
 # General
 WORKDIR = $(PWD)
@@ -16,16 +17,24 @@ COVERAGE_REPORT = coverage.txt
 COVERAGE_PROFILE = profile.out
 COVERAGE_MODE = atomic
 
+.PHONY: all bindata test test-coverage validate-commit
+
 all: bindata
 
-bindata: $(ASSETS)
+bindata: $(addsuffix /bindata.go,$(addprefix $(ASSETS_PACKAGE)/,$(ASSETS)))
 
-$(ASSETS):
+$(BINDATA_CMD):
+	go get $(BINDATA_URL)/...
+
+
+$(ASSETS_PACKAGE)/%/bindata.go: $(ASSETS_PATH)/% $(ASSETS_PATH)/%/* $(ASSETS_PATH)/%/*/* $(ASSETS_PATH)/%/*/*/* $(BINDATA_CMD)
 	$(BINDATA_CMD) \
-		-pkg $@ \
-		-prefix $(ASSETS_PATH)/$@ \
-		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
-		$(ASSETS_PATH)/$@/...
+		-modtime 1 \
+		-nocompress \
+		-pkg $* \
+		-prefix $(ASSETS_PATH)/$* \
+		-o $@ \
+		$(ASSETS_PATH)/$*/...
 
 test:
 	cd $(WORKDIR); \
@@ -45,4 +54,8 @@ test-coverage:
 		fi; \
 	done; \
 
-
+validate-commit: bindata
+	if git status --untracked-files=no --porcelain | grep -qe '..*' ; then \
+		 echo >&2 "generated bindata is out of sync"; \
+	         exit 2; \
+	fi
