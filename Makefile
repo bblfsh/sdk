@@ -32,7 +32,7 @@ $(DEPENDENCIES):
 	$(GO_GET) $@/...
 
 $(ASSETS): $(DEPENDENCIES)
-	chmod -R go=r $(ASSETS_PATH)/$@/*; \
+	chmod -R go=r $(ASSETS_PATH)/$@; \
 	$(BINDATA_CMD) \
 		-pkg $@ \
 		-modtime 1 \
