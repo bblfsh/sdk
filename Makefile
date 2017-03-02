@@ -1,6 +1,8 @@
 # Package configuration
 PROJECT := bblfsh-sdk
-DEPENDENCIES := github.com/jteeuwen/go-bindata
+DEPENDENCIES := \
+	github.com/jteeuwen/go-bindata \
+	golang.org/x/tools/cmd/cover
 
 # Environment
 BASE_PATH := $(shell pwd)
@@ -15,7 +17,7 @@ BINDATA_CMD := go-bindata
 # Go parameters
 GO_CMD = go
 GO_TEST = $(GO_CMD) test -v
-GO_GET = $(GO_CMD) get -v -u
+GO_GET = $(GO_CMD) get -v
 
 # Coverage
 COVERAGE_REPORT = coverage.txt
@@ -30,9 +32,10 @@ $(DEPENDENCIES):
 	$(GO_GET) $@/...
 
 $(ASSETS): $(DEPENDENCIES)
+	chmod -R go=r $(ASSETS_PATH)/$@/*; \
 	$(BINDATA_CMD) \
-		-modtime 1 \
 		-pkg $@ \
+		-modtime 1 \
 		-prefix $(ASSETS_PATH)/$@ \
 		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
 		$(ASSETS_PATH)/$@/...
@@ -53,7 +56,12 @@ test-coverage:
 		fi; \
 	done
 
+
 validate-commit: bindata
-	if git status --untracked-files=no --porcelain | grep -qe '..*' ; then \
-		$(error generated bindata is out of sync); \
+	git status --untracked-files=no --porcelain | grep -qe '..*'; \
+	if  [ $$? -eq 0 ] ; then \
+		echo >&2 "generated bindata is out of sync"; \
+		exit 2; \
 	fi
+
+.PHONY: bindata test test-coverage validate-commit $(ASSETS) $(DEPENDENCIES)
