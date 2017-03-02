@@ -10,6 +10,8 @@ import (
 
 var (
 	ErrEmptyAST             = errors.NewKind("input AST was empty")
+	ErrTwoTokensSameNode    = errors.NewKind("token was already set (%s != %s)")
+	ErrTwoTypesSameNode     = errors.NewKind("internal type was already set (%s != %s)")
 	ErrUnexpectedObject     = errors.NewKind("expected object of type %s, got: %#v")
 	ErrUnexpectedObjectSize = errors.NewKind("expected object of size %d, got %d")
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
@@ -54,10 +56,6 @@ func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
 		return nil, ErrUnsupported.New("non-object root node")
 	}
 
-	if len(src) == 0 {
-		return nil, ErrEmptyAST.New()
-	}
-
 	if topLevelIsRootNode {
 		return nil, ErrUnsupported.New("top level object as root node")
 	}
@@ -66,11 +64,17 @@ func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
 		return nil, ErrUnexpectedObjectSize.New(1, len(src))
 	}
 
-	for _, obj := range src {
-		return c.toNode(obj)
+	if len(src) == 0 {
+		return nil, ErrEmptyAST.New()
 	}
 
-	panic("not reachable")
+	var vobj interface{}
+	for _, obj := range src {
+		vobj = obj
+		break
+	}
+
+	return c.toNode(vobj)
 }
 
 func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
@@ -81,7 +85,6 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 
 	n := NewNode()
 	for k, o := range m {
-
 		switch ov := o.(type) {
 		case map[string]interface{}:
 			child, err := c.mapToNode(k, ov)
@@ -104,7 +107,8 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 		}
 	}
 
-	sort.Sort(byOffset(n.Children))
+	sort.Stable(byOffset(n.Children))
+
 	return n, nil
 }
 
@@ -115,6 +119,7 @@ func (c *BaseToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, er
 	}
 
 	n.Properties[InternalRoleKey] = k
+
 	return n, nil
 }
 
@@ -136,11 +141,12 @@ func (c *BaseToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, error) {
 func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
-		if n.Token != "" {
-			return fmt.Errorf("two token keys for same node: %s", k)
+		s := fmt.Sprint(o)
+		if n.Token != "" && n.Token != s {
+			return ErrTwoTokensSameNode.New(n.Token, s)
 		}
 
-		n.Token = fmt.Sprint(o)
+		n.Token = s
 	case c.InternalTypeKey == k:
 		s := fmt.Sprint(o)
 		if err := c.setInternalKey(n, s); err != nil {
@@ -149,8 +155,8 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 
 		tk := c.syntheticToken(s)
 		if tk != "" {
-			if n.Token != "" {
-				return fmt.Errorf("two token keys for same node: %s", k)
+			if n.Token != "" && n.Token != tk {
+				return ErrTwoTokensSameNode.New(n.Token, tk)
 			}
 
 			n.Token = tk
@@ -189,15 +195,16 @@ func (c *BaseToNoder) syntheticToken(key string) string {
 }
 
 func (c *BaseToNoder) setInternalKey(n *Node, k string) error {
-	if n.InternalType != "" {
-		return fmt.Errorf("two internal keys for same node: %s, %s",
-			n.InternalType, k)
+	if n.InternalType != "" && n.InternalType != k {
+		return ErrTwoTypesSameNode.New(n.InternalType, k)
 	}
 
 	n.InternalType = k
 	return nil
 }
 
+// toUint32 converts a JSON value to a uint32.
+// The only expected values are string or int64.
 func toUint32(v interface{}) (uint32, error) {
 	switch o := v.(type) {
 	case string:
@@ -207,12 +214,6 @@ func toUint32(v interface{}) (uint32, error) {
 		}
 
 		return uint32(i), nil
-	case uint32:
-		return o, nil
-	case int:
-		return uint32(o), nil
-	case int32:
-		return uint32(o), nil
 	case int64:
 		return uint32(o), nil
 	default:
