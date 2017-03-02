@@ -32,10 +32,11 @@ $(DEPENDENCIES):
 	$(GO_GET) $@/...
 
 $(ASSETS): $(DEPENDENCIES)
-	chmod -R go=r $(ASSETS_PATH)/$@/*; \
+	chmod -R go=r $(ASSETS_PATH)/$@; \
 	$(BINDATA_CMD) \
 		-pkg $@ \
 		-modtime 1 \
+		-nocompress \
 		-prefix $(ASSETS_PATH)/$@ \
 		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
 		$(ASSETS_PATH)/$@/...
@@ -60,6 +61,7 @@ test-coverage:
 validate-commit: bindata
 	git status --untracked-files=no --porcelain | grep -qe '..*'; \
 	if  [ $$? -eq 0 ] ; then \
+		git diff|cat; \
 		echo >&2 "generated bindata is out of sync"; \
 		exit 2; \
 	fi
