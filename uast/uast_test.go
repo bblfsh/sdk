@@ -1,7 +1,6 @@
 package uast
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,7 +29,4 @@ func TestNodeTokens(t *testing.T) {
 
 	tokens := Tokens(n)
 	require.True(len(tokens) > 0)
-	for _, tk := range tokens {
-		fmt.Println("TOKEN", tk)
-	}
 }

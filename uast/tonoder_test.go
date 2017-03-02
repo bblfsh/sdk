@@ -2,7 +2,6 @@ package uast
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,7 +25,6 @@ func TestToNoderJava(t *testing.T) {
 	n, err := c.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
-	fmt.Println("NODE", n)
 }
 
 func getFixture(name string) (map[string]interface{}, error) {
