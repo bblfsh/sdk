@@ -36,6 +36,7 @@ $(ASSETS): $(DEPENDENCIES)
 	$(BINDATA_CMD) \
 		-pkg $@ \
 		-modtime 1 \
+		-nocompress \
 		-prefix $(ASSETS_PATH)/$@ \
 		-o $(ASSETS_PACKAGE)/$@/$(BINDATA_FILE) \
 		$(ASSETS_PATH)/$@/...
