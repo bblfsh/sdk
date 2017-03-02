@@ -151,7 +151,7 @@ func (c *UpdateCommand) doWriteFile(file string, content []byte, m os.FileMode) 
 	defer f.Close()
 
 	if c.Verbose {
-		cli.Debug.Printf("file %q has be written\n", file)
+		cli.Debug.Printf("file %q has been written\n", file)
 	}
 
 	_, err = f.Write(content)
