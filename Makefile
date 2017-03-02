@@ -57,5 +57,6 @@ test-coverage:
 validate-commit: bindata
 	if git status --untracked-files=no --porcelain | grep -qe 'assets/.*' ; then \
 		 echo >&2 "generated bindata is out of sync"; \
+		 git status; \
 	         exit 2; \
 	fi
