@@ -41,7 +41,7 @@ make clean          cleans all the build directories.
 
 INTERNAL RULES
 Two internal rules are required to run the test and the build main rules:
-test-native-internal and build-driver-internal. This rules are defined in the
+`test-native-internal` and `build-native-internal`. This rules are defined in the
 Makefile in the root of the driver, they contain the language specific commands
 for the native runtime.
 
