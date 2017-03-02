@@ -36,5 +36,6 @@ func (c *ManifestCommand) processManifest(m *manifest.Manifest) {
 }
 
 func (c *ManifestCommand) processValue(key, value string) error {
-	fmt.Printf("%s=%s\n", key, value)
+	_, err := fmt.Printf("%s=%s\n", key, value)
+	return err
 }
