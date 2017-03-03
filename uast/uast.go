@@ -326,3 +326,37 @@ const (
 func (f IncludeFlag) Is(of IncludeFlag) bool {
 	return f&of != 0
 }
+
+type NodePath []*Node
+
+func NewNodePath(nodes ...*Node) NodePath {
+	return NodePath(nodes)
+}
+
+func (p NodePath) IsEmpty() bool {
+	return len(p) == 0
+}
+
+func (p NodePath) IsRoot() bool {
+	return len(p) == 1
+}
+
+func (p NodePath) Node() *Node {
+	if p.IsEmpty() {
+		return nil
+	}
+
+	return p[len(p)-1]
+}
+
+func (p NodePath) Ancestors() []*Node {
+	if len(p) <= 1 {
+		return nil
+	}
+
+	return p[:len(p)-1]
+}
+
+func (p NodePath) ParentPath() NodePath {
+	return NodePath(p.Ancestors())
+}
