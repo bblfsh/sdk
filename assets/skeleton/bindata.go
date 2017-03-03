@@ -2,8 +2,8 @@
 // sources:
 // etc/skeleton/.gitignore
 // etc/skeleton/.travis.yml
-// etc/skeleton/Dockerfile.build.tpl
-// etc/skeleton/Dockerfile.tpl
+// etc/skeleton/Dockerfile.build.tpl.tpl
+// etc/skeleton/Dockerfile.tpl.tpl
 // etc/skeleton/LICENSE
 // etc/skeleton/Makefile
 // etc/skeleton/README.md.tpl
@@ -107,7 +107,7 @@ func TravisYml() (*asset, error) {
 	return a, nil
 }
 
-var _dockerfileBuildTpl = []byte(`# Dockerfile.build represents the build environment of the driver, used during
+var _dockerfileBuildTplTpl = []byte(`# Dockerfile.build represents the build environment of the driver, used during
 # the development phase to test and in CI to build and test.
 
 # The prefered base image is the lastest stable Alpine image, if alpine doesn't
@@ -141,22 +141,22 @@ RUN apt update && \
 # set the workdir to this path.
 WORKDIR /opt/driver/src`)
 
-func dockerfileBuildTplBytes() ([]byte, error) {
-	return _dockerfileBuildTpl, nil
+func dockerfileBuildTplTplBytes() ([]byte, error) {
+	return _dockerfileBuildTplTpl, nil
 }
 
-func dockerfileBuildTpl() (*asset, error) {
-	bytes, err := dockerfileBuildTplBytes()
+func dockerfileBuildTplTpl() (*asset, error) {
+	bytes, err := dockerfileBuildTplTplBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.build.tpl", size: 1493, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.build.tpl.tpl", size: 1493, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _dockerfileTpl = []byte(`# Dockerfile represents the container being use to run the driver, should be
+var _dockerfileTplTpl = []byte(`# Dockerfile represents the container being use to run the driver, should be
 # small as possible containing strictly only the tools required to run the
 # driver.
 
@@ -170,17 +170,17 @@ FROM {{.Manifest.Runtime.OS.AsImage}}
 CMD /opt/driver/bin/driver
 `)
 
-func dockerfileTplBytes() ([]byte, error) {
-	return _dockerfileTpl, nil
+func dockerfileTplTplBytes() ([]byte, error) {
+	return _dockerfileTplTpl, nil
 }
 
-func dockerfileTpl() (*asset, error) {
-	bytes, err := dockerfileTplBytes()
+func dockerfileTplTpl() (*asset, error) {
+	bytes, err := dockerfileTplTplBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 568, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl.tpl", size: 568, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1190,8 +1190,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	".gitignore": Gitignore,
 	".travis.yml": TravisYml,
-	"Dockerfile.build.tpl": dockerfileBuildTpl,
-	"Dockerfile.tpl": dockerfileTpl,
+	"Dockerfile.build.tpl.tpl": dockerfileBuildTplTpl,
+	"Dockerfile.tpl.tpl": dockerfileTplTpl,
 	"LICENSE": license,
 	"Makefile": makefile,
 	"README.md.tpl": readmeMdTpl,
@@ -1244,8 +1244,8 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	".gitignore": &bintree{Gitignore, map[string]*bintree{}},
 	".travis.yml": &bintree{TravisYml, map[string]*bintree{}},
-	"Dockerfile.build.tpl": &bintree{dockerfileBuildTpl, map[string]*bintree{}},
-	"Dockerfile.tpl": &bintree{dockerfileTpl, map[string]*bintree{}},
+	"Dockerfile.build.tpl.tpl": &bintree{dockerfileBuildTplTpl, map[string]*bintree{}},
+	"Dockerfile.tpl.tpl": &bintree{dockerfileTplTpl, map[string]*bintree{}},
 	"LICENSE": &bintree{license, map[string]*bintree{}},
 	"Makefile": &bintree{makefile, map[string]*bintree{}},
 	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
