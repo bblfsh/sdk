@@ -95,7 +95,7 @@ func (c *UpdateCommand) processTemplateAsset(name string, v interface{}, overwri
 	}
 
 	name = fixGitFolder(name)
-	file := filepath.Join(c.Root, name[:len(name)-len(tplExtension)])
+	file := filepath.Join(c.Root, name)
 
 	buf := bytes.NewBuffer(nil)
 	if err := t.Execute(buf, v); err != nil {
