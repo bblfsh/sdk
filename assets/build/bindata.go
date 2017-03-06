@@ -458,6 +458,10 @@ build-driver-internal:
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))
 
+	@if [ "$$DOCKER_USERNAME" != "" ]; then \
+		$(DOCKER_CMD) login -u="$$DOCKER_USERNAME" -p="$$DOCKER_PASSWORD"; \
+	fi;
+
 	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
 		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
@@ -479,7 +483,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 3425, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 3545, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

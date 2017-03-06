@@ -94,6 +94,10 @@ build-driver-internal:
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))
 
+	@if [ "$$DOCKER_USERNAME" != "" ]; then \
+		$(DOCKER_CMD) login -u="$$DOCKER_USERNAME" -p="$$DOCKER_PASSWORD"; \
+	fi;
+
 	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
 		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
