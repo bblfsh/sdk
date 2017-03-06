@@ -1073,14 +1073,14 @@ func driverNormalizerNormalizer_testGo() (*asset, error) {
 }
 
 var _gitHooksPreCommit = []byte(`#!/bin/bash
-lastStash=$(git rev-parse -q --verify refs/stash)
+last_stash=$(git rev-parse -q --verify refs/stash)
 git stash save -q --keep-index "automatic stash on pre-commit at $(git branch  --points-at HEAD)";
-newStash=$(git rev-parse -q --verify refs/stash)
+new_stash=$(git rev-parse -q --verify refs/stash)
 
 bblfsh-sdk update --root `+"`"+`git rev-parse --show-toplevel`+"`"+` --dry-run
 status=$?
 
-if [ "$lastStash" != "$newStash" ]; then
+if [ "$last_stash" != "$new_stash" ]; then
     git reset --hard -q && git stash apply --index -q && git stash drop -q
 fi
 
@@ -1097,7 +1097,7 @@ func gitHooksPreCommit() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "git/hooks/pre-commit", size: 422, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "git/hooks/pre-commit", size: 426, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
