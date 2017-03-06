@@ -456,14 +456,12 @@ build-driver-internal:
 	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
 
 push: build
-	@if [ $(pushdisabled) ]; then \
-		$(error $(pushdisabled))
-	fi
+	$(if $(pushdisabled),$(error $(pushdisabled)))
 
 	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
 		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
-	@$(RUN) $(DOCKER_PUSH) $(DOCKER_IMAGE_VERSIONED)
-	@$(RUN) $(DOCKER_PUSH) $(DOCKER_IMAGE):latest
+	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
+	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest)
 
 validate:
 	@$(RUN) $(bblfsh-sdk) update --dry-run
@@ -481,7 +479,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 3385, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 3425, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
