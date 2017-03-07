@@ -326,3 +326,36 @@ const (
 func (f IncludeFlag) Is(of IncludeFlag) bool {
 	return f&of != 0
 }
+
+// Path represents a Node with its path in a tree. It is a slice with every
+// token in the path, where the last one is the node itself. The empty path is
+// is the zero value (e.g. parent of the root node).
+type Path []*Node
+
+// NewPath creates a new Path from a slice of nodes.
+func NewPath(nodes ...*Node) Path {
+	return Path(nodes)
+}
+
+// IsEmpty returns true if the path is empty.
+func (p Path) IsEmpty() bool {
+	return len(p) == 0
+}
+
+// Node returns the node. If the path is empty, the result is nil.
+func (p Path) Node() *Node {
+	if p.IsEmpty() {
+		return nil
+	}
+
+	return p[len(p)-1]
+}
+
+// Parent returns the path of the parent of this node.
+func (p Path) Parent() Path {
+	if len(p) <= 1 {
+		return Path(nil)
+	}
+
+	return Path(p[:len(p)-1])
+}
