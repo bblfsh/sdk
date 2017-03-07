@@ -1,22 +1,3 @@
-// Copyright (c) 2017 Sourced Technologies S.L.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
 syntax = "proto3";
 package github.com.bblfsh.sdk.uast;
 
@@ -24,6 +5,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option go_package = "uast";
 
+// Node is a node in a UAST.
 message Node {
 	option (gogoproto.typedecl) = false;
 	string internal_type = 1;
@@ -35,6 +17,7 @@ message Node {
 	repeated github.com.bblfsh.sdk.uast.Role roles = 7;
 }
 
+// Position represents a position in a source code file.
 message Position {
 	option (gogoproto.typedecl) = false;
 	uint32 offset = 1;
@@ -42,24 +25,83 @@ message Position {
 	uint32 col = 3;
 }
 
+// Role is the main UAST annotation. It indicates that a node in an AST can
+// be interpreted as acting with certain language-independent role.
+// 
+// go:generate stringer -type=Role
 enum Role {
 	option (gogoproto.enumdecl) = false;
 	option (gogoproto.goproto_enum_prefix) = false;
+	// SimpleIdentifier is the most basic form of identifier, used for variable
+	// names, functions, packages, etc.
 	SIMPLE_IDENTIFIER = 0 [(gogoproto.enumvalue_customname) = "SimpleIdentifier"];
+	// QualifiedIdentifier is form of identifier composed of multiple
+	// SimpleIdentifier. One main identifier (usually the last one) and one
+	// or more qualifiers.
 	QUALIFIED_IDENTIFIER = 1 [(gogoproto.enumvalue_customname) = "QualifiedIdentifier"];
 	EXPRESSION = 2 [(gogoproto.enumvalue_customname) = "Expression"];
 	STATEMENT = 3 [(gogoproto.enumvalue_customname) = "Statement"];
+	// File is the root node of a single file AST.
 	FILE = 4 [(gogoproto.enumvalue_customname) = "File"];
+	// PackageDeclaration identifies the package that all its children
+	// belong to. Its children include, at least, QualifiedIdentifier or
+	// SimpleIdentifier with the package name.
 	PACKAGE_DECLARATION = 5 [(gogoproto.enumvalue_customname) = "PackageDeclaration"];
+	// ImportDeclaration represents the import of another package in the
+	// current scope. Its children may include an ImportPath and ImportInclude.
 	IMPORT_DECLARATION = 6 [(gogoproto.enumvalue_customname) = "ImportDeclaration"];
+	// ImportPath is the (usually) fully qualified package name to import.
 	IMPORT_PATH = 7 [(gogoproto.enumvalue_customname) = "ImportPath"];
+	// ImportAlias is an identifier used as an alias for an imported package
+	// in a certain scope.
 	IMPORT_ALIAS = 8 [(gogoproto.enumvalue_customname) = "ImportAlias"];
+	// TODO: arguments, return value, body, etc
 	FUNCTION_DECLARATION = 9 [(gogoproto.enumvalue_customname) = "FunctionDeclaration"];
+	// TypeDeclaration is the declaration of a type. It could be a class or
+	// interface in Java, a struct, interface or alias in Go, etc.
 	TYPE_DECLARATION = 10 [(gogoproto.enumvalue_customname) = "TypeDeclaration"];
+	// If is used for if-then[-else] statements or expressions.
+	// An if-then tree will look like:
+	// 
+	// 	IfStatement {
+	// 		**[non-If nodes] {
+	// 			IfCondition {
+	// 				[...]
+	//                      }
+	// 		}
+	// 		**[non-If* nodes] {
+	// 			IfBody {
+	// 				[...]
+	// 			}
+	// 		}
+	// 		**[non-If* nodes] {
+	// 			IfElse {
+	// 				[...]
+	// 			}
+	// 		}
+	// 	}
+	// 
+	// The IfElse node is optional. The order of IfCondition, IfBody and
+	// IfElse is not defined.
 	IF = 11 [(gogoproto.enumvalue_customname) = "If"];
+	// IfCondition is a condition in an IfStatement or IfExpression.
 	IF_CONDITION = 12 [(gogoproto.enumvalue_customname) = "IfCondition"];
+	// IfBody is the code following a then clause in an IfStatement or
+	// IfExpression.
 	IF_BODY = 13 [(gogoproto.enumvalue_customname) = "IfBody"];
+	// IfBody is the code following a else clause in an IfStatement or
+	// IfExpression.
 	IF_ELSE = 14 [(gogoproto.enumvalue_customname) = "IfElse"];
+	// Switch is used to represent a broad of switch flavors. An expression
+	// is evaluated and then compared to the values returned by different
+	// case expressions, executing a body associated to the first case that
+	// matches. Similar constructions that go beyond expression comparison
+	// (such as pattern matching in Scala's match) should not be annotated
+	// with Switch.
+	// 
+	// TODO: We still have to decide how to annotate fallthrough and
+	//      non-fallthrough variants. As well as crazy variants such as Perl
+	//      and Bash with its optional fallthrough.
 	SWITCH = 15 [(gogoproto.enumvalue_customname) = "Switch"];
 	SWITCH_CASE = 16 [(gogoproto.enumvalue_customname) = "SwitchCase"];
 	SWITCH_CASE_CONDITION = 17 [(gogoproto.enumvalue_customname) = "SwitchCaseCondition"];
@@ -79,33 +121,63 @@ enum Role {
 	DO_WHILE_BODY = 31 [(gogoproto.enumvalue_customname) = "DoWhileBody"];
 	BREAK = 32 [(gogoproto.enumvalue_customname) = "Break"];
 	CONTINUE = 33 [(gogoproto.enumvalue_customname) = "Continue"];
+	// Block is a group of statements. If the source language has block scope,
+	// it should be annotated both with Block and BlockScope.
 	BLOCK = 34 [(gogoproto.enumvalue_customname) = "Block"];
+	// BlockScope is a block with its own block scope.
+	// TODO: Should we replace BlockScope with a more general Scope role that
+	//       can be combined with Block?
 	BLOCK_SCOPE = 35 [(gogoproto.enumvalue_customname) = "BlockScope"];
+	// Return is a return statement. It might have a child expression or not
+	// as with naked returns in Go or return in void methods in Java.
 	RETURN = 36 [(gogoproto.enumvalue_customname) = "Return"];
 	TRY = 37 [(gogoproto.enumvalue_customname) = "Try"];
 	TRY_BODY = 38 [(gogoproto.enumvalue_customname) = "TryBody"];
 	TRY_CATCH = 39 [(gogoproto.enumvalue_customname) = "TryCatch"];
 	TRY_FINALLY = 40 [(gogoproto.enumvalue_customname) = "TryFinally"];
 	THROW = 41 [(gogoproto.enumvalue_customname) = "Throw"];
+	// Assert checks if an expression is true and if it is not, it signals
+	// an error/exception, possibly stopping the execution.
 	ASSERT = 42 [(gogoproto.enumvalue_customname) = "Assert"];
+	// MethodInvocation is the invocation of a method as present in OO
+	// languages.
 	METHOD_INVOCATION = 43 [(gogoproto.enumvalue_customname) = "MethodInvocation"];
+	// MethodInvocationObject is the object where whose method is being
+	// invoked.
 	METHOD_INVOCATION_OBJECT = 44 [(gogoproto.enumvalue_customname) = "MethodInvocationObject"];
+	// MethodInvocationName is the name of the method being invoked.
 	METHOD_INVOCATION_NAME = 45 [(gogoproto.enumvalue_customname) = "MethodInvocationName"];
 	METHOD_INVOCATION_ARGUMENT = 46 [(gogoproto.enumvalue_customname) = "MethodInvocationArgument"];
 	NOOP = 47 [(gogoproto.enumvalue_customname) = "Noop"];
+	// TODO: should we differentiate literal types with specialized literal
+	// annotations or combined with other type roles?
 	LITERAL = 48 [(gogoproto.enumvalue_customname) = "Literal"];
 	NULL_LITERAL = 49 [(gogoproto.enumvalue_customname) = "NullLiteral"];
 	STRING_LITERAL = 50 [(gogoproto.enumvalue_customname) = "StringLiteral"];
 	NUMBER_LITERAL = 51 [(gogoproto.enumvalue_customname) = "NumberLiteral"];
 	TYPE_LITERAL = 52 [(gogoproto.enumvalue_customname) = "TypeLiteral"];
 	TYPE = 53 [(gogoproto.enumvalue_customname) = "Type"];
+	// TODO: should we distinguist between primitive and builtin types?
 	PRIMITIVE_TYPE = 54 [(gogoproto.enumvalue_customname) = "PrimitiveType"];
+	// Assignment represents a variable assignment or binding.
+	// The variable that is being assigned to is annotated with the
+	// AssignmentVariable role, while the value is annotated with
+	// AssignmentValue.
 	ASSIGNMENT = 55 [(gogoproto.enumvalue_customname) = "Assignment"];
 	ASSIGNMENT_VARIABLE = 56 [(gogoproto.enumvalue_customname) = "AssignmentVariable"];
 	ASSIGNMENT_VALUE = 57 [(gogoproto.enumvalue_customname) = "AssignmentValue"];
+	// This represents the self-reference of an object instance in
+	// one of its methods. This corresponds to the `this` keyword
+	// (e.g. Java, C++, PHP), `self` (e.g. Smalltalk, Perl, Swift) and `Me`
+	// (e.g. Visual Basic).
 	THIS = 58 [(gogoproto.enumvalue_customname) = "This"];
 	COMMENT = 59 [(gogoproto.enumvalue_customname) = "Comment"];
+	// Documentation is a node that represents documentation of another node,
+	// such as function or package. Documentation is usually in the form of
+	// a string in certain position (e.g. Python docstring) or comment
+	// (e.g. Javadoc, godoc).
 	DOCUMENTATION = 60 [(gogoproto.enumvalue_customname) = "Documentation"];
+	// Whitespace
 	WHITESPACE = 61 [(gogoproto.enumvalue_customname) = "Whitespace"];
 }
 

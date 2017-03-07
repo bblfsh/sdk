@@ -1,0 +1,33 @@
+syntax = "proto3";
+package github.com.bblfsh.sdk.protocol;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "protocol";
+
+// ParseASTRequest is a request to parse a file and get its AST.
+message ParseASTRequest {
+	option (gogoproto.typedecl) = false;
+	string content = 1;
+}
+
+// ParseASTResponse is the reply to ParseASTRequest.
+message ParseASTResponse {
+	option (gogoproto.typedecl) = false;
+	string status = 1 [(gogoproto.casttype) = "Status"];
+	repeated string errors = 2;
+}
+
+// ParseUASTRequest is a request to parse a file and get its UAST.
+message ParseUASTRequest {
+	option (gogoproto.typedecl) = false;
+	string content = 1;
+}
+
+// ParseUASTResponse is the reply to ParseUASTRequest.
+message ParseUASTResponse {
+	option (gogoproto.typedecl) = false;
+	string status = 1 [(gogoproto.casttype) = "Status"];
+	repeated string errors = 2;
+}
+

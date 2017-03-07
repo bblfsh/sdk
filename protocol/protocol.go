@@ -4,16 +4,20 @@ import (
 	"github.com/bblfsh/sdk/uast"
 )
 
+// go:generate proteus proto -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast -f $GOPATH/src/github.com/bblfsh/sdk/protos
+// go:generate proteus rpc -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast
+
 // Status is the status of a response.
 type Status string
 
+//proteus:generate
 const (
 	// Ok status code.
 	Ok Status = "ok"
 	// Error status code. It is replied when the driver has got the AST with errors.
-	Error = "error"
+	Error Status = "error"
 	// Fatal status code. It is replied when the driver hasn't could get the AST.
-	Fatal = "fatal"
+	Fatal Status = "fatal"
 )
 
 // String returns the string value of the Status.

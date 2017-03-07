@@ -31,7 +31,11 @@ bindata: $(ASSETS)
 $(DEPENDENCIES):
 	$(GO_GET) $@/...
 
-$(ASSETS): $(DEPENDENCIES)
+driver-tpl:
+	cat protocol/internal/testdriver/main.go | sed -e 's|\([[:space:]]\+\).*//REPLACE:\(.*\)|\1\2|g' \
+		> etc/skeleton/driver/main.go.tpl
+
+$(ASSETS): $(DEPENDENCIES) driver-tpl
 	chmod -R go=r $(ASSETS_PATH)/$@; \
 	$(BINDATA_CMD) \
 		-pkg $@ \
@@ -66,4 +70,4 @@ validate-commit: bindata
 		exit 2; \
 	fi
 
-.PHONY: bindata test test-coverage validate-commit $(ASSETS) $(DEPENDENCIES)
+.PHONY: bindata test test-coverage validate-commit driver-tpl $(ASSETS) $(DEPENDENCIES)
