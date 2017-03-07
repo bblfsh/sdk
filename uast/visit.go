@@ -10,9 +10,9 @@ var (
 )
 
 // FindAll finds all nodes that satisfy a predicate.
-func FindAll(n *Node, f func(NodePath) bool) []*Node {
+func FindAll(n *Node, f func(Path) bool) []*Node {
 	var nodes []*Node
-	err := PreOrderVisit(n, func(ns NodePath) error {
+	err := PreOrderVisit(n, func(ns Path) error {
 		if f(ns) {
 			nodes = append(nodes, ns.Node())
 		}
@@ -33,8 +33,8 @@ func FindAll(n *Node, f func(NodePath) bool) []*Node {
 // not return an error.
 // If the function returns ErrNoVisit, children of the current node will not be
 // visited.
-func PreOrderVisit(n *Node, f func(NodePath) error) error {
-	err := preOrderVisit(f, NewNodePath(n))
+func PreOrderVisit(n *Node, f func(Path) error) error {
+	err := preOrderVisit(f, NewPath(n))
 	if err == ErrStop {
 		return nil
 	}
@@ -42,7 +42,7 @@ func PreOrderVisit(n *Node, f func(NodePath) error) error {
 	return err
 }
 
-func preOrderVisit(f func(NodePath) error, ns NodePath) error {
+func preOrderVisit(f func(Path) error, ns Path) error {
 	if err := f(ns); err != nil {
 		if err == ErrNoVisit {
 			return nil

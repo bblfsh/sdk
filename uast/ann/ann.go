@@ -5,24 +5,23 @@ import (
 	"github.com/bblfsh/sdk/uast"
 )
 
-// PathMatcher is a function that matches against a NodePath. If a prefix is not
-// matched, it returns that prefix. If there is no match at all, it returns the
-// input NodePath. If it matches the full NodePath, nil is returned.
+// PathMatcher matches paths.
 type PathMatcher interface {
 	// MatchPath matches against the given path and returns any unmatched
-	// prefix.
-	MatchPath(path uast.NodePath) uast.NodePath
+	// prefix. If there is no match at all, it returns the input path. If it
+	// matches the full path, nil is returned.
+	MatchPath(path uast.Path) uast.Path
 }
 
 // PathPredicate is a function that takes a node path and returns a boolean. It
 // is provided as a convenient way of defining a PathMatcher.
-type PathPredicate func(path uast.NodePath) bool
+type PathPredicate func(path uast.Path) bool
 
 // MatchPath returns an empty path if the PathPredicate is true. Otherwise, it
 // returns the given path.
-func (p PathPredicate) MatchPath(path uast.NodePath) uast.NodePath {
+func (p PathPredicate) MatchPath(path uast.Path) uast.Path {
 	if p(path) {
-		return uast.NewNodePath()
+		return uast.NewPath()
 	}
 
 	return path
@@ -34,7 +33,7 @@ type NodePredicate func(n *uast.Node) bool
 
 // MatchPath returns the parent of the given path if the NodePredicate is true.
 // Otherwise, it returns the given path.
-func (p NodePredicate) MatchPath(path uast.NodePath) uast.NodePath {
+func (p NodePredicate) MatchPath(path uast.Path) uast.Path {
 	if path.IsEmpty() {
 		return path
 	}
@@ -67,7 +66,7 @@ func On(matchers ...PathMatcher) *Rule {
 func (r *Rule) Apply(n *uast.Node) error {
 	var ruleStack [][]*Rule
 	ruleStack = append(ruleStack, []*Rule{r})
-	pathStack := []uast.NodePath{uast.NewNodePath(n)}
+	pathStack := []uast.Path{uast.NewPath(n)}
 
 	for {
 		lvl := len(pathStack)
@@ -158,7 +157,7 @@ func HasToken(tk string) NodePredicate {
 
 // Any matches any path.
 func Any() PathPredicate {
-	return func(uast.NodePath) bool { return true }
+	return func(uast.Path) bool { return true }
 }
 
 // Not negates a node predicate.
@@ -186,7 +185,7 @@ func Join(matchers ...PathMatcher) PathMatcher {
 	return jm
 }
 
-func (m *joinMatcher) MatchPath(path uast.NodePath) uast.NodePath {
+func (m *joinMatcher) MatchPath(path uast.Path) uast.Path {
 	stack := m.matchers
 	for {
 		if len(stack) == 0 {

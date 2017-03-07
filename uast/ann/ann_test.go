@@ -12,8 +12,8 @@ import (
 func TestHasInternalType(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) NodePath {
-		path := NewNodePath()
+	path := func(ss ...string) Path {
+		path := NewPath()
 		for _, s := range ss {
 			n := NewNode()
 			n.InternalType = s
@@ -35,8 +35,8 @@ func TestHasInternalType(t *testing.T) {
 func TestHasInternalRole(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) NodePath {
-		path := NewNodePath()
+	path := func(ss ...string) Path {
+		path := NewPath()
 		for _, s := range ss {
 			n := NewNode()
 			n.Properties[InternalRoleKey] = s
@@ -59,8 +59,8 @@ func TestHasProperty(t *testing.T) {
 	require := require.New(t)
 
 	myProp := "property"
-	path := func(ss ...string) NodePath {
-		path := NewNodePath()
+	path := func(ss ...string) Path {
+		path := NewPath()
 		for _, s := range ss {
 			n := NewNode()
 			n.Properties[myProp] = s
@@ -82,8 +82,8 @@ func TestHasProperty(t *testing.T) {
 func TestHasToken(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) NodePath {
-		path := NewNodePath()
+	path := func(ss ...string) Path {
+		path := NewPath()
 		for _, s := range ss {
 			n := NewNode()
 			n.Token = s
@@ -115,8 +115,8 @@ func TestAny(t *testing.T) {
 	require := require.New(t)
 
 	myProp := "property"
-	path := func(ss ...string) NodePath {
-		path := NewNodePath()
+	path := func(ss ...string) Path {
+		path := NewPath()
 		for _, s := range ss {
 			n := NewNode()
 			n.Properties[myProp] = s
@@ -138,8 +138,8 @@ func TestAny(t *testing.T) {
 func TestNot(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) NodePath {
-		path := NewNodePath()
+	path := func(ss ...string) Path {
+		path := NewPath()
 		for _, s := range ss {
 			n := NewNode()
 			n.InternalType = s
@@ -242,10 +242,10 @@ func TestRuleOnRulesActionError(t *testing.T) {
 func TestPathPredicateMatchPath(t *testing.T) {
 	require := require.New(t)
 
-	falsePred := PathPredicate(func(path NodePath) bool {
+	falsePred := PathPredicate(func(path Path) bool {
 		return false
 	})
 
-	unmatched := falsePred.MatchPath(NewNodePath(&Node{}))
+	unmatched := falsePred.MatchPath(NewPath(&Node{}))
 	require.Len(unmatched, 1)
 }

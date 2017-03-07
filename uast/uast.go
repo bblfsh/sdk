@@ -327,23 +327,23 @@ func (f IncludeFlag) Is(of IncludeFlag) bool {
 	return f&of != 0
 }
 
-// NodePath represents a Node with its path in a tree. It is a slice with every
+// Path represents a Node with its path in a tree. It is a slice with every
 // token in the path, where the last one is the node itself. The empty path is
 // is the zero value (e.g. parent of the root node).
-type NodePath []*Node
+type Path []*Node
 
-// NewNodePath creates a new NodePath from a slice of nodes.
-func NewNodePath(nodes ...*Node) NodePath {
-	return NodePath(nodes)
+// NewPath creates a new Path from a slice of nodes.
+func NewPath(nodes ...*Node) Path {
+	return Path(nodes)
 }
 
 // IsEmpty returns true if the path is empty.
-func (p NodePath) IsEmpty() bool {
+func (p Path) IsEmpty() bool {
 	return len(p) == 0
 }
 
 // Node returns the node. If the path is empty, the result is nil.
-func (p NodePath) Node() *Node {
+func (p Path) Node() *Node {
 	if p.IsEmpty() {
 		return nil
 	}
@@ -352,10 +352,10 @@ func (p NodePath) Node() *Node {
 }
 
 // Parent returns the path of the parent of this node.
-func (p NodePath) Parent() NodePath {
+func (p Path) Parent() Path {
 	if len(p) <= 1 {
-		return NodePath(nil)
+		return Path(nil)
 	}
 
-	return NodePath(p[:len(p)-1])
+	return Path(p[:len(p)-1])
 }
