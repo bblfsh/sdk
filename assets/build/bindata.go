@@ -7,7 +7,6 @@
 // etc/build/make/bootstrap.mk
 // etc/build/make/functions.mk
 // etc/build/make/help.mk
-// etc/build/make/manifest.mk
 // etc/build/make/rules.mk
 // DO NOT EDIT!
 
@@ -341,27 +340,6 @@ func makeHelpMk() (*asset, error) {
 	return a, nil
 }
 
-var _makeManifestMk = []byte(`LANGUAGE=rust
-RUNTIME_OS=debian
-RUNTIME_NATIVE_VERSION=nightly-2017-02-20
-RUNTIME_GO_VERSION=1.8
-`)
-
-func makeManifestMkBytes() ([]byte, error) {
-	return _makeManifestMk, nil
-}
-
-func makeManifestMk() (*asset, error) {
-	bytes, err := makeManifestMkBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "make/manifest.mk", size: 97, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _makeRulesMk = []byte(`BUILD_ID := $(shell date +"%m-%d-%Y_%H_%M_%S")
 BUILD_PATH := $(location)/build
 
@@ -547,7 +525,6 @@ var _bindata = map[string]func() (*asset, error){
 	"make/bootstrap.mk": makeBootstrapMk,
 	"make/functions.mk": makeFunctionsMk,
 	"make/help.mk": makeHelpMk,
-	"make/manifest.mk": makeManifestMk,
 	"make/rules.mk": makeRulesMk,
 }
 
@@ -603,7 +580,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"bootstrap.mk": &bintree{makeBootstrapMk, map[string]*bintree{}},
 		"functions.mk": &bintree{makeFunctionsMk, map[string]*bintree{}},
 		"help.mk": &bintree{makeHelpMk, map[string]*bintree{}},
-		"manifest.mk": &bintree{makeManifestMk, map[string]*bintree{}},
 		"rules.mk": &bintree{makeRulesMk, map[string]*bintree{}},
 	}},
 }}
