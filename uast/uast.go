@@ -327,20 +327,22 @@ func (f IncludeFlag) Is(of IncludeFlag) bool {
 	return f&of != 0
 }
 
+// NodePath represents a Node with its path in a tree. It is a slice with every
+// token in the path, where the last one is the node itself. The empty path is
+// is the zero value (e.g. parent of the root node).
 type NodePath []*Node
 
+// NewNodePath creates a new NodePath from a slice of nodes.
 func NewNodePath(nodes ...*Node) NodePath {
 	return NodePath(nodes)
 }
 
+// IsEmpty returns true if the path is empty.
 func (p NodePath) IsEmpty() bool {
 	return len(p) == 0
 }
 
-func (p NodePath) IsRoot() bool {
-	return len(p) == 1
-}
-
+// Node returns the node. If the path is empty, the result is nil.
 func (p NodePath) Node() *Node {
 	if p.IsEmpty() {
 		return nil
@@ -349,14 +351,11 @@ func (p NodePath) Node() *Node {
 	return p[len(p)-1]
 }
 
-func (p NodePath) Ancestors() []*Node {
+// Parent returns the path of the parent of this node.
+func (p NodePath) Parent() NodePath {
 	if len(p) <= 1 {
-		return nil
+		return NodePath(nil)
 	}
 
-	return p[:len(p)-1]
-}
-
-func (p NodePath) ParentPath() NodePath {
-	return NodePath(p.Ancestors())
+	return NodePath(p[:len(p)-1])
 }

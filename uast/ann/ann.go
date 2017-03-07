@@ -44,7 +44,7 @@ func (p NodePredicate) MatchPath(path uast.NodePath) uast.NodePath {
 		return path
 	}
 
-	return path.ParentPath()
+	return path.Parent()
 }
 
 // Rule is a conversion rule that can visit a tree, match nodes against
