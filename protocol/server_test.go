@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bblfsh/sdk/uast"
+	"github.com/bblfsh/sdk/uast/ann"
 
 	"github.com/stretchr/testify/require"
 )
@@ -68,7 +69,7 @@ func testServer(t *testing.T, exitError bool, f func(io.WriteCloser, io.Reader))
 		Out:      sOut,
 		Native:   n,
 		ToNoder:  &uast.BaseToNoder{},
-		Annotate: func(*uast.Node) error { return nil },
+		Annotate: ann.On(ann.Any),
 	}
 
 	err = s.Start()

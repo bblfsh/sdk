@@ -1,14 +1,13 @@
 package normalizer
 
 import (
-	"github.com/bblfsh/sdk/uast"
+	. "github.com/bblfsh/sdk/uast"
+	. "github.com/bblfsh/sdk/uast/ann"
 )
 
-// Implement a uast.ToNoder to convert from the native AST to a *uast.Node.
-// uast.BaseToNoder can be used (with parameters) for most cases.
-var ToNoder = &uast.BaseToNoder{}
+// NativeToNoder implement a ToNoder to convert from the native AST to a *Node.
+// BaseToNoder can be used (with parameters) for most cases.
+var NativeToNoder = &BaseToNoder{}
 
-// Annotate annotates a *uast.Node with roles.
-func Annotate(n *uast.Node) error {
-	return nil
-}
+// AnnotationRules annotate a UAST with roles.
+var AnnotationRules = On(Any).Roles(File)

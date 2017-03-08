@@ -6,6 +6,7 @@ import (
 
 	"github.com/bblfsh/sdk/uast"
 
+	"github.com/bblfsh/sdk/uast/ann"
 	"srcd.works/go-errors.v0"
 )
 
@@ -21,7 +22,7 @@ type Server struct {
 	Out      io.Writer
 	Native   *NativeClient
 	ToNoder  uast.ToNoder
-	Annotate func(*uast.Node) error
+	Annotate *ann.Rule
 
 	err  error
 	done chan struct{}
@@ -82,7 +83,7 @@ func (s *Server) process(enc *json.Encoder, dec *json.Decoder) error {
 			return s.error(enc, err)
 		}
 
-		if err := s.Annotate(node); err != nil {
+		if err := s.Annotate.Apply(node); err != nil {
 			return s.error(enc, err)
 		}
 	}

@@ -985,7 +985,9 @@ var version string
 var build string
 
 func main() {
-	cmd.DriverMain(version, build, normalizer.ToNoder, normalizer.Annotate)
+	cmd.DriverMain(version, build,
+		normalizer.NativeToNoder,
+		normalizer.AnnotationRules)
 }
 `)
 
@@ -999,7 +1001,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 260, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 277, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1007,17 +1009,16 @@ func driverMainGoTpl() (*asset, error) {
 var _driverNormalizerNormalizerGo = []byte(`package normalizer
 
 import (
-	"github.com/bblfsh/sdk/uast"
+	. "github.com/bblfsh/sdk/uast"
+	. "github.com/bblfsh/sdk/uast/ann"
 )
 
-// Implement a uast.ToNoder to convert from the native AST to a *uast.Node.
-// uast.BaseToNoder can be used (with parameters) for most cases.
-var ToNoder = &uast.BaseToNoder{}
+// NativeToNoder implement a ToNoder to convert from the native AST to a *Node.
+// BaseToNoder can be used (with parameters) for most cases.
+var NativeToNoder = &BaseToNoder{}
 
-// Annotate annotates a *uast.Node with roles.
-func Annotate(n *uast.Node) error {
-	return nil
-}
+// AnnotationRules annotate a UAST with roles.
+var AnnotationRules = On(Any).Roles(File)
 `)
 
 func driverNormalizerNormalizerGoBytes() ([]byte, error) {
@@ -1030,7 +1031,7 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 336, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 366, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

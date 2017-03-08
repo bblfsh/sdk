@@ -10,5 +10,7 @@ var version string
 var build string
 
 func main() {
-	cmd.DriverMain(version, build, normalizer.ToNoder, normalizer.Annotate)
+	cmd.DriverMain(version, build,
+		normalizer.NativeToNoder,
+		normalizer.AnnotationRules)
 }

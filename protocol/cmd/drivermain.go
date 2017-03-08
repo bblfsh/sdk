@@ -9,9 +9,10 @@ import (
 	"os"
 
 	"github.com/bblfsh/sdk"
-	"github.com/bblfsh/sdk/uast"
 	"github.com/bblfsh/sdk/protocol"
+	"github.com/bblfsh/sdk/uast"
 
+	"github.com/bblfsh/sdk/uast/ann"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -20,7 +21,7 @@ import (
 func DriverMain(
 	version, build string,
 	toNoder uast.ToNoder,
-	annotate func(*uast.Node) error) {
+	annotate *ann.Rule) {
 
 	cmd := cmd{
 		Version:   version,
@@ -64,7 +65,7 @@ type cmd struct {
 	Out       io.Writer
 	Err       io.Writer
 	ToNoder   uast.ToNoder
-	Annotate  func(*uast.Node) error
+	Annotate  *ann.Rule
 	NativeBin string `long:"native-bin" description:"alternative path for the native binary"`
 }
 
