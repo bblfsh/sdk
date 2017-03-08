@@ -1,7 +1,6 @@
 package ann
 
 import (
-	"fmt"
 	"testing"
 
 	. "github.com/bblfsh/sdk/uast"
@@ -360,12 +359,8 @@ func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
 func TestRuleOnRulesActionError(t *testing.T) {
 	require := require.New(t)
 
-	errorAction := func(n *Node) error {
-		return fmt.Errorf("test error")
-	}
-
 	rule := On(HasInternalType("root")).
-		Children(On(HasInternalType("foo")).Do(errorAction))
+		Children(On(HasInternalType("foo")).Error("test error"))
 
 	input := &Node{
 		InternalType: "root",

@@ -2,6 +2,8 @@
 package ann
 
 import (
+	"errors"
+
 	"github.com/bblfsh/sdk/uast"
 )
 
@@ -105,6 +107,11 @@ func (r *Rule) Roles(roles ...uast.Role) *Rule {
 	return r.Do(AddRoles(roles...))
 }
 
+// Error makes the rule application fail if the current rule matches.
+func (r *Rule) Error(msg string) *Rule {
+	return r.Do(ReturnError(msg))
+}
+
 // Do attaches actions to the rule.
 func (r *Rule) Do(actions ...Action) *Rule {
 	r.actions = append(r.actions, actions...)
@@ -176,6 +183,14 @@ func AddRoles(roles ...uast.Role) Action {
 	return func(n *uast.Node) error {
 		n.Roles = append(n.Roles, roles...)
 		return nil
+	}
+}
+
+// Return error creates an action that always returns an error with the given
+// message.
+func ReturnError(msg string) Action {
+	return func(n *uast.Node) error {
+		return errors.New(msg)
 	}
 }
 
