@@ -3,6 +3,7 @@ BUILD_PATH := $(location)/build
 
 RUN := $(sdklocation)/etc/run.sh
 RUN_VERBOSE := VERBOSE=1 $(RUN)
+RUN_IT := $(sdklocation)/etc/it.bash
 
 # docker runtime commands
 DOCKER_CMD ?= docker
@@ -90,6 +91,9 @@ build-driver: | $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
 build-driver-internal:
 	@cd driver; \
 	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
+
+integration-test: build
+	@$(RUN_VERBOSE) $(RUN_IT) "$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))"
 
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))

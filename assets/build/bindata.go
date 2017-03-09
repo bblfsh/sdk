@@ -3,6 +3,7 @@
 // etc/build/Makefile
 // etc/build/etc/build/Dockerfile.build.alpine.tpl
 // etc/build/etc/build/Dockerfile.build.debian.tpl
+// etc/build/etc/it.bash
 // etc/build/etc/run.sh
 // etc/build/make/bootstrap.mk
 // etc/build/make/functions.mk
@@ -167,6 +168,123 @@ func etcBuildDockerfileBuildDebianTpl() (*asset, error) {
 	return a, nil
 }
 
+var _etcItBash = []byte(`#!/bin/bash -e
+
+DRIVER_IMAGE="$1"
+
+if [[ -z ${DRIVER_IMAGE} ]] ; then
+	echo "Usage: $0 <driver image>"
+	exit 1
+fi
+
+PYTHON="${PYTHON:-python3}"
+DOCKER="${DOCKER:-docker}"
+TOOLS="bblfsh-tools"
+
+MANIFEST=""
+
+TESTS_DIR="tests"
+SOURCES_DIR="${TESTS_DIR}/sources"
+NATIVE_DIR="${TESTS_DIR}/native"
+UAST_DIR="${TESTS_DIR}/uast"
+
+green() {
+	echo -e "\e[32m$1\e[0m"
+}
+
+red() {
+	echo -e "\e[31m$1\e[0m"
+}
+
+yellow() {
+	echo -e "\e[33m$1\e[0m"
+}
+
+require() {
+	if ! which &> /dev/null $1 ; then
+		red "$1 not found: $2"
+		exit 1
+	fi
+}
+
+# check requirements
+require "${TOOLS}" "install bblfsh-sdk"
+require "${PYTHON}" "install Python 3 or set its path in PYTHON environment variable"
+require "${DOCKER}" "install Docker or set its path in DOCKER environment variable"
+
+# LANGUAGE is defined by manifest
+eval $("${TOOLS}" manifest)
+
+parse_native_ast() {
+	#TODO: replace with actual command
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-native /code/$(readlink -f $1) | "${PYTHON}" -m json.tool
+}
+
+parse_uast() {
+	#TODO: replace with actual command
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast /code/$(readlink -f $1) | "${PYTHON}" -m json.tool
+}
+
+check_result() {
+	local typ="$1"
+	local target="$2"
+	local tmp="$3"
+	if [[ ! -e ${target} ]] ; then
+                mv "${tmp}" "${target}"
+                yellow "\tgenerated ${target}"
+        elif [[ -f ${target} ]] ; then
+                if cmp --silent "${target}" "${tmp}" ; then
+                        green "\t ✔ ${typ}"
+                else
+                        red "\t ✖ ${typ} does not match"
+                        diff -ur "${target}" "${tmp}"
+                fi
+        else
+                red "\t✖ ${target} path not valid"
+        fi
+        rm -f "${tmp}"
+}
+
+mkdir -p "${SOURCES_DIR}"
+mkdir -p "${NATIVE_DIR}"
+mkdir -p "${UAST_DIR}"
+
+echo -e "Scanning sources in ${SOURCES_DIR}"
+find "${SOURCES_DIR}" -type f | while read src ; do
+	NAME="$(basename "${src}")"
+	NATIVE="${NATIVE_DIR}/${NAME}.json"
+	UAST="${UAST_DIR}/${NAME}.json"
+
+	green "${NAME}"
+
+	# NATIVE
+	tmp="$(mktemp)"
+	parse_native_ast "${src}" > "${tmp}"
+	check_result "native" "${NATIVE}" "${tmp}"
+
+	# UAST
+	tmp="$(mktemp)"
+	parse_uast "${src}" > "${tmp}"
+	check_result "uast" "${UAST}" "${tmp}"
+done
+
+`)
+
+func etcItBashBytes() ([]byte, error) {
+	return _etcItBash, nil
+}
+
+func etcItBash() (*asset, error) {
+	bytes, err := etcItBashBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "etc/it.bash", size: 2292, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _etcRunSh = []byte(`#!/bin/bash
 darkcyan='\033[0;31m'
 normal=$'\e[0m'
@@ -280,37 +398,39 @@ contains several rules to build docker containers, execute tests, validate
 the driver, etc.
 
 RULES
-make build          builds driver's docker image, compiling the normalizer
-                    component and the native component if needed calling the
-                    rules: build-native and build-driver. Builds the required
-                    docker images to do this.
+make build            builds driver's docker image, compiling the normalizer
+                      component and the native component if needed calling the
+                      rules: build-native and build-driver. Builds the required
+                      docker images to do this.
 
-make build-native   compiles the native component if needed, in interpreted
-                    languages only prepares the scripts to execute the
-                    component. To perform this is executes make calling the
-                    private rule: `+"`"+`build-native-internal`+"`"+` defined in the
-                    Makefile in the root of the project inside of the build
-                    container.
+make build-native     compiles the native component if needed, in interpreted
+                      languages only prepares the scripts to execute the
+                      component. To perform this is executes make calling the
+                      private rule: `+"`"+`build-native-internal`+"`"+` defined in the
+                      Makefile in the root of the project inside of the build
+                      container.
 
-make build-driver   compiles the normalizer component.
+make build-driver     compiles the normalizer component.
 
-make test           execute all the unit tests of the components inside of the
-                    build containers. It build the docker images if need it.
+make test             execute all the unit tests of the components inside of the
+                      build containers. It build the docker images if need it.
 
-make test-native    execute the unit test for the native component. To perform
-                    this is execute make calling the private rule:
-                    `+"`"+`test-native-internal`+"`"+` defined in the Makefile in the root
-                    of the project inside of the build container.
+make test-native      execute the unit test for the native component. To perform
+                      this is execute make calling the private rule:
+                      `+"`"+`test-native-internal`+"`"+` defined in the Makefile in the root
+                      of the project inside of the build container.
 
-make test-driver    execute the unit test for the normalizer component.
+make test-driver      execute the unit test for the normalizer component.
 
-make push           push the driver's docker image to the Docker registry. This
-                    rule can be only executed inside of a Travis-CI environment
-                    and just when is running for a tag.
+make push             push the driver's docker image to the Docker registry. This
+                      rule can be only executed inside of a Travis-CI environment
+                      and just when is running for a tag.
 
-make validate       validates the current driver.
+make integration-test execute integration tests.
 
-make clean          cleans all the build directories.
+make validate         validates the current driver.
+
+make clean            cleans all the build directories.
 
 INTERNAL RULES
 Two internal rules are required to run the test and the build main rules:
@@ -335,7 +455,7 @@ func makeHelpMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/help.mk", size: 2195, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/help.mk", size: 2291, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -345,6 +465,7 @@ BUILD_PATH := $(location)/build
 
 RUN := $(sdklocation)/etc/run.sh
 RUN_VERBOSE := VERBOSE=1 $(RUN)
+RUN_IT := $(sdklocation)/etc/it.bash
 
 # docker runtime commands
 DOCKER_CMD ?= docker
@@ -433,6 +554,9 @@ build-driver-internal:
 	@cd driver; \
 	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
 
+integration-test: build
+	@$(RUN_VERBOSE) $(RUN_IT) "$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))"
+
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))
 
@@ -461,7 +585,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 3545, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 3690, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -521,6 +645,7 @@ var _bindata = map[string]func() (*asset, error){
 	"Makefile": makefile,
 	"etc/build/Dockerfile.build.alpine.tpl": etcBuildDockerfileBuildAlpineTpl,
 	"etc/build/Dockerfile.build.debian.tpl": etcBuildDockerfileBuildDebianTpl,
+	"etc/it.bash": etcItBash,
 	"etc/run.sh": etcRunSh,
 	"make/bootstrap.mk": makeBootstrapMk,
 	"make/functions.mk": makeFunctionsMk,
@@ -574,6 +699,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"Dockerfile.build.alpine.tpl": &bintree{etcBuildDockerfileBuildAlpineTpl, map[string]*bintree{}},
 			"Dockerfile.build.debian.tpl": &bintree{etcBuildDockerfileBuildDebianTpl, map[string]*bintree{}},
 		}},
+		"it.bash": &bintree{etcItBash, map[string]*bintree{}},
 		"run.sh": &bintree{etcRunSh, map[string]*bintree{}},
 	}},
 	"make": &bintree{nil, map[string]*bintree{
