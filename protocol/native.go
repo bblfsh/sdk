@@ -1,9 +1,10 @@
 package protocol
 
 import (
-	"encoding/json"
 	"io"
 	"os/exec"
+
+	"github.com/bblfsh/sdk/protocol/jsonlines"
 )
 
 // ParseNativeASTRequest to use with the native AST parser. This is for internal
@@ -22,8 +23,8 @@ type ParseNativeASTResponse struct {
 
 // NativeClient is a wrapper of the native command.
 type NativeClient struct {
-	enc    *json.Encoder
-	dec    *json.Decoder
+	enc    jsonlines.Encoder
+	dec    jsonlines.Decoder
 	closer io.Closer
 	cmd    *exec.Cmd
 }
@@ -46,8 +47,8 @@ func ExecNative(path string, args ...string) (*NativeClient, error) {
 	}
 
 	return &NativeClient{
-		enc:    json.NewEncoder(in),
-		dec:    json.NewDecoder(out),
+		enc:    jsonlines.NewEncoder(in),
+		dec:    jsonlines.NewDecoder(out),
 		closer: in,
 		cmd:    cmd,
 	}, nil

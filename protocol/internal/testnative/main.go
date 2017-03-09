@@ -2,16 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 
 	"github.com/bblfsh/sdk/protocol"
-	"io"
 )
 
 type ParseASTResponse struct {
 	Status protocol.Status
 	Errors []string
-	AST interface{}
+	AST    interface{}
 }
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 
 		resp := &ParseASTResponse{
 			Status: protocol.Ok,
-			AST:    map[string]interface{}{
+			AST: map[string]interface{}{
 				"root": map[string]interface{}{
 					"key": "val",
 				},

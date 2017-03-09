@@ -1,11 +1,11 @@
 package protocol
 
 import (
-	"encoding/json"
 	"io"
 	"testing"
 	"time"
 
+	"github.com/bblfsh/sdk/protocol/jsonlines"
 	"github.com/bblfsh/sdk/uast"
 	"github.com/bblfsh/sdk/uast/ann"
 
@@ -15,8 +15,8 @@ import (
 func TestServerOneGood(t *testing.T) {
 	require := require.New(t)
 	testServer(t, false, func(in io.WriteCloser, out io.Reader) {
-		enc := json.NewEncoder(in)
-		dec := json.NewDecoder(out)
+		enc := jsonlines.NewEncoder(in)
+		dec := jsonlines.NewDecoder(out)
 
 		err := enc.Encode(&ParseUASTRequest{Content: "foo"})
 		require.NoError(err)
@@ -32,8 +32,8 @@ func TestServerOneGood(t *testing.T) {
 func TestServerOneMalformedAndOneGood(t *testing.T) {
 	require := require.New(t)
 	testServer(t, false, func(in io.WriteCloser, out io.Reader) {
-		enc := json.NewEncoder(in)
-		dec := json.NewDecoder(out)
+		enc := jsonlines.NewEncoder(in)
+		dec := jsonlines.NewDecoder(out)
 
 		err := enc.Encode("BAD REQUEST")
 		require.NoError(err)

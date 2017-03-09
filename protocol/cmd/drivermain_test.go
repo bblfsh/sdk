@@ -2,11 +2,11 @@ package cmd_test
 
 import (
 	"bufio"
-	"encoding/json"
 	"os/exec"
 	"testing"
 
 	"github.com/bblfsh/sdk/protocol"
+	"github.com/bblfsh/sdk/protocol/jsonlines"
 
 	"github.com/stretchr/testify/require"
 )
@@ -43,8 +43,8 @@ func TestDriverMain(t *testing.T) {
 		}
 	}()
 
-	enc := json.NewEncoder(in)
-	dec := json.NewDecoder(out)
+	enc := jsonlines.NewEncoder(in)
+	dec := jsonlines.NewDecoder(out)
 
 	req := &protocol.ParseUASTRequest{Content: "foo"}
 	err = enc.Encode(req)

@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"encoding/json"
 	"io"
 
+	"github.com/bblfsh/sdk/protocol/jsonlines"
 	"github.com/bblfsh/sdk/uast"
-
 	"github.com/bblfsh/sdk/uast/ann"
+
 	"srcd.works/go-errors.v0"
 )
 
@@ -43,8 +43,8 @@ func (s *Server) Wait() error {
 }
 
 func (s *Server) serve() {
-	dec := json.NewDecoder(s.In)
-	enc := json.NewEncoder(s.Out)
+	enc := jsonlines.NewEncoder(s.Out)
+	dec := jsonlines.NewDecoder(s.In)
 	for {
 		if err := s.process(enc, dec); err != nil {
 			if err == noErrClose {
@@ -59,7 +59,7 @@ func (s *Server) serve() {
 	close(s.done)
 }
 
-func (s *Server) process(enc *json.Encoder, dec *json.Decoder) error {
+func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 	req := &ParseUASTRequest{}
 	if err := dec.Decode(req); err != nil {
 		if err == io.EOF {
@@ -100,7 +100,7 @@ func (s *Server) process(enc *json.Encoder, dec *json.Decoder) error {
 	return nil
 }
 
-func (s *Server) error(enc *json.Encoder, err error) error {
+func (s *Server) error(enc jsonlines.Encoder, err error) error {
 	if err := enc.Encode(newFatalResponse(err)); err != nil {
 		return ErrEncodingResponse.Wrap(err)
 	}
