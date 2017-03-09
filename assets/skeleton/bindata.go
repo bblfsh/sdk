@@ -976,28 +976,20 @@ func readmeMdTpl() (*asset, error) {
 var _driverMainGoTpl = []byte(`package main
 
 import (
-	"fmt"
-	"os"
+	"github.com/bblfsh/sdk/protocol/cmd"
 
-	"github.com/bblfsh/sdk"
-
-	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
+	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
 
 var version string
 var build string
 
 func main() {
-	fmt.Printf("version: %s\nbuild: %s\n", version, build)
-
-	_, err := os.Stat(sdk.NativeBin)
-	if err == nil {
-		fmt.Println("native: ok")
-		return
-	}
-
-	fmt.Printf("native: %s\n", err)
-}`)
+	cmd.DriverMain(version, build,
+		normalizer.NativeToNoder,
+		normalizer.AnnotationRules)
+}
+`)
 
 func driverMainGoTplBytes() ([]byte, error) {
 	return _driverMainGoTpl, nil
@@ -1009,12 +1001,24 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 371, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 277, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
 var _driverNormalizerNormalizerGo = []byte(`package normalizer
+
+import (
+	. "github.com/bblfsh/sdk/uast"
+	. "github.com/bblfsh/sdk/uast/ann"
+)
+
+// NativeToNoder implement a ToNoder to convert from the native AST to a *Node.
+// BaseToNoder can be used (with parameters) for most cases.
+var NativeToNoder = &BaseToNoder{}
+
+// AnnotationRules annotate a UAST with roles.
+var AnnotationRules = On(Any).Roles(File)
 `)
 
 func driverNormalizerNormalizerGoBytes() ([]byte, error) {
@@ -1027,7 +1031,7 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 19, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 366, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

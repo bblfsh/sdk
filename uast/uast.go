@@ -6,6 +6,8 @@ import (
 	"bytes"
 )
 
+// go:generate proteus proto -p github.com/bblfsh/sdk/uast -f $GOPATH/src/github.com/bblfsh/sdk/protos
+
 // Hash is a hash value.
 type Hash uint32
 
