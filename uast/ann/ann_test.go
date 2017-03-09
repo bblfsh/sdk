@@ -1,7 +1,6 @@
 package ann
 
 import (
-	"fmt"
 	"testing"
 
 	. "github.com/bblfsh/sdk/uast"
@@ -12,149 +11,104 @@ import (
 func TestHasInternalType(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) Path {
-		path := NewPath()
-		for _, s := range ss {
-			n := NewNode()
-			n.InternalType = s
-			path = append(path, n)
-		}
-
-		return path
+	node := func(s string) *Node {
+		n := NewNode()
+		n.InternalType = s
+		return n
 	}
 
-	has := HasInternalType("foo")
-
-	require.Equal(path(), has.MatchPath(path()))
-	require.Equal(path(), has.MatchPath(path("foo")))
-	require.Equal(path("other"), has.MatchPath(path("other")))
-	require.Equal(path("other"), has.MatchPath(path("other", "foo")))
-	require.Equal(path("foo", "bar"), has.MatchPath(path("foo", "bar")))
+	pred := HasInternalType("foo")
+	require.True(pred(node("foo")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.False(pred(node("")))
+	require.False(pred(node("bar")))
 }
 
 func TestHasInternalRole(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) Path {
-		path := NewPath()
-		for _, s := range ss {
-			n := NewNode()
-			n.Properties[InternalRoleKey] = s
-			path = append(path, n)
-		}
-
-		return path
+	node := func(s string) *Node {
+		n := NewNode()
+		n.Properties[InternalRoleKey] = s
+		return n
 	}
 
-	has := HasInternalRole("foo")
-
-	require.Equal(path(), has.MatchPath(path()))
-	require.Equal(path(), has.MatchPath(path("foo")))
-	require.Equal(path("other"), has.MatchPath(path("other")))
-	require.Equal(path("other"), has.MatchPath(path("other", "foo")))
-	require.Equal(path("foo", "bar"), has.MatchPath(path("foo", "bar")))
+	pred := HasInternalRole("foo")
+	require.True(pred(node("foo")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.False(pred(node("")))
+	require.False(pred(node("bar")))
 }
 
 func TestHasProperty(t *testing.T) {
 	require := require.New(t)
 
-	myProp := "property"
-	path := func(ss ...string) Path {
-		path := NewPath()
-		for _, s := range ss {
-			n := NewNode()
-			n.Properties[myProp] = s
-			path = append(path, n)
-		}
-
-		return path
+	node := func(k, v string) *Node {
+		n := NewNode()
+		n.Properties[k] = v
+		return n
 	}
 
-	has := HasProperty(myProp, "foo")
-
-	require.Equal(path(), has.MatchPath(path()))
-	require.Equal(path(), has.MatchPath(path("foo")))
-	require.Equal(path("other"), has.MatchPath(path("other")))
-	require.Equal(path("other"), has.MatchPath(path("other", "foo")))
-	require.Equal(path("foo", "bar"), has.MatchPath(path("foo", "bar")))
+	pred := HasProperty("myprop", "foo")
+	require.True(pred(node("myprop", "foo")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.False(pred(node("myprop", "bar")))
+	require.False(pred(node("otherprop", "foo")))
+	require.False(pred(node("otherprop", "bar")))
 }
 
 func TestHasToken(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) Path {
-		path := NewPath()
-		for _, s := range ss {
-			n := NewNode()
-			n.Token = s
-			path = append(path, n)
-		}
-
-		return path
+	node := func(s string) *Node {
+		n := NewNode()
+		n.Token = s
+		return n
 	}
 
-	has := HasToken("foo")
+	pred := HasToken("foo")
+	require.True(pred(node("foo")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.False(pred(node("")))
+	require.False(pred(node("bar")))
 
-	require.Equal(path(), has.MatchPath(path()))
-	require.Equal(path(), has.MatchPath(path("foo")))
-	require.Equal(path(""), has.MatchPath(path("")))
-	require.Equal(path("other"), has.MatchPath(path("other")))
-	require.Equal(path("other"), has.MatchPath(path("other", "foo")))
-	require.Equal(path("foo", "bar"), has.MatchPath(path("foo", "bar")))
-
-	has = HasToken("")
-
-	require.Equal(path(), has.MatchPath(path()))
-	require.Equal(path(), has.MatchPath(path("")))
-	require.Equal(path("other"), has.MatchPath(path("other")))
-	require.Equal(path("other"), has.MatchPath(path("other", "")))
-	require.Equal(path("", "bar"), has.MatchPath(path("", "bar")))
+	pred = HasToken("")
+	require.True(pred(&Node{}))
+	require.True(pred(node("")))
+	require.False(pred(nil))
+	require.False(pred(node("bar")))
 }
 
 func TestAny(t *testing.T) {
 	require := require.New(t)
 
-	myProp := "property"
-	path := func(ss ...string) Path {
-		path := NewPath()
-		for _, s := range ss {
-			n := NewNode()
-			n.Properties[myProp] = s
-			path = append(path, n)
-		}
-
-		return path
-	}
-
-	has := Any()
-
-	require.Equal(path(), has.MatchPath(path()))
-	require.Equal(path(), has.MatchPath(path("foo")))
-	require.Equal(path(), has.MatchPath(path("other")))
-	require.Equal(path(), has.MatchPath(path("other", "foo")))
-	require.Equal(path(), has.MatchPath(path("foo", "bar")))
+	pred := Any
+	require.True(pred(nil))
+	require.True(pred(&Node{}))
+	require.True(pred(NewNode()))
+	require.True(pred(&Node{InternalType: "foo"}))
+	require.True(pred(&Node{Token: "foo"}))
 }
 
 func TestNot(t *testing.T) {
 	require := require.New(t)
 
-	path := func(ss ...string) Path {
-		path := NewPath()
-		for _, s := range ss {
-			n := NewNode()
-			n.InternalType = s
-			path = append(path, n)
-		}
-
-		return path
+	node := func(s string) *Node {
+		n := NewNode()
+		n.InternalType = s
+		return n
 	}
 
-	has := Not(HasInternalType("foo"))
-
-	require.Equal(path("foo"), has.MatchPath(path("foo")))
-	require.Equal(path(), has.MatchPath(path("other")))
-	require.Equal(path("other", "foo"), has.MatchPath(path("other", "foo")))
-	require.Equal(path("foo"), has.MatchPath(path("foo", "bar")))
+	pred := Not(HasInternalType("foo"))
+	require.False(pred(node("foo")))
+	require.True(pred(nil))
+	require.True(pred(&Node{}))
+	require.True(pred(node("")))
+	require.True(pred(node("bar")))
 }
 
 func TestAddRoles(t *testing.T) {
@@ -173,7 +127,7 @@ func TestRuleOnApply(t *testing.T) {
 	require := require.New(t)
 
 	role := Block
-	rule := On(Any()).Roles(role)
+	rule := On(Any).Roles(role)
 
 	input := &Node{
 		InternalType: "root",
@@ -186,7 +140,6 @@ func TestRuleOnApply(t *testing.T) {
 		Roles:        []Role{role},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles:        []Role{role},
 		}},
 	}
 	err := rule.Apply(input)
@@ -194,12 +147,47 @@ func TestRuleOnApply(t *testing.T) {
 	require.Equal(expected, input)
 }
 
-func TestRuleOnRulesApply(t *testing.T) {
+func TestRuleOnSelfApply(t *testing.T) {
 	require := require.New(t)
 
 	role := Block
-	rule := On(HasInternalType("root")).
-		Rules(On(HasInternalType("foo")).Roles(role))
+	rule := On(Any).Self(On(HasInternalType("root")).Roles(role))
+
+	input := &Node{
+		InternalType: "root",
+		Children: []*Node{{
+			InternalType: "foo",
+			Children: []*Node{{
+				InternalType: "bar",
+				Children: []*Node{{
+					InternalType: "baz",
+				}},
+			}},
+		}},
+	}
+	expected := &Node{
+		InternalType: "root",
+		Roles:        []Role{role},
+		Children: []*Node{{
+			InternalType: "foo",
+			Children: []*Node{{
+				InternalType: "bar",
+				Children: []*Node{{
+					InternalType: "baz",
+				}},
+			}},
+		}},
+	}
+	err := rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+}
+
+func TestRuleOnChildrenApply(t *testing.T) {
+	require := require.New(t)
+
+	role := Block
+	rule := On(Any).Children(On(HasInternalType("foo")).Roles(role))
 
 	input := &Node{
 		InternalType: "root",
@@ -217,17 +205,162 @@ func TestRuleOnRulesApply(t *testing.T) {
 	err := rule.Apply(input)
 	require.NoError(err)
 	require.Equal(expected, input)
+
+	input = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+		}},
+	}
+	expected = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+		}},
+	}
+	err = rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+
+	input = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+			Children: []*Node{{
+				InternalType: "foo",
+			}},
+		}},
+	}
+	expected = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+			Children: []*Node{{
+				InternalType: "foo",
+			}},
+		}},
+	}
+	err = rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+}
+
+func TestRuleOnDescendantsApply(t *testing.T) {
+	require := require.New(t)
+
+	role := Block
+	rule := On(Any).Descendants(On(HasInternalType("foo")).Roles(role))
+
+	input := &Node{
+		InternalType: "root",
+		Children: []*Node{{
+			InternalType: "foo",
+		}},
+	}
+	expected := &Node{
+		InternalType: "root",
+		Children: []*Node{{
+			InternalType: "foo",
+			Roles:        []Role{role},
+		}},
+	}
+	err := rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+
+	input = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+		}},
+	}
+	expected = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+		}},
+	}
+	err = rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+
+	input = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+			Children: []*Node{{
+				InternalType: "foo",
+			}},
+		}},
+	}
+	expected = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+			Children: []*Node{{
+				InternalType: "foo",
+				Roles:        []Role{role},
+			}},
+		}},
+	}
+	err = rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+}
+
+func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
+	require := require.New(t)
+
+	role := Block
+	rule := On(Any).DescendantsOrSelf(On(HasInternalType("foo")).Roles(role))
+
+	input := &Node{
+		InternalType: "root",
+		Children: []*Node{{
+			InternalType: "foo",
+		}},
+	}
+	expected := &Node{
+		InternalType: "root",
+		Children: []*Node{{
+			InternalType: "foo",
+			Roles:        []Role{role},
+		}},
+	}
+	err := rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+
+	input = &Node{
+		InternalType: "foo",
+		Children: []*Node{{
+			InternalType: "bar",
+			Children: []*Node{{
+				InternalType: "foo",
+			}},
+		}},
+	}
+	expected = &Node{
+		InternalType: "foo",
+		Roles:        []Role{role},
+		Children: []*Node{{
+			InternalType: "bar",
+			Children: []*Node{{
+				InternalType: "foo",
+				Roles:        []Role{role},
+			}},
+		}},
+	}
+	err = rule.Apply(input)
+	require.NoError(err)
+	require.Equal(expected, input)
 }
 
 func TestRuleOnRulesActionError(t *testing.T) {
 	require := require.New(t)
 
-	errorAction := func(n *Node) error {
-		return fmt.Errorf("test error")
-	}
-
 	rule := On(HasInternalType("root")).
-		Rules(On(HasInternalType("foo")).Do(errorAction))
+		Children(On(HasInternalType("foo")).Error("test error"))
 
 	input := &Node{
 		InternalType: "root",
@@ -237,15 +370,4 @@ func TestRuleOnRulesActionError(t *testing.T) {
 	}
 	err := rule.Apply(input)
 	require.EqualError(err, "test error")
-}
-
-func TestPathPredicateMatchPath(t *testing.T) {
-	require := require.New(t)
-
-	falsePred := PathPredicate(func(path Path) bool {
-		return false
-	})
-
-	unmatched := falsePred.MatchPath(NewPath(&Node{}))
-	require.Len(unmatched, 1)
 }

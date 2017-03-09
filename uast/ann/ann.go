@@ -2,121 +2,114 @@
 package ann
 
 import (
+	"errors"
+
 	"github.com/bblfsh/sdk/uast"
 )
 
-// PathMatcher matches paths.
-type PathMatcher interface {
-	// MatchPath matches against the given path and returns any unmatched
-	// prefix. If there is no match at all, it returns the input path. If it
-	// matches the full path, nil is returned.
-	MatchPath(path uast.Path) uast.Path
-}
+type axis int
 
-// PathPredicate is a function that takes a node path and returns a boolean. It
+const (
+	self axis = iota
+	child
+	descendant
+	descendantOrSelf
+)
+
+// Predicate is a function that takes a node and returns a boolean. It
 // is provided as a convenient way of defining a PathMatcher.
-type PathPredicate func(path uast.Path) bool
-
-// MatchPath returns an empty path if the PathPredicate is true. Otherwise, it
-// returns the given path.
-func (p PathPredicate) MatchPath(path uast.Path) uast.Path {
-	if p(path) {
-		return uast.NewPath()
-	}
-
-	return path
-}
-
-// NodePredicate is a function that takes a node and returns a boolean. It
-// is provided as a convenient way of defining a PathMatcher.
-type NodePredicate func(n *uast.Node) bool
-
-// MatchPath returns the parent of the given path if the NodePredicate is true.
-// Otherwise, it returns the given path.
-func (p NodePredicate) MatchPath(path uast.Path) uast.Path {
-	if path.IsEmpty() {
-		return path
-	}
-
-	n := path.Node()
-	if !p(n) {
-		return path
-	}
-
-	return path.Parent()
-}
+type Predicate func(n *uast.Node) bool
 
 // Rule is a conversion rule that can visit a tree, match nodes against
 // path matchers and apply actions to the matching node.
 type Rule struct {
-	on      PathMatcher
-	actions []Action
-	rules   []*Rule
+	axis       axis
+	predicates []Predicate
+	actions    []Action
+	rules      []*Rule
 }
 
-// On is the *Rule constructor. It takes a list of path matchers and returns a
-// new *Rule with all the given matchers joined (see the `Join` function).
-func On(matchers ...PathMatcher) *Rule {
-	return &Rule{
-		on: Join(matchers...),
-	}
+// On is the *Rule constructor. It takes a list of predicates and returns a
+// new *Rule that matches all of them.
+func On(predicates ...Predicate) *Rule {
+	return &Rule{predicates: predicates}
 }
 
-// Apply applies the rule to the given node.
-func (r *Rule) Apply(n *uast.Node) error {
-	var ruleStack [][]*Rule
-	ruleStack = append(ruleStack, []*Rule{r})
-	pathStack := []uast.Path{uast.NewPath(n)}
-
-	for {
-		lvl := len(pathStack)
-		if lvl == 0 {
-			break
-		}
-
-		path := pathStack[lvl-1]
-		pathStack = pathStack[:lvl-1]
-		rules := ruleStack[lvl-1]
-		ruleStack = ruleStack[:lvl-1]
-		var childRules []*Rule
-		childRules = append(childRules, rules...)
-		n := path.Node()
-
-		for _, r := range rules {
-			childRules = append(childRules, r.rules...)
-			if len(r.on.MatchPath(path)) > 0 {
-				continue
-			}
-
-			for _, a := range r.actions {
-				if err := a(n); err != nil {
-					return err
-				}
-			}
-		}
-
-		for _, child := range n.Children {
-			pathStack = append(pathStack, append(path, child))
-			ruleStack = append(ruleStack, childRules)
-		}
-	}
-
-	return nil
-}
-
-// Rules attaches a list of rules as children of the current rule.
-func (r *Rule) Rules(rules ...*Rule) *Rule {
-	for _, or := range rules {
-		or.on = Join(r.on, or.on)
+// Self applies the given rules to nodes matched by the current rule.
+func (r *Rule) Self(rules ...*Rule) *Rule {
+	for _, r := range rules {
+		r.axis = self
 	}
 
 	r.rules = append(r.rules, rules...)
 	return r
 }
 
+// Children applies the given rules to children of nodes matched by the current
+// rule.
+func (r *Rule) Children(rules ...*Rule) *Rule {
+	for _, r := range rules {
+		r.axis = child
+	}
+
+	r.rules = append(r.rules, rules...)
+	return r
+}
+
+// Descendants applies the given rules to any descendant matched of nodes matched
+// by the current rule.
+func (r *Rule) Descendants(rules ...*Rule) *Rule {
+	for _, r := range rules {
+		r.axis = descendant
+	}
+
+	r.rules = append(r.rules, rules...)
+	return r
+}
+
+// DescendantsOrSelf applies the given rules to self and any descendant matched
+// of nodes matched by the current rule.
+func (r *Rule) DescendantsOrSelf(rules ...*Rule) *Rule {
+	for _, r := range rules {
+		r.axis = descendantOrSelf
+	}
+
+	r.rules = append(r.rules, rules...)
+	return r
+}
+
+// Apply applies the rule to the given node.
+func (r *Rule) Apply(n *uast.Node) error {
+	iter := newMatchPathIter(n, r.axis, r.predicates)
+	for {
+		p := iter.Next()
+		if p.IsEmpty() {
+			return nil
+		}
+
+		mn := p.Node()
+		for _, a := range r.actions {
+			if err := a(mn); err != nil {
+				return err
+			}
+		}
+
+		for _, cr := range r.rules {
+			if err := cr.Apply(mn); err != nil {
+				return err
+			}
+		}
+	}
+}
+
 // Roles attaches an action to the rule that adds the given roles.
 func (r *Rule) Roles(roles ...uast.Role) *Rule {
 	return r.Do(AddRoles(roles...))
+}
+
+// Error makes the rule application fail if the current rule matches.
+func (r *Rule) Error(msg string) *Rule {
+	return r.Do(ReturnError(msg))
 }
 
 // Do attaches actions to the rule.
@@ -126,15 +119,27 @@ func (r *Rule) Do(actions ...Action) *Rule {
 }
 
 // HasInternalType matches a node if its internal type matches the given one.
-func HasInternalType(it string) NodePredicate {
+func HasInternalType(it string) Predicate {
 	return func(n *uast.Node) bool {
+		if n == nil {
+			return false
+		}
+
 		return n.InternalType == it
 	}
 }
 
 // HasProperty matches a node if it has a property matching the given key and value.
-func HasProperty(k, v string) NodePredicate {
+func HasProperty(k, v string) Predicate {
 	return func(n *uast.Node) bool {
+		if n == nil {
+			return false
+		}
+
+		if n.Properties == nil {
+			return false
+		}
+
 		prop, ok := n.Properties[k]
 		return ok && prop == v
 	}
@@ -144,65 +149,29 @@ func HasProperty(k, v string) NodePredicate {
 //
 //	HasProperty(uast.InternalRoleKey, r)
 //
-func HasInternalRole(r string) NodePredicate {
+func HasInternalRole(r string) Predicate {
 	return HasProperty(uast.InternalRoleKey, r)
 }
 
 // HasToken matches a node if its token matches the given one.
-func HasToken(tk string) NodePredicate {
+func HasToken(tk string) Predicate {
 	return func(n *uast.Node) bool {
+		if n == nil {
+			return false
+		}
+
 		return n.Token == tk
 	}
 }
 
 // Any matches any path.
-func Any() PathPredicate {
-	return func(uast.Path) bool { return true }
-}
+var Any Predicate = func(n *uast.Node) bool { return true }
 
 // Not negates a node predicate.
-func Not(p NodePredicate) NodePredicate {
+func Not(p Predicate) Predicate {
 	return func(n *uast.Node) bool {
 		return !p(n)
 	}
-}
-
-type joinMatcher struct {
-	matchers []PathMatcher
-}
-
-// Join joins the given path matchers into a single one.
-func Join(matchers ...PathMatcher) PathMatcher {
-	jm := &joinMatcher{}
-	for _, m := range matchers {
-		if ojm, ok := m.(*joinMatcher); ok {
-			jm.matchers = append(jm.matchers, ojm.matchers...)
-		} else {
-			jm.matchers = append(jm.matchers, m)
-		}
-	}
-
-	return jm
-}
-
-func (m *joinMatcher) MatchPath(path uast.Path) uast.Path {
-	stack := m.matchers
-	for {
-		if len(stack) == 0 {
-			break
-		}
-
-		matcher := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		n := len(path)
-		path = matcher.MatchPath(path)
-		if len(path) == n {
-			break
-		}
-	}
-
-	return path
 }
 
 // Action is a function that takes a node, does something with it
@@ -215,4 +184,95 @@ func AddRoles(roles ...uast.Role) Action {
 		n.Roles = append(n.Roles, roles...)
 		return nil
 	}
+}
+
+// Return error creates an action that always returns an error with the given
+// message.
+func ReturnError(msg string) Action {
+	return func(n *uast.Node) error {
+		return errors.New(msg)
+	}
+}
+
+type matchPathIter struct {
+	axis       axis
+	predicates []Predicate
+	iter       uast.PathStepIter
+}
+
+func newMatchPathIter(n *uast.Node, axis axis, predicates []Predicate) uast.PathIter {
+	return &matchPathIter{
+		axis:       axis,
+		predicates: predicates,
+		iter:       uast.NewPreOrderPathIter(uast.NewPath(n)),
+	}
+}
+
+func (i *matchPathIter) Next() uast.Path {
+	for {
+		p := i.iter.Next()
+		if p.IsEmpty() {
+			return p
+		}
+
+		switch i.axis {
+		case self:
+			if len(p) >= len(i.predicates) {
+				i.iter.Step()
+			}
+
+			if matchPredicates(p, i.predicates) {
+				return p
+			}
+		case child:
+			if len(p) > len(i.predicates) {
+				i.iter.Step()
+			}
+
+			p = p[1:]
+			if matchPredicates(p, i.predicates) {
+				return p
+			}
+		case descendant:
+			p = p[1:]
+			if matchSuffixPredicates(p, i.predicates) {
+				return p
+			}
+		case descendantOrSelf:
+			if matchSuffixPredicates(p, i.predicates) {
+				return p
+			}
+		}
+	}
+}
+
+func matchPredicates(path uast.Path, preds []Predicate) bool {
+	if len(path) != len(preds) {
+		return false
+	}
+
+	for i, pred := range preds {
+		if !pred(path[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func matchSuffixPredicates(path uast.Path, preds []Predicate) bool {
+	if len(path) < len(preds) {
+		return false
+	}
+
+	j := len(path) - 1
+	for i := len(preds) - 1; i >= 0; i-- {
+		if !preds[i](path[j]) {
+			return false
+		}
+
+		j--
+	}
+
+	return true
 }

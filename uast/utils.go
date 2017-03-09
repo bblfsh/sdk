@@ -3,16 +3,17 @@ package uast
 // Tokens returns a slice of tokens contained in the node.
 func Tokens(n *Node) []string {
 	var tokens []string
-	err := PreOrderVisit(n, func(p Path) error {
+	iter := NewPreOrderPathIter(NewPath(n))
+	for {
+		p := iter.Next()
+		if p.IsEmpty() {
+			break
+		}
+
 		n := p.Node()
 		if n.Token != "" {
 			tokens = append(tokens, n.Token)
 		}
-
-		return nil
-	})
-	if err != nil {
-		panic(err)
 	}
 
 	return tokens
