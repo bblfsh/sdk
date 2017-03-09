@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/bblfsh/sdk/protocol/jsonlines"
@@ -42,9 +43,16 @@ func ExecNative(path string, args ...string) (*NativeClient, error) {
 		return nil, err
 	}
 
+	errReader, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
+
+	go io.Copy(os.Stderr, errReader)
 
 	return &NativeClient{
 		enc:    jsonlines.NewEncoder(in),
