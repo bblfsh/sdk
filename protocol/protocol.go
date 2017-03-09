@@ -29,37 +29,37 @@ func (s Status) String() string {
 //proteus:generate
 type ParseUASTRequest struct {
 	// Content is the source code to be parsed.
-	Content string
+	Content string `json:"content"`
 }
 
 // ParseUASTResponse is the reply to ParseUASTRequest.
 //proteus:generate
 type ParseUASTResponse struct {
 	// Status is the status of the parsing request.
-	Status Status
+	Status Status `json:"status"`
 	// Errors contrains a list of parsing errors. If Status is ok, this list
 	// should always be empty.
-	Errors []string
+	Errors []string `json:"errors"`
 	// UAST contains the parsed UAST.
-	UAST *uast.Node
+	UAST *uast.Node `json:"uast"`
 }
 
 // ParseASTRequest is a request to parse a file and get its AST.
 //proteus:generate
 type ParseASTRequest struct {
 	// Content is the source code to be parsed.
-	Content string
+	Content string `json:"content"`
 }
 
 // ParseASTResponse is the reply to ParseASTRequest.
 //proteus:generate
 type ParseASTResponse struct {
 	// Status is the status of the parsing request.
-	Status Status
+	Status Status `json:"status"`
 	// Errors contrains a list of parsing errors. If Status is ok, this list
 	// should always be empty.
-	Errors []string
+	Errors []string `json:"errors"`
 	// AST contains the parsed AST in its normalized form. That is the same
 	// type as the UAST, but without any annotation.
-	AST *uast.Node
+	AST *uast.Node `json:"ast"`
 }

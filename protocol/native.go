@@ -10,15 +10,15 @@ import (
 // ParseNativeASTRequest to use with the native AST parser. This is for internal
 // use.
 type ParseNativeASTRequest struct {
-	Content string
+	Content string `json:"content"`
 }
 
 // ParseNativeASTResponse is the reply to ParseASTRequest by the native AST
 // parser.
 type ParseNativeASTResponse struct {
-	Status Status
-	Errors []string
-	AST    interface{}
+	Status Status      `json:"status"`
+	Errors []string    `json:"errors"`
+	AST    interface{} `json:"ast"`
 }
 
 // NativeClient is a wrapper of the native command.
