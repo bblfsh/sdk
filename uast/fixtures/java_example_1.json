@@ -3,13 +3,13 @@
       "types" : [
          {
             "interface" : "false",
-            "line" : "22",
+            "line" : 22,
             "modifiers" : [
                {
                   "internalClass" : "Modifier",
                   "keyword" : "public",
                   "line" : "22",
-                  "startPosition" : "809"
+                  "startPosition" : 809
                }
             ],
             "internalClass" : "TypeDeclaration",
