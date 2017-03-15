@@ -170,8 +170,20 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		return fmt.Errorf("request failed: %q", err)
 	}
 
+	uastResp := &protocol.ParseUASTResponse{}
+	uastResp.Status = resp.Status
+	uastResp.Errors = resp.Errors
+	if err == nil {
+		n, err := c.ToNoder.ToNode(resp.AST)
+		uastResp.UAST = n
+		if err != nil {
+			uastResp.Status = protocol.Fatal
+			uastResp.Errors = []string{err.Error()}
+		}
+	}
+
 	e := json.NewEncoder(os.Stdout)
-	if err := e.Encode(resp); err != nil {
+	if err := e.Encode(uastResp); err != nil {
 		return err
 	}
 
