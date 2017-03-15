@@ -12,7 +12,7 @@ before_script:
   - go get -v -t ./...
 
 script:
-  - make test
+  - make test integration-test
 
 after_success:
   - make push

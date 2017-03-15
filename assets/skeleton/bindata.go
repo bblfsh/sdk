@@ -87,10 +87,11 @@ before_script:
   - go get -v -t ./...
 
 script:
-  - make test
+  - make test integration-test
 
 after_success:
-  - make push`)
+  - make push
+`)
 
 func TravisYmlBytes() ([]byte, error) {
 	return _TravisYml, nil
@@ -102,7 +103,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 210, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 228, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
