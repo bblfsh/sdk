@@ -21,6 +21,7 @@ func TestToNoderJava(t *testing.T) {
 
 	var c ToNoder = &BaseToNoder{
 		InternalTypeKey: "internalClass",
+		LineKey:         "line",
 	}
 	n, err := c.ToNode(f)
 	require.NoError(err)

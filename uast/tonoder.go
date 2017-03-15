@@ -216,6 +216,8 @@ func toUint32(v interface{}) (uint32, error) {
 		return uint32(i), nil
 	case int64:
 		return uint32(o), nil
+	case float64:
+		return uint32(o), nil
 	default:
 		return 0, fmt.Errorf("toUint32 error: %#v", v)
 	}
