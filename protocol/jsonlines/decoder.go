@@ -40,6 +40,9 @@ func NewDecoder(r io.Reader) Decoder {
 	return &decoder{r: lr}
 }
 
+// Decode decodes the next line in the reader.
+// It does not check JSON for well-formedness before decoding, so in case of
+// error, the structure might be half-filled.
 func (d *decoder) Decode(v interface{}) error {
 	line, isPrefix, err := d.r.ReadLine()
 	if isPrefix {
@@ -50,5 +53,10 @@ func (d *decoder) Decode(v interface{}) error {
 		return err
 	}
 
-	return json.Unmarshal(line, v)
+	switch o := v.(type) {
+	case json.Unmarshaler:
+		return o.UnmarshalJSON(line)
+	default:
+		return json.Unmarshal(line, v)
+	}
 }
