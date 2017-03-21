@@ -153,6 +153,23 @@ func HasInternalRole(r string) Predicate {
 	return HasProperty(uast.InternalRoleKey, r)
 }
 
+// HasChild matches a node that contains a child matching the given predicate.
+func HasChild(pred Predicate) Predicate {
+	return func(n *uast.Node) bool {
+		if n == nil {
+			return false
+		}
+
+		for _, c := range n.Children {
+			if pred(c) {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
 // HasToken matches a node if its token matches the given one.
 func HasToken(tk string) Predicate {
 	return func(n *uast.Node) bool {
@@ -171,6 +188,34 @@ var Any Predicate = func(n *uast.Node) bool { return true }
 func Not(p Predicate) Predicate {
 	return func(n *uast.Node) bool {
 		return !p(n)
+	}
+}
+
+// And returns a predicate that returns true if all the given predicates returns
+// true.
+func And(ps ...Predicate) Predicate {
+	return func(n *uast.Node) bool {
+		for _, p := range ps {
+			if !p(n) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+// Or returns a predicate that returns true if any of the given predicates returns
+// true.
+func Or(ps ...Predicate) Predicate {
+	return func(n *uast.Node) bool {
+		for _, p := range ps {
+			if p(n) {
+				return true
+			}
+		}
+
+		return false
 	}
 }
 
