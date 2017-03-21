@@ -61,6 +61,11 @@ export
 
 all: build
 
+check-gopath:
+ifeq ($(GOPATH),)
+	$(error GOPATH is not defined)
+endif
+
 $(BUILD_PATH):
 	@$(RUN) mkdir -p $(BUILD_PATH)
 
@@ -74,7 +79,7 @@ test: | validate test-native test-driver
 test-native: $(DOCKER_BUILD_NATIVE_IMAGE)
 	@$(RUN_VERBOSE) $(BUILD_NATIVE_CMD) make test-native-internal
 
-test-driver: | $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE)
+test-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE)
 	@$(RUN_VERBOSE) $(BUILD_DRIVER_CMD) make test-driver-internal
 
 test-driver-internal: build-native-internal
@@ -85,7 +90,7 @@ build: | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
 build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 	@$(RUN) $(BUILD_NATIVE_CMD) make build-native-internal
 
-build-driver: | $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
+build-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
 	@$(RUN) $(BUILD_DRIVER_CMD) make build-driver-internal
 
 build-driver-internal:
