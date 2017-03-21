@@ -43,6 +43,8 @@ type BaseToNoder struct {
 	OffsetKey string
 	// LineKey is a key that indicates the line number.
 	LineKey string
+	// ColumnKey is a key that indicates the column inside the line
+	ColumnKey string
 	// TokenKeys is a slice of keys used to extract token content.
 	TokenKeys map[string]bool
 	// SyntheticTokens is a map of InternalType to string used to add
@@ -175,6 +177,13 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 		}
 
 		n.StartPosition.Line = i
+	case c.ColumnKey == k:
+		i, err := toUint32(o)
+		if err != nil {
+			return err
+		}
+
+		n.StartPosition.Col = i
 	default:
 		n.Properties[k] = fmt.Sprint(0)
 	}
