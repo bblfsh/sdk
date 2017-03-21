@@ -173,12 +173,18 @@ func (c *parseUASTCommand) Execute(args []string) error {
 	uastResp := &protocol.ParseUASTResponse{}
 	uastResp.Status = resp.Status
 	uastResp.Errors = resp.Errors
-	if err == nil {
+	if err == nil && resp.Status != protocol.Fatal {
 		n, err := c.ToNoder.ToNode(resp.AST)
-		uastResp.UAST = n
 		if err != nil {
 			uastResp.Status = protocol.Fatal
-			uastResp.Errors = []string{err.Error()}
+			uastResp.Errors = append(uastResp.Errors, err.Error())
+		} else {
+			if err := c.Annotate.Apply(n); err != nil {
+				uastResp.Status = protocol.Error
+				uastResp.Errors = append(uastResp.Errors, err.Error())
+			}
+
+			uastResp.UAST = n
 		}
 	}
 
