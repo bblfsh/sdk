@@ -111,6 +111,74 @@ func TestNot(t *testing.T) {
 	require.True(pred(node("bar")))
 }
 
+func TestOr(t *testing.T) {
+	require := require.New(t)
+
+	node := func(s string) *Node {
+		n := NewNode()
+		n.InternalType = s
+		return n
+	}
+
+	pred := Or(HasInternalType("foo"), HasInternalType("bar"))
+	require.True(pred(node("foo")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.False(pred(node("")))
+	require.True(pred(node("bar")))
+	require.False(pred(node("baz")))
+}
+
+func TestAnd(t *testing.T) {
+	require := require.New(t)
+
+	node := func(typ, tok string) *Node {
+		n := NewNode()
+		n.InternalType = typ
+		n.Token = tok
+		return n
+	}
+
+	pred := And(HasInternalType("foo"), HasToken("bar"))
+	require.False(pred(node("foo", "")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.False(pred(node("", "")))
+	require.False(pred(node("bar", "")))
+	require.False(pred(node("foo", "foo")))
+	require.False(pred(node("bar", "bar")))
+	require.True(pred(node("foo", "bar")))
+}
+
+func TestHasChild(t *testing.T) {
+	require := require.New(t)
+
+	pred := HasChild(HasInternalType("foo"))
+
+	path := func(s ...string) *Node {
+		var n *Node
+		for i := len(s) - 1; i >= 0; i-- {
+			tn := NewNode()
+			tn.InternalType = s[i]
+			if n != nil {
+				tn.Children = append(tn.Children, n)
+			}
+
+			n = tn
+		}
+
+		return n
+	}
+
+	require.False(pred(path("foo")))
+	require.False(pred(path("foo", "bar")))
+	require.False(pred(path("", "")))
+	require.False(pred(nil))
+	require.False(pred(&Node{}))
+	require.True(pred(path("bar", "foo")))
+	require.False(pred(path("bar", "baz", "foo")))
+}
+
 func TestAddRoles(t *testing.T) {
 	require := require.New(t)
 
