@@ -233,24 +233,24 @@ func (p Position) IsEmpty() bool {
 type Node struct {
 	// InternalType is the internal type of the node in the AST, in the source
 	// language.
-	InternalType string
+	InternalType string `json:",omitempty"`
 	// Properties are arbitrary, language-dependent, metadata of the
 	// original AST.
-	Properties map[string]string
+	Properties map[string]string `json:",omitempty"`
 	// Children are the children nodes of this node.
-	Children []*Node
+	Children []*Node `json:",omitempty"`
 	// Token is the token content if this node represents a token from the
 	// original source file. If it is empty, there is no token attached.
-	Token string
+	Token string `json:",omitempty"`
 	// StartPosition is the position where this node starts in the original
 	// source code file.
-	StartPosition Position
+	StartPosition Position `json:",omitempty"`
 	// EndPosition is the position where this node ends in the original
 	// source code file.
-	EndPosition Position
+	EndPosition Position `json:",omitempty"`
 	// Roles is a list of Role that this node has. It is a language-independent
 	// annotation.
-	Roles []Role
+	Roles []Role `json:",omitempty"`
 }
 
 // NewNode creates a new empty *Node.
