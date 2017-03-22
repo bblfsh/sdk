@@ -4,9 +4,9 @@ package uast
 
 import "fmt"
 
-const _Role_name = "SimpleIdentifierQualifiedIdentifierExpressionStatementFilePackageDeclarationImportDeclarationImportPathImportAliasFunctionDeclarationTypeDeclarationIfIfConditionIfBodyIfElseSwitchSwitchCaseSwitchCaseConditionSwitchCaseBodySwitchDefaultForForInitForExpressionForUpdateForBodyForEachWhileWhileConditionWhileBodyDoWhileDoWhileConditionDoWhileBodyBreakContinueBlockBlockScopeReturnTryTryBodyTryCatchTryFinallyThrowAssertMethodInvocationMethodInvocationObjectMethodInvocationNameMethodInvocationArgumentNoopLiteralNullLiteralStringLiteralNumberLiteralTypeLiteralTypePrimitiveTypeAssignmentAssignmentVariableAssignmentValueThisCommentDocumentationWhitespace"
+const _Role_name = "SimpleIdentifierQualifiedIdentifierExpressionStatementFilePackageDeclarationImportDeclarationImportPathImportAliasFunctionDeclarationTypeDeclarationVisibleFromInstanceVisibleFromTypeVisibleFromSubtypeVisibleFromPackageVisibleFromSubpackageVisibleFromModuleVisibleFromFriendVisibleFromWorldIfIfConditionIfBodyIfElseSwitchSwitchCaseSwitchCaseConditionSwitchCaseBodySwitchDefaultForForInitForExpressionForUpdateForBodyForEachWhileWhileConditionWhileBodyDoWhileDoWhileConditionDoWhileBodyBreakContinueBlockBlockScopeReturnTryTryBodyTryCatchTryFinallyThrowAssertMethodInvocationMethodInvocationObjectMethodInvocationNameMethodInvocationArgumentNoopLiteralNullLiteralStringLiteralNumberLiteralTypeLiteralTypePrimitiveTypeAssignmentAssignmentVariableAssignmentValueThisCommentDocumentationWhitespace"
 
-var _Role_index = [...]uint16{0, 16, 35, 45, 54, 58, 76, 93, 103, 114, 133, 148, 150, 161, 167, 173, 179, 189, 208, 222, 235, 238, 245, 258, 267, 274, 281, 286, 300, 309, 316, 332, 343, 348, 356, 361, 371, 377, 380, 387, 395, 405, 410, 416, 432, 454, 474, 498, 502, 509, 520, 533, 546, 557, 561, 574, 584, 602, 617, 621, 628, 641, 651}
+var _Role_index = [...]uint16{0, 16, 35, 45, 54, 58, 76, 93, 103, 114, 133, 148, 167, 182, 200, 218, 239, 256, 273, 289, 291, 302, 308, 314, 320, 330, 349, 363, 376, 379, 386, 399, 408, 415, 422, 427, 441, 450, 457, 473, 484, 489, 497, 502, 512, 518, 521, 528, 536, 546, 551, 557, 573, 595, 615, 639, 643, 650, 661, 674, 687, 698, 702, 715, 725, 743, 758, 762, 769, 782, 792}
 
 func (i Role) String() string {
 	if i < 0 || i >= Role(len(_Role_index)-1) {
