@@ -22,7 +22,7 @@ func newSliceIter(elements ...Path) PathIter {
 func newNodeSliceIter(prefix Path, nodes ...*Node) PathIter {
 	paths := make([]Path, 0, len(nodes))
 	for _, n := range nodes {
-		paths = append(paths, append(prefix, n))
+		paths = append(paths, prefix.Child(n))
 	}
 
 	return newSliceIter(paths...)

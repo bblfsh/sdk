@@ -353,11 +353,21 @@ func (p Path) Node() *Node {
 	return p[len(p)-1]
 }
 
+// Child creates a Path for a given child.
+func (p Path) Child(n *Node) Path {
+	dst := make(Path, len(p) + 1)
+	copy(dst, p)
+	dst[len(p)] = n
+	return dst
+}
+
 // Parent returns the path of the parent of this node.
 func (p Path) Parent() Path {
 	if len(p) <= 1 {
 		return Path(nil)
 	}
 
-	return Path(p[:len(p)-1])
+	dst := make(Path, 0, len(p) - 1)
+	copy(dst, p)
+	return dst
 }
