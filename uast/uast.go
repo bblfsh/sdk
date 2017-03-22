@@ -54,6 +54,35 @@ const (
 	// interface in Java, a struct, interface or alias in Go, etc.
 	TypeDeclaration
 
+	// VisibleFromInstance marks modifiers that declare visibility from instance.
+	VisibleFromInstance
+	// VisibleFromType marks modifiers that declare visibility from the same
+	// type (e.g. class, trait).
+	// Implies VisibleFromInstance.
+	VisibleFromType
+	// VisibleFromSubtype marks modifiers that declare visibility from
+	// subtypes (e.g. subclasses).
+	// Implies VisibleFromInstance and VisibleFromType.
+	VisibleFromSubtype
+	// VisibleFromSubpackage marks modifiers that declare visibility from the
+	// same package.
+	VisibleFromPackage
+	// VisibleFromSubpackage marks modifiers that declare visibility from
+	// subpackages.
+	// Implies VisibleFromInstance, VisibleFromType and VisibleFromPackage.
+	VisibleFromSubpackage
+	// VisibleFromModule marks modifiers that declare visibility from the
+	// same module (e.g. Java JAR).
+	// Implies VisibleFromInstance and VisibleFromType.
+	VisibleFromModule
+	// VisibleFromFriend marks modifiers that declare visibility from friends
+	// (e.g. C++ friends).
+	// Implies VisibleFromInstance and VisibleFromType.
+	VisibleFromFriend
+	// VisibleFromWorld implies full public visibility. Implies all other
+	// visibility levels.
+	VisibleFromWorld
+
 	// If is used for if-then[-else] statements or expressions.
 	// An if-then tree will look like:
 	//
