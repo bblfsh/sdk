@@ -37,41 +37,30 @@ func On(predicates ...Predicate) *Rule {
 
 // Self applies the given rules to nodes matched by the current rule.
 func (r *Rule) Self(rules ...*Rule) *Rule {
-	for _, r := range rules {
-		r.axis = self
-	}
-
-	r.rules = append(r.rules, rules...)
-	return r
+	return r.addRules(self, rules)
 }
 
 // Children applies the given rules to children of nodes matched by the current
 // rule.
 func (r *Rule) Children(rules ...*Rule) *Rule {
-	for _, r := range rules {
-		r.axis = child
-	}
-
-	r.rules = append(r.rules, rules...)
-	return r
+	return r.addRules(child, rules)
 }
 
 // Descendants applies the given rules to any descendant matched of nodes matched
 // by the current rule.
 func (r *Rule) Descendants(rules ...*Rule) *Rule {
-	for _, r := range rules {
-		r.axis = descendant
-	}
-
-	r.rules = append(r.rules, rules...)
-	return r
+	return r.addRules(descendant, rules)
 }
 
 // DescendantsOrSelf applies the given rules to self and any descendant matched
 // of nodes matched by the current rule.
 func (r *Rule) DescendantsOrSelf(rules ...*Rule) *Rule {
+	return r.addRules(descendantOrSelf, rules)
+}
+
+func (r *Rule) addRules(axis axis, rules []*Rule) *Rule {
 	for _, r := range rules {
-		r.axis = descendantOrSelf
+		r.axis = axis
 	}
 
 	r.rules = append(r.rules, rules...)
