@@ -54,6 +54,10 @@ const (
 	// interface in Java, a struct, interface or alias in Go, etc.
 	TypeDeclaration
 
+	// Static marks a type or method as a static member of its containing
+	// type (e.g. static modifier in Java).
+	Static
+
 	// VisibleFromInstance marks modifiers that declare visibility from instance.
 	VisibleFromInstance
 	// VisibleFromType marks modifiers that declare visibility from the same
