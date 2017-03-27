@@ -174,15 +174,29 @@ const (
 	// an error/exception, possibly stopping the execution.
 	Assert
 
-	// MethodInvocation is the invocation of a method as present in OO
-	// languages.
-	MethodInvocation
-	// MethodInvocationObject is the object where whose method is being
-	// invoked.
-	MethodInvocationObject
-	// MethodInvocationName is the name of the method being invoked.
-	MethodInvocationName
-	MethodInvocationArgument
+	// Call is any call, whether it is a function, procedure, method or macro.
+	// In its simplest form, a call will have a single child with a function
+	// name (CallCallee). Arguments are marked with CallPositionalArgument
+	// and CallNamedArgument. In OO languages there is usually a CallReceiver
+	// too.
+	Call
+	// CallReceiver is an optional expression receiving the call. This
+	// corresponds to the method invocant in OO languages, receiving in Go, etc.
+	CallReceiver
+	// CallCallee is the callable being called. It might be the name of a
+	// function or procedure, it might be a method, it might a simple name
+	// or qualified with a namespace.
+	CallCallee
+	// CallPositionalArgument is a positional argument in a call.
+	CallPositionalArgument
+	// CallNamedArgument is a named argument in a call. It should have a
+	// child with role CallNamedArgumentName and another child with role
+	// CallNamedArgumentValue.
+	CallNamedArgument
+	// CallNamedArgumentName is the name of a named argument.
+	CallNamedArgumentName
+	// CallNamedArgumentValue is the value of a named argument.
+	CallNamedArgumentValue
 
 	Noop
 
