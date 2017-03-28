@@ -184,9 +184,9 @@ TOOLS="bblfsh-tools"
 MANIFEST=""
 
 TESTS_DIR="tests"
-SOURCES_DIR="${TESTS_DIR}/sources"
-NATIVE_DIR="${TESTS_DIR}/native"
-UAST_DIR="${TESTS_DIR}/uast"
+SOURCES_SUFFIX="source"
+NATIVE_SUFFIX="native"
+UAST_SUFFIX="uast"
 
 green() {
 	echo -e "\e[32m$1\e[0m"
@@ -222,7 +222,7 @@ parse_native_ast() {
 
 parse_uast() {
 	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast /code/$(readlink -f $1) | "${PYTHON}" -m json.tool
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast --format=pretty /code/$(readlink -f $1)
 }
 
 check_result() {
@@ -245,27 +245,25 @@ check_result() {
         rm -f "${tmp}"
 }
 
-mkdir -p "${SOURCES_DIR}"
-mkdir -p "${NATIVE_DIR}"
-mkdir -p "${UAST_DIR}"
+mkdir -p "${TESTS_DIR}"
 
-echo -e "Scanning sources in ${SOURCES_DIR}"
-find "${SOURCES_DIR}" -type f | while read src ; do
+echo -e "Scanning sources: ${TESTS_DIR}/*.${SOURCES_SUFFIX}"
+for src in $(find "${TESTS_DIR}" -type f -name '*'.${SOURCES_SUFFIX}) ; do
 	NAME="$(basename "${src}")"
-	NATIVE="${NATIVE_DIR}/${NAME}.json"
-	UAST="${UAST_DIR}/${NAME}.json"
+	NATIVE_NAME="$(echo "${NAME}" | sed -e "s/${SOURCES_SUFFIX}\$/${NATIVE_SUFFIX}/g")"
+	UAST_NAME="$(echo "${NAME}" | sed -e "s/${SOURCES_SUFFIX}\$/${UAST_SUFFIX}/g")"
 
 	green "${NAME}"
 
 	# NATIVE
 	tmp="$(mktemp)"
 	parse_native_ast "${src}" > "${tmp}"
-	check_result "native" "${NATIVE}" "${tmp}"
+	check_result "native" "${TESTS_DIR}/${NATIVE_NAME}" "${tmp}"
 
 	# UAST
 	tmp="$(mktemp)"
 	parse_uast "${src}" > "${tmp}"
-	check_result "uast" "${UAST}" "${tmp}"
+	check_result "uast" "${TESTS_DIR}/${UAST_NAME}" "${tmp}"
 done
 
 `)
@@ -280,7 +278,7 @@ func etcItBash() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/it.bash", size: 2292, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/it.bash", size: 2371, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

@@ -52,7 +52,7 @@ parse_native_ast() {
 
 parse_uast() {
 	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast /code/$(readlink -f $1) | "${PYTHON}" -m json.tool
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast --format=pretty /code/$(readlink -f $1)
 }
 
 check_result() {
