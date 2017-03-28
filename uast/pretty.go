@@ -22,6 +22,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 	}
 
 	istr := strings.Repeat(".  ", indent+1)
+	istrPrev := strings.Repeat(".  ", indent)
 
 	if includes.Is(IncludeAnnotations) && len(n.Roles) > 0 {
 		_, err := fmt.Fprintf(w, "%sRoles: %s\n",
@@ -96,7 +97,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if _, err := fmt.Fprintf(w, "%s}\n", istr); err != nil {
+	if _, err := fmt.Fprintf(w, "%s}\n", istrPrev); err != nil {
 		return err
 	}
 
