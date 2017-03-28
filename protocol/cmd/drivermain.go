@@ -143,13 +143,24 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 
 type parseUASTCommand struct {
 	cmd
-	Args struct {
+	Format string `long:"format" default:"json" description:"json, pretty (default: json)"`
+	Args   struct {
 		File string
 	} `positional-args:"yes"`
 }
 
 func (c *parseUASTCommand) Execute(args []string) error {
 	f := c.Args.File
+
+	var formatter func(io.Writer, *protocol.ParseUASTResponse) error
+	switch c.Format {
+	case "pretty":
+		formatter = c.prettyPrinter
+	case "json":
+		formatter = c.jsonPrinter
+	default:
+		return fmt.Errorf("invalid format: %s", c.Format)
+	}
 
 	client, err := protocol.ExecNative(sdk.NativeBin)
 	if err != nil {
@@ -188,10 +199,21 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		}
 	}
 
-	e := json.NewEncoder(os.Stdout)
-	if err := e.Encode(uastResp); err != nil {
-		return err
-	}
+	return formatter(os.Stdout, uastResp)
+}
 
+func (c *parseUASTCommand) jsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
+	e := json.NewEncoder(w)
+	return e.Encode(r)
+}
+
+func (c *parseUASTCommand) prettyPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
+	fmt.Fprintln(w, "Status: ", r.Status)
+	fmt.Fprintln(w, "Errors: ")
+	for _, err := range r.Errors {
+		fmt.Fprintln(w, " . ", err)
+	}
+	fmt.Fprintln(w, "UAST: ")
+	fmt.Fprintln(w, r.UAST.String())
 	return nil
 }
