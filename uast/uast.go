@@ -30,6 +30,18 @@ const (
 	Expression
 	Statement
 
+	// Binary comparison operators (usually >, >=, etc)
+	BinaryCompOpEqual
+	BinaryCompOpNotEqual
+	BinaryCompOpEqualLessThan
+	BinaryCompOpLessThanEqual
+	BinaryCompOpGreaterThan
+	BinaryCompOpGreaterThanEqual
+	BinaryCompOpIdentity
+	BinaryCompOpNotIdentity
+	BinaryCompOpIn
+	BinaryCompOpNotIn
+
 	// File is the root node of a single file AST.
 	File
 
