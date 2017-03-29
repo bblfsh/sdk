@@ -29,6 +29,19 @@ const (
 	// or more qualifiers.
 	QualifiedIdentifier
 
+	// Binary bitwise operators, used to alterate bits on numeral variables
+
+	// OpBitwiseLeftShift is the binary bitwise shift to the left operator (i.e. << in most languages)
+	OpBitwiseLeftShift
+	// OpBitwiseRightShift is the binary bitwise shift to the right operator (i.e. >> in most languages)
+	OpBitwiseRightShift
+	// OpBitwiseOr is the binary bitwise OR operator  (i.e. | in most languages)
+	OpBitwiseOr
+	// OpBitwiseXor is the binary bitwise Xor operator  (i.e. ~ in most languages)
+	OpBitwiseXor
+	// OpBitwiseAnd is the binary bitwise And/complement operator  (i.e. & in most languages)
+	OpBitwiseAnd
+
 	Expression
 	Statement
 
