@@ -70,6 +70,17 @@ const (
 	// File is the root node of a single file AST.
 	File
 
+	// Binary boolean operators, like
+
+	// OpBooleanAnd is the boolean AND operator (i.e. "and" or && in most languages)
+	OpBooleanAnd
+	// OpBooleanOr is the boolean OR operator (i.e. "or" or || in most languages)
+	OpBooleanOr
+	// OpBooleanNot is the boolean NOT operator (i.e. "NOT" or ! in most languages)
+	OpBooleanNot
+	// OpBooleanXor is the boolean XOR operator (i.e. "XOR" or ^ in most languages)
+	OpBooleanXor
+
 	// PackageDeclaration identifies the package that all its children
 	// belong to. Its children include, at least, QualifiedIdentifier or
 	// SimpleIdentifier with the package name.
