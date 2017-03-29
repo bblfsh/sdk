@@ -290,10 +290,25 @@ const (
 	// Block is a group of statements. If the source language has block scope,
 	// it should be annotated both with Block and BlockScope.
 	Block
-	// BlockScope is a block with its own block scope.
+	// BlockScope is a block with its own block scope. Depending on the language it could
+	// have children of the following types.
 	// TODO: Should we replace BlockScope with a more general Scope role that
 	//       can be combined with Block?
 	BlockScope
+	// BlockScopeName is the given name of a scoped block for languages that support it
+	// (e.g. C++ namespaces).
+	BlockScopeName
+	// BlockScopeBody is the body holding the expressions inside the BlockScope.
+	BlockScopeBody
+	// BlockScopeResourceExpr marks the role of the expression that will
+	// generate a resource that will be cleaned when the block goes out
+	// of scope, RAII-style (e.g. Python's "with open('file.txt') as f:" or
+	// Java "Try with resources" that combines this with a Try...Catch.
+	BlockScopeResourceExpr
+	// This is an alias for a BlockScopeResourceExpr that can be used
+	// inside the BlockScope (e.g. the "f" in Python's: "with open('file.txt') as f:").
+	BlockScopeResourceAlias
+
 
 	// Return is a return statement. It might have a child expression or not
 	// as with naked returns in Go or return in void methods in Java.
