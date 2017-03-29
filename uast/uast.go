@@ -19,6 +19,8 @@ type Hash uint32
 type Role int8
 
 const (
+	_ = iota
+
 	// SimpleIdentifier is the most basic form of identifier, used for variable
 	// names, functions, packages, etc.
 	SimpleIdentifier Role = iota
