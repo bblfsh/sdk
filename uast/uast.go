@@ -198,6 +198,16 @@ const (
 	// as with naked returns in Go or return in void methods in Java.
 	Return
 
+	// Yield is for generators/coroutines. For generators it usually returns
+	// a value while keeping its internal state so it can be called successive
+	// times.  It might have a child expression or not.
+	Yield
+
+	// YieldFrom is like Yield but delegates control to another coroutine. This is usually
+	// used to implement machine-state type designs or event loops (e.g. YieldFrom in Python). The
+	// child node should be a Call (the coroutine) or an expression generating a Call.
+	YieldFrom
+
 	Try
 	TryBody
 	TryCatch
