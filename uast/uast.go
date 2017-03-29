@@ -30,40 +30,40 @@ const (
 	Expression
 	Statement
 
-	// Comparison operators. Usually inside one of the Condition nodes, but could also be in an
+	// Comparison operators. Usually inside one of the Condition nodes, but could also be in
 	// an expression of boolean value by itself. The tested expressions will be its siblings.
 
-	// OpCompEquality is the operator that tests for logical equality between two expressions
-	OpCompEquality
-	// OpCompEquality is the operator that tests for logical inequality between two expressions
+	// OpEqual is the operator that tests for logical equality between two expressions
+	OpEqual
+	// OpEqual is the operator that tests for logical inequality between two expressions
 	// (i.e. != or != or <> in most languages).
-	OpCompNotEquality
-	// OpCompEquality is the operator that tests if the expression on the left is worth logically less
+	OpNotEqual
+	// OpEqual is the operator that tests if the expression on the left is worth logically less
 	// than the expression on the right. (i.e. < in most languages).
-	OpCompLessThan
-	// OpCompEquality is the operator that tests if the expression on the left is worth logically less
+	OpLessThan
+	// OpEqual is the operator that tests if the expression on the left is worth logically less
 	// or has equality with the expression on the right. (i.e. >= in most languages).
-	OpCompLessThanEqual
-	// OpCompEquality is the operator that tests if the expression on the left is worth logically more
+	OpLessThanEqual
+	// OpEqual is the operator that tests if the expression on the left is worth logically more
 	// than the expression on the right. (i.e. > in most languages).
-	OpCompGreaterThan
-	// OpCompEquality is the operator that tests if the expression on the left is worth logically more
+	OpGreaterThan
+	// OpEqual is the operator that tests if the expression on the left is worth logically more
 	// or has equality with the expression on the right. (i.e. >= in most languages).
-	OpCompGreaterThanEqual
-	// OpCompIdentity tests if the result of the expressions tested is the same object, like the "is"
+	OpGreaterThanEqual
+	// OpSame tests if the result of the expressions tested is the same object, like the "is"
 	// operator in node or === in Javascript.
-	OpCompIdentity
-	// OpCompIdentity tests if the result of the expressions tested are different objects, like the "is not"
+	OpSame
+	// OpNotSame tests if the result of the expressions tested are different objects, like the "is not"
 	// operator in node or !== in Javascript.
-	OpCompNotIdentity
-	// OpCompPertenency tests if the left expression result is contained inside, or has an item contained
+	OpNotSame
+	// OpContains tests if the left expression result is contained inside, or has an item contained
 	// with equality, the result of the expression of the right which usually will be a container type
 	// (e.g. "in" in Python).
-	OpCompPertenency
-	// OpCompPertenency tests if the left expression result is not contained inside
+	OpContains
+	// OpNotContains tests if the left expression result is not contained inside
 	// the result of the expression of the right which usually will be a container type
 	// (e.g. "not in" in Python).
-	OpCompNotPertenency
+	OpNotContains
 
 	// File is the root node of a single file AST.
 	File
