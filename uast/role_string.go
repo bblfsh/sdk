@@ -9,8 +9,9 @@ const _Role_name = "SimpleIdentifierQualifiedIdentifierExpressionStatementOpEqua
 var _Role_index = [...]uint16{0, 16, 35, 45, 54, 61, 71, 81, 96, 109, 127, 133, 142, 152, 165, 169, 187, 204, 214, 225, 244, 259, 278, 293, 311, 329, 350, 367, 384, 400, 402, 413, 419, 425, 431, 441, 460, 474, 487, 490, 497, 510, 519, 526, 533, 538, 552, 561, 568, 584, 595, 600, 608, 613, 623, 629, 632, 639, 647, 657, 662, 668, 672, 684, 694, 716, 733, 754, 776, 780, 787, 798, 811, 824, 835, 839, 852, 862, 880, 895, 899, 906, 919, 929}
 
 func (i Role) String() string {
+	i -= 1
 	if i < 0 || i >= Role(len(_Role_index)-1) {
-		return fmt.Sprintf("Role(%d)", i)
+		return fmt.Sprintf("Role(%d)", i+1)
 	}
 	return _Role_name[_Role_index[i]:_Role_index[i+1]]
 }
