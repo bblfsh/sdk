@@ -80,6 +80,35 @@ const (
 	// (e.g. "not in" in Python).
 	OpNotContains
 
+	// Unary operators. These will have a single child node that will apply the operator over it.
+	// TODO: use BooleanNot to implement the UnaryNot?
+
+	// OpPreIncrement increments in place the value before it is evaluated. It's
+	// typical of C-inspired languages (e. g. ++x).
+	OpPreIncrement
+	// OpPostIncrement increments in place the value after it is evaluated. It's
+	// typical of C-inspired languages (e. g. x++).
+	OpPostIncrement
+	// OpPreDecrement decrement in place the value before it is evaluated. It's
+	// typical of C-inspired languages (e. g. --x).
+	OpPreDecrement
+	// OpPostDecrement decrement in place the value after it is evaluated. It's
+	// typical of C-inspired languages (e. g. x--).
+	OpPostDecrement
+	// OpNegative changes the sign of the numeric type (e. g. -x in most languages).
+	OpNegative
+	// OpPositive usually is a no-op for basic numeric types but exists in the AST of some languages.
+	// On some languages like C it could perform an aritmetic conversion to a signed type without
+	// changing the sign or could be overloaded (e. g. +x).
+	OpPositive
+	// OpBitwiseComplement will invert all the bits of a type. (e. g. ~x in C-inspired languages).
+	OpBitwiseComplement
+	// OpDereference will get the actual value pointed by a pointer or reference type (e.g. *x).
+	OpDereference
+	// OpTakeAddress will get the memory address of the associated variable which will usually be
+	// stored in a pointer or reference type (e. g. &x).
+	OpTakeAddress
+
 	// File is the root node of a single file AST.
 	File
 
@@ -347,7 +376,7 @@ const (
 	Whitespace
 
 	// TODO: types
-	// TODO: references/pointers
+	// TODO: references/pointer member access
 	// TODO: variable declarations
 	// TODO: expressions
 	// TODO: type parameters
