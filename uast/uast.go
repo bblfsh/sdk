@@ -94,6 +94,21 @@ const (
 	// OpBooleanXor is the boolean XOR operator (i.e. "XOR" or ^ in most languages)
 	OpBooleanXor
 
+	// Binary aritmethic operators. Examples with C operators.
+	// TODO: should we have division and FloorDivision like Python or Nim?
+	// TODO: should we had the pow operator that some languages have?
+
+	// OpAdd is the binary add operator (i.e. + in most languages).
+	OpAdd
+	// OpSubstract is the binary subtract operator (i.e. - in most languages).
+	OpSubstract
+	// OpMultiply is the binary multiply operator (i.e. * in most languages).
+	OpMultiply
+	// OpDivide is the binary division operator (i.e. / in most languages).
+	OpDivide
+	// OpMod is the binary division module operator (i.e. % or "mod" in most languages).
+	OpMod
+
 	// PackageDeclaration identifies the package that all its children
 	// belong to. Its children include, at least, QualifiedIdentifier or
 	// SimpleIdentifier with the package name.
@@ -108,7 +123,7 @@ const (
 	// in a certain scope.
 	ImportAlias
 
-	// TODO: arguments, return value, body, etc
+	// TODO: arguments, return value, body, etc.
 	FunctionDeclaration
 
 	// TypeDeclaration is the declaration of a type. It could be a class or
