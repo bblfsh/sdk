@@ -276,13 +276,46 @@ const (
 
 	Noop
 
-	// TODO: should we differentiate literal types with specialized literal
-	// annotations or combined with other type roles?
-	Literal
+	// BooleanLiteral is a boolean literal. It is expected that BooleanLiteral
+	// nodes contain a token with some form of boolean literal (e.g. true,
+	// false, yes, no, 1, 0).
+	BooleanLiteral
+	// ByteLiteral is a single-byte literal. For example, in Rust.
+	ByteLiteral
+	// ByteStringLiteral is a literal for a raw byte string. For example, in Rust.
+	ByteStringLiteral
+	// CharacterLiteral is a character literal. It is expected that
+	// CharacterLiteral nodes contain a token with a single character with
+	// optional quoting (e.g. c, 'c', "c").
+	CharacterLiteral
+	// ListLiteral is a literal array or list.
+	ListLiteral
+	// MapLiteral is a literal map-like structure.
+	MapLiteral
+	// NullLiteral is a null literal. It is expected that NullLiteral nodes
+	// contain a token equivalent to null (e.g. null, nil, None).
 	NullLiteral
-	StringLiteral
+	// NumberLiteral is a numeric literal. This applies to any numeric literal
+	// whether it is integer or float, any base, scientific notation or not,
+	// etc.
 	NumberLiteral
+	// RegexpLiteral is a literal for a regular expression.
+	RegexpLiteral
+	// SetLiteral is a literal for a set. For example, in Python 3.
+	SetLiteral
+	// StringLiteral is a string literal. This applies both to single-line and
+	// multi-line literals and it does not imply any particular encoding.
+	//
+	// TODO: Decide what to do with interpolated strings.
+	StringLiteral
+	// TupleLiteral is a literal for a tuple. For example, in Python and Scala.
+	TupleLiteral
+	// TypeLiteral is a literal that identifies a type. It might contain a
+	// token with the type literal itself, or children that define the type.
 	TypeLiteral
+	// OtherLiteral is a literal of a type not covered by other literal
+	// annotations.
+	OtherLiteral
 
 	Type
 	// TODO: should we distinguist between primitive and builtin types?
