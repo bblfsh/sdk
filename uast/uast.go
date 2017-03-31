@@ -19,6 +19,8 @@ type Hash uint32
 type Role int8
 
 const (
+	_ = iota
+
 	// SimpleIdentifier is the most basic form of identifier, used for variable
 	// names, functions, packages, etc.
 	SimpleIdentifier Role = iota
@@ -26,6 +28,19 @@ const (
 	// SimpleIdentifier. One main identifier (usually the last one) and one
 	// or more qualifiers.
 	QualifiedIdentifier
+
+	// Binary bitwise operators, used to alterate bits on numeral variables
+
+	// OpBitwiseLeftShift is the binary bitwise shift to the left operator (i.e. << in most languages)
+	OpBitwiseLeftShift
+	// OpBitwiseRightShift is the binary bitwise shift to the right operator (i.e. >> in most languages)
+	OpBitwiseRightShift
+	// OpBitwiseOr is the binary bitwise OR operator  (i.e. | in most languages)
+	OpBitwiseOr
+	// OpBitwiseXor is the binary bitwise Xor operator  (i.e. ~ in most languages)
+	OpBitwiseXor
+	// OpBitwiseAnd is the binary bitwise And/complement operator  (i.e. & in most languages)
+	OpBitwiseAnd
 
 	Expression
 	Statement
@@ -65,8 +80,63 @@ const (
 	// (e.g. "not in" in Python).
 	OpNotContains
 
+	// Unary operators. These will have a single child node that will apply the operator over it.
+	// TODO: use BooleanNot to implement the UnaryNot?
+
+	// OpPreIncrement increments in place the value before it is evaluated. It's
+	// typical of C-inspired languages (e. g. ++x).
+	OpPreIncrement
+	// OpPostIncrement increments in place the value after it is evaluated. It's
+	// typical of C-inspired languages (e. g. x++).
+	OpPostIncrement
+	// OpPreDecrement decrement in place the value before it is evaluated. It's
+	// typical of C-inspired languages (e. g. --x).
+	OpPreDecrement
+	// OpPostDecrement decrement in place the value after it is evaluated. It's
+	// typical of C-inspired languages (e. g. x--).
+	OpPostDecrement
+	// OpNegative changes the sign of the numeric type (e. g. -x in most languages).
+	OpNegative
+	// OpPositive usually is a no-op for basic numeric types but exists in the AST of some languages.
+	// On some languages like C it could perform an aritmetic conversion to a signed type without
+	// changing the sign or could be overloaded (e. g. +x).
+	OpPositive
+	// OpBitwiseComplement will invert all the bits of a type. (e. g. ~x in C-inspired languages).
+	OpBitwiseComplement
+	// OpDereference will get the actual value pointed by a pointer or reference type (e.g. *x).
+	OpDereference
+	// OpTakeAddress will get the memory address of the associated variable which will usually be
+	// stored in a pointer or reference type (e. g. &x).
+	OpTakeAddress
+
 	// File is the root node of a single file AST.
 	File
+
+	// Binary boolean operators, like
+
+	// OpBooleanAnd is the boolean AND operator (i.e. "and" or && in most languages)
+	OpBooleanAnd
+	// OpBooleanOr is the boolean OR operator (i.e. "or" or || in most languages)
+	OpBooleanOr
+	// OpBooleanNot is the boolean NOT operator (i.e. "NOT" or ! in most languages)
+	OpBooleanNot
+	// OpBooleanXor is the boolean XOR operator (i.e. "XOR" or ^ in most languages)
+	OpBooleanXor
+
+	// Binary aritmethic operators. Examples with C operators.
+	// TODO: should we have division and FloorDivision like Python or Nim?
+	// TODO: should we had the pow operator that some languages have?
+
+	// OpAdd is the binary add operator (i.e. + in most languages).
+	OpAdd
+	// OpSubstract is the binary subtract operator (i.e. - in most languages).
+	OpSubstract
+	// OpMultiply is the binary multiply operator (i.e. * in most languages).
+	OpMultiply
+	// OpDivide is the binary division operator (i.e. / in most languages).
+	OpDivide
+	// OpMod is the binary division module operator (i.e. % or "mod" in most languages).
+	OpMod
 
 	// PackageDeclaration identifies the package that all its children
 	// belong to. Its children include, at least, QualifiedIdentifier or
@@ -82,7 +152,7 @@ const (
 	// in a certain scope.
 	ImportAlias
 
-	// TODO: arguments, return value, body, etc
+	// TODO: arguments, return value, body, etc.
 	FunctionDeclaration
 
 	// TypeDeclaration is the declaration of a type. It could be a class or
@@ -235,16 +305,49 @@ const (
 
 	Noop
 
-	// TODO: should we differentiate literal types with specialized literal
-	// annotations or combined with other type roles?
-	Literal
+	// BooleanLiteral is a boolean literal. It is expected that BooleanLiteral
+	// nodes contain a token with some form of boolean literal (e.g. true,
+	// false, yes, no, 1, 0).
+	BooleanLiteral
+	// ByteLiteral is a single-byte literal. For example, in Rust.
+	ByteLiteral
+	// ByteStringLiteral is a literal for a raw byte string. For example, in Rust.
+	ByteStringLiteral
+	// CharacterLiteral is a character literal. It is expected that
+	// CharacterLiteral nodes contain a token with a single character with
+	// optional quoting (e.g. c, 'c', "c").
+	CharacterLiteral
+	// ListLiteral is a literal array or list.
+	ListLiteral
+	// MapLiteral is a literal map-like structure.
+	MapLiteral
+	// NullLiteral is a null literal. It is expected that NullLiteral nodes
+	// contain a token equivalent to null (e.g. null, nil, None).
 	NullLiteral
-	StringLiteral
+	// NumberLiteral is a numeric literal. This applies to any numeric literal
+	// whether it is integer or float, any base, scientific notation or not,
+	// etc.
 	NumberLiteral
+	// RegexpLiteral is a literal for a regular expression.
+	RegexpLiteral
+	// SetLiteral is a literal for a set. For example, in Python 3.
+	SetLiteral
+	// StringLiteral is a string literal. This applies both to single-line and
+	// multi-line literals and it does not imply any particular encoding.
+	//
+	// TODO: Decide what to do with interpolated strings.
+	StringLiteral
+	// TupleLiteral is a literal for a tuple. For example, in Python and Scala.
+	TupleLiteral
+	// TypeLiteral is a literal that identifies a type. It might contain a
+	// token with the type literal itself, or children that define the type.
 	TypeLiteral
+	// OtherLiteral is a literal of a type not covered by other literal
+	// annotations.
+	OtherLiteral
 
 	Type
-	// TODO: should we distinguist between primitive and builtin types?
+	// TODO: should we distinguish between primitive and builtin types?
 	PrimitiveType
 
 	// Assignment represents a variable assignment or binding.
@@ -254,6 +357,16 @@ const (
 	Assignment
 	AssignmentVariable
 	AssignmentValue
+
+	// AugmentedAssignment is an augmented assignment usually combining the equal operator with
+	// another one (e. g. +=, -=, *=, etc). It is expected that children contains an
+	// AugmentedAssignmentOperator with a child or aditional role for the specific Bitwise or
+	// Arithmetic operator used. The AugmentedAssignmentVariable and AugmentedAssignmentValue roles
+	// have the same meaning than in Assignment.
+	AugmentedAssignment
+	AugmentedAssignmentOperator
+	AugmentedAssignmentVariable
+	AugmentedAssignmentValue
 
 	// This represents the self-reference of an object instance in
 	// one of its methods. This corresponds to the `this` keyword
@@ -273,7 +386,7 @@ const (
 	Whitespace
 
 	// TODO: types
-	// TODO: references/pointers
+	// TODO: references/pointer member access
 	// TODO: variable declarations
 	// TODO: expressions
 	// TODO: type parameters
