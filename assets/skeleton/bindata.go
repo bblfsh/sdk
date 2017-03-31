@@ -977,7 +977,7 @@ func readmeMdTpl() (*asset, error) {
 var _driverMainGoTpl = []byte(`package main
 
 import (
-	"github.com/bblfsh/sdk/protocol/cmd"
+	"github.com/bblfsh/sdk/protocol"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
@@ -986,9 +986,13 @@ var version string
 var build string
 
 func main() {
-	cmd.DriverMain(version, build,
-		normalizer.NativeToNoder,
-		normalizer.AnnotationRules)
+	d := protocol.Driver{
+		Version:  version,
+		Build:    build,
+		ToNoder:  normalizer.NativeToNoder,
+		Annotate: normalizer.AnnotationRules,
+	}
+	d.Exec()
 }
 `)
 
@@ -1002,7 +1006,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 277, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 337, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

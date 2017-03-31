@@ -1,4 +1,4 @@
-package cmd_test
+package protocol_test
 
 import (
 	"bufio"
@@ -15,9 +15,9 @@ func TestDriverMain(t *testing.T) {
 	require := require.New(t)
 
 	cmd := exec.Command(
-		"go", "run", "../internal/testdriver/main.go",
+		"go", "run", "internal/testdriver/main.go",
 		"serve",
-		"--native-bin", "../internal/testnative/native",
+		"--native-bin", "internal/testnative/native",
 	)
 
 	in, err := cmd.StdinPipe()
