@@ -65,11 +65,13 @@ func testServer(t *testing.T, exitError bool, f func(io.WriteCloser, io.Reader))
 	require.NotNil(n)
 
 	s := &Server{
-		In:       sIn,
-		Out:      sOut,
-		Native:   n,
-		ToNoder:  &uast.BaseToNoder{},
-		Annotate: ann.On(ann.Any),
+		In:  sIn,
+		Out: sOut,
+		UASTClient: &UASTClient{
+			NativeClient: n,
+			ToNoder:      &uast.BaseToNoder{},
+			Annotate:     ann.On(ann.Any),
+		},
 	}
 
 	err = s.Start()

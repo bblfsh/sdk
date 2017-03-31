@@ -90,22 +90,33 @@ type cmd struct {
 	NativeBin string `long:"native-bin" description:"alternative path for the native binary"`
 }
 
+func (c cmd) client() (*UASTClient, error) {
+	native, err := ExecNative(c.NativeBin)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UASTClient{
+		NativeClient: native,
+		ToNoder:      c.ToNoder,
+		Annotate:     c.Annotate,
+	}, nil
+}
+
 type serveCommand struct {
 	cmd
 }
 
 func (c *serveCommand) Execute(args []string) error {
-	client, err := ExecNative(c.NativeBin)
+	client, err := c.client()
 	if err != nil {
 		return fmt.Errorf("error executing native: %s", err.Error())
 	}
 
 	server := &Server{
-		In:       c.In,
-		Out:      c.Out,
-		Native:   client,
-		ToNoder:  c.ToNoder,
-		Annotate: c.Annotate,
+		In:         c.In,
+		Out:        c.Out,
+		UASTClient: client,
 	}
 
 	if err := server.Start(); err != nil {
@@ -135,23 +146,23 @@ type parseNativeASTCommand struct {
 func (c *parseNativeASTCommand) Execute(args []string) error {
 	f := c.Args.File
 
-	client, err := ExecNative(c.NativeBin)
-	if err != nil {
-		return err
-	}
-
 	b, err := ioutil.ReadFile(f)
 	if err != nil {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	req := &ParseNativeASTRequest{
-		Content: string(b),
+	client, err := c.client()
+	if err != nil {
+		return err
 	}
 
-	resp, err := client.ParseNativeAST(req)
+	defer func() { _ = client.Close() }()
+
+	resp, err := client.ParseNativeAST(&ParseNativeASTRequest{
+		Content: string(b),
+	})
 	if err != nil {
-		return fmt.Errorf("request failed: %q", err)
+		return err
 	}
 
 	e := json.NewEncoder(c.Out)
@@ -173,17 +184,7 @@ type parseUASTCommand struct {
 func (c *parseUASTCommand) Execute(args []string) error {
 	f := c.Args.File
 
-	var formatter func(io.Writer, *ParseUASTResponse) error
-	switch c.Format {
-	case "pretty":
-		formatter = c.prettyPrinter
-	case "json":
-		formatter = c.jsonPrinter
-	default:
-		return fmt.Errorf("invalid format: %s", c.Format)
-	}
-
-	client, err := ExecNative(c.NativeBin)
+	fmter, err := formatter(c.Format)
 	if err != nil {
 		return err
 	}
@@ -193,42 +194,40 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	req := &ParseNativeASTRequest{
-		Content: string(b),
-	}
-
-	resp, err := client.ParseNativeAST(req)
+	client, err := c.client()
 	if err != nil {
-		return fmt.Errorf("request failed: %q", err)
+		return err
 	}
 
-	uastResp := &ParseUASTResponse{}
-	uastResp.Status = resp.Status
-	uastResp.Errors = resp.Errors
-	if err == nil && resp.Status != Fatal {
-		n, err := c.ToNoder.ToNode(resp.AST)
-		if err != nil {
-			uastResp.Status = Fatal
-			uastResp.Errors = append(uastResp.Errors, err.Error())
-		} else {
-			if err := c.Annotate.Apply(n); err != nil {
-				uastResp.Status = Error
-				uastResp.Errors = append(uastResp.Errors, err.Error())
-			}
+	defer func() { _ = client.Close() }()
 
-			uastResp.UAST = n
-		}
+	resp, err := client.ParseUAST(&ParseUASTRequest{
+		Content: string(b),
+	})
+	if err != nil {
+		return err
 	}
 
-	return formatter(c.Out, uastResp)
+	return fmter(c.Out, resp)
 }
 
-func (c *parseUASTCommand) jsonPrinter(w io.Writer, r *ParseUASTResponse) error {
+func formatter(f string) (func(io.Writer, *ParseUASTResponse) error, error) {
+	switch f {
+	case "pretty":
+		return prettyPrinter, nil
+	case "json":
+		return jsonPrinter, nil
+	default:
+		return nil, fmt.Errorf("invalid format: %s", f)
+	}
+}
+
+func jsonPrinter(w io.Writer, r *ParseUASTResponse) error {
 	e := json.NewEncoder(w)
 	return e.Encode(r)
 }
 
-func (c *parseUASTCommand) prettyPrinter(w io.Writer, r *ParseUASTResponse) error {
+func prettyPrinter(w io.Writer, r *ParseUASTResponse) error {
 	fmt.Fprintln(w, "Status: ", r.Status)
 	fmt.Fprintln(w, "Errors: ")
 	for _, err := range r.Errors {
