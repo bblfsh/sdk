@@ -47,7 +47,7 @@ eval $("${TOOLS}" manifest)
 
 parse_native_ast() {
 	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-native /code/$(readlink -f $1) | "${PYTHON}" -m json.tool
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-native /code/$(readlink -f $1) | "${PYTHON}" -m json.tool --sort-keys
 }
 
 parse_uast() {
