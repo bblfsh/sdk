@@ -185,7 +185,7 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 
 		n.StartPosition.Col = i
 	default:
-		n.Properties[k] = fmt.Sprint(0)
+		n.Properties[k] = fmt.Sprint(o)
 	}
 
 	return nil
