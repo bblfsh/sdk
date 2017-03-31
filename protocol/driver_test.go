@@ -47,7 +47,7 @@ func TestDriverParseUAST(t *testing.T) {
 			"./driver_test.go",
 		},
 		false,
-		`{"status":"ok","errors":null,"uast":{"Properties":{"key":"0"},"StartPosition":{"Offset":0,"Line":0,"Col":0},"EndPosition":{"Offset":0,"Line":0,"Col":0},"Roles":[1]}}
+		`{"status":"ok","errors":null,"uast":{"Properties":{"key":"val"},"StartPosition":{"Offset":0,"Line":0,"Col":0},"EndPosition":{"Offset":0,"Line":0,"Col":0},"Roles":[1]}}
 `,
 		"",
 	)
@@ -72,7 +72,7 @@ func TestDriverParseNative(t *testing.T) {
 func TestDriverHelp(t *testing.T) {
 	expectedStderr := ""
 	expectedStdout := `Usage:
-  driver [OPTIONS] <parse-native | parse-uast | serve>
+  driver [OPTIONS] <command>
 
 Help Options:
   -h, --help  Show this help message
@@ -81,6 +81,7 @@ Available commands:
   parse-native
   parse-uast
   serve
+  tokenize
 
 Build information
   commit: test

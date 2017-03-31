@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/bblfsh/sdk"
 	"github.com/bblfsh/sdk/uast"
@@ -55,6 +56,7 @@ func (d *Driver) run(args []string) error {
 	parser.AddCommand("serve", "", "", &serveCommand{cmd: cmd})
 	parser.AddCommand("parse-native", "", "", &parseNativeASTCommand{cmd: cmd})
 	parser.AddCommand("parse-uast", "", "", &parseUASTCommand{cmd: cmd})
+	parser.AddCommand("tokenize", "", "", &tokenizeCommand{cmd: cmd})
 
 	if _, err := parser.ParseArgs(args[1:]); err != nil {
 		if err, ok := err.(*flags.Error); ok {
@@ -101,6 +103,22 @@ func (c cmd) client() (*UASTClient, error) {
 		ToNoder:      c.ToNoder,
 		Annotate:     c.Annotate,
 	}, nil
+}
+
+func (c cmd) parseUAST(path string) (*ParseUASTResponse, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file %s: %s", path, err.Error())
+	}
+
+	client, err := c.client()
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = client.Close() }()
+
+	return client.ParseUAST(&ParseUASTRequest{Content: string(b)})
 }
 
 type serveCommand struct {
@@ -182,28 +200,12 @@ type parseUASTCommand struct {
 }
 
 func (c *parseUASTCommand) Execute(args []string) error {
-	f := c.Args.File
-
 	fmter, err := formatter(c.Format)
 	if err != nil {
 		return err
 	}
 
-	b, err := ioutil.ReadFile(f)
-	if err != nil {
-		return fmt.Errorf("error reading file %s: %s", f, err.Error())
-	}
-
-	client, err := c.client()
-	if err != nil {
-		return err
-	}
-
-	defer func() { _ = client.Close() }()
-
-	resp, err := client.ParseUAST(&ParseUASTRequest{
-		Content: string(b),
-	})
+	resp, err := c.parseUAST(c.Args.File)
 	if err != nil {
 		return err
 	}
@@ -236,4 +238,22 @@ func prettyPrinter(w io.Writer, r *ParseUASTResponse) error {
 	fmt.Fprintln(w, "UAST: ")
 	fmt.Fprintln(w, r.UAST.String())
 	return nil
+}
+
+type tokenizeCommand struct {
+	cmd
+	Args struct {
+		File string
+	} `positional-args:"yes"`
+}
+
+func (c *tokenizeCommand) Execute(args []string) error {
+	resp, err := c.parseUAST(c.Args.File)
+	if err != nil {
+		return err
+	}
+
+	toks := uast.Tokens(resp.UAST)
+	_, err = fmt.Fprintf(c.Out, strings.Join(toks, "\t"))
+	return err
 }
