@@ -4,8 +4,6 @@ import (
 	"io"
 
 	"github.com/bblfsh/sdk/protocol/jsonlines"
-	"github.com/bblfsh/sdk/uast"
-	"github.com/bblfsh/sdk/uast/ann"
 
 	"srcd.works/go-errors.v0"
 )
@@ -18,11 +16,10 @@ var (
 )
 
 type Server struct {
-	In       io.Reader
-	Out      io.Writer
-	Native   *NativeClient
-	ToNoder  uast.ToNoder
-	Annotate *ann.Rule
+	*UASTClient
+
+	In  io.Reader
+	Out io.Writer
 
 	err  error
 	done chan struct{}
@@ -69,31 +66,12 @@ func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 		return s.error(enc, ErrDecodingRequest.Wrap(err))
 	}
 
-	resp, err := s.Native.ParseNativeAST(&ParseNativeASTRequest{
-		Content: req.Content,
-	})
+	resp, err := s.ParseUAST(req)
 	if err != nil {
 		return s.error(enc, err)
 	}
 
-	var node *uast.Node
-	if resp.Status != Fatal {
-		node, err = s.ToNoder.ToNode(resp.AST)
-		if err != nil {
-			return s.error(enc, err)
-		}
-
-		if err := s.Annotate.Apply(node); err != nil {
-			return s.error(enc, err)
-		}
-	}
-
-	uastResp := &ParseUASTResponse{
-		Status: resp.Status,
-		Errors: resp.Errors,
-		UAST:   node,
-	}
-	if err := enc.Encode(uastResp); err != nil {
+	if err := enc.Encode(resp); err != nil {
 		return ErrEncodingResponse.Wrap(err)
 	}
 
