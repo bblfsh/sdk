@@ -881,11 +881,11 @@ var _makefile = []byte(`-include .sdk/Makefile
 
 $(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk))
 
-test-native:
+test-native-internal:
 	cd native; \
 	echo "not implemented"
 
-build-native:
+build-native-internal:
 	cd native; \
 	echo "not implemented"
 	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/native
@@ -902,7 +902,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 302, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 320, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
