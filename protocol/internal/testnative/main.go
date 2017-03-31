@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
 	"os"
 
 	"github.com/bblfsh/sdk/protocol"
+	"github.com/bblfsh/sdk/protocol/jsonlines"
 )
 
 type ParseASTResponse struct {
@@ -15,8 +15,8 @@ type ParseASTResponse struct {
 }
 
 func main() {
-	dec := json.NewDecoder(os.Stdin)
-	enc := json.NewEncoder(os.Stdout)
+	dec := jsonlines.NewDecoder(os.Stdin)
+	enc := jsonlines.NewEncoder(os.Stdout)
 	for {
 		req := &protocol.ParseASTRequest{}
 		if err := dec.Decode(req); err != nil {
