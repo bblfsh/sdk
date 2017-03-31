@@ -155,7 +155,7 @@ const (
 	// in a certain scope.
 	ImportAlias
 
-	// TODO: argument type declarations, return value, body, etc.
+	// TODO: argument type declarations, return value, body, annotations/decorators, etc.
 
 	// FunctionDeclaration is the parent node of all function or method declarations. It should have a
 	// FunctionDeclarationName, a FunctionDeclarationBody (except for pure declarations like the ones in C/C++
@@ -185,6 +185,22 @@ const (
 	// indicate that from that point in the argument list the function can get a variable number
 	// of arguments (e.g. "..." in C-ish languages, "Object..." in Java, "*args" in Python, etc).
 	FunctionDeclarationVarArgsList
+	// FunctionDeclarationVarArgsMap is the node representing whatever syntax the language has to
+	// indicate that from that point in the argument list the function can get any number of additional
+	// arguments and they'll be mapped to a dictionary where the key and values are mapped to the
+	// actual arguments used on the call
+	FunctionDeclarationVarArgsMap
+	// FunctionDeclarationAnnotation represents an annotation over a function. This usually marks or
+	// modifies the function in some way, e.g. for avoiding unittesting, marking function as pure
+	// so the compiler can check its validity, etc. Examples on languages include function decorators in
+	// Python, method annotations in Java, function attributes in D, etc. If they take the form of a call
+	// (e.g. "annotation(param1, param2)") they can have Call*Argument children.
+	FunctionDeclarationAnnotation
+
+	// LambdaFunctionDeclaration is for the lambda function-expressions if the languages supports them.
+	// They just like FunctionDeclaration and can have the same childs but usually wont have a
+	// FunctionDeclarationName.
+	LambdaFunctionDeclaration
 
 	// TypeDeclaration is the declaration of a type. It could be a class or
 	// interface in Java, a struct, interface or alias in Go, etc.
