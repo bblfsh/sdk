@@ -3,6 +3,7 @@ package uast
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 )
 
@@ -126,8 +127,10 @@ func printChildren(w io.Writer, indent int, children []*Node, includes IncludeFl
 
 func printProperties(w io.Writer, indent int, props map[string]string) error {
 	istr := strings.Repeat(".  ", indent)
+	keys := sortedKeys(props)
 
-	for k, v := range props {
+	for _, k := range keys {
+		v := props[k]
 		_, err := fmt.Fprintf(w, "%s%s: %s\n", istr, k, v)
 		if err != nil {
 			return err
@@ -135,6 +138,16 @@ func printProperties(w io.Writer, indent int, props map[string]string) error {
 	}
 
 	return nil
+}
+
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	return keys
 }
 
 func printPosition(w io.Writer, indent int, pos Position) error {
