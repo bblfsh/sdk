@@ -35,6 +35,9 @@ const (
 	OpBitwiseLeftShift
 	// OpBitwiseRightShift is the binary bitwise shift to the right operator (i.e. >> in most languages)
 	OpBitwiseRightShift
+	// OpBitwiseUnsignedRightShift is the binary bitwise unsigned shift to the
+	// right operator (e.g. >>> in Java or C#)
+	OpBitwiseUnsignedRightShift
 	// OpBitwiseOr is the binary bitwise OR operator  (i.e. | in most languages)
 	OpBitwiseOr
 	// OpBitwiseXor is the binary bitwise Xor operator  (i.e. ~ in most languages)
