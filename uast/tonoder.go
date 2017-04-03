@@ -50,6 +50,9 @@ type BaseToNoder struct {
 	// SyntheticTokens is a map of InternalType to string used to add
 	// synthetic tokens to nodes depending on its InternalType.
 	SyntheticTokens map[string]string
+	// SortByOffset controls if children are sorted by offset or preserved
+	// as they are.
+	SortByOffset bool
 }
 
 func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
@@ -109,7 +112,9 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 		}
 	}
 
-	sort.Stable(byOffset(n.Children))
+	if c.SortByOffset {
+		sort.Stable(byOffset(n.Children))
+	}
 
 	return n, nil
 }
