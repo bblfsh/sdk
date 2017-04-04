@@ -16,7 +16,7 @@ type Hash uint32
 //
 //proteus:generate
 //go:generate stringer -type=Role
-type Role int8
+type Role int16
 
 const (
 	_ = iota
@@ -35,6 +35,9 @@ const (
 	OpBitwiseLeftShift
 	// OpBitwiseRightShift is the binary bitwise shift to the right operator (i.e. >> in most languages)
 	OpBitwiseRightShift
+	// OpBitwiseUnsignedRightShift is the binary bitwise unsigned shift to the
+	// right operator (e.g. >>> in Java or C#)
+	OpBitwiseUnsignedRightShift
 	// OpBitwiseOr is the binary bitwise OR operator  (i.e. | in most languages)
 	OpBitwiseOr
 	// OpBitwiseXor is the binary bitwise Xor operator  (i.e. ~ in most languages)
@@ -152,8 +155,36 @@ const (
 	// in a certain scope.
 	ImportAlias
 
-	// TODO: arguments, return value, body, etc.
+	// TODO: argument type declarations, return value, body, etc.
+
+	// FunctionDeclaration is the parent node of all function or method declarations. It should have a
+	// FunctionDeclarationName, a FunctionDeclarationBody (except for pure declarations like the ones in C/C++
+	// header files or forward declarations in other languages) and, if the function has formal arguments,
+	// FunctionDeclarationArgument children.
 	FunctionDeclaration
+	// FunctionDeclarationBody is the grouping node for all nodes in the function body.
+	FunctionDeclarationBody
+	// FunctionDeclarationName contains the unqualified name of the function.
+	FunctionDeclarationName
+	// FunctionDeclarationReceiver is the target Type of a method or struct.
+	FunctionDeclarationReceiver
+	// FunctionDeclarationArgument is the parent node for the function formal arguments. The name will be
+	// specified as the token of the child FunctionDeclarationArgumentName and depending on the language it
+	// could have one or more child nodes of different types to implement them in the UAST like
+	// FunctionDeclarationArgumentDefaultValue, type declarations (TODO), annotations (TODO), etc.
+	FunctionDeclarationArgument
+	// FunctionDeclarationArgumentName is the symbolic name of the argument. On languages that support
+	// argument passing by name this will be the name used by the CallNamedArgument roles.
+	FunctionDeclarationArgumentName
+	// For languages that support setting a default value for a formal argument,
+	// FunctionDeclarationArgumentDefaultValue is the node that contains the default value.
+	// Depending on the language his child node representing the actual value could be some kind or
+	// literal or even expressions that can resolved at runtime (if interpreted) or compile time.
+	FunctionDeclarationArgumentDefaultValue
+	// FunctionDeclarationVarArgsList is the node representing whatever syntax the language has to
+	// indicate that from that point in the argument list the function can get a variable number
+	// of arguments (e.g. "..." in C-ish languages, "Object..." in Java, "*args" in Python, etc).
+	FunctionDeclarationVarArgsList
 
 	// TypeDeclaration is the declaration of a type. It could be a class or
 	// interface in Java, a struct, interface or alias in Go, etc.
