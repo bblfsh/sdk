@@ -50,6 +50,15 @@ type BaseToNoder struct {
 	// SyntheticTokens is a map of InternalType to string used to add
 	// synthetic tokens to nodes depending on its InternalType.
 	SyntheticTokens map[string]string
+	// PromotedPropertyLists allows to convert some properties in the native AST with a list value
+	// to its own node with the list elements as children. The key of the first map is the name
+	// of the InternalType which can have promotions and the value is a map where keys must be the names
+	// of the properties to be promoted if the value is true. For example to promote a "body" property
+	// inside an "If" InternalKey the map should contain: ["If"]["body"] = true.
+	PromotedPropertyLists map[string]map[string]bool
+	// If this option is set, all properties mapped to a list will be promoted to its own node. Setting
+	// this option to true will ignore the PromotedPropertyLists settings.
+	PromoteAllPropertyLists bool
 }
 
 func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
@@ -86,7 +95,32 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 	}
 
 	n := NewNode()
-	for k, o := range m {
+
+	// We need to have the internalkey before iterating others
+	internalKey, err := c.getInternalKeyFromObject(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	var promotedKeys map[string]bool
+	if (!c.PromoteAllPropertyLists && c.PromotedPropertyLists != nil) {
+		promotedKeys = c.PromotedPropertyLists[internalKey]
+	}
+
+	if err := c.setInternalKey(n, internalKey); err != nil {
+		return nil, err
+	}
+
+	// Sort the keys of the map so the integration tests that currently do a
+	// textual diff doesn't fail because of sort order
+	var keys []string
+	for listkey := range m {
+		keys = append(keys, listkey)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		o := m[k]
 		switch ov := o.(type) {
 		case map[string]interface{}:
 			child, err := c.mapToNode(k, ov)
@@ -96,7 +130,20 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 
 			n.Children = append(n.Children, child)
 		case []interface{}:
-			children, err := c.sliceToNodes(k, ov)
+			if c.PromoteAllPropertyLists || (promotedKeys != nil && promotedKeys[k])  {
+				// This property->List  must be promoted to its own node
+				child, err := c.sliceToNodeWithChildren(k, ov, internalKey)
+				if err != nil {
+					return nil, err
+				}
+				if child != nil {
+					n.Children = append(n.Children, child)
+				}
+				continue
+			}
+
+			// This property -> List elements will be added as the current node Children
+			children, err := c.sliceToNodeSlice(k, ov)
 			if err != nil {
 				return nil, err
 			}
@@ -125,7 +172,31 @@ func (c *BaseToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, er
 	return n, nil
 }
 
-func (c *BaseToNoder) sliceToNodes(k string, s []interface{}) ([]*Node, error) {
+func (c *BaseToNoder) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*Node, error) {
+	kn := NewNode()
+
+	var ns []*Node
+	for _, v := range s {
+		n, err := c.toNode(v)
+		if err != nil {
+			return nil, err
+		}
+
+		ns = append(ns, n)
+	}
+
+	if len(ns) == 0 {
+		// should be still create new nodes for empty slices or add it as an option?
+		return nil, nil
+	}
+	c.setInternalKey(kn, parentKey+"."+k)
+	kn.Properties["promotedPropertyList"] = "true"
+	kn.Children = append(kn.Children, ns...)
+
+	return kn, nil
+}
+
+func (c *BaseToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*Node, error) {
 	var ns []*Node
 	for _, v := range s {
 		n, err := c.toNode(v)
@@ -150,19 +221,8 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 
 		n.Token = s
 	case c.InternalTypeKey == k:
-		s := fmt.Sprint(o)
-		if err := c.setInternalKey(n, s); err != nil {
-			return err
-		}
-
-		tk := c.syntheticToken(s)
-		if tk != "" {
-			if n.Token != "" && n.Token != tk {
-				return ErrTwoTokensSameNode.New(n.Token, tk)
-			}
-
-			n.Token = tk
-		}
+		// should be already set by toNode
+		return nil
 	case c.OffsetKey == k:
 		i, err := toUint32(o)
 		if err != nil {
@@ -210,6 +270,19 @@ func (c *BaseToNoder) setInternalKey(n *Node, k string) error {
 
 	n.InternalType = k
 	return nil
+}
+
+func (c *BaseToNoder) getInternalKeyFromObject(obj interface{}) (string, error) {
+	m, ok := obj.(map[string]interface{})
+	if !ok {
+		return "", ErrUnexpectedObject.New("map[string]interface{}", obj)
+	}
+
+	if val, ok := m[c.InternalTypeKey].(string); ok {
+		return val, nil
+	}
+	// should this be an error?
+	return "", nil
 }
 
 // toUint32 converts a JSON value to a uint32.

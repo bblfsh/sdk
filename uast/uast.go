@@ -172,6 +172,7 @@ const (
 	// specified as the token of the child FunctionDeclarationArgumentName and depending on the language it
 	// could have one or more child nodes of different types to implement them in the UAST like
 	// FunctionDeclarationArgumentDefaultValue, type declarations (TODO), annotations (TODO), etc.
+	//FunctionDeclarationArguments
 	FunctionDeclarationArgument
 	// FunctionDeclarationArgumentName is the symbolic name of the argument. On languages that support
 	// argument passing by name this will be the name used by the CallNamedArgument roles.
