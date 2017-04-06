@@ -29,6 +29,17 @@ const (
 	// or more qualifiers.
 	QualifiedIdentifier
 
+	// BinaryExpression is the parent node of all binary expressions of any type. It must have
+	// BinaryExpressionLeft, BinaryExpressionRight and BinaryExpressionOp children.
+	// Those children must have aditional roles specifying the specific type (e.g. Expression,
+	// QualifiedIdentifier or Literal for the left and right nodes and one of the specific operator roles
+	// for the binary operator). BinaryExpresion can be considered a derivation of Expression and thus
+	// could be its child or implemented as an additional node.
+	BinaryExpression
+	BinaryExpressionLeft
+	BinaryExpressionRight
+	BinaryExpressionOp
+
 	// Binary bitwise operators, used to alterate bits on numeral variables
 
 	// OpBitwiseLeftShift is the binary bitwise shift to the left operator (i.e. << in most languages)
