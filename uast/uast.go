@@ -187,8 +187,15 @@ const (
 	FunctionDeclarationVarArgsList
 
 	// TypeDeclaration is the declaration of a type. It could be a class or
-	// interface in Java, a struct, interface or alias in Go, etc.
+	// interface in Java, a struct, interface or alias in Go, etc. Except for pure or forward declarations
+	// it will usually have a TypeDeclarationBody child and for OOP languages a TypeDeclarationBases and/or
+	// TypeDeclarationInterfaces.
 	TypeDeclaration
+	TypeDeclarationBody
+	// TypeDeclarationBases are the Types that the current inherits from in OOP languages.
+	TypeDeclarationBases
+	// TypeDeclarationImplements are the Types (usually interfaces) that the Type implements.
+	TypeDeclarationImplements
 
 	// VisibleFromInstance marks modifiers that declare visibility from instance.
 	VisibleFromInstance
