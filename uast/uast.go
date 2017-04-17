@@ -378,6 +378,12 @@ const (
 	// annotations.
 	OtherLiteral
 
+	// MapEntry is the expression pairing a map key and a value usually on MapLiteral expressions. It must
+	// have both a MapKey and a MapValue children (e.g. {"key": "value", "otherkey": "otherval"} in Python).
+	MapEntry
+	MapKey
+	MapValue
+
 	Type
 	// TODO: should we distinguish between primitive and builtin types?
 	PrimitiveType
