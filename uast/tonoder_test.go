@@ -2,6 +2,7 @@ package uast
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,6 +13,102 @@ import (
 var (
 	fixtureDir = "fixtures"
 )
+
+func TestToNodeErrUnsupported(t *testing.T) {
+	require := require.New(t)
+	c := &BaseToNoder{}
+	var notAndAST struct{}
+	_, err := c.ToNode(notAndAST)
+	require.NotNil(err)
+	require.True(ErrUnsupported.Is(err))
+}
+
+func TestToNodeErrEmptyAST(t *testing.T) {
+	topLevelIsRootNode := false
+	testToNodeErrEmptyAST(t, topLevelIsRootNode)
+	topLevelIsRootNode = true
+	testToNodeErrEmptyAST(t, topLevelIsRootNode)
+}
+
+func testToNodeErrEmptyAST(t *testing.T, topIsRoot bool) {
+	require := require.New(t)
+	c := &BaseToNoder{TopLevelIsRootNode: topIsRoot}
+	empty := make(map[string]interface{})
+	_, err := c.ToNode(empty)
+	require.NotNil(err)
+	require.True(ErrEmptyAST.Is(err))
+}
+
+func TestToNodeErrUnexpectedObjectSize(t *testing.T) {
+	require := require.New(t)
+	c := &BaseToNoder{}
+	multiRoot := make(map[string]interface{})
+	multiRoot["a"] = 0
+	multiRoot["b"] = 0
+	_, err := c.ToNode(multiRoot)
+	require.NotNil(err)
+	require.True(ErrUnexpectedObjectSize.Is(err))
+}
+
+func TestToNodeWithTopLevelRoot(t *testing.T) {
+	require := require.New(t)
+
+	root, err := getRootAtTopLevelFromFixture()
+	require.Nil(err)
+
+	c := &BaseToNoder{
+		TopLevelIsRootNode: true,
+		InternalTypeKey:    "internalClass",
+		LineKey:            "line",
+	}
+
+	n, err := c.ToNode(root)
+	require.NoError(err)
+	require.NotNil(n)
+}
+
+// Returns a fixture of an AST with its root at the top level, by
+// reusing the already existing fixture at java_example_1; it strips a
+// few object from the top levels of the fixture (the CompilationUnit,
+// then the types, then picks the first type) util we are left with a
+// AST node at its top level.
+func getRootAtTopLevelFromFixture() (map[string]interface{}, error) {
+	ast, err := getFixture("java_example_1.json")
+	if err != nil {
+		return nil, err
+	}
+
+	// strip the CompilationUnit object
+	compilationUnit, ok := ast["CompilationUnit"]
+	if !ok {
+		return nil, fmt.Errorf("key not found: CompilationUnit")
+	}
+	ast, ok = compilationUnit.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid cast: compilationUnit to map[string]interface{}")
+	}
+
+	// get the list of types
+	types, ok := ast["types"]
+	if !ok {
+		return nil, fmt.Errorf("key not found: types")
+	}
+	list, ok := types.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid cast: types to []interface{}")
+	}
+
+	if len(list) == 0 {
+		return nil, fmt.Errorf("empty list of types")
+	}
+
+	first, ok := list[0].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid cast: first to map[string]interface{}")
+	}
+
+	return first, nil
+}
 
 func TestToNoderJava(t *testing.T) {
 	require := require.New(t)
@@ -49,8 +146,8 @@ func TestPropertyListPromotionSpecific(t *testing.T) {
 	c = &BaseToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
-		PromotedPropertyLists: map[string]map[string]bool {
-			"CompilationUnit" : { "types" : true },
+		PromotedPropertyLists: map[string]map[string]bool{
+			"CompilationUnit": {"types": true},
 		},
 		PromoteAllPropertyLists: false,
 	}
@@ -78,8 +175,8 @@ func TestPropertyListPromotionAll(t *testing.T) {
 	require.Nil(child)
 
 	c = &BaseToNoder{
-		InternalTypeKey: "internalClass",
-		LineKey:         "line",
+		InternalTypeKey:         "internalClass",
+		LineKey:                 "line",
 		PromoteAllPropertyLists: true,
 	}
 
@@ -91,7 +188,7 @@ func TestPropertyListPromotionAll(t *testing.T) {
 	require.NotNil(child)
 }
 
-func findChildWithInternalType(n *Node, internalType string) (*Node) {
+func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
 			return child

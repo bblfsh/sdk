@@ -24,10 +24,6 @@ type ToNoder interface {
 }
 
 const (
-	// topLevelIsRootNode is true if the top level object is the root node
-	// of the AST. If false, top level object should have a single key, that
-	// being the root node.
-	topLevelIsRootNode = false
 	// InternalRoleKey is a key string uses in properties to use the internal
 	// role of a node in the AST, if any.
 	InternalRoleKey = "internalRole"
@@ -59,6 +55,11 @@ type BaseToNoder struct {
 	// If this option is set, all properties mapped to a list will be promoted to its own node. Setting
 	// this option to true will ignore the PromotedPropertyLists settings.
 	PromoteAllPropertyLists bool
+	// TopLevelIsRootNode tells ToNode where to find the root node of
+	// the AST.  If true, the root will be its input argument. If false,
+	// the root will be the value of the only key present in its input
+	// argument.
+	TopLevelIsRootNode bool
 }
 
 func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
@@ -67,25 +68,34 @@ func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
 		return nil, ErrUnsupported.New("non-object root node")
 	}
 
-	if topLevelIsRootNode {
-		return nil, ErrUnsupported.New("top level object as root node")
+	root, err := findRoot(src, c.TopLevelIsRootNode)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(src) > 1 {
-		return nil, ErrUnexpectedObjectSize.New(1, len(src))
-	}
+	return c.toNode(root)
+}
 
-	if len(src) == 0 {
+func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (
+	interface{}, error) {
+
+	if len(m) == 0 {
 		return nil, ErrEmptyAST.New()
 	}
 
-	var vobj interface{}
-	for _, obj := range src {
-		vobj = obj
-		break
+	if topLevelIsRootNode {
+		return m, nil
 	}
 
-	return c.toNode(vobj)
+	if len(m) > 1 {
+		return nil, ErrUnexpectedObjectSize.New(1, len(m))
+	}
+
+	for _, root := range m {
+		return root, nil
+	}
+
+	panic("unreachable")
 }
 
 func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
@@ -103,7 +113,7 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 	}
 
 	var promotedKeys map[string]bool
-	if (!c.PromoteAllPropertyLists && c.PromotedPropertyLists != nil) {
+	if !c.PromoteAllPropertyLists && c.PromotedPropertyLists != nil {
 		promotedKeys = c.PromotedPropertyLists[internalKey]
 	}
 
@@ -130,7 +140,7 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 
 			n.Children = append(n.Children, child)
 		case []interface{}:
-			if c.PromoteAllPropertyLists || (promotedKeys != nil && promotedKeys[k])  {
+			if c.PromoteAllPropertyLists || (promotedKeys != nil && promotedKeys[k]) {
 				// This property->List  must be promoted to its own node
 				child, err := c.sliceToNodeWithChildren(k, ov, internalKey)
 				if err != nil {
