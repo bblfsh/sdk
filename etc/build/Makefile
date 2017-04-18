@@ -12,7 +12,13 @@ $(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
 bblfsh-tools := $(shell command -v bblfsh-tools 2> /dev/null)
-ifdef bblfsh-tools
+in-container := $(shell echo $$ENVIRONMENT)
+
+# TODO(bzz) ideal: `go run` ONLY inside container, started from non-linux host
+ifdef bblfsh-tools # with Golang
+    ifdef in-container
+        bblfsh-tools :=  go run /go/src/github.com/bblfsh/sdk/cli/bblfsh-tools/main.go
+    endif
     $(shell $(bblfsh-tools) manifest > $(manifest))
 endif
 
