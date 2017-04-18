@@ -45,7 +45,7 @@ func (d *Driver) run(args []string) error {
 
 	cmd := cmd{Driver: d}
 
-	if len(os.Args) == 1 {
+	if len(args) == 1 {
 		cmd := &serveCommand{cmd}
 		return cmd.Execute(nil)
 	}
