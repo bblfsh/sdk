@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bblfsh/sdk"
 	"github.com/bblfsh/sdk/uast"
 	"github.com/bblfsh/sdk/uast/ann"
 
@@ -45,7 +44,6 @@ func (d *Driver) run(args []string) error {
 	d.initialize()
 
 	cmd := cmd{Driver: d}
-	cmd.NativeBin = sdk.NativeBin
 
 	if len(os.Args) == 1 {
 		cmd := &serveCommand{cmd}
@@ -89,7 +87,7 @@ func (d *Driver) initialize() {
 
 type cmd struct {
 	*Driver
-	NativeBin string `long:"native-bin" description:"alternative path for the native binary"`
+	NativeBin string `long:"native-bin" description:"alternative path for the native binary" default:"/opt/driver/bin/native"`
 }
 
 func (c cmd) client() (*UASTClient, error) {
