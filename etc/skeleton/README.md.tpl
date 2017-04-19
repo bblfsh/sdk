@@ -16,12 +16,13 @@ Development Environment
 Requirements:
 - `docker`
 - [`bblfsh-sdk`](https://github.com/bblfsh/sdk) _(go get -u github.com/bblfsh/sdk/...)_
+- UAST converter dependencies _(go get -t -v ./...)_
 
 To initialize the build system execute: `bblfsh-sdk prepare-build`, at the root of the project. This will install the SDK at `.sdk` for this driver.
 
 To execute the tests just execute `make test`, this will execute the test over the native and the go components of the driver. Use `make test-native` to run the test only over the native component or `make test-driver` to run the test just over the go component.
 
-The build is done executing `make build`. To evaluate the result, a docker container, execute:
+The build is done executing `make build`. To evaluate the result using a docker container, execute:
 `docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:6]>`
 
 
