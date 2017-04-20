@@ -57,7 +57,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 	}
 
 	if includes.Is(IncludePositions) && !n.EndPosition.IsEmpty() {
-		if _, err := fmt.Fprintf(w, "%EndPosition: {\n", istr); err != nil {
+		if _, err := fmt.Fprintf(w, "%sEndPosition: {\n", istr); err != nil {
 			return err
 		}
 
