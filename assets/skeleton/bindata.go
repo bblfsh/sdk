@@ -9,7 +9,6 @@
 // etc/skeleton/README.md.tpl
 // etc/skeleton/driver/main.go.tpl
 // etc/skeleton/driver/normalizer/normalizer.go
-// etc/skeleton/driver/normalizer/normalizer_test.go
 // etc/skeleton/git/hooks/pre-commit
 // etc/skeleton/manifest.toml.tpl
 // DO NOT EDIT!
@@ -1041,46 +1040,6 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 	return a, nil
 }
 
-var _driverNormalizerNormalizer_testGo = []byte(`package normalizer
-
-import (
-	"os/exec"
-	"testing"
-	"time"
-
-	"github.com/bblfsh/sdk"
-
-	"github.com/stretchr/testify/require"
-)
-
-func TestNativeBinary(t *testing.T) {
-	r := require.New(t)
-
-	cmd := exec.Command(sdk.NativeBinTest)
-	err := cmd.Start()
-	r.Nil(err)
-
-	time.Sleep(time.Second)
-	err = cmd.Process.Kill()
-	r.Nil(err)
-}
-`)
-
-func driverNormalizerNormalizer_testGoBytes() ([]byte, error) {
-	return _driverNormalizerNormalizer_testGo, nil
-}
-
-func driverNormalizerNormalizer_testGo() (*asset, error) {
-	bytes, err := driverNormalizerNormalizer_testGoBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "driver/normalizer/normalizer_test.go", size: 326, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _gitHooksPreCommit = []byte(`#!/bin/bash
 last_stash=$(git rev-parse -q --verify refs/stash)
 git stash save -q --keep-index "automatic stash on pre-commit at $(git branch  --points-at HEAD)";
@@ -1218,7 +1177,6 @@ var _bindata = map[string]func() (*asset, error){
 	"README.md.tpl": readmeMdTpl,
 	"driver/main.go.tpl": driverMainGoTpl,
 	"driver/normalizer/normalizer.go": driverNormalizerNormalizerGo,
-	"driver/normalizer/normalizer_test.go": driverNormalizerNormalizer_testGo,
 	"git/hooks/pre-commit": gitHooksPreCommit,
 	"manifest.toml.tpl": manifestTomlTpl,
 }
@@ -1274,7 +1232,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"main.go.tpl": &bintree{driverMainGoTpl, map[string]*bintree{}},
 		"normalizer": &bintree{nil, map[string]*bintree{
 			"normalizer.go": &bintree{driverNormalizerNormalizerGo, map[string]*bintree{}},
-			"normalizer_test.go": &bintree{driverNormalizerNormalizer_testGo, map[string]*bintree{}},
 		}},
 	}},
 	"git": &bintree{nil, map[string]*bintree{
