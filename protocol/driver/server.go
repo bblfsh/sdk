@@ -1,8 +1,9 @@
-package protocol
+package driver
 
 import (
 	"io"
 
+	"github.com/bblfsh/sdk/protocol"
 	"github.com/bblfsh/sdk/protocol/jsonlines"
 
 	"srcd.works/go-errors.v0"
@@ -11,12 +12,13 @@ import (
 var (
 	ErrDecodingRequest  = errors.NewKind("error decoding request")
 	ErrEncodingResponse = errors.NewKind("error encoding response")
+	ErrFatalParsing     = errors.NewKind("error from UAST parser")
 
 	noErrClose = errors.NewKind("clean close").New()
 )
 
 type Server struct {
-	*UASTClient
+	UASTParser
 
 	In  io.Reader
 	Out io.Writer
@@ -57,7 +59,7 @@ func (s *Server) serve() {
 }
 
 func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
-	req := &ParseUASTRequest{}
+	req := &protocol.ParseUASTRequest{}
 	if err := dec.Decode(req); err != nil {
 		if err == io.EOF {
 			return noErrClose
@@ -66,9 +68,9 @@ func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 		return s.error(enc, ErrDecodingRequest.Wrap(err))
 	}
 
-	resp, err := s.ParseUAST(req)
+	resp, err := s.UASTParser.ParseUAST(req)
 	if err != nil {
-		return s.error(enc, err)
+		return ErrFatalParsing.Wrap(err)
 	}
 
 	if err := enc.Encode(resp); err != nil {
@@ -86,9 +88,9 @@ func (s *Server) error(enc jsonlines.Encoder, err error) error {
 	return nil
 }
 
-func newFatalResponse(err error) *ParseUASTResponse {
-	return &ParseUASTResponse{
-		Status: Fatal,
+func newFatalResponse(err error) *protocol.ParseUASTResponse {
+	return &protocol.ParseUASTResponse{
+		Status: protocol.Fatal,
 		Errors: []string{err.Error()},
 	}
 }

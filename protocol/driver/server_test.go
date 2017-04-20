@@ -1,27 +1,40 @@
-package protocol
+package driver
 
 import (
 	"io"
 	"testing"
 	"time"
 
+	"github.com/bblfsh/sdk/protocol"
 	"github.com/bblfsh/sdk/protocol/jsonlines"
-	"github.com/bblfsh/sdk/uast"
-	"github.com/bblfsh/sdk/uast/ann"
 
 	"github.com/stretchr/testify/require"
 )
 
+type mockUASTParser struct {
+	Response *protocol.ParseUASTResponse
+	Error    error
+}
+
+func (p *mockUASTParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
+	return p.Response, p.Error
+}
+
+func (p *mockUASTParser) Close() error {
+	return nil
+}
+
 func TestServerOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		err := enc.Encode(&ParseUASTRequest{Content: "foo"})
+		p.Response = &protocol.ParseUASTResponse{}
+		err := enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp := &ParseUASTResponse{}
+		resp := &protocol.ParseUASTResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -31,22 +44,23 @@ func TestServerOneGood(t *testing.T) {
 
 func TestServerOneMalformedAndOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
+		p.Response = &protocol.ParseUASTResponse{}
 		err := enc.Encode("BAD REQUEST")
 		require.NoError(err)
 
-		resp := &ParseUASTResponse{}
+		resp := &protocol.ParseUASTResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
-		require.Equal(Fatal, resp.Status)
+		require.Equal(protocol.Fatal, resp.Status)
 
-		err = enc.Encode(&ParseUASTRequest{Content: "foo"})
+		err = enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp = &ParseUASTResponse{}
+		resp = &protocol.ParseUASTResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -54,30 +68,23 @@ func TestServerOneMalformedAndOneGood(t *testing.T) {
 	})
 }
 
-func testServer(t *testing.T, exitError bool, f func(io.WriteCloser, io.Reader)) {
+func testServer(t *testing.T, exitError bool, f func(*mockUASTParser, io.WriteCloser, io.Reader)) {
 	require := require.New(t)
 
 	sIn, cIn := io.Pipe()
 	cOut, sOut := io.Pipe()
 
-	n, err := testExecNative()
-	require.NoError(err)
-	require.NotNil(n)
-
+	p := &mockUASTParser{}
 	s := &Server{
-		In:  sIn,
-		Out: sOut,
-		UASTClient: &UASTClient{
-			NativeClient: n,
-			ToNoder:      &uast.BaseToNoder{},
-			Annotate:     ann.On(ann.Any),
-		},
+		In:         sIn,
+		Out:        sOut,
+		UASTParser: p,
 	}
 
-	err = s.Start()
+	err := s.Start()
 	require.NoError(err)
 
-	f(cIn, cOut)
+	f(p, cIn, cOut)
 
 	waitDone := make(chan struct{})
 	go func() {

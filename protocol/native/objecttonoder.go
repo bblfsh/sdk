@@ -1,9 +1,11 @@
-package uast
+package native
 
 import (
 	"fmt"
 	"sort"
 	"strconv"
+
+	"github.com/bblfsh/sdk/uast"
 
 	"srcd.works/go-errors.v0"
 )
@@ -17,21 +19,10 @@ var (
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
 )
 
-// ToNoder is a converter of source ASTs to *Node.
-type ToNoder interface {
-	// ToNode converts the source AST to a *Node.
-	ToNode(src interface{}) (*Node, error)
-}
-
-const (
-	// InternalRoleKey is a key string uses in properties to use the internal
-	// role of a node in the AST, if any.
-	InternalRoleKey = "internalRole"
-)
-
-// BaseOriginalToNoder is an implementation of OriginalToNoder that aims to work
-// for the most common source ASTs.
-type BaseToNoder struct {
+// ObjectToNoder is a ToNoder for trees that are represented as nested JSON objects.
+// That is, an interface{} containing maps, slices, strings and integers. It
+// then converts from that structure to *Node.
+type ObjectToNoder struct {
 	// InternalTypeKey is a key in the source AST that can be used to get the
 	// InternalType of a node.
 	InternalTypeKey string
@@ -62,7 +53,7 @@ type BaseToNoder struct {
 	TopLevelIsRootNode bool
 }
 
-func (c *BaseToNoder) ToNode(v interface{}) (*Node, error) {
+func (c *ObjectToNoder) ToNode(v interface{}) (*uast.Node, error) {
 	src, ok := v.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnsupported.New("non-object root node")
@@ -98,13 +89,13 @@ func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (
 	panic("unreachable")
 }
 
-func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
+func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnexpectedObject.New("map[string]interface{}", obj)
 	}
 
-	n := NewNode()
+	n := uast.NewNode()
 
 	// We need to have the internalkey before iterating others
 	internalKey, err := c.getInternalKeyFromObject(obj)
@@ -171,21 +162,21 @@ func (c *BaseToNoder) toNode(obj interface{}) (*Node, error) {
 	return n, nil
 }
 
-func (c *BaseToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
+func (c *ObjectToNoder) mapToNode(k string, obj map[string]interface{}) (*uast.Node, error) {
 	n, err := c.toNode(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	n.Properties[InternalRoleKey] = k
+	n.Properties[uast.InternalRoleKey] = k
 
 	return n, nil
 }
 
-func (c *BaseToNoder) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*Node, error) {
-	kn := NewNode()
+func (c *ObjectToNoder) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*uast.Node, error) {
+	kn := uast.NewNode()
 
-	var ns []*Node
+	var ns []*uast.Node
 	for _, v := range s {
 		n, err := c.toNode(v)
 		if err != nil {
@@ -206,22 +197,22 @@ func (c *BaseToNoder) sliceToNodeWithChildren(k string, s []interface{}, parentK
 	return kn, nil
 }
 
-func (c *BaseToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*Node, error) {
-	var ns []*Node
+func (c *ObjectToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*uast.Node, error) {
+	var ns []*uast.Node
 	for _, v := range s {
 		n, err := c.toNode(v)
 		if err != nil {
 			return nil, err
 		}
 
-		n.Properties[InternalRoleKey] = k
+		n.Properties[uast.InternalRoleKey] = k
 		ns = append(ns, n)
 	}
 
 	return ns, nil
 }
 
-func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
+func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
 		s := fmt.Sprint(o)
@@ -241,7 +232,7 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 			}
 
 			n.Token = tk
- 		}
+		}
 		return nil
 	case c.OffsetKey == k:
 		i, err := toUint32(o)
@@ -271,11 +262,11 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 	return nil
 }
 
-func (c *BaseToNoder) isTokenKey(key string) bool {
+func (c *ObjectToNoder) isTokenKey(key string) bool {
 	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
-func (c *BaseToNoder) syntheticToken(key string) string {
+func (c *ObjectToNoder) syntheticToken(key string) string {
 	if c.SyntheticTokens == nil {
 		return ""
 	}
@@ -283,7 +274,7 @@ func (c *BaseToNoder) syntheticToken(key string) string {
 	return c.SyntheticTokens[key]
 }
 
-func (c *BaseToNoder) setInternalKey(n *Node, k string) error {
+func (c *ObjectToNoder) setInternalKey(n *uast.Node, k string) error {
 	if n.InternalType != "" && n.InternalType != k {
 		return ErrTwoTypesSameNode.New(n.InternalType, k)
 	}
@@ -292,7 +283,7 @@ func (c *BaseToNoder) setInternalKey(n *Node, k string) error {
 	return nil
 }
 
-func (c *BaseToNoder) getInternalKeyFromObject(obj interface{}) (string, error) {
+func (c *ObjectToNoder) getInternalKeyFromObject(obj interface{}) (string, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return "", ErrUnexpectedObject.New("map[string]interface{}", obj)
@@ -325,15 +316,15 @@ func toUint32(v interface{}) (uint32, error) {
 	}
 }
 
-type byOffset []*Node
+type byOffset []*uast.Node
 
 func (s byOffset) Len() int      { return len(s) }
 func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s byOffset) Less(i, j int) bool {
 	a := s[i]
 	b := s[j]
-	apos := a.startPosition()
-	bpos := b.startPosition()
+	apos := startPosition(a)
+	bpos := startPosition(b)
 	if apos.IsEmpty() {
 		return false
 	}
@@ -343,4 +334,20 @@ func (s byOffset) Less(i, j int) bool {
 	}
 
 	return apos.Offset < bpos.Offset
+}
+
+func startPosition(n *uast.Node) uast.Position {
+	if !n.StartPosition.IsEmpty() {
+		return n.StartPosition
+	}
+
+	var min uast.Position
+	for _, c := range n.Children {
+		other := startPosition(c)
+		if min.IsEmpty() || other.Offset < min.Offset {
+			min = other
+		}
+	}
+
+	return min
 }
