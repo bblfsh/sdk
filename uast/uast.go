@@ -476,11 +476,6 @@ type Position struct {
 	Col uint32
 }
 
-// IsEmpty returns true if the position is empty.
-func (p Position) IsEmpty() bool {
-	return p.Offset == 0 && p.Line == 0 && p.Col == 0
-}
-
 // Node is a node in a UAST.
 //
 //proteus:generate
@@ -498,10 +493,10 @@ type Node struct {
 	Token string `json:",omitempty"`
 	// StartPosition is the position where this node starts in the original
 	// source code file.
-	StartPosition Position `json:",omitempty"`
+	StartPosition *Position `json:",omitempty"`
 	// EndPosition is the position where this node ends in the original
 	// source code file.
-	EndPosition Position `json:",omitempty"`
+	EndPosition *Position `json:",omitempty"`
 	// Roles is a list of Role that this node has. It is a language-independent
 	// annotation.
 	Roles []Role `json:",omitempty"`

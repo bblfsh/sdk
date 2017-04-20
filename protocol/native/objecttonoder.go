@@ -240,6 +240,10 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 			return err
 		}
 
+		if n.StartPosition == nil {
+			n.StartPosition = &uast.Position{}
+		}
+
 		n.StartPosition.Offset = i
 	case c.LineKey == k:
 		i, err := toUint32(o)
@@ -247,11 +251,19 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 			return err
 		}
 
+		if n.StartPosition == nil {
+			n.StartPosition = &uast.Position{}
+		}
+
 		n.StartPosition.Line = i
 	case c.ColumnKey == k:
 		i, err := toUint32(o)
 		if err != nil {
 			return err
+		}
+
+		if n.StartPosition == nil {
+			n.StartPosition = &uast.Position{}
 		}
 
 		n.StartPosition.Col = i
@@ -325,26 +337,30 @@ func (s byOffset) Less(i, j int) bool {
 	b := s[j]
 	apos := startPosition(a)
 	bpos := startPosition(b)
-	if apos.IsEmpty() {
+	if apos == nil {
 		return false
 	}
 
-	if bpos.IsEmpty() {
+	if bpos == nil {
 		return true
 	}
 
 	return apos.Offset < bpos.Offset
 }
 
-func startPosition(n *uast.Node) uast.Position {
-	if !n.StartPosition.IsEmpty() {
+func startPosition(n *uast.Node) *uast.Position {
+	if n.StartPosition != nil {
 		return n.StartPosition
 	}
 
-	var min uast.Position
+	var min *uast.Position
 	for _, c := range n.Children {
 		other := startPosition(c)
-		if min.IsEmpty() || other.Offset < min.Offset {
+		if other == nil {
+			continue
+		}
+
+		if min == nil || other.Offset < min.Offset {
 			min = other
 		}
 	}
