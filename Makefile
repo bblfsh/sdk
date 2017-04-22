@@ -26,7 +26,10 @@ COVERAGE_MODE = atomic
 
 all: bindata
 
-bindata: $(ASSETS)
+bindata: | install-go-bindata $(ASSETS)
+
+install-go-bindata:
+	go get -u github.com/jteeuwen/go-bindata/...
 
 $(DEPENDENCIES):
 	$(GO_GET) $@/...
