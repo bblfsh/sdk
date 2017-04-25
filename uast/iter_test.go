@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPreOrderPathIter(t *testing.T) {
+func TestOrderPathIter(t *testing.T) {
 	require := require.New(t)
 
 	n := &Node{InternalType: "a",
@@ -19,7 +19,7 @@ func TestPreOrderPathIter(t *testing.T) {
 		},
 	}
 
-	iter := NewPreOrderPathIter(NewPath(n))
+	iter := NewOrderPathIter(NewPath(n))
 	var result []string
 	for {
 		p := iter.Next()

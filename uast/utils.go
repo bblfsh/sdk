@@ -3,7 +3,7 @@ package uast
 // Tokens returns a slice of tokens contained in the node.
 func Tokens(n *Node) []string {
 	var tokens []string
-	iter := NewPreOrderPathIter(NewPath(n))
+	iter := NewOrderPathIter(NewPath(n))
 	for {
 		p := iter.Next()
 		if p.IsEmpty() {
@@ -15,6 +15,5 @@ func Tokens(n *Node) []string {
 			tokens = append(tokens, n.Token)
 		}
 	}
-
 	return tokens
 }

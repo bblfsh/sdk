@@ -40,6 +40,13 @@ const (
 	BinaryExpressionRight
 	BinaryExpressionOp
 
+	// Infix should mark the nodes which are parents of expression nodes using infix notation, e.g.: a+b.
+	// Nodes without Infix or Postfix mark are considered in prefix order by default.
+	Infix
+	// Postfix should mark the nodes which are parents of nodes using postfix notation, e.g.: ab+.
+	// Nodes without Infix or Postfix mark are considered in prefix order by default.
+	Postfix
+
 	// Binary bitwise operators, used to alterate bits on numeral variables
 
 	// OpBitwiseLeftShift is the binary bitwise shift to the left operator (i.e. << in most languages)
