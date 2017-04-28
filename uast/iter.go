@@ -43,28 +43,83 @@ func (i *sliceIter) Next() Path {
 	return n
 }
 
-// NewPreOrderPathIter creates an iterator that iterates all tree nodes in pre-order.
-func NewPreOrderPathIter(p Path) PathStepIter {
-	return &preOrderPathIter{
-		stack: []PathIter{newSliceIter(p)},
-	}
-}
-
-type preOrderPathIter struct {
+type orderPathIter struct {
 	stack []PathIter
 	last  Path
 }
 
-func (i *preOrderPathIter) Next() Path {
+// NewOrderPathIter creates an iterator that iterates all tree nodes (by default it
+// will use preorder traversal but will switch to inorder or postorder if the Infix and
+// Postfix roles are found).
+func NewOrderPathIter(p Path) PathStepIter {
+	return &orderPathIter{
+		stack: []PathIter{newSliceIter(p)},
+	}
+}
+
+const (
+	preOrder = iota
+	inOrder
+	postOrder
+)
+
+func getNextIterType(n *Node) int {
+	var order int
+	for _, r := range n.Roles {
+		switch r {
+		case Infix:
+			order = inOrder
+		case Postfix:
+			order = postOrder
+		default:
+			order = preOrder
+		}
+	}
+
+	return order
+}
+
+// Make a copy of the Node removing the children. Used to
+// add nodes with the InOrder or PostOrder roles to the stack
+// when their children have been already added
+func noChildrenNodeCopy(n *Node) *Node {
+	noChildrenNode := *n
+	noChildrenNode.Children = nil
+	return &noChildrenNode
+}
+
+// Adds to the orderPathIter stack with the right order depending on
+// the order Role with (if set) can be Infix, Postfix or Prefix. Defaults to Preorder
+// if the order Role is not set. This also updates i.last.
+func (i *orderPathIter) addToStackWithOrder(n *Node) {
+	hasChildren := len(n.Children) > 0
+
+	iterType := getNextIterType(n)
+	if iterType == inOrder && hasChildren {
+		// Right
+		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[1]))
+		// Relator
+		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
+		// left
+		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[0]))
+	} else if iterType == postOrder && hasChildren {
+		// Children
+		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
+		// Relator
+		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
+	} else if hasChildren{
+		// no order role or (default) preOrder
+		// (children not added to the stack):
+		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
+	}
+}
+
+func (i *orderPathIter) Next() Path {
 	for {
 		if !i.last.IsEmpty() {
 			n := i.last.Node()
-			if len(n.Children) > 0 {
-				i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
-			}
+			i.addToStackWithOrder(n)
 		}
-
-		i.last = nil
 
 		if len(i.stack) == 0 {
 			break
@@ -78,12 +133,22 @@ func (i *preOrderPathIter) Next() Path {
 		}
 
 		i.last = p
+		n := p.Node()
+
+		// Check if the item has the role inOrder or postOrder and have children; in that
+		// case skip it since the children and the (childless) copy of the node have already
+		// been added in addToStackWithOrder in the correct order
+		iterType := getNextIterType(n)
+		if (iterType == inOrder || iterType == postOrder) && n.Children != nil {
+			continue
+		}
+
 		return p
 	}
 
 	return NewPath()
 }
 
-func (i *preOrderPathIter) Step() {
+func (i *orderPathIter) Step() {
 	i.last = nil
 }

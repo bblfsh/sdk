@@ -238,7 +238,7 @@ func newMatchPathIter(n *uast.Node, axis axis, predicates []Predicate) uast.Path
 	return &matchPathIter{
 		axis:       axis,
 		predicates: predicates,
-		iter:       uast.NewPreOrderPathIter(uast.NewPath(n)),
+		iter:       uast.NewOrderPathIter(uast.NewPath(n)),
 	}
 }
 
