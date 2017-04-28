@@ -231,7 +231,17 @@ func (c *BaseToNoder) addProperty(n *Node, k string, o interface{}) error {
 
 		n.Token = s
 	case c.InternalTypeKey == k:
-		// should be already set by toNode
+		// InternalType should be already set by toNode, but check if
+		// they InternalKey is one of the ones in SyntheticTokens.
+		s := fmt.Sprint(o)
+		tk := c.syntheticToken(s)
+		if tk != "" {
+			if n.Token != "" && n.Token != tk {
+				return ErrTwoTokensSameNode.New(n.Token, tk)
+			}
+
+			n.Token = tk
+ 		}
 		return nil
 	case c.OffsetKey == k:
 		i, err := toUint32(o)
