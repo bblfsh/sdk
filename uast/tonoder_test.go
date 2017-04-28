@@ -188,6 +188,32 @@ func TestPropertyListPromotionAll(t *testing.T) {
 	require.NotNil(child)
 }
 
+func TestSyntheticTokens(t *testing.T) {
+	require := require.New(t)
+
+	f, err := getFixture("java_example_1.json")
+	require.NoError(err)
+
+	var c ToNoder = &BaseToNoder{
+		InternalTypeKey: "internalClass",
+		LineKey:         "line",
+		SyntheticTokens: map[string]string{
+			"CompilationUnit": "TestToken",
+		},
+	}
+	n, err := c.ToNode(f)
+	require.NoError(err)
+	require.NotNil(n)
+	child := findChildWithInternalType(n, "CompilationUnit")
+
+	require.Nil(child)
+	n, err = c.ToNode(f)
+	require.NoError(err)
+	require.NotNil(n)
+	require.True(n.Token == "TestToken")
+
+}
+
 func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
