@@ -187,7 +187,6 @@ if [[ -z ${DRIVER_IMAGE} ]] ; then
 	exit 1
 fi
 
-PYTHON="${PYTHON:-python3}"
 DOCKER="${DOCKER:-docker}"
 TOOLS="bblfsh-tools"
 
@@ -219,7 +218,6 @@ require() {
 
 # check requirements
 require "${TOOLS}" "install bblfsh-sdk"
-require "${PYTHON}" "install Python 3 or set its path in PYTHON environment variable"
 require "${DOCKER}" "install Docker or set its path in DOCKER environment variable"
 
 # LANGUAGE is defined by manifest
@@ -227,7 +225,7 @@ eval $("${TOOLS}" manifest)
 
 parse_native_ast() {
 	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-native /code/$(readlink -f $1) | "${PYTHON}" -m json.tool --sort-keys
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-native --format=prettyjson /code/$(readlink -f $1)
 }
 
 parse_uast() {
@@ -288,7 +286,7 @@ func etcItBash() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/it.bash", size: 2383, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/it.bash", size: 2250, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

@@ -154,7 +154,8 @@ func (c *serveCommand) Execute(args []string) error {
 
 type parseNativeASTCommand struct {
 	cmd
-	Args struct {
+	Format string `long:"format" default:"json" description:"json, prettyjson (default: json)"`
+	Args   struct {
 		File string
 	} `positional-args:"yes"`
 }
@@ -182,6 +183,10 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 	}
 
 	e := json.NewEncoder(c.Out)
+	if c.Format == "prettyjson" {
+		e.SetIndent("", "    ")
+	}
+
 	if err := e.Encode(resp); err != nil {
 		return err
 	}
@@ -191,7 +196,7 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 
 type parseUASTCommand struct {
 	cmd
-	Format string `long:"format" default:"json" description:"json, pretty (default: json)"`
+	Format string `long:"format" default:"json" description:"json, prettyjson, pretty (default: json)"`
 	Args   struct {
 		File string
 	} `positional-args:"yes"`
@@ -215,6 +220,8 @@ func formatter(f string) (func(io.Writer, *ParseUASTResponse) error, error) {
 	switch f {
 	case "pretty":
 		return prettyPrinter, nil
+	case "prettyjson":
+		return prettyJsonPrinter, nil
 	case "json":
 		return jsonPrinter, nil
 	default:
@@ -224,6 +231,12 @@ func formatter(f string) (func(io.Writer, *ParseUASTResponse) error, error) {
 
 func jsonPrinter(w io.Writer, r *ParseUASTResponse) error {
 	e := json.NewEncoder(w)
+	return e.Encode(r)
+}
+
+func prettyJsonPrinter(w io.Writer, r *ParseUASTResponse) error {
+	e := json.NewEncoder(w)
+	e.SetIndent("", "    ")
 	return e.Encode(r)
 }
 
