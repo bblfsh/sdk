@@ -66,7 +66,16 @@ $(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
 bblfsh-tools := $(shell command -v bblfsh-tools 2> /dev/null)
-ifdef bblfsh-tools
+in-container := $(shell echo $$ENVIRONMENT)
+host-platform := $(shell echo $$HOST_PLATFORM)
+
+ifdef bblfsh-tools # run only with Golang
+    ifdef in-container
+    ifneq ($(host-platform),Linux)
+        bblfsh-tools :=  go run /go/src/github.com/bblfsh/sdk/cli/bblfsh-tools/main.go
+    endif
+    endif
+
     $(shell $(bblfsh-tools) manifest > $(manifest))
 endif
 
@@ -75,7 +84,8 @@ include $(sdklocation)/make/functions.mk
 include $(sdklocation)/make/bootstrap.mk
 include $(sdklocation)/make/help.mk
 include $(sdklocation)/make/rules.mk
-sdkloaded = true`)
+sdkloaded = true
+`)
 
 func makefileBytes() ([]byte, error) {
 	return _makefile, nil
@@ -87,7 +97,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 935, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 1217, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -495,6 +505,7 @@ BUILD_NATIVE_CMD ?= $(DOCKER_RUN) \
 	-u $(BUILD_USER):$(BUILD_UID) \
 	-v $(BUILD_VOLUME_PATH):$(BUILD_VOLUME_TARGET) \
 	-e ENVIRONMENT=$(DOCKER_BUILD_NATIVE_IMAGE) \
+	-e HOST_PLATFORM=$(shell uname) \
 	$(DOCKER_BUILD_NATIVE_IMAGE)
 
 BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
@@ -502,6 +513,7 @@ BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
 	-v $(BUILD_VOLUME_PATH):$(BUILD_VOLUME_TARGET) \
 	-v $(GOPATH):/go \
 	-e ENVIRONMENT=$(DOCKER_BUILD_DRIVER_IMAGE) \
+	-e HOST_PLATFORM=$(shell uname) \
 	$(DOCKER_BUILD_DRIVER_IMAGE)
 
 # if VERBOSE is unset docker build is executed in quite mode
@@ -576,7 +588,8 @@ validate:
 	@$(RUN) $(bblfsh-sdk) update --dry-run
 
 clean:
-	@$(RUN) rm -rf $(BUILD_PATH)`)
+	@$(RUN) rm -rf $(BUILD_PATH)
+`)
 
 func makeRulesMkBytes() ([]byte, error) {
 	return _makeRulesMk, nil
@@ -588,7 +601,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 3787, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 3858, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
