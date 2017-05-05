@@ -3,6 +3,8 @@ package ann
 import (
 	"testing"
 
+	errors "srcd.works/go-errors.v0"
+
 	. "github.com/bblfsh/sdk/uast"
 
 	"github.com/stretchr/testify/require"
@@ -427,8 +429,9 @@ func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
 func TestRuleOnRulesActionError(t *testing.T) {
 	require := require.New(t)
 
+	var ErrTestMe = errors.NewKind("test me: %s")
 	rule := On(HasInternalType("root")).
-		Children(On(HasInternalType("foo")).Error("test error"))
+		Children(On(HasInternalType("foo")).Error(ErrTestMe.New("foo node found")))
 
 	input := &Node{
 		InternalType: "root",
@@ -437,5 +440,13 @@ func TestRuleOnRulesActionError(t *testing.T) {
 		}},
 	}
 	err := rule.Apply(input)
-	require.EqualError(err, "test error")
+	require.EqualError(err, "test me: foo node found")
+
+	extraInfoError, ok := err.(RuleError)
+	require.Equal(ok, true)
+	require.EqualError(extraInfoError, "test me: foo node found")
+	require.True(ErrTestMe.Is(extraInfoError.Inner()))
+
+	offendingNode := extraInfoError.Node()
+	require.Equal(offendingNode.InternalType, "foo")
 }
