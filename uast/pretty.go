@@ -42,7 +42,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludePositions) && !n.StartPosition.IsEmpty() {
+	if includes.Is(IncludePositions) && n.StartPosition != nil {
 		if _, err := fmt.Fprintf(w, "%sStartPosition: {\n", istr); err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludePositions) && !n.EndPosition.IsEmpty() {
+	if includes.Is(IncludePositions) && n.EndPosition != nil {
 		if _, err := fmt.Fprintf(w, "%sEndPosition: {\n", istr); err != nil {
 			return err
 		}
@@ -150,8 +150,8 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
-func printPosition(w io.Writer, indent int, pos Position) error {
-	if pos.IsEmpty() {
+func printPosition(w io.Writer, indent int, pos *Position) error {
+	if pos == nil {
 		return nil
 	}
 

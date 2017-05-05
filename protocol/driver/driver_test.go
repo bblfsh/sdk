@@ -49,7 +49,7 @@ func TestDriverParseUAST(t *testing.T) {
 			"./driver_test.go",
 		},
 		false,
-		`{"status":"ok","errors":null,"uast":{"Properties":{"key":"val"},"StartPosition":{"Offset":0,"Line":0,"Col":0},"EndPosition":{"Offset":0,"Line":0,"Col":0},"Roles":[1]}}
+		`{"status":"ok","errors":null,"uast":{"Properties":{"key":"val"},"Roles":[1]}}
 `,
 		"",
 	)

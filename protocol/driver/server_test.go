@@ -11,19 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockUASTParser struct {
-	Response *protocol.ParseUASTResponse
-	Error    error
-}
-
-func (p *mockUASTParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
-	return p.Response, p.Error
-}
-
-func (p *mockUASTParser) Close() error {
-	return nil
-}
-
 func TestServerOneGood(t *testing.T) {
 	require := require.New(t)
 	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
