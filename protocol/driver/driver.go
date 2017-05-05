@@ -157,6 +157,7 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 	}
 
 	e := json.NewEncoder(c.Out)
+	e.SetEscapeHTML(false)
 	if c.Format == "prettyjson" {
 		e.SetIndent("", "    ")
 	}
@@ -223,12 +224,14 @@ func formatter(f string) (func(io.Writer, *protocol.ParseUASTResponse) error, er
 
 func jsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
 	e := json.NewEncoder(w)
+	e.SetEscapeHTML(false)
 	return e.Encode(r)
 }
 
 func prettyJsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
 	e := json.NewEncoder(w)
 	e.SetIndent("", "    ")
+	e.SetEscapeHTML(false)
 	return e.Encode(r)
 }
 
