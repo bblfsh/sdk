@@ -24,7 +24,11 @@ func main() {
 				os.Exit(0)
 			}
 
-			os.Exit(-1)
+			if err := enc.Encode(newFatalResponse(err)); err != nil {
+				os.Exit(-1)
+			}
+
+			continue
 		}
 
 		resp := &ParseASTResponse{
@@ -38,5 +42,12 @@ func main() {
 		if err := enc.Encode(resp); err != nil {
 			os.Exit(-1)
 		}
+	}
+}
+
+func newFatalResponse(err error) *ParseASTResponse {
+	return &ParseASTResponse{
+		Status: protocol.Fatal,
+		Errors: []string{err.Error()},
 	}
 }

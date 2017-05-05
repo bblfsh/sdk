@@ -1,4 +1,4 @@
-package uast
+package native
 
 import (
 	"encoding/json"
@@ -7,19 +7,20 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bblfsh/sdk/uast"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	fixtureDir = "fixtures"
+	fixtureDir = "../../uast/fixtures"
 )
 
 func TestToNodeErrUnsupported(t *testing.T) {
 	require := require.New(t)
-	c := &BaseToNoder{}
-	var notAndAST struct{}
-	_, err := c.ToNode(notAndAST)
-	require.NotNil(err)
+	p := &ObjectToNoder{}
+	n, err := p.ToNode(struct{}{})
+	require.Error(err)
+	require.Nil(n)
 	require.True(ErrUnsupported.Is(err))
 }
 
@@ -32,21 +33,23 @@ func TestToNodeErrEmptyAST(t *testing.T) {
 
 func testToNodeErrEmptyAST(t *testing.T, topIsRoot bool) {
 	require := require.New(t)
-	c := &BaseToNoder{TopLevelIsRootNode: topIsRoot}
 	empty := make(map[string]interface{})
-	_, err := c.ToNode(empty)
-	require.NotNil(err)
+	p := &ObjectToNoder{TopLevelIsRootNode: topIsRoot}
+	n, err := p.ToNode(empty)
+	require.Error(err)
+	require.Nil(n)
 	require.True(ErrEmptyAST.Is(err))
 }
 
 func TestToNodeErrUnexpectedObjectSize(t *testing.T) {
 	require := require.New(t)
-	c := &BaseToNoder{}
 	multiRoot := make(map[string]interface{})
 	multiRoot["a"] = 0
 	multiRoot["b"] = 0
-	_, err := c.ToNode(multiRoot)
-	require.NotNil(err)
+	p := &ObjectToNoder{}
+	n, err := p.ToNode(multiRoot)
+	require.Error(err)
+	require.Nil(n)
 	require.True(ErrUnexpectedObjectSize.Is(err))
 }
 
@@ -56,13 +59,13 @@ func TestToNodeWithTopLevelRoot(t *testing.T) {
 	root, err := getRootAtTopLevelFromFixture()
 	require.Nil(err)
 
-	c := &BaseToNoder{
+	p := &ObjectToNoder{
 		TopLevelIsRootNode: true,
 		InternalTypeKey:    "internalClass",
 		LineKey:            "line",
 	}
 
-	n, err := c.ToNode(root)
+	n, err := p.ToNode(root)
 	require.NoError(err)
 	require.NotNil(n)
 }
@@ -116,11 +119,11 @@ func TestToNoderJava(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c ToNoder = &BaseToNoder{
+	var p ToNoder = &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
-	n, err := c.ToNode(f)
+	n, err := p.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 }
@@ -132,18 +135,18 @@ func TestPropertyListPromotionSpecific(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c ToNoder = &BaseToNoder{
+	p := &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
-	n, err := c.ToNode(f)
+	n, err := p.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 
 	child := findChildWithInternalType(n, "CompilationUnit.types")
 	require.Nil(child)
 
-	c = &BaseToNoder{
+	p = &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		PromotedPropertyLists: map[string]map[string]bool{
@@ -152,7 +155,7 @@ func TestPropertyListPromotionSpecific(t *testing.T) {
 		PromoteAllPropertyLists: false,
 	}
 
-	n, err = c.ToNode(f)
+	n, err = p.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 }
@@ -164,23 +167,23 @@ func TestPropertyListPromotionAll(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c ToNoder = &BaseToNoder{
+	p := &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
-	n, err := c.ToNode(f)
+	n, err := p.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 	child := findChildWithInternalType(n, "CompilationUnit.types")
 	require.Nil(child)
 
-	c = &BaseToNoder{
+	p = &ObjectToNoder{
 		InternalTypeKey:         "internalClass",
 		LineKey:                 "line",
 		PromoteAllPropertyLists: true,
 	}
 
-	n, err = c.ToNode(f)
+	n, err = p.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 
@@ -194,7 +197,7 @@ func TestSyntheticTokens(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c ToNoder = &BaseToNoder{
+	var c ToNoder = &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		SyntheticTokens: map[string]string{
@@ -214,7 +217,7 @@ func TestSyntheticTokens(t *testing.T) {
 
 }
 
-func findChildWithInternalType(n *Node, internalType string) *Node {
+func findChildWithInternalType(n *uast.Node, internalType string) *uast.Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
 			return child

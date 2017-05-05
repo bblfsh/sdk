@@ -1,4 +1,4 @@
-package protocol
+package driver
 
 import (
 	"encoding/json"
@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bblfsh/sdk/protocol"
+	"github.com/bblfsh/sdk/protocol/native"
 	"github.com/bblfsh/sdk/uast"
 	"github.com/bblfsh/sdk/uast/ann"
 
@@ -20,8 +22,8 @@ type Driver struct {
 	Version string
 	// Build identifier.
 	Build string
-	// ToNoder converts original AST to *uast.Node.
-	ToNoder uast.ToNoder
+	// ASTParserBuilder creates a ASTParser.
+	ASTParserBuilder ASTParserBuilder
 	// Annotate contains an *ann.Rule to convert AST to UAST.
 	Annotate *ann.Rule
 	// In is the input of the driver. Defaults to os.Stdin.
@@ -35,12 +37,12 @@ type Driver struct {
 // Exec runs the driver with the given command line arguments.
 // Note that this method contains calls to os.Exit.
 func (d *Driver) Exec() {
-	if err := d.run(os.Args); err != nil {
+	if err := d.Run(os.Args); err != nil {
 		os.Exit(1)
 	}
 }
 
-func (d *Driver) run(args []string) error {
+func (d *Driver) Run(args []string) error {
 	d.initialize()
 
 	cmd := cmd{Driver: d}
@@ -87,36 +89,7 @@ func (d *Driver) initialize() {
 
 type cmd struct {
 	*Driver
-	NativeBin string `long:"native-bin" description:"alternative path for the native binary" default:"/opt/driver/bin/native"`
-}
-
-func (c cmd) client() (*UASTClient, error) {
-	native, err := ExecNative(c.NativeBin)
-	if err != nil {
-		return nil, err
-	}
-
-	return &UASTClient{
-		NativeClient: native,
-		ToNoder:      c.ToNoder,
-		Annotate:     c.Annotate,
-	}, nil
-}
-
-func (c cmd) parseUAST(path string) (*ParseUASTResponse, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("error reading file %s: %s", path, err.Error())
-	}
-
-	client, err := c.client()
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() { _ = client.Close() }()
-
-	return client.ParseUAST(&ParseUASTRequest{Content: string(b)})
+	ASTParserOptions
 }
 
 type serveCommand struct {
@@ -124,29 +97,32 @@ type serveCommand struct {
 }
 
 func (c *serveCommand) Execute(args []string) error {
-	client, err := c.client()
+	p, err := c.ASTParserBuilder(c.ASTParserOptions)
 	if err != nil {
-		return fmt.Errorf("error executing native: %s", err.Error())
+		return err
 	}
 
 	server := &Server{
-		In:         c.In,
-		Out:        c.Out,
-		UASTClient: client,
+		In:  c.In,
+		Out: c.Out,
+		UASTParser: &uastParser{
+			ASTParser:  p,
+			Annotation: c.Driver.Annotate,
+		},
 	}
 
 	if err := server.Start(); err != nil {
-		_ = client.Close()
+		_ = p.Close()
 		return fmt.Errorf("error starting server: %s", err.Error())
 	}
 
 	if err := server.Wait(); err != nil {
-		_ = client.Close()
+		_ = p.Close()
 		return fmt.Errorf("error waiting for server end: %s", err.Error())
 	}
 
-	if err := client.Close(); err != nil {
-		return fmt.Errorf("error closing native: %s", err.Error())
+	if err := p.Close(); err != nil {
+		return fmt.Errorf("error closing parser: %s", err.Error())
 	}
 
 	return nil
@@ -168,16 +144,14 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	client, err := c.client()
+	nc, err := native.ExecClient(c.NativeBin)
 	if err != nil {
-		return err
+		return fmt.Errorf("error executing native client: %s", c)
 	}
 
-	defer func() { _ = client.Close() }()
+	defer func() { _ = nc.Close() }()
 
-	resp, err := client.ParseNativeAST(&ParseNativeASTRequest{
-		Content: string(b),
-	})
+	resp, err := nc.ParseNativeAST(&native.ParseASTRequest{Content: string(b)})
 	if err != nil {
 		return err
 	}
@@ -208,7 +182,25 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		return err
 	}
 
-	resp, err := c.parseUAST(c.Args.File)
+	f := c.Args.File
+	b, err := ioutil.ReadFile(f)
+	if err != nil {
+		return fmt.Errorf("error reading file %s: %s", f, err.Error())
+	}
+
+	p, err := c.ASTParserBuilder(c.ASTParserOptions)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = p.Close() }()
+
+	up := &uastParser{
+		ASTParser:  p,
+		Annotation: c.Driver.Annotate,
+	}
+
+	resp, err := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
 	if err != nil {
 		return err
 	}
@@ -216,7 +208,7 @@ func (c *parseUASTCommand) Execute(args []string) error {
 	return fmter(c.Out, resp)
 }
 
-func formatter(f string) (func(io.Writer, *ParseUASTResponse) error, error) {
+func formatter(f string) (func(io.Writer, *protocol.ParseUASTResponse) error, error) {
 	switch f {
 	case "pretty":
 		return prettyPrinter, nil
@@ -229,18 +221,18 @@ func formatter(f string) (func(io.Writer, *ParseUASTResponse) error, error) {
 	}
 }
 
-func jsonPrinter(w io.Writer, r *ParseUASTResponse) error {
+func jsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
 	e := json.NewEncoder(w)
 	return e.Encode(r)
 }
 
-func prettyJsonPrinter(w io.Writer, r *ParseUASTResponse) error {
+func prettyJsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
 	e := json.NewEncoder(w)
 	e.SetIndent("", "    ")
 	return e.Encode(r)
 }
 
-func prettyPrinter(w io.Writer, r *ParseUASTResponse) error {
+func prettyPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
 	fmt.Fprintln(w, "Status: ", r.Status)
 	fmt.Fprintln(w, "Errors: ")
 	for _, err := range r.Errors {
@@ -259,7 +251,25 @@ type tokenizeCommand struct {
 }
 
 func (c *tokenizeCommand) Execute(args []string) error {
-	resp, err := c.parseUAST(c.Args.File)
+	f := c.Args.File
+	b, err := ioutil.ReadFile(f)
+	if err != nil {
+		return fmt.Errorf("error reading file %s: %s", f, err.Error())
+	}
+
+	p, err := c.ASTParserBuilder(c.ASTParserOptions)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = p.Close() }()
+
+	up := &uastParser{
+		ASTParser:  p,
+		Annotation: c.Driver.Annotate,
+	}
+
+	resp, err := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
 	if err != nil {
 		return err
 	}

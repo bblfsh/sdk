@@ -107,7 +107,7 @@ func (i *orderPathIter) addToStackWithOrder(n *Node) {
 		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
 		// Relator
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
-	} else if hasChildren{
+	} else if hasChildren {
 		// no order role or (default) preOrder
 		// (children not added to the stack):
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))

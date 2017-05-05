@@ -536,21 +536,11 @@ func (n *Node) String() string {
 	return buf.String()
 }
 
-func (n *Node) startPosition() Position {
-	if !n.StartPosition.IsEmpty() {
-		return n.StartPosition
-	}
-
-	var min Position
-	for _, c := range n.Children {
-		other := c.startPosition()
-		if min.IsEmpty() || other.Offset < min.Offset {
-			min = other
-		}
-	}
-
-	return min
-}
+const (
+	// InternalRoleKey is a key string uses in properties to use the internal
+	// role of a node in the AST, if any.
+	InternalRoleKey = "internalRole"
+)
 
 // IncludeFlag represents a set of fields to be included in a Hash or String.
 type IncludeFlag int64
@@ -609,7 +599,7 @@ func (p Path) Node() *Node {
 
 // Child creates a Path for a given child.
 func (p Path) Child(n *Node) Path {
-	dst := make(Path, len(p) + 1)
+	dst := make(Path, len(p)+1)
 	copy(dst, p)
 	dst[len(p)] = n
 	return dst
@@ -621,7 +611,7 @@ func (p Path) Parent() Path {
 		return Path(nil)
 	}
 
-	dst := make(Path, 0, len(p) - 1)
+	dst := make(Path, 0, len(p)-1)
 	copy(dst, p)
 	return dst
 }

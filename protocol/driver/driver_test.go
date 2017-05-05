@@ -1,9 +1,11 @@
-package protocol
+package driver_test
 
 import (
 	"bytes"
 	"testing"
 
+	"github.com/bblfsh/sdk/etc/skeleton/driver/normalizer"
+	. "github.com/bblfsh/sdk/protocol/driver"
 	"github.com/bblfsh/sdk/uast"
 	"github.com/bblfsh/sdk/uast/ann"
 
@@ -18,16 +20,16 @@ func testDriver(t *testing.T, args []string, expectedErr bool, expectedStdout, e
 	stderr := bytes.NewBuffer(nil)
 
 	d := &Driver{
-		Version:  "test",
-		Build:    "test",
-		ToNoder:  &uast.BaseToNoder{},
-		Annotate: ann.On(ann.Any).Roles(uast.SimpleIdentifier),
-		In:       stdin,
-		Out:      stdout,
-		Err:      stderr,
+		Version:          "test",
+		Build:            "test",
+		ASTParserBuilder: normalizer.ASTParserBuilder,
+		Annotate:         ann.On(ann.Any).Roles(uast.SimpleIdentifier),
+		In:               stdin,
+		Out:              stdout,
+		Err:              stderr,
 	}
 
-	err := d.run(args)
+	err := d.Run(args)
 	if expectedErr {
 		require.Error(err)
 	} else {
@@ -43,7 +45,7 @@ func TestDriverParseUAST(t *testing.T) {
 		[]string{
 			"driver",
 			"parse-uast",
-			"--native-bin=internal/testnative/native",
+			"--native-bin=../internal/testnative/native",
 			"./driver_test.go",
 		},
 		false,
@@ -59,7 +61,7 @@ func TestDriverParseNative(t *testing.T) {
 		[]string{
 			"driver",
 			"parse-native",
-			"--native-bin=internal/testnative/native",
+			"--native-bin=../internal/testnative/native",
 			"./driver_test.go",
 		},
 		false,
