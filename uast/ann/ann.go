@@ -2,8 +2,6 @@
 package ann
 
 import (
-	"errors"
-
 	"github.com/bblfsh/sdk/uast"
 )
 
@@ -96,9 +94,36 @@ func (r *Rule) Roles(roles ...uast.Role) *Rule {
 	return r.Do(AddRoles(roles...))
 }
 
+// RuleError values are returned by the annotation process when a rule
+// created by the Error function is activated.  A RuleError wraps the
+// desired error and carries the node that provoke the error.
+type RuleError interface {
+	// Error implements the error interface.
+	Error() string
+	// Inner returns the wrapped error.
+	Inner() error
+	// Node returns the offending node.
+	Node() *uast.Node
+}
+
+type ruleError struct {
+	error
+	node *uast.Node
+}
+
+// implements RuleError.
+func (e *ruleError) Inner() error {
+	return e.error
+}
+
+// implements RuleError.
+func (e *ruleError) Node() *uast.Node {
+	return e.node
+}
+
 // Error makes the rule application fail if the current rule matches.
-func (r *Rule) Error(msg string) *Rule {
-	return r.Do(ReturnError(msg))
+func (r *Rule) Error(err error) *Rule {
+	return r.Do(ReturnError(err))
 }
 
 // Do attaches actions to the rule.
@@ -220,11 +245,14 @@ func AddRoles(roles ...uast.Role) Action {
 	}
 }
 
-// Return error creates an action that always returns an error with the given
-// message.
-func ReturnError(msg string) Action {
+// ReturnError creates an action that always returns a RuleError
+// wrapping the given error with the offending node information.
+func ReturnError(err error) Action {
 	return func(n *uast.Node) error {
-		return errors.New(msg)
+		return &ruleError{
+			error: err,
+			node:  n,
+		}
 	}
 }
 
