@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/bblfsh/sdk/protocol"
+	"github.com/bblfsh/sdk/uast"
 	"github.com/bblfsh/sdk/uast/ann"
 )
 
@@ -22,6 +23,29 @@ type ASTParser interface {
 type UASTParser interface {
 	io.Closer
 	ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error)
+}
+
+// TransformationASTParser wraps another ASTParser and applies a transformation
+// to its results.
+type TransformationASTParser struct {
+	// ASTParser to delegate parsing.
+	ASTParser
+	// Transformation function to apply to resulting *uast.Node. The first
+	// argument is the original source code from the request. Any
+	// transformation to *uast.Node should be performed in-place. If error
+	// is returned, it will be propagated to the ParseAST call.
+	Transformation func([]byte, *uast.Node) error
+}
+
+// ParseAST calls the wrapped ASTParser and applies the transformation to its
+// result.
+func (p *TransformationASTParser) ParseAST(req *protocol.ParseASTRequest) (*protocol.ParseASTResponse, error) {
+	resp, err := p.ASTParser.ParseAST(req)
+	if err != nil || resp.Status == protocol.Fatal {
+		return resp, err
+	}
+
+	return resp, p.Transformation([]byte(req.Content), resp.AST)
 }
 
 type uastParser struct {
