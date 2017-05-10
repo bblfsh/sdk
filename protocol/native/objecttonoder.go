@@ -7,7 +7,7 @@ import (
 
 	"github.com/bblfsh/sdk/uast"
 
-	"srcd.works/go-errors.v0"
+	"gopkg.in/src-d/go-errors.v0"
 )
 
 var (

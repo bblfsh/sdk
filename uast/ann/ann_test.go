@@ -3,7 +3,7 @@ package ann
 import (
 	"testing"
 
-	errors "srcd.works/go-errors.v0"
+	errors "gopkg.in/src-d/go-errors.v0"
 
 	. "github.com/bblfsh/sdk/uast"
 
