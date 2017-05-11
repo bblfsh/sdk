@@ -312,6 +312,7 @@ const (
 
 	Break
 	Continue
+	Goto
 
 	// Block is a group of statements. If the source language has block scope,
 	// it should be annotated both with Block and BlockScope.
