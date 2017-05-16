@@ -332,7 +332,7 @@ RUNTIME_GO_VERSION ?=
 
 # optional variables
 DRIVER_DEV_PREFIX := dev
-DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
+DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-6)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
 DOCKER_IMAGE_VERSIONED ?= $(call escape_docker_tag,$(DOCKER_IMAGE):$(DRIVER_VERSION))
@@ -353,7 +353,8 @@ endif
 # if we are not in tag, the push is disabled
 ifeq ($(firstword $(subst -, ,$(DRIVER_VERSION))), $(DRIVER_DEV_PREFIX))
 	pushdisabled = "push disabled for development versions"
-endif`)
+endif
+`)
 
 func makeBootstrapMkBytes() ([]byte, error) {
 	return _makeBootstrapMk, nil
@@ -365,7 +366,7 @@ func makeBootstrapMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/bootstrap.mk", size: 950, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/bootstrap.mk", size: 951, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
