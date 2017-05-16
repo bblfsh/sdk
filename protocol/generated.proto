@@ -53,3 +53,10 @@ enum Status {
 	FATAL = 2 [(gogoproto.enumvalue_customname) = "Fatal"];
 }
 
+service ProtocolService {
+	// ParseAST uses DefaultParser to process the given AST parsing request.
+	rpc ParseAST (github.com.bblfsh.sdk.protocol.ParseASTRequest) returns (github.com.bblfsh.sdk.protocol.ParseASTResponse);
+	// ParseUAST uses DefaultParser to process the given UAST parsing request.
+	rpc ParseUAST (github.com.bblfsh.sdk.protocol.ParseUASTRequest) returns (github.com.bblfsh.sdk.protocol.ParseUASTResponse);
+}
+
