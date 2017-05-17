@@ -1,11 +1,12 @@
 package protocol
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/bblfsh/sdk/uast"
 )
 
-//go:generate stringer -type=Status
-//go:generate jsonenums -type=Status
 //go:generate proteus  -f $GOPATH/src -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast
 
 // Status is the status of a response.
@@ -20,6 +21,36 @@ const (
 	// Fatal status code. It is replied when the driver hasn't could get the AST.
 	Fatal
 )
+
+var statusToString = map[Status]string{
+	Ok:    "ok",
+	Error: "error",
+	Fatal: "fatal",
+}
+
+var stringToStatus = map[string]Status{
+	"ok":    Ok,
+	"error": Error,
+	"fatal": Fatal,
+}
+
+func (s Status) String() string {
+	return statusToString[s]
+}
+
+func (s Status) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+func (s *Status) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return fmt.Errorf("Status should be a string, got %s", data)
+	}
+
+	*s, _ = stringToStatus[str]
+	return nil
+}
 
 // ParseUASTRequest is a request to parse a file and get its UAST.
 //proteus:generate
