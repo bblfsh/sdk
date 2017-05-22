@@ -6,7 +6,7 @@ import (
 	"github.com/bblfsh/sdk/protocol"
 	"github.com/bblfsh/sdk/protocol/jsonlines"
 
-	"srcd.works/go-errors.v0"
+	"gopkg.in/src-d/go-errors.v0"
 )
 
 var (
