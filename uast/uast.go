@@ -186,9 +186,11 @@ const (
 	FunctionDeclarationName
 	// FunctionDeclarationReceiver is the target Type of a method or struct.
 	FunctionDeclarationReceiver
-	// FunctionDeclarationArgument is the parent node for the function formal arguments. The name will be
-	// specified as the token of the child FunctionDeclarationArgumentName and depending on the language it
-	// could have one or more child nodes of different types to implement them in the UAST like
+	// FunctionDeclarationArguments is the parent node grouping all FuncionDeclarationArgument nodes.
+	FunctionDeclarationArguments
+	// FunctionDeclarationArgument represents and individual formal argument. The name will be specified as the
+	// token of the child FunctionDeclarationArgumentName and depending on the language it could have one or
+	// more child nodes (or aditional roles) of different types to implement them in the UAST like
 	// FunctionDeclarationArgumentDefaultValue, type declarations (TODO), annotations (TODO), etc.
 	//FunctionDeclarationArguments
 	FunctionDeclarationArgument
