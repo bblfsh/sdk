@@ -6,7 +6,7 @@ RUNTIME_GO_VERSION ?=
 
 # optional variables
 DRIVER_DEV_PREFIX := dev
-DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-6)
+DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
 DOCKER_IMAGE_VERSIONED ?= $(call escape_docker_tag,$(DOCKER_IMAGE):$(DRIVER_VERSION))
