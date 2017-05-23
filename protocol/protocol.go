@@ -71,47 +71,13 @@ type ParseUASTResponse struct {
 	UAST *uast.Node `json:"uast"`
 }
 
-// ParseASTRequest is a request to parse a file and get its AST.
-//proteus:generate
-type ParseASTRequest struct {
-	// Content is the source code to be parsed.
-	Content string `json:"content"`
-}
-
-// ParseASTResponse is the reply to ParseASTRequest.
-//proteus:generate
-type ParseASTResponse struct {
-	// Status is the status of the parsing request.
-	Status Status `json:"status"`
-	// Errors contrains a list of parsing errors. If Status is ok, this list
-	// should always be empty.
-	Errors []string `json:"errors"`
-	// AST contains the parsed AST in its normalized form. That is the same
-	// type as the UAST, but without any annotation.
-	AST *uast.Node `json:"ast"`
-}
-
-// Parser can parse AST and UAST.
+// Parser can parse UAST.
 type Parser interface {
-	ParseAST(*ParseASTRequest) *ParseASTResponse
 	ParseUAST(*ParseUASTRequest) *ParseUASTResponse
 }
 
 // DefaultParser is the default parser used by ParseAST and ParseUAST.
 var DefaultParser Parser
-
-// ParseAST uses DefaultParser to process the given AST parsing request.
-//proteus:generate
-func ParseAST(req *ParseASTRequest) *ParseASTResponse {
-	if DefaultParser == nil {
-		return &ParseASTResponse{
-			Status: Fatal,
-			Errors: []string{"no default parser registered"},
-		}
-	}
-
-	return DefaultParser.ParseAST(req)
-}
 
 // ParseUAST uses DefaultParser to process the given UAST parsing request.
 //proteus:generate

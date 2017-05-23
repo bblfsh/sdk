@@ -988,10 +988,10 @@ var build string
 
 func main() {
 	d := driver.Driver{
-		Version:          version,
-		Build:            build,
-		ASTParserBuilder: normalizer.ASTParserBuilder,
-		Annotate:         normalizer.AnnotationRules,
+		Version:           version,
+		Build:             build,
+		UASTParserBuilder: normalizer.UASTParserBuilder,
+		Annotate:          normalizer.AnnotationRules,
 	}
 	d.Exec()
 }
@@ -1007,7 +1007,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 377, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 382, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1045,8 +1045,8 @@ import (
 	"github.com/bblfsh/sdk/protocol/native"
 )
 
-// ASTParserBuilder creates a parser that transform source code files into *uast.Node.
-func ASTParserBuilder(opts driver.ASTParserOptions) (driver.ASTParser, error) {
+// UASTParserBuilder creates a parser that transform source code files into *uast.Node.
+func UASTParserBuilder(opts driver.UASTParserOptions) (driver.UASTParser, error) {
 	toNoder := &native.ObjectToNoder{}
 	parser, err := native.ExecParser(toNoder, opts.NativeBin)
 	if err != nil {
@@ -1067,7 +1067,7 @@ func driverNormalizerParserGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 437, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 441, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

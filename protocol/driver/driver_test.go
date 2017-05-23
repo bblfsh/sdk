@@ -20,13 +20,13 @@ func testDriver(t *testing.T, args []string, expectedErr bool, expectedStdout, e
 	stderr := bytes.NewBuffer(nil)
 
 	d := &Driver{
-		Version:          "test",
-		Build:            "test",
-		ASTParserBuilder: normalizer.ASTParserBuilder,
-		Annotate:         ann.On(ann.Any).Roles(uast.SimpleIdentifier),
-		In:               stdin,
-		Out:              stdout,
-		Err:              stderr,
+		Version:           "test",
+		Build:             "test",
+		UASTParserBuilder: normalizer.UASTParserBuilder,
+		Annotate:          ann.On(ann.Any).Roles(uast.SimpleIdentifier),
+		In:                stdin,
+		Out:               stdout,
+		Err:               stderr,
 	}
 
 	err := d.Run(args)

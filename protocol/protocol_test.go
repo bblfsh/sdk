@@ -15,10 +15,6 @@ import (
 
 type mockParser struct{}
 
-func (p *mockParser) ParseAST(req *protocol.ParseASTRequest) *protocol.ParseASTResponse {
-	return &protocol.ParseASTResponse{Status: protocol.Ok}
-}
-
 func (p *mockParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
 	return &protocol.ParseUASTResponse{Status: protocol.Ok}
 }
@@ -54,13 +50,6 @@ func TestInvalidParser(t *testing.T) {
 	require.NoError(err)
 	require.Equal(protocol.Fatal, uresp.Status)
 
-	areq := &protocol.ParseASTRequest{
-		Content: "my source code",
-	}
-	aresp, err := client.ParseAST(context.TODO(), areq)
-	require.NoError(err)
-	require.Equal(protocol.Fatal, aresp.Status)
-
 	server.GracefulStop()
 }
 
@@ -84,23 +73,15 @@ func Example() {
 
 	client := protocol.NewProtocolServiceClient(conn)
 
-	ureq := &protocol.ParseUASTRequest{Content: "my source code"}
-	fmt.Println("Sending ParseUAST for:", ureq.Content)
-	uresp, err := client.ParseUAST(context.TODO(), ureq)
+	req := &protocol.ParseUASTRequest{Content: "my source code"}
+	fmt.Println("Sending ParseUAST for:", req.Content)
+	resp, err := client.ParseUAST(context.TODO(), req)
 	checkError(err)
-	fmt.Println("Got response with status:", uresp.Status.String())
-
-	areq := &protocol.ParseASTRequest{Content: "my source code"}
-	fmt.Println("Sending ParseAST for:", areq.Content)
-	aresp, err := client.ParseAST(context.TODO(), areq)
-	checkError(err)
-	fmt.Println("Got response with status:", aresp.Status.String())
+	fmt.Println("Got response with status:", resp.Status.String())
 
 	server.GracefulStop()
 
 	//Output: Sending ParseUAST for: my source code
-	// Got response with status: ok
-	// Sending ParseAST for: my source code
 	// Got response with status: ok
 }
 
