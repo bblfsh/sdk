@@ -35,13 +35,13 @@ func ExecParser(toNoder ToNoder, path string, args ...string) (*Parser, error) {
 	return &Parser{Client: c, ToNoder: toNoder}, nil
 }
 
-func (p *Parser) ParseAST(req *protocol.ParseASTRequest) (*protocol.ParseASTResponse, error) {
+func (p *Parser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
 	nativeResp, err := p.Client.ParseNativeAST(&ParseASTRequest{Content: req.Content})
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &protocol.ParseASTResponse{
+	resp := &protocol.ParseUASTResponse{
 		Status: nativeResp.Status,
 		Errors: nativeResp.Errors,
 	}
@@ -56,7 +56,7 @@ func (p *Parser) ParseAST(req *protocol.ParseASTRequest) (*protocol.ParseASTResp
 		return resp, nil
 	}
 
-	resp.AST = ast
+	resp.UAST = ast
 	return resp, nil
 }
 

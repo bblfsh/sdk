@@ -3,8 +3,8 @@ package driver
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/bblfsh/sdk/uast"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFillLineColFromOffset(t *testing.T) {

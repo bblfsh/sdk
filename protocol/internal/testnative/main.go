@@ -18,7 +18,7 @@ func main() {
 	dec := jsonlines.NewDecoder(os.Stdin)
 	enc := jsonlines.NewEncoder(os.Stdout)
 	for {
-		req := &protocol.ParseASTRequest{}
+		req := &protocol.ParseUASTRequest{}
 		if err := dec.Decode(req); err != nil {
 			if err == io.EOF {
 				os.Exit(0)

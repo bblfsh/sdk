@@ -22,8 +22,8 @@ type Driver struct {
 	Version string
 	// Build identifier.
 	Build string
-	// ASTParserBuilder creates a ASTParser.
-	ASTParserBuilder ASTParserBuilder
+	// UASTParserBuilder creates a ASTParser.
+	UASTParserBuilder UASTParserBuilder
 	// Annotate contains an *ann.Rule to convert AST to UAST.
 	Annotate *ann.Rule
 	// In is the input of the driver. Defaults to os.Stdin.
@@ -89,7 +89,7 @@ func (d *Driver) initialize() {
 
 type cmd struct {
 	*Driver
-	ASTParserOptions
+	UASTParserOptions
 }
 
 type serveCommand struct {
@@ -97,7 +97,7 @@ type serveCommand struct {
 }
 
 func (c *serveCommand) Execute(args []string) error {
-	p, err := c.ASTParserBuilder(c.ASTParserOptions)
+	p, err := c.UASTParserBuilder(c.UASTParserOptions)
 	if err != nil {
 		return err
 	}
@@ -105,8 +105,8 @@ func (c *serveCommand) Execute(args []string) error {
 	server := &Server{
 		In:  c.In,
 		Out: c.Out,
-		UASTParser: &uastParser{
-			ASTParser:  p,
+		UASTParser: &annotationParser{
+			UASTParser: p,
 			Annotation: c.Driver.Annotate,
 		},
 	}
@@ -189,15 +189,15 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	p, err := c.ASTParserBuilder(c.ASTParserOptions)
+	p, err := c.UASTParserBuilder(c.UASTParserOptions)
 	if err != nil {
 		return err
 	}
 
 	defer func() { _ = p.Close() }()
 
-	up := &uastParser{
-		ASTParser:  p,
+	up := &annotationParser{
+		UASTParser: p,
 		Annotation: c.Driver.Annotate,
 	}
 
@@ -260,15 +260,15 @@ func (c *tokenizeCommand) Execute(args []string) error {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	p, err := c.ASTParserBuilder(c.ASTParserOptions)
+	p, err := c.UASTParserBuilder(c.UASTParserOptions)
 	if err != nil {
 		return err
 	}
 
 	defer func() { _ = p.Close() }()
 
-	up := &uastParser{
-		ASTParser:  p,
+	up := &annotationParser{
+		UASTParser: p,
 		Annotation: c.Driver.Annotate,
 	}
 

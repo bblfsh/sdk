@@ -11,10 +11,10 @@ var build string
 
 func main() {
 	d := driver.Driver{
-		Version:          version,
-		Build:            build,
-		ASTParserBuilder: normalizer.ASTParserBuilder,
-		Annotate:         normalizer.AnnotationRules,
+		Version:           version,
+		Build:             build,
+		UASTParserBuilder: normalizer.UASTParserBuilder,
+		Annotate:          normalizer.AnnotationRules,
 	}
 	d.Exec()
 }

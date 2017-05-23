@@ -8,28 +8,23 @@ import (
 	"github.com/bblfsh/sdk/uast/ann"
 )
 
-type ASTParserOptions struct {
+type UASTParserOptions struct {
 	NativeBin string `long:"native-bin" description:"alternative path for the native binary" default:"/opt/driver/bin/native"`
 }
 
-// ASTParserBuilder is a function that given ParserOptions creates a Parser.
-type ASTParserBuilder func(ASTParserOptions) (ASTParser, error)
-
-type ASTParser interface {
-	io.Closer
-	ParseAST(req *protocol.ParseASTRequest) (*protocol.ParseASTResponse, error)
-}
+// UASTParserBuilder is a function that given ParserOptions creates a Parser.
+type UASTParserBuilder func(UASTParserOptions) (UASTParser, error)
 
 type UASTParser interface {
 	io.Closer
 	ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error)
 }
 
-// TransformationASTParser wraps another ASTParser and applies a transformation
+// TransformationUASTParser wraps another ASTParser and applies a transformation
 // to its results.
-type TransformationASTParser struct {
+type TransformationUASTParser struct {
 	// ASTParser to delegate parsing.
-	ASTParser
+	UASTParser
 	// Transformation function to apply to resulting *uast.Node. The first
 	// argument is the original source code from the request. Any
 	// transformation to *uast.Node should be performed in-place. If error
@@ -39,32 +34,26 @@ type TransformationASTParser struct {
 
 // ParseAST calls the wrapped ASTParser and applies the transformation to its
 // result.
-func (p *TransformationASTParser) ParseAST(req *protocol.ParseASTRequest) (*protocol.ParseASTResponse, error) {
-	resp, err := p.ASTParser.ParseAST(req)
+func (p *TransformationUASTParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
+	resp, err := p.UASTParser.ParseUAST(req)
 	if err != nil || resp.Status == protocol.Fatal {
 		return resp, err
 	}
 
-	return resp, p.Transformation([]byte(req.Content), resp.AST)
+	return resp, p.Transformation([]byte(req.Content), resp.UAST)
 }
 
-type uastParser struct {
-	ASTParser
+type annotationParser struct {
+	UASTParser
 	Annotation *ann.Rule
 }
 
-func (p *uastParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
-	astResp, err := p.ASTParser.ParseAST(&protocol.ParseASTRequest{
+func (p *annotationParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
+	resp, err := p.UASTParser.ParseUAST(&protocol.ParseUASTRequest{
 		Content: req.Content,
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	resp := &protocol.ParseUASTResponse{
-		Status: astResp.Status,
-		Errors: astResp.Errors,
-		UAST:   astResp.AST,
 	}
 
 	if resp.Status == protocol.Fatal {
@@ -78,6 +67,6 @@ func (p *uastParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseU
 	return resp, nil
 }
 
-func (p *uastParser) Close() error {
-	return p.ASTParser.Close()
+func (p *annotationParser) Close() error {
+	return p.UASTParser.Close()
 }
