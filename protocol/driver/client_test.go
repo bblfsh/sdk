@@ -1,0 +1,69 @@
+package driver
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"testing"
+
+	"github.com/bblfsh/sdk/protocol"
+	"github.com/bblfsh/sdk/protocol/jsonlines"
+	"github.com/bblfsh/sdk/uast"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestClient(t *testing.T) {
+	require := require.New(t)
+
+	inr, inw := io.Pipe()
+	outr, outw := io.Pipe()
+
+	client := NewClient(inw, outr)
+	req := &protocol.ParseUASTRequest{Content: "foo"}
+
+	done := make(chan struct{})
+	go func() {
+		resp := client.ParseUAST(req)
+		require.Equal(protocol.Ok, resp.Status)
+		require.Equal("bar", resp.UAST.InternalType)
+
+		resp = client.ParseUAST(req)
+		require.Equal(protocol.Fatal, resp.Status)
+
+		inw.Close()
+		resp = client.ParseUAST(req)
+		require.Equal(protocol.Fatal, resp.Status)
+
+		close(done)
+	}()
+
+	srvDec := jsonlines.NewDecoder(inr)
+	srvEnc := jsonlines.NewEncoder(outw)
+	srvReq := &protocol.ParseUASTRequest{}
+	err := srvDec.Decode(srvReq)
+	require.NoError(err)
+	require.Equal(req, srvReq)
+
+	err = srvEnc.Encode(&protocol.ParseUASTResponse{
+		Status: protocol.Ok,
+		UAST:   &uast.Node{InternalType: "bar"},
+	})
+	require.NoError(err)
+
+	err = srvDec.Decode(srvReq)
+	require.NoError(err)
+	require.Equal(req, srvReq)
+	fmt.Fprintln(outw, "GARGABE\"")
+
+	<-done
+
+	err = client.Close()
+	require.NoError(err)
+}
+
+type nopWriteCloser struct {
+	*bytes.Buffer
+}
+
+func (w *nopWriteCloser) Close() error { return nil }
