@@ -12,11 +12,10 @@ import (
 
 type mockUASTParser struct {
 	Response *protocol.ParseUASTResponse
-	Error    error
 }
 
-func (p *mockUASTParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
-	return p.Response, p.Error
+func (p *mockUASTParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+	return p.Response
 }
 
 func (p *mockUASTParser) Close() error {
@@ -26,14 +25,13 @@ func (p *mockUASTParser) Close() error {
 func TestTransformationUASTParserUnderlyingError(t *testing.T) {
 	require := require.New(t)
 
-	e := errors.New("test error")
-	p := &mockUASTParser{Error: e}
+	e := "test error"
+	p := &mockUASTParser{Response: &protocol.ParseUASTResponse{Status: protocol.Fatal, Errors: []string{e}}}
 	tf := func(d []byte, n *uast.Node) error { return nil }
 	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
 
-	resp, err := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
-	require.Equal(e, err)
-	require.Nil(resp)
+	resp := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
+	require.Equal(protocol.Fatal, resp.Status)
 }
 
 func TestTransformationUASTParserTransformationError(t *testing.T) {
@@ -44,9 +42,9 @@ func TestTransformationUASTParserTransformationError(t *testing.T) {
 	tf := func(d []byte, n *uast.Node) error { return e }
 	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
 
-	resp, err := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
-	require.Equal(e, err)
-	require.NotNil(resp)
+	resp := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
+	require.Equal(protocol.Error, resp.Status)
+	require.Equal([]string{e.Error()}, resp.Errors)
 }
 
 func TestTransformationUASTParser(t *testing.T) {
@@ -59,8 +57,7 @@ func TestTransformationUASTParser(t *testing.T) {
 	}
 	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
 
-	resp, err := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
-	require.NoError(err)
+	resp := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
 	require.NotNil(resp)
 	require.NotNil(resp.UAST)
 	require.Equal("foo", resp.UAST.InternalType)

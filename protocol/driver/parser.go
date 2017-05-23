@@ -17,13 +17,13 @@ type UASTParserBuilder func(UASTParserOptions) (UASTParser, error)
 
 type UASTParser interface {
 	io.Closer
-	ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error)
+	protocol.Parser
 }
 
 // TransformationUASTParser wraps another ASTParser and applies a transformation
 // to its results.
 type TransformationUASTParser struct {
-	// ASTParser to delegate parsing.
+	// UASTParser to delegate parsing.
 	UASTParser
 	// Transformation function to apply to resulting *uast.Node. The first
 	// argument is the original source code from the request. Any
@@ -34,13 +34,18 @@ type TransformationUASTParser struct {
 
 // ParseAST calls the wrapped ASTParser and applies the transformation to its
 // result.
-func (p *TransformationUASTParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
-	resp, err := p.UASTParser.ParseUAST(req)
-	if err != nil || resp.Status == protocol.Fatal {
-		return resp, err
+func (p *TransformationUASTParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+	resp := p.UASTParser.ParseUAST(req)
+	if resp.Status == protocol.Fatal {
+		return resp
 	}
 
-	return resp, p.Transformation([]byte(req.Content), resp.UAST)
+	if err := p.Transformation([]byte(req.Content), resp.UAST); err != nil {
+		resp.Status = protocol.Error
+		resp.Errors = append(resp.Errors, err.Error())
+	}
+
+	return resp
 }
 
 type annotationParser struct {
@@ -48,25 +53,17 @@ type annotationParser struct {
 	Annotation *ann.Rule
 }
 
-func (p *annotationParser) ParseUAST(req *protocol.ParseUASTRequest) (*protocol.ParseUASTResponse, error) {
-	resp, err := p.UASTParser.ParseUAST(&protocol.ParseUASTRequest{
+func (p *annotationParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+	resp := p.UASTParser.ParseUAST(&protocol.ParseUASTRequest{
 		Content: req.Content,
 	})
-	if err != nil {
-		return nil, err
-	}
-
 	if resp.Status == protocol.Fatal {
-		return resp, nil
+		return resp
 	}
 
 	if err := p.Annotation.Apply(resp.UAST); err != nil {
 		resp.Errors = append(resp.Errors, err.Error())
 	}
 
-	return resp, nil
-}
-
-func (p *annotationParser) Close() error {
-	return p.UASTParser.Close()
+	return resp
 }

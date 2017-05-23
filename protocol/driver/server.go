@@ -68,9 +68,9 @@ func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 		return s.error(enc, ErrDecodingRequest.Wrap(err))
 	}
 
-	resp, err := s.UASTParser.ParseUAST(req)
-	if err != nil {
-		return ErrFatalParsing.Wrap(err)
+	resp := s.UASTParser.ParseUAST(req)
+	if resp.Status == protocol.Fatal {
+		return ErrFatalParsing.New()
 	}
 
 	if err := enc.Encode(resp); err != nil {

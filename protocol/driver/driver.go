@@ -2,6 +2,7 @@ package driver
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -201,11 +202,7 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		Annotation: c.Driver.Annotate,
 	}
 
-	resp, err := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
-	if err != nil {
-		return err
-	}
-
+	resp := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
 	return fmter(c.Out, resp)
 }
 
@@ -272,9 +269,9 @@ func (c *tokenizeCommand) Execute(args []string) error {
 		Annotation: c.Driver.Annotate,
 	}
 
-	resp, err := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
-	if err != nil {
-		return err
+	resp := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
+	if resp.Status == protocol.Fatal {
+		return errors.New("parsing error")
 	}
 
 	toks := uast.Tokens(resp.UAST)
