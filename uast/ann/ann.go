@@ -44,17 +44,6 @@ type Predicate interface {
 	Eval(n *uast.Node) bool
 }
 
-// predicate implements Predicate by using desc as the XPath
-// representation of the predicate.
-type predicate struct {
-	eval func(n *uast.Node) bool
-	desc string // change this to a bytes.Buffer to help gc.
-}
-
-func (p *predicate) Eval(n *uast.Node) bool { return p.eval(n) }
-
-func (p *predicate) String() string { return p.desc }
-
 // Rule is a conversion rule that can visit a tree, match nodes against
 // path matchers and apply actions to the matching node.
 type Rule struct {
@@ -181,34 +170,43 @@ func (r *Rule) Do(actions ...Action) *Rule {
 
 // HasInternalType matches a node if its internal type matches the given one.
 func HasInternalType(it string) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool {
-			if n == nil {
-				return false
-			}
-			return n.InternalType == it
-		},
-		desc: fmt.Sprintf("@InternalType='%s'", it),
+	p := hasInternalType(it)
+	return &p
+}
+
+type hasInternalType string
+
+func (p *hasInternalType) String() string {
+	return fmt.Sprintf("@InternalType='%s'", string(*p))
+}
+
+func (p *hasInternalType) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+	return n.InternalType == string(*p)
 }
 
 // HasProperty matches a node if it has a property matching the given key and value.
-func HasProperty(k, v string) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool {
-			if n == nil {
-				return false
-			}
+func HasProperty(k, v string) Predicate { return &hasProperty{k, v} }
 
-			if n.Properties == nil {
-				return false
-			}
+type hasProperty struct{ k, v string }
 
-			prop, ok := n.Properties[k]
-			return ok && prop == v
-		},
-		desc: fmt.Sprintf("@%s][@%[1]s='%s'", k, v),
+func (p *hasProperty) String() string {
+	return fmt.Sprintf("@%s][@%[1]s='%s'", p.k, p.v)
+}
+
+func (p *hasProperty) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+
+	if n.Properties == nil {
+		return false
+	}
+
+	prop, ok := n.Properties[p.k]
+	return ok && prop == p.v
 }
 
 // HasInternalRole is a convenience shortcut for:
@@ -220,68 +218,86 @@ func HasInternalRole(r string) Predicate {
 }
 
 // HasChild matches a node that contains a child matching the given predicate.
-func HasChild(pred Predicate) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool {
-			if n == nil {
-				return false
-			}
+func HasChild(pred Predicate) Predicate { return &hasChild{pred} }
 
-			for _, c := range n.Children {
-				if pred.Eval(c) {
-					return true
-				}
-			}
+type hasChild struct{ Predicate }
 
-			return false
-		},
-		desc: fmt.Sprintf("child::%s", pred),
+func (p *hasChild) String() string {
+	return fmt.Sprintf("child::%s", p.Predicate)
+}
+
+func (p *hasChild) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+
+	for _, c := range n.Children {
+		if p.Predicate.Eval(c) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // HasToken matches a node if its token matches the given one.
 func HasToken(tk string) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool {
-			if n == nil {
-				return false
-			}
+	p := hasToken(tk)
+	return &p
+}
 
-			return n.Token == tk
-		},
-		desc: fmt.Sprintf("@Token='%s'", tk),
+type hasToken string
+
+func (p *hasToken) String() string {
+	return fmt.Sprintf("@Token='%s'", string(*p))
+}
+
+func (p *hasToken) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+
+	return n.Token == string(*p)
 }
 
 // Any matches any path.
-var Any = &predicate{
-	eval: func(n *uast.Node) bool { return true },
-	desc: "*",
-}
+var Any = &any{}
+
+type any struct{}
+
+func (p *any) String() string { return "*" }
+
+func (p *any) Eval(n *uast.Node) bool { return true }
 
 // Not negates a node predicate.
 func Not(p Predicate) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool { return !p.Eval(n) },
-		desc: fmt.Sprintf("not(%s)", p),
-	}
+	return &not{p}
 }
+
+type not struct{ Predicate }
+
+func (p *not) String() string { return fmt.Sprintf("not(%s)", p.Predicate) }
+
+func (p *not) Eval(n *uast.Node) bool { return !p.Predicate.Eval(n) }
 
 // And returns a predicate that returns true if all the given predicates returns
 // true.
-func And(ps ...Predicate) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool {
-			for _, p := range ps {
-				if !p.Eval(n) {
-					return false
-				}
-			}
+func And(ps ...Predicate) Predicate { return &and{ps} }
 
-			return true
-		},
-		desc: joinPredicates(ps, " and "),
+type and struct{ data []Predicate }
+
+const andGlue = " and "
+
+func (p *and) String() string { return joinPredicates(p.data, andGlue) }
+
+func (p *and) Eval(n *uast.Node) bool {
+	for _, p := range p.data {
+		if !p.Eval(n) {
+			return false
+		}
 	}
+
+	return true
 }
 
 func joinPredicates(ps []Predicate, sep string) string {
@@ -296,19 +312,22 @@ func joinPredicates(ps []Predicate, sep string) string {
 
 // Or returns a predicate that returns true if any of the given predicates returns
 // true.
-func Or(ps ...Predicate) Predicate {
-	return &predicate{
-		eval: func(n *uast.Node) bool {
-			for _, p := range ps {
-				if p.Eval(n) {
-					return true
-				}
-			}
+func Or(ps ...Predicate) Predicate { return &or{ps} }
 
-			return false
-		},
-		desc: joinPredicates(ps, " or "),
+type or struct{ data []Predicate }
+
+const orGlue = " or "
+
+func (p *or) String() string { return joinPredicates(p.data, orGlue) }
+
+func (p *or) Eval(n *uast.Node) bool {
+	for _, p := range p.data {
+		if p.Eval(n) {
+			return true
+		}
 	}
+
+	return false
 }
 
 // Action is the interface that wraps an operation to be made on a
