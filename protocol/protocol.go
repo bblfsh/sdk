@@ -1,28 +1,55 @@
 package protocol
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/bblfsh/sdk/uast"
 )
 
-// go:generate proteus proto -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast -f $GOPATH/src/github.com/bblfsh/sdk/protos
-// go:generate proteus rpc -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast
+//go:generate proteus  -f $GOPATH/src -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast
 
 // Status is the status of a response.
-type Status string
-
 //proteus:generate
+type Status byte
+
 const (
 	// Ok status code.
-	Ok Status = "ok"
+	Ok Status = iota
 	// Error status code. It is replied when the driver has got the AST with errors.
-	Error Status = "error"
+	Error
 	// Fatal status code. It is replied when the driver hasn't could get the AST.
-	Fatal Status = "fatal"
+	Fatal
 )
 
-// String returns the string value of the Status.
+var statusToString = map[Status]string{
+	Ok:    "ok",
+	Error: "error",
+	Fatal: "fatal",
+}
+
+var stringToStatus = map[string]Status{
+	"ok":    Ok,
+	"error": Error,
+	"fatal": Fatal,
+}
+
 func (s Status) String() string {
-	return string(s)
+	return statusToString[s]
+}
+
+func (s Status) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+func (s *Status) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return fmt.Errorf("Status should be a string, got %s", data)
+	}
+
+	*s, _ = stringToStatus[str]
+	return nil
 }
 
 // ParseUASTRequest is a request to parse a file and get its UAST.
@@ -37,7 +64,7 @@ type ParseUASTRequest struct {
 type ParseUASTResponse struct {
 	// Status is the status of the parsing request.
 	Status Status `json:"status"`
-	// Errors contrains a list of parsing errors. If Status is ok, this list
+	// Errors contains a list of parsing errors. If Status is ok, this list
 	// should always be empty.
 	Errors []string `json:"errors"`
 	// UAST contains the parsed UAST.
@@ -62,4 +89,39 @@ type ParseASTResponse struct {
 	// AST contains the parsed AST in its normalized form. That is the same
 	// type as the UAST, but without any annotation.
 	AST *uast.Node `json:"ast"`
+}
+
+// Parser can parse AST and UAST.
+type Parser interface {
+	ParseAST(*ParseASTRequest) *ParseASTResponse
+	ParseUAST(*ParseUASTRequest) *ParseUASTResponse
+}
+
+// DefaultParser is the default parser used by ParseAST and ParseUAST.
+var DefaultParser Parser
+
+// ParseAST uses DefaultParser to process the given AST parsing request.
+//proteus:generate
+func ParseAST(req *ParseASTRequest) *ParseASTResponse {
+	if DefaultParser == nil {
+		return &ParseASTResponse{
+			Status: Fatal,
+			Errors: []string{"no default parser registered"},
+		}
+	}
+
+	return DefaultParser.ParseAST(req)
+}
+
+// ParseUAST uses DefaultParser to process the given UAST parsing request.
+//proteus:generate
+func ParseUAST(req *ParseUASTRequest) *ParseUASTResponse {
+	if DefaultParser == nil {
+		return &ParseUASTResponse{
+			Status: Fatal,
+			Errors: []string{"no default parser registered"},
+		}
+	}
+
+	return DefaultParser.ParseUAST(req)
 }

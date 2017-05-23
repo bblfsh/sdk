@@ -1,0 +1,62 @@
+syntax = "proto3";
+package github.com.bblfsh.sdk.protocol;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github.com/bblfsh/sdk/uast/generated.proto";
+
+option (gogoproto.protosizer_all) = true;
+option (gogoproto.sizer_all) = false;
+option go_package = "protocol";
+
+// ParseASTRequest is a request to parse a file and get its AST.
+message ParseASTRequest {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	string content = 1;
+}
+
+// ParseASTResponse is the reply to ParseASTRequest.
+message ParseASTResponse {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	github.com.bblfsh.sdk.protocol.Status status = 1;
+	repeated string errors = 2;
+	github.com.bblfsh.sdk.uast.Node ast = 3 [(gogoproto.customname) = "AST"];
+}
+
+// ParseUASTRequest is a request to parse a file and get its UAST.
+message ParseUASTRequest {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	string content = 1;
+}
+
+// ParseUASTResponse is the reply to ParseUASTRequest.
+message ParseUASTResponse {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	github.com.bblfsh.sdk.protocol.Status status = 1;
+	repeated string errors = 2;
+	github.com.bblfsh.sdk.uast.Node uast = 3 [(gogoproto.customname) = "UAST"];
+}
+
+// Status is the status of a response.
+enum Status {
+	option (gogoproto.enumdecl) = false;
+	option (gogoproto.goproto_enum_prefix) = false;
+	option (gogoproto.goproto_enum_stringer) = false;
+	// Ok status code.
+	OK = 0 [(gogoproto.enumvalue_customname) = "Ok"];
+	// Error status code. It is replied when the driver has got the AST with errors.
+	ERROR = 1 [(gogoproto.enumvalue_customname) = "Error"];
+	// Fatal status code. It is replied when the driver hasn't could get the AST.
+	FATAL = 2 [(gogoproto.enumvalue_customname) = "Fatal"];
+}
+
+service ProtocolService {
+	// ParseAST uses DefaultParser to process the given AST parsing request.
+	rpc ParseAST (github.com.bblfsh.sdk.protocol.ParseASTRequest) returns (github.com.bblfsh.sdk.protocol.ParseASTResponse);
+	// ParseUAST uses DefaultParser to process the given UAST parsing request.
+	rpc ParseUAST (github.com.bblfsh.sdk.protocol.ParseUASTRequest) returns (github.com.bblfsh.sdk.protocol.ParseUASTResponse);
+}
+
