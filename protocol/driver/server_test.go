@@ -55,6 +55,33 @@ func TestServerOneMalformedAndOneGood(t *testing.T) {
 	})
 }
 
+func TestServerOneFatalAndOneGood(t *testing.T) {
+	require := require.New(t)
+	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+		enc := jsonlines.NewEncoder(in)
+		dec := jsonlines.NewDecoder(out)
+
+		p.Response = &protocol.ParseUASTResponse{Status: protocol.Fatal}
+		err := enc.Encode(&protocol.ParseUASTRequest{Content: "FATAL"})
+		require.NoError(err)
+
+		resp := &protocol.ParseUASTResponse{}
+		err = dec.Decode(resp)
+		require.NoError(err)
+		require.Equal(protocol.Fatal, resp.Status)
+
+		p.Response = &protocol.ParseUASTResponse{}
+		err = enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		require.NoError(err)
+
+		resp = &protocol.ParseUASTResponse{}
+		err = dec.Decode(resp)
+		require.NoError(err)
+
+		require.NoError(in.Close())
+	})
+}
+
 func testServer(t *testing.T, exitError bool, f func(*mockUASTParser, io.WriteCloser, io.Reader)) {
 	require := require.New(t)
 
