@@ -240,69 +240,82 @@ func TestNpathComplexity(t *testing.T) {
 	expect = append(expect, 10)
 
 	/*
-			while(2condtions){
-				Statement
-				Statement
-				Statement
-			}else{
-				Statement
-				Statement
-			} Npath = 3
+		while(2condtions){
+			Statement
+			Statement
+			Statement
+		}else{
+			Statement
+			Statement
+		} Npath = 3
+	*/
+	whileCondition := &Node{InternalType: "WhileCondition", Roles: []Role{WhileCondition}, Children: []*Node{
+		andBool,
+	}}
+	whileBody := &Node{InternalType: "WhileBody", Roles: []Role{WhileBody}, Children: []*Node{
+		statement,
+		statement,
+		statement,
+	}}
+	whileElse := &Node{InternalType: "WhileElse", Roles: []Role{IfElse}, Children: []*Node{
+		statement,
+		statement,
+	}}
+	nWhile := &Node{InternalType: "While", Roles: []Role{While}, Children: []*Node{
+		whileCondition,
+		whileBody,
+		whileElse,
+	}}
 
-		whileCondition := &Node{InternalType: "WhileCondition", Roles: []Role{WhileCondition}, Children: []*Node{
-			andBool,
-			orBool,
-		}}
-		whileBody := &Node{InternalType: "WhileBody", Roles: []Role{WhileBody}, Children: []*Node{
-			statement,
-			statement,
-			statement,
-		}}
-		whileElse := &Node{InternalType: "WhileElse", Roles: []Role{IfElse}, Children: []*Node{
-			statement,
-			statement,
-		}}
-		nWhile := &Node{InternalType: "While", Roles: []Role{While}, Children: []*Node{
-			whileCondition,
-			whileBody,
-			whileElse,
-		}}
-		result = append(result, NpathComplexity(nWhile))
-		expect = append(expect, 3)
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nWhile,
+	}}
 
-		/*
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 3)
+
+	/*
+		while(2conditions){
 			while(2conditions){
 				while(2conditions){
-					while(2conditions){
-						Statement
-						Statement
-					}
-				}else{
 					Statement
 					Statement
 				}
-			} Npath = 10
-
-		nestedWhileBody := &Node{InternalType: "WhileBody1", Roles: []Role{WhileBody}, Children: []*Node{
-			{InternalType: "While2", Roles: []Role{While}, Children: []*Node{
-				whileCondition,
-				{InternalType: "WhileBody2", Roles: []Role{WhileBody}, Children: []*Node{
-					{InternalType: "While3", Roles: []Role{While}, Children: []*Node{
-						whileCondition,
-						whileBody,
-					}},
-				}},
-				whileElse,
-			}},
-		}}
-		nNestedWhile := &Node{InternalType: "While1", Roles: []Role{While}, Children: []*Node{
+			}
+		} Npath = 10
+	*/
+	nestedWhileBody := &Node{InternalType: "WhileBody1", Roles: []Role{WhileBody}, Children: []*Node{
+		{InternalType: "While2", Roles: []Role{While}, Children: []*Node{
 			whileCondition,
-			nestedWhileBody,
-		}}
-		result = append(result, NpathComplexity(nNestedWhile))
-		expect = append(expect, 10)
+			{InternalType: "WhileBody2", Roles: []Role{WhileBody}, Children: []*Node{
+				{InternalType: "While3", Roles: []Role{While}, Children: []*Node{
+					whileCondition,
+					whileBody,
+				}},
+			}},
+		}},
+	}}
+	nNestedWhile := &Node{InternalType: "While1", Roles: []Role{While}, Children: []*Node{
+		whileCondition,
+		nestedWhileBody,
+	}}
 
-		/*
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nNestedWhile,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 7)
+
+	/*
 				 for(init;2condition;update){
 				 	Statement
 					Statement

@@ -2,6 +2,7 @@ package uast
 
 import (
 	"errors"
+	"fmt"
 )
 
 //CodeReference
@@ -88,7 +89,7 @@ func visitIf(n *Node) int {
 	if len(ifElse) == 0 {
 		npath++
 	} else {
-		npath += complexitySumOf(ifElse[0])
+		npath += complexityMultOf(ifElse[0])
 	}
 	npath *= complexityMultOf(ifBody[0])
 	npath += expressionComp(ifCondition[0])
@@ -106,9 +107,10 @@ func visitWhile(n *Node) int {
 	if len(whileElse) == 0 {
 		npath++
 	} else {
-		npath += complexitySumOf(whileElse[0])
+		npath += complexityMultOf(whileElse[0])
+		fmt.Println("WhileELse ", npath)
 	}
-	npath += complexitySumOf(whileBody[0])
+	npath *= complexityMultOf(whileBody[0])
 	npath += expressionComp(whileCondition[0])
 
 	return npath
