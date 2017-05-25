@@ -1,28 +1,36 @@
 package uast
 
+import (
+	"errors"
+)
+
 //CodeReference
 //https://pmd.github.io/pmd-5.7.0/pmd-java/xref/net/sourceforge/pmd/lang/java/rule/codesize/NPathComplexityRule.html
 
 //I don't know what is better a map Rol-> func or a switch
 //var selector = map[Role]func(n *Node) int{}
 
-func NpathComplexity(n *Node) []int {
-	//Divisor de arbol en funciones
-	//Habra que llamar al visitor de metodo por cada metodo
-	methods := n.deepFindChildrenOfRol(FunctionDeclaration)
+func NpathComplexity(n *Node) ([]int, error) {
+	var funcs []*Node
 	var npath []int
-	if len(methods) <= 0 {
-		return npath
+	if n.containsRol(FunctionDeclarationBody) {
+		funcs = append(funcs, n)
+	} else {
+		funcs = n.deepChildrenOfRole(FunctionDeclarationBody)
 	}
-
-	for _, method := range methods {
-		npath = append(npath, visitMethod(method))
+	if len(funcs) <= 0 {
+		npath = append(npath, -1)
+		return npath, errors.New("Function declaration not found")
 	}
-
-	return npath
+	for _, function := range funcs {
+		npath = append(npath, visitFunctionBody(function))
+	}
+	return npath, nil
 }
 
 func visitorSelector(n *Node) int {
+	// I need to add a error when the node dont have any rol
+	// when I got 2 or more roles in a node this doesnt work
 	for _, rol := range n.Roles {
 		switch rol {
 		case If:
@@ -41,13 +49,13 @@ func visitorSelector(n *Node) int {
 			return visitNotCompNode(n)
 		}
 	}
-	return -1
+	return -10
 }
 
 func complexityMultOf(n *Node) int {
 	npath := 1
 	for _, child := range n.Children {
-		npath += visitorSelector(child)
+		npath *= visitorSelector(child)
 	}
 	return npath
 }
@@ -60,7 +68,7 @@ func complexitySumOf(n *Node) int {
 	return npath
 }
 
-func visitMethod(n *Node) int {
+func visitFunctionBody(n *Node) int {
 	return complexityMultOf(n)
 }
 
@@ -71,16 +79,20 @@ func visitNotCompNode(n *Node) int {
 func visitIf(n *Node) int {
 	// (npath of if + npath of else (or 1) + bool_comp of if) * npath of next
 	npath := 0
+
 	ifBody := n.childrenOfRole(IfBody)
 	ifCondition := n.childrenOfRole(IfCondition)
+
 	ifElse := n.childrenOfRole(IfElse)
+
 	if len(ifElse) == 0 {
 		npath++
 	} else {
 		npath += complexitySumOf(ifElse[0])
 	}
-	npath += complexitySumOf(ifBody[0])
+	npath *= complexityMultOf(ifBody[0])
 	npath += expressionComp(ifCondition[0])
+
 	return npath
 }
 
@@ -168,14 +180,14 @@ func (n *Node) childrenOfRole(wanted Role) []*Node {
 	return children
 }
 
-func (n *Node) deepFindChildrenOfRol(rol Role) []*Node {
+func (n *Node) deepChildrenOfRole(rol Role) []*Node {
 	var childList []*Node
 	for _, child := range n.Children {
 		for _, cRol := range child.Roles {
 			if cRol == rol {
 				childList = append(childList, child)
 			}
-			childList = append(childList, child.deepFindChildrenOfRol(rol)...)
+			childList = append(childList, child.deepChildrenOfRole(rol)...)
 		}
 	}
 	return childList
@@ -184,6 +196,7 @@ func (n *Node) deepFindChildrenOfRol(rol Role) []*Node {
 func expressionComp(n *Node) int {
 	orCount := n.deepCountChildrenOfRol(OpBooleanAnd)
 	andCount := n.deepCountChildrenOfRol(OpBooleanOr)
+
 	return orCount + andCount + 1
 }
 
@@ -198,4 +211,13 @@ func (n *Node) deepCountChildrenOfRol(rol Role) int {
 		}
 	}
 	return count
+}
+
+func (n *Node) containsRol(rol Role) bool {
+	for _, r := range n.Roles {
+		if rol == r {
+			return true
+		}
+	}
+	return false
 }
