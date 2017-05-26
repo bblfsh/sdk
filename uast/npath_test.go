@@ -316,189 +316,232 @@ func TestNpathComplexity(t *testing.T) {
 	expect = append(expect, 7)
 
 	/*
-				 for(init;2condition;update){
-				 	Statement
-					Statement
-			 	 } Npath = 4
+			 for(init;2condition;update){
+			 	Statement
+				Statement
+		 	 } Npath = 2
+	*/
+	forCondition := &Node{InternalType: "forCondition", Roles: []Role{ForExpression}, Children: []*Node{
+		orBool,
+	}}
+	forInit := &Node{InternalType: "forInit", Roles: []Role{ForInit}}
+	forUpdate := &Node{InternalType: "forUpdate", Roles: []Role{ForUpdate}}
+	forBody := &Node{InternalType: "forBody", Roles: []Role{ForBody}, Children: []*Node{
+		statement,
+		statement,
+	}}
+	nFor := &Node{InternalType: "for", Roles: []Role{For}, Children: []*Node{
+		forInit,
+		forCondition,
+		forUpdate,
+		forBody,
+	}}
 
-		forCondition := &Node{InternalType: "forCondition", Roles: []Role{ForExpression}, Children: []*Node{
-			orBool,
-			andBool,
-		}}
-		forInit := &Node{InternalType: "forInit", Roles: []Role{ForInit}}
-		forUpdate := &Node{InternalType: "forUpdate", Roles: []Role{ForUpdate}}
-		forBody := &Node{InternalType: "forBody", Roles: []Role{ForBody}, Children: []*Node{
-			statement,
-			statement,
-		}}
-		nFor := &Node{InternalType: "for", Roles: []Role{For}, Children: []*Node{
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nFor,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 2)
+
+	/*
+		for(init;2conditions;update){
+			for(init;2conditions;update){
+				for(init;2condtions;update){
+					Statement
+					Statement
+				}
+			}
+		} Npath = 4
+	*/
+	nestedForBody := &Node{InternalType: "forBody1", Roles: []Role{ForBody}, Children: []*Node{
+		{InternalType: "for2", Roles: []Role{For}, Children: []*Node{
 			forInit,
 			forCondition,
 			forUpdate,
-			forBody,
-		}}
-
-		result = append(result, NpathComplexity(nFor))
-		expect = append(expect, 4)
-
-		/*
-			for(init;2conditions;update){
-				for(init;2conditions;update){
-					for(init;2condtions;update){
-						Statement
-						Statement
-					}
-				}
-			} Npath = 41
-
-		nestedForBody := &Node{InternalType: "forBody1", Roles: []Role{ForBody}, Children: []*Node{
-			{InternalType: "for2", Roles: []Role{For}, Children: []*Node{
-				forInit,
-				forCondition,
-				forUpdate,
-				{InternalType: "forBody2", Roles: []Role{ForBody}, Children: []*Node{
-					{InternalType: "for3", Roles: []Role{For}, Children: []*Node{
-						forInit,
-						forCondition,
-						forUpdate,
-						forBody,
-					}},
+			{InternalType: "forBody2", Roles: []Role{ForBody}, Children: []*Node{
+				{InternalType: "for3", Roles: []Role{For}, Children: []*Node{
+					forInit,
+					forCondition,
+					forUpdate,
+					forBody,
 				}},
 			}},
-		}}
-		nNestedFor := &Node{InternalType: "for1", Roles: []Role{For}, Children: []*Node{
-			forInit,
-			forCondition,
-			forUpdate,
-			nestedForBody,
-		}}
-		result = append(result, NpathComplexity(nNestedFor))
-		expect = append(expect, 41)
+		}},
+	}}
+	nNestedFor := &Node{InternalType: "for1", Roles: []Role{For}, Children: []*Node{
+		forInit,
+		forCondition,
+		forUpdate,
+		nestedForBody,
+	}}
 
-		/*
-			do{
-				Statement
-				Statement
-			}while(3conditions)
-			Npath = 3
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nNestedFor,
+	}}
 
-		doWhileCondition := &Node{InternalType: "doWhileCondition", Roles: []Role{DoWhileCondition}, Children: []*Node{
-			orBool,
-			andBool,
-			xorBool,
-		}}
-		doWhileBody := &Node{InternalType: "doWhileBody", Roles: []Role{DoWhileBody}, Children: []*Node{
-			statement,
-			statement,
-		}}
-		nDoWhile := &Node{InternalType: "doWhile", Roles: []Role{DoWhile}, Children: []*Node{
-			doWhileBody,
-			doWhileCondition,
-		}}
-		result = append(result, NpathComplexity(nDoWhile))
-		expect = append(expect, 3)
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 4)
 
-		/*
+	/*
+		do{
+			Statement
+			Statement
+		}while(3conditions)
+		Npath = 4
+	*/
+	doWhileCondition := &Node{InternalType: "doWhileCondition", Roles: []Role{DoWhileCondition}, Children: []*Node{
+		orBool,
+	}}
+	doWhileBody := &Node{InternalType: "doWhileBody", Roles: []Role{DoWhileBody}, Children: []*Node{
+		statement,
+		statement,
+	}}
+	nDoWhile := &Node{InternalType: "doWhile", Roles: []Role{DoWhile}, Children: []*Node{
+		doWhileBody,
+		doWhileCondition,
+	}}
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nDoWhile,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 4)
+
+	/*
+		do{
 			do{
 				do{
-					do{
-						Statement
-						Statement
-					}while(3conditions)
-				}while{3conditions}
-			}while(3condtions)
-			Npath = 27
-
-		nestedDoWhileBody := &Node{InternalType: "doWhileBody1", Roles: []Role{DoWhileBody}, Children: []*Node{
-			{InternalType: "doWhile2", Roles: []Role{DoWhile}, Children: []*Node{
-				{InternalType: "doWhileBody2", Roles: []Role{DoWhileBody}, Children: []*Node{
-					{InternalType: "doWhile3", Roles: []Role{DoWhile}, Children: []*Node{
-						doWhileBody,
-						doWhileCondition,
-					}},
-				}},
-				doWhileCondition,
-			}},
-		}}
-		nNestedDoWhile := &Node{InternalType: "doWhile1", Roles: []Role{DoWhile}, Children: []*Node{
-			nestedDoWhileBody,
-			doWhileCondition,
-		}}
-		result = append(result, NpathComplexity(nNestedDoWhile))
-		expect = append(expect, 27)
-
-		/*
-			switch{
-			case(2conditions):
-				Statement
-				Statement
-			case(2conditions):
-				Statement
-				Statement
-			default:
-				Statement
-				Statement
-			} Npath = 5
-
-		switchCondition := &Node{InternalType: "switchCondition", Roles: []Role{SwitchCaseCondition}, Children: []*Node{
-			orBool,
-			andBool,
-		}}
-		switchCaseBody := &Node{InternalType: "switchCaseBody", Roles: []Role{SwitchCaseBody}, Children: []*Node{
-			statement,
-			statement,
-		}}
-		switchCase := &Node{InternalType: "switchCase", Roles: []Role{SwitchCase}, Children: []*Node{
-			switchCondition,
-			switchCaseBody,
-		}}
-		defaultCase := &Node{InternalType: "defaultCase", Roles: []Role{SwitchDefault}, Children: []*Node{
-			switchCaseBody,
-		}}
-		nSwitch := &Node{InternalType: "switch", Roles: []Role{Switch}, Children: []*Node{
-			switchCase,
-			switchCase,
-			defaultCase,
-		}}
-		result = append(result, NpathComplexity(nSwitch))
-		expect = append(expect, 5)
-
-		/*
-			switch{
-			case(2conditions):
-				Statement
-				Statement
-			case(2conditions):
-				Statement
-				Statement
-			default:
-				switch{
-				case(2conditions):
 					Statement
 					Statement
-				case(2conditions):
-					Statement
-					Statement
-				default:
-					Statement
-					Statement
-			} Npath = 10
-
-		nestedDefaultCase := &Node{InternalType: "defaultCase", Roles: []Role{SwitchDefault}, Children: []*Node{
-			nSwitch,
-		}}
-		nNestedSwitch := &Node{InternalType: "switch", Roles: []Role{Switch}, Children: []*Node{
-			switchCase,
-			switchCase,
-			nestedDefaultCase,
-		}}
-
-		result = append(result, NpathComplexity(nNestedSwitch))
-		expect = append(expect, 10)
-
-
-
+				}while(3conditions)
+			}while{3conditions}
+		}while(3condtions)
+		Npath = 27
 	*/
+	nestedDoWhileBody := &Node{InternalType: "doWhileBody1", Roles: []Role{DoWhileBody}, Children: []*Node{
+		{InternalType: "doWhile2", Roles: []Role{DoWhile}, Children: []*Node{
+			{InternalType: "doWhileBody2", Roles: []Role{DoWhileBody}, Children: []*Node{
+				{InternalType: "doWhile3", Roles: []Role{DoWhile}, Children: []*Node{
+					doWhileBody,
+					doWhileCondition,
+				}},
+			}},
+			doWhileCondition,
+		}},
+	}}
+	nNestedDoWhile := &Node{InternalType: "doWhile1", Roles: []Role{DoWhile}, Children: []*Node{
+		nestedDoWhileBody,
+		doWhileCondition,
+	}}
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nNestedDoWhile,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 10)
+
+	/*
+		switch(3conditions){
+		case:
+			Statement
+			Statement
+		case:
+			Statement
+			Statement
+		default:
+			Statement
+			Statement
+		} Npath = 5
+	*/
+	switchCondition := &Node{InternalType: "switchCondition", Roles: []Role{SwitchCaseCondition}, Children: []*Node{
+		orBool,
+		andBool,
+	}}
+	switchCaseBody := &Node{InternalType: "switchCaseBody", Roles: []Role{SwitchCaseBody}, Children: []*Node{
+		statement,
+		statement,
+	}}
+	switchCase := &Node{InternalType: "switchCase", Roles: []Role{SwitchCase}, Children: []*Node{
+		switchCaseBody,
+	}}
+	defaultCase := &Node{InternalType: "defaultCase", Roles: []Role{SwitchDefault}, Children: []*Node{
+		switchCaseBody,
+	}}
+	nSwitch := &Node{InternalType: "switch", Roles: []Role{Switch}, Children: []*Node{
+		switchCondition,
+		switchCase,
+		switchCase,
+		defaultCase,
+	}}
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nSwitch,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 5)
+
+	/*
+		switch(2conditions){
+		case:
+			Statement
+			Statement
+		case:
+			Statement
+			Statement
+		default:
+			switch(2conditions){
+			case:
+				Statement
+				Statement
+			case:
+				Statement
+				Statement
+			default:
+				Statement
+				Statement
+		} Npath = 10
+	*/
+	nestedDefaultCase := &Node{InternalType: "defaultCase", Roles: []Role{SwitchDefault}, Children: []*Node{
+		nSwitch,
+	}}
+	nNestedSwitch := &Node{InternalType: "switch", Roles: []Role{Switch}, Children: []*Node{
+		switchCondition,
+		switchCase,
+		switchCase,
+		nestedDefaultCase,
+	}}
+
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nNestedSwitch,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 9)
 
 	require.Equal(expect, result)
 }

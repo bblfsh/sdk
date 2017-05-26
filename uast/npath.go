@@ -108,7 +108,6 @@ func visitWhile(n *Node) int {
 		npath++
 	} else {
 		npath += complexityMultOf(whileElse[0])
-		fmt.Println("WhileELse ", npath)
 	}
 	npath *= complexityMultOf(whileBody[0])
 	npath += expressionComp(whileCondition[0])
@@ -118,26 +117,28 @@ func visitWhile(n *Node) int {
 
 func visitDoWhile(n *Node) int {
 	// (npath of do + bool_comp of do + 1) * npath of next
-	npath := 0
+	npath := 1
 	doWhileCondition := n.childrenOfRole(DoWhileCondition)
 	doWhileBody := n.childrenOfRole(DoWhileBody)
 
-	npath += complexitySumOf(doWhileBody[0])
+	npath *= complexityMultOf(doWhileBody[0])
 	npath += expressionComp(doWhileCondition[0])
+
 	//The +1 is used for the path of not taking the doWhile
 	return npath + 1
 }
 
 func visitFor(n *Node) int {
 	// (npath of for + bool_comp of for + 1) * npath of next
-	npath := 0
+	npath := 1
 	forBody := n.childrenOfRole(ForBody)
-	forExpression := n.childrenOfRole(ForExpression)
+	//forExpression := n.childrenOfRole(ForExpression)
 
-	npath += complexitySumOf(forBody[0])
-	npath += expressionComp(forExpression[0])
-
-	return npath + 1
+	npath *= complexityMultOf(forBody[0])
+	//This is suposed the way of doing, but I cant find a example that works with pmd, for pmd the value is 1
+	//npath += expressionComp(forExpression[0])
+	npath++
+	return npath
 }
 
 func visitReturn(n *Node) int {
@@ -146,20 +147,25 @@ func visitReturn(n *Node) int {
 }
 
 func visitSwitch(n *Node) int {
+	fmt.Println(n)
 	// The switch npath calculation is strange too in PMD
 	npath := 0
 	switchCases := n.childrenOfRole(SwitchCase)
 	switchDefault := n.childrenOfRole(SwitchDefault)
-
-	for _, switchCase := range switchCases {
-		npath = complexityMultOf(switchCase)
-	}
+	switchCondition := n.childrenOfRole(SwitchCaseCondition)
+	complexity := 0
+	npath += expressionComp(switchCondition[0])
 	if len(switchDefault) == 0 {
-		npath++
+		complexity++
 	} else {
-		npath += complexityMultOf(switchDefault[0])
+		complexity = complexityMultOf(switchDefault[0])
 	}
-	return npath
+	//Calculate the complexity of children nodes,then we add the number of cases
+	for _, switchCase := range switchCases {
+		complexity *= complexityMultOf(switchCase)
+	}
+
+	return npath + complexity
 }
 
 func visitTry(n *Node) {
