@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -209,7 +210,7 @@ func TestNpathComplexity(t *testing.T) {
 					Statement
 				}
 			}
-		} Npath = 101
+		} Npath = 10
 	*/
 	nestedIfBody := &Node{InternalType: "bodyº", Roles: []Role{IfBody}, Children: []*Node{
 		{InternalType: "if2", Roles: []Role{If}, Children: []*Node{
@@ -286,7 +287,7 @@ func TestNpathComplexity(t *testing.T) {
 					Statement
 				}
 			}
-		} Npath = 10
+		} Npath = 7
 	*/
 	nestedWhileBody := &Node{InternalType: "WhileBody1", Roles: []Role{WhileBody}, Children: []*Node{
 		{InternalType: "While2", Roles: []Role{While}, Children: []*Node{
@@ -429,7 +430,7 @@ func TestNpathComplexity(t *testing.T) {
 				}while(3conditions)
 			}while{3conditions}
 		}while(3condtions)
-		Npath = 27
+		Npath = 10
 	*/
 	nestedDoWhileBody := &Node{InternalType: "doWhileBody1", Roles: []Role{DoWhileBody}, Children: []*Node{
 		{InternalType: "doWhile2", Roles: []Role{DoWhile}, Children: []*Node{
@@ -502,7 +503,7 @@ func TestNpathComplexity(t *testing.T) {
 	expect = append(expect, 5)
 
 	/*
-		switch(2conditions){
+		switch(3conditions){
 		case:
 			Statement
 			Statement
@@ -510,7 +511,7 @@ func TestNpathComplexity(t *testing.T) {
 			Statement
 			Statement
 		default:
-			switch(2conditions){
+			switch(3conditions){
 			case:
 				Statement
 				Statement
@@ -520,7 +521,7 @@ func TestNpathComplexity(t *testing.T) {
 			default:
 				Statement
 				Statement
-		} Npath = 10
+		} Npath = 9
 	*/
 	nestedDefaultCase := &Node{InternalType: "defaultCase", Roles: []Role{SwitchDefault}, Children: []*Node{
 		nSwitch,
@@ -544,4 +545,61 @@ func TestNpathComplexity(t *testing.T) {
 	expect = append(expect, 9)
 
 	require.Equal(expect, result)
+}
+
+func TestNpathMultiFunc(t *testing.T) {
+	require := require.New(t)
+	var result []int
+	expect := []int{7, 7, 7}
+	andBool := &Node{InternalType: "bool_and", Roles: []Role{OpBooleanAnd}}
+	orBool := &Node{InternalType: "bool_or", Roles: []Role{OpBooleanOr}}
+	statement := &Node{InternalType: "Statement", Roles: []Role{Statement}}
+
+	ifCondition := &Node{InternalType: "Condition", Roles: []Role{IfCondition}, Children: []*Node{
+		andBool,
+		orBool,
+	}}
+	ifBody := &Node{InternalType: "Body", Roles: []Role{IfBody}, Children: []*Node{
+		statement,
+		statement,
+	}}
+	elseIf := &Node{InternalType: "elseIf", Roles: []Role{IfElse}, Children: []*Node{
+		&Node{InternalType: "If", Roles: []Role{If}, Children: []*Node{
+			ifCondition,
+			ifBody,
+		}},
+	}}
+	ifElse := &Node{InternalType: "else", Roles: []Role{IfElse}, Children: []*Node{
+		ifBody,
+	}}
+	nIf := &Node{InternalType: "if", Roles: []Role{If}, Children: []*Node{
+		ifCondition,
+		ifBody,
+		elseIf,
+		ifElse,
+	}}
+
+	func1 := &Node{InternalType: "func1", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{nIf}}
+	func2 := &Node{InternalType: "func2", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{nIf}}
+	func3 := &Node{InternalType: "func3", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{nIf}}
+
+	n := &Node{InternalType: "module", Children: []*Node{
+		func1,
+		func2,
+		func3,
+	}}
+	comp, error := NpathComplexity(n)
+	if error != nil {
+		fmt.Println(error)
+	}
+
+	result = comp
+	require.Equal(expect, result)
+}
+func TestZeroFunction(t *testing.T) {
+	//Empty tree
+	n := &Node{InternalType: "module"}
+
+	_, error := NpathComplexity(n)
+	assert.NotNil(t, error)
 }
