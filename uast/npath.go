@@ -47,10 +47,10 @@ func visitorSelector(n *Node) int {
 		case Return:
 			return visitReturn(n)
 		default:
-			return visitNotCompNode(n)
+			continue
 		}
 	}
-	return -10
+	return visitNotCompNode(n)
 }
 
 func complexityMultOf(n *Node) int {
