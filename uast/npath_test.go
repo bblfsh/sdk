@@ -544,6 +544,42 @@ func TestNpathComplexity(t *testing.T) {
 	}
 	expect = append(expect, 9)
 
+	/*
+		return
+	*/
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		{InternalType: "Return", Roles: []Role{Return}},
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 1)
+
+	/*
+		statement
+		statement
+		return 3condition
+	*/
+	nReturn := &Node{InternalType: "Return", Roles: []Role{Return}, Children: []*Node{
+		orBool,
+		andBool,
+	}}
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		statement,
+		statement,
+		nReturn,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 2)
+
 	require.Equal(expect, result)
 }
 
@@ -599,7 +635,6 @@ func TestNpathMultiFunc(t *testing.T) {
 func TestZeroFunction(t *testing.T) {
 	//Empty tree
 	n := &Node{InternalType: "module"}
-
 	_, error := NpathComplexity(n)
 	assert.NotNil(t, error)
 }

@@ -139,8 +139,10 @@ func visitFor(n *Node) int {
 }
 
 func visitReturn(n *Node) int {
-	//The return isn't complete, I don't fully understand what PMD people do here
-	return expressionComp(n)
+	if aux := expressionComp(n); aux != 1 {
+		return aux - 1
+	}
+	return 1
 }
 
 func visitSwitch(n *Node) int {
