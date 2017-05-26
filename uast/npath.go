@@ -11,6 +11,7 @@ import (
 func NpathComplexity(n *Node) ([]int, error) {
 	var funcs []*Node
 	var npath []int
+
 	if n.containsRol(FunctionDeclarationBody) {
 		funcs = append(funcs, n)
 	} else {
@@ -77,10 +78,8 @@ func visitNotCompNode(n *Node) int {
 func visitIf(n *Node) int {
 	// (npath of if + npath of else (or 1) + bool_comp of if) * npath of next
 	npath := 0
-
 	ifBody := n.childrenOfRole(IfBody)
 	ifCondition := n.childrenOfRole(IfCondition)
-
 	ifElse := n.childrenOfRole(IfElse)
 
 	if len(ifElse) == 0 {
@@ -130,7 +129,6 @@ func visitFor(n *Node) int {
 	npath := 1
 	forBody := n.childrenOfRole(ForBody)
 	//forExpression := n.childrenOfRole(ForExpression)
-
 	npath *= complexityMultOf(forBody[0])
 	//This is suposed the way of doing, but I cant find a example that works with pmd, for pmd the value is 1
 	//npath += expressionComp(forExpression[0])
@@ -156,9 +154,7 @@ func visitSwitch(n *Node) int {
 	//I suposed this happens because java AST differ with the UAST
 	npath += expressionComp(switchCondition[0]) - 1
 	if len(caseDefault) != 0 {
-
 		npath += complexityMultOf(caseDefault[0])
-
 	}
 	for _, switchCase := range switchCases {
 		npath += complexityMultOf(switchCase)
