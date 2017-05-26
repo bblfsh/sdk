@@ -2,15 +2,12 @@ package uast
 
 import (
 	"errors"
-	"fmt"
 )
 
 //CodeReference
 //https://pmd.github.io/pmd-5.7.0/pmd-java/xref/net/sourceforge/pmd/lang/java/rule/codesize/NPathComplexityRule.html
 
-//I don't know what is better a map Rol-> func or a switch
-//var selector = map[Role]func(n *Node) int{}
-
+//NpathComplexity return a slice of int for each function in the tree
 func NpathComplexity(n *Node) ([]int, error) {
 	var funcs []*Node
 	var npath []int
@@ -147,25 +144,24 @@ func visitReturn(n *Node) int {
 }
 
 func visitSwitch(n *Node) int {
-	fmt.Println(n)
-	// The switch npath calculation is strange too in PMD
-	npath := 0
-	switchCases := n.childrenOfRole(SwitchCase)
-	switchDefault := n.childrenOfRole(SwitchDefault)
-	switchCondition := n.childrenOfRole(SwitchCaseCondition)
-	complexity := 0
-	npath += expressionComp(switchCondition[0])
-	if len(switchDefault) == 0 {
-		complexity++
-	} else {
-		complexity = complexityMultOf(switchDefault[0])
-	}
-	//Calculate the complexity of children nodes,then we add the number of cases
-	for _, switchCase := range switchCases {
-		complexity *= complexityMultOf(switchCase)
-	}
 
-	return npath + complexity
+	caseDefault := n.childrenOfRole(SwitchDefault)
+	switchCases := n.childrenOfRole(SwitchCase)
+	switchCondition := n.childrenOfRole(SwitchCaseCondition)
+	npath := 0
+	//In pmd the expressionComp function returns always our value -1
+	//but in other places of the code the fuction works exactly as our function
+	//I suposed this happens because java AST differ with the UAST
+	npath += expressionComp(switchCondition[0]) - 1
+	if len(caseDefault) != 0 {
+
+		npath += complexityMultOf(caseDefault[0])
+
+	}
+	for _, switchCase := range switchCases {
+		npath += complexityMultOf(switchCase)
+	}
+	return npath
 }
 
 func visitTry(n *Node) {
