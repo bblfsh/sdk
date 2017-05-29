@@ -12,7 +12,6 @@ import (
 var (
 	ErrDecodingRequest  = errors.NewKind("error decoding request")
 	ErrEncodingResponse = errors.NewKind("error encoding response")
-	ErrFatalParsing     = errors.NewKind("error from UAST parser")
 
 	noErrClose = errors.NewKind("clean close").New()
 )
@@ -69,10 +68,6 @@ func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 	}
 
 	resp := s.UASTParser.ParseUAST(req)
-	if resp.Status == protocol.Fatal {
-		return ErrFatalParsing.New()
-	}
-
 	if err := enc.Encode(resp); err != nil {
 		return ErrEncodingResponse.Wrap(err)
 	}
