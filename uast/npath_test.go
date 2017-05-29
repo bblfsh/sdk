@@ -158,6 +158,43 @@ func TestNpathComplexity(t *testing.T) {
 	}
 	expect = append(expect, 7)
 
+	//This case looks like the previous one, but we have the ElseIF and the If roles in the same node
+	/*
+		if(3conditions){
+			Statement
+			Statement
+		}else if(3conditions){
+			Statement
+			Statement
+		}else{
+			Statement
+			Statement
+		} Npath = 7
+	*/
+
+	elseIf2roles := &Node{InternalType: "elseIf", Roles: []Role{IfElse, If}, Children: []*Node{
+		ifCondition,
+		ifBody,
+	}}
+
+	nIf2roles := &Node{InternalType: "if", Roles: []Role{If}, Children: []*Node{
+		ifCondition,
+		ifBody,
+		elseIf2roles,
+		ifElse,
+	}}
+
+	n = &Node{InternalType: "Function declaration body", Roles: []Role{FunctionDeclarationBody}, Children: []*Node{
+		nIf2roles,
+	}}
+
+	comp, err = NpathComplexity(n)
+	result = append(result, comp...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	expect = append(expect, 7)
+
 	/*
 	  if(condition){
 	    Statement

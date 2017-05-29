@@ -17,7 +17,7 @@ func NpathComplexity(n *Node) ([]int, error) {
 	} else {
 		funcs = n.deepChildrenOfRole(FunctionDeclarationBody)
 	}
-	if len(funcs) <= 0 {
+	if len(funcs) == 0 {
 		npath = append(npath, -1)
 		return npath, errors.New("Function declaration not found")
 	}
@@ -29,7 +29,7 @@ func NpathComplexity(n *Node) ([]int, error) {
 
 func visitorSelector(n *Node) int {
 	// I need to add a error when the node dont have any rol
-	// when I got 2 or more roles in a node this doesnt work
+	// when I got 2 or more roles that are inside the switch this doesn't work
 	for _, rol := range n.Roles {
 		switch rol {
 		case If:
@@ -45,7 +45,6 @@ func visitorSelector(n *Node) int {
 		case Return:
 			return visitReturn(n)
 		default:
-			continue
 		}
 	}
 	return visitNotCompNode(n)
@@ -85,7 +84,12 @@ func visitIf(n *Node) int {
 	if len(ifElse) == 0 {
 		npath++
 	} else {
-		npath += complexityMultOf(ifElse[0])
+		//This if is a short circuit to avoid the two roles in the switch problem
+		if ifElse[0].containsRol(If) {
+			npath += visitIf(ifElse[0])
+		} else {
+			npath += complexityMultOf(ifElse[0])
+		}
 	}
 	npath *= complexityMultOf(ifBody[0])
 	npath += expressionComp(ifCondition[0])
@@ -151,7 +155,7 @@ func visitSwitch(n *Node) int {
 	npath := 0
 	//In pmd the expressionComp function returns always our value -1
 	//but in other places of the code the fuction works exactly as our function
-	//I suposed this happens because java AST differ with the UAST
+	//I suposed this happens because java AST differs with the UAST
 	npath += expressionComp(switchCondition[0]) - 1
 	if len(caseDefault) != 0 {
 		npath += complexityMultOf(caseDefault[0])
