@@ -1,10 +1,8 @@
 package uast
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -105,11 +103,8 @@ func TestNpathComplexity(t *testing.T) {
 		statement,
 	}}
 
-	comp, err := NpathComplexity(n)
+	comp := NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 1)
 	/*
 			if(3conditions){
@@ -151,11 +146,8 @@ func TestNpathComplexity(t *testing.T) {
 		nIf,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 7)
 
 	//This case looks like the previous one, but we have the ElseIF and the If roles in the same node
@@ -188,11 +180,8 @@ func TestNpathComplexity(t *testing.T) {
 		nIf2roles,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 7)
 
 	/*
@@ -210,11 +199,8 @@ func TestNpathComplexity(t *testing.T) {
 		nSimpleIF,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 2)
 
 	/*
@@ -229,11 +215,8 @@ func TestNpathComplexity(t *testing.T) {
 		nIf,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 343)
 
 	/*
@@ -270,11 +253,8 @@ func TestNpathComplexity(t *testing.T) {
 		nNestedIf,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 10)
 
 	/*
@@ -309,11 +289,8 @@ func TestNpathComplexity(t *testing.T) {
 		nWhile,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 3)
 
 	/*
@@ -346,11 +323,8 @@ func TestNpathComplexity(t *testing.T) {
 		nNestedWhile,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 7)
 
 	/*
@@ -379,11 +353,8 @@ func TestNpathComplexity(t *testing.T) {
 		nFor,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 2)
 
 	/*
@@ -422,11 +393,8 @@ func TestNpathComplexity(t *testing.T) {
 		nNestedFor,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 4)
 
 	/*
@@ -451,11 +419,8 @@ func TestNpathComplexity(t *testing.T) {
 		nDoWhile,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 4)
 
 	/*
@@ -488,11 +453,8 @@ func TestNpathComplexity(t *testing.T) {
 		nNestedDoWhile,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 10)
 
 	/*
@@ -532,11 +494,8 @@ func TestNpathComplexity(t *testing.T) {
 		nSwitch,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 5)
 
 	/*
@@ -574,11 +533,8 @@ func TestNpathComplexity(t *testing.T) {
 		nNestedSwitch,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 9)
 
 	/*
@@ -588,11 +544,8 @@ func TestNpathComplexity(t *testing.T) {
 		{InternalType: "Return", Roles: []Role{Return}},
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 1)
 
 	/*
@@ -610,11 +563,8 @@ func TestNpathComplexity(t *testing.T) {
 		nReturn,
 	}}
 
-	comp, err = NpathComplexity(n)
+	comp = NpathComplexity(n)
 	result = append(result, comp...)
-	if err != nil {
-		fmt.Println(err)
-	}
 	expect = append(expect, 2)
 
 	require.Equal(expect, result)
@@ -661,17 +611,14 @@ func TestNpathMultiFunc(t *testing.T) {
 		func2,
 		func3,
 	}}
-	comp, error := NpathComplexity(n)
-	if error != nil {
-		fmt.Println(error)
-	}
-
+	comp := NpathComplexity(n)
 	result = comp
 	require.Equal(expect, result)
 }
 func TestZeroFunction(t *testing.T) {
+	require := require.New(t)
 	//Empty tree
 	n := &Node{InternalType: "module"}
-	_, error := NpathComplexity(n)
-	assert.NotNil(t, error)
+	comp := NpathComplexity(n)
+	require.Equal(0, len(comp))
 }

@@ -1,14 +1,10 @@
 package uast
 
-import (
-	"errors"
-)
-
 //CodeReference
 //https://pmd.github.io/pmd-5.7.0/pmd-java/xref/net/sourceforge/pmd/lang/java/rule/codesize/NPathComplexityRule.html
 
 //NpathComplexity return a slice of int for each function in the tree
-func NpathComplexity(n *Node) ([]int, error) {
+func NpathComplexity(n *Node) []int {
 	var funcs []*Node
 	var npath []int
 
@@ -17,14 +13,10 @@ func NpathComplexity(n *Node) ([]int, error) {
 	} else {
 		funcs = n.deepChildrenOfRole(FunctionDeclarationBody)
 	}
-	if len(funcs) == 0 {
-		npath = append(npath, -1)
-		return npath, errors.New("Function declaration not found")
-	}
 	for _, function := range funcs {
 		npath = append(npath, visitFunctionBody(function))
 	}
-	return npath, nil
+	return npath
 }
 
 func visitorSelector(n *Node) int {
