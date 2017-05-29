@@ -18,7 +18,12 @@ func Tokens(n *Node) []string {
 	return tokens
 }
 
-// CyclomaticComplexity returns the cyclomatic complexity for the node. This uses the method of
+// CyclomaticComplexity returns the cyclomatic complexity for the node. The cyclomatic complexity
+// is a quantitative measure of the number of linearly independent paths through a program's source code.
+// It was developed by Thomas J. McCabe, Sr. in 1976. For a formal description see:
+// https://en.wikipedia.org/wiki/Cyclomatic_complexity
+// And the original paper: http://www.literateprogramming.com/mccabe.pdf
+// This implementation uses the method of
 // counting one + one of the following UAST Roles if present on any children:
 // If | SwitchCase |  SwitchDefault | For[Each] | [Do]While | TryCatch | Continue | OpBoolean* | Goto
 // Important: since some languages allow for code defined
@@ -27,7 +32,6 @@ func Tokens(n *Node) []string {
 // If the children contain more than one function definitions, the value will not be averaged between
 // the total number of function declarations but given as a total.
 //
-// Original paper: http://www.literateprogramming.com/mccabe.pdf
 //
 // Some practical implementations counting tokens in the code. They sometimes differ; for example
 // some of them count the switch "default" as an incrementor, some consider all return values minus the
