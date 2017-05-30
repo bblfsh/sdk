@@ -8,7 +8,7 @@ if [[ -z ${DRIVER_IMAGE} ]] ; then
 fi
 
 DOCKER="${DOCKER:-docker}"
-TOOLS="bblfsh-tools"
+TOOLS="bblfsh-sdk-tools"
 
 MANIFEST=""
 
