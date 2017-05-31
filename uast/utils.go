@@ -23,9 +23,10 @@ func Tokens(n *Node) []string {
 // It was developed by Thomas J. McCabe, Sr. in 1976. For a formal description see:
 // https://en.wikipedia.org/wiki/Cyclomatic_complexity
 // And the original paper: http://www.literateprogramming.com/mccabe.pdf
-// This implementation uses the method of
+
+// This implementation uses PMD implementation as reference and uses the method of
 // counting one + one of the following UAST Roles if present on any children:
-// If | SwitchCase |  SwitchDefault | For[Each] | [Do]While | TryCatch | Continue | OpBoolean* | Goto
+// If | SwitchCase |  For[Each] | [Do]While | TryCatch | Continue | OpBoolean* | Goto
 // Important: since some languages allow for code defined
 // outside function definitions, this won't check that the Node has the role FunctionDeclarationRole
 // so the user should check that if the intended use is calculating the complexity of a function/method.
@@ -39,6 +40,7 @@ func Tokens(n *Node) []string {
 // consider throw and finally while others only the catch, etc.
 //
 // Examples:
+// PMD reference implementation: http://pmd.sourceforge.net/pmd-4.3.0/xref/net/sourceforge/pmd/rules/CyclomaticComplexity.html
 // GMetrics: http://gmetrics.sourceforge.net/gmetrics-CyclomaticComplexityMetric.html
 // Go: https://github.com/fzipp/gocyclo/blob/master/gocyclo.go#L214
 // SonarQube (include rules for many languages): https://docs.sonarqube.org/display/SONAR/Metrics+-+Complexity
@@ -65,7 +67,7 @@ func CyclomaticComplexity(n *Node)  int {
 		n := p.Node()
 		for _, r := range n.Roles {
 			switch(r) {
-			case If, SwitchCase, SwitchDefault, For, ForEach, While,
+			case If, SwitchCase, For, ForEach, While,
 			     DoWhile, TryCatch, Continue, OpBooleanAnd, OpBooleanOr,
 			     OpBooleanXor:
 				complx++
