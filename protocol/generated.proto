@@ -12,7 +12,9 @@ option go_package = "protocol";
 message ParseUASTRequest {
 	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
-	string content = 1;
+	string filename = 1;
+	string language = 2;
+	string content = 3;
 }
 
 // ParseUASTResponse is the reply to ParseUASTRequest.

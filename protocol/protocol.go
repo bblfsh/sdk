@@ -55,6 +55,12 @@ func (s *Status) UnmarshalJSON(data []byte) error {
 // ParseUASTRequest is a request to parse a file and get its UAST.
 //proteus:generate
 type ParseUASTRequest struct {
+	// Filename is the name of the file containing the source code. Used for
+	// language detection. This is optional.
+	Filename string
+	// Language. If specified, it will override language detection. This is
+	// optional.
+	Language string
 	// Content is the source code to be parsed.
 	Content string `json:"content"`
 }
