@@ -65,18 +65,18 @@ tmplocation = $(sdklocation)/tmp
 $(shell mkdir -p $(tmplocation))
 
 bblfsh-sdk := $(shell command -v bblfsh-sdk 2> /dev/null)
-bblfsh-tools := $(shell command -v bblfsh-tools 2> /dev/null)
+bblfsh-sdk-tools := $(shell command -v bblfsh-sdk-tools 2> /dev/null)
 in-container := $(shell echo $$ENVIRONMENT)
 host-platform := $(shell echo $$HOST_PLATFORM)
 
-ifdef bblfsh-tools # run only with Golang
+ifdef bblfsh-sdk-tools # run only with Golang
     ifdef in-container
     ifneq ($(host-platform),Linux)
-        bblfsh-tools :=  go run /go/src/github.com/bblfsh/sdk/cli/bblfsh-tools/main.go
+        bblfsh-sdk-tools :=  go run /go/src/github.com/bblfsh/sdk/cli/bblfsh-sdk-tools/main.go
     endif
     endif
 
-    $(shell $(bblfsh-tools) manifest > $(manifest))
+    $(shell $(bblfsh-sdk-tools) manifest > $(manifest))
 endif
 
 include $(sdklocation)/make/manifest.mk
@@ -97,7 +97,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 1217, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 1241, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -188,7 +188,7 @@ if [[ -z ${DRIVER_IMAGE} ]] ; then
 fi
 
 DOCKER="${DOCKER:-docker}"
-TOOLS="bblfsh-tools"
+TOOLS="bblfsh-sdk-tools"
 
 MANIFEST=""
 
@@ -286,7 +286,7 @@ func etcItBash() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/it.bash", size: 2250, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/it.bash", size: 2254, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
