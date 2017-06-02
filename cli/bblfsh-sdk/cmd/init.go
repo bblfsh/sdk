@@ -13,7 +13,7 @@ const InitCommandDescription = "initializes a driver for a given language and OS
 
 type InitCommand struct {
 	Args struct {
-		Language string `positional-arg-name:"language"  description:"target langunge of the driver"`
+		Language string `positional-arg-name:"language"  description:"target language of the driver"`
 		OS       string `positional-arg-name:"os" description:"distribution used to run the runtime. (Values: alpine or debian)"`
 	} `positional-args:"yes"`
 
