@@ -54,7 +54,7 @@ func Tokens(n *Node) []string {
 // themselves which should work for short-circuit infix languages but not prefix or infix languages that can
 // evaluate more than two items with a single operator.  (FIXME when both things are solved in the UAST
 // definition and the SDK).
-func CyclomaticComplexity(n *Node)  int {
+func CyclomaticComplexity(n *Node) int {
 	complx := 1
 
 	iter := NewOrderPathIter(NewPath(n))
@@ -66,13 +66,72 @@ func CyclomaticComplexity(n *Node)  int {
 		}
 		n := p.Node()
 		for _, r := range n.Roles {
-			switch(r) {
+			switch r {
 			case If, SwitchCase, For, ForEach, While,
-			     DoWhile, TryCatch, Continue, OpBooleanAnd, OpBooleanOr,
-			     OpBooleanXor:
+				DoWhile, TryCatch, Continue, OpBooleanAnd, OpBooleanOr,
+				OpBooleanXor:
 				complx++
 			}
 		}
 	}
 	return complx
+}
+
+func (n *Node) ChildrenOfRole(wanted Role) []*Node {
+	var children []*Node
+	for _, child := range n.Children {
+		for _, role := range child.Roles {
+			if role == wanted {
+				children = append(children, child)
+			}
+		}
+	}
+	return children
+}
+
+func (n *Node) CountChildrenOfRole(role Role) int {
+	count := 0
+	for _, child := range n.Children {
+		for _, cRole := range child.Roles {
+			if cRole == role {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func (n *Node) DeepChildrenOfRole(role Role) []*Node {
+	var childList []*Node
+	for _, child := range n.Children {
+		for _, cRole := range child.Roles {
+			if cRole == role {
+				childList = append(childList, child)
+			}
+		}
+		childList = append(childList, child.DeepChildrenOfRole(role)...)
+	}
+	return childList
+}
+
+func (n *Node) DeepCountChildrenOfRole(role Role) int {
+	count := 0
+	for _, child := range n.Children {
+		for _, cRole := range child.Roles {
+			if cRole == role {
+				count++
+			}
+		}
+		count += child.DeepCountChildrenOfRole(role)
+	}
+	return count
+}
+
+func (n *Node) ContainsRole(role Role) bool {
+	for _, r := range n.Roles {
+		if role == r {
+			return true
+		}
+	}
+	return false
 }
