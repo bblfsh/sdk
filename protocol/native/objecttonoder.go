@@ -23,25 +23,56 @@ var (
 // That is, an interface{} containing maps, slices, strings and integers. It
 // then converts from that structure to *Node.
 type ObjectToNoder struct {
-	// InternalTypeKey is a key in the source AST that can be used to get the
-	// InternalType of a node.
+	// InternalTypeKey is the name of the key that the native AST uses
+	// to differentiate the type of the AST nodes. This internal key will then be
+	// checkable in the AnnotationRules with the `HasInternalType` predicate. This
+	// field is mandatory.
 	InternalTypeKey string
-	// OffsetKey is a key that indicates the position offset.
+	// OffsetKey is the key used in the native AST to indicate the absolute offset,
+	// from the file start position, where the code mapped to the AST node starts.
 	OffsetKey string
-	// LineKey is a key that indicates the line number.
+	// LineKey is the key used in the native AST to indicate
+    // the line number where the code mapped to the AST node starts.
 	LineKey string
 	// ColumnKey is a key that indicates the column inside the line
 	ColumnKey string
-	// TokenKeys is a slice of keys used to extract token content.
+	// TokenKeys establishes what properties (as in JSON
+	// keys) in the native AST nodes can be mapped to Tokens in the UAST. If the
+	// InternalTypeKey is the "type" of a node, the Token could be tough of as the
+	// "value" representation; this could be a specific value for string/numeric
+	// literals or the symbol name for others.  E.g.: if a native AST represents a
+	// numeric literal as: `{"ast_type": NumLiteral, "value": 2}` then you should have
+	// to add `"value": true` to the TokenKeys map.  Some native ASTs will use several
+	// different fields as tokens depending on the node type; in that case, all should
+	// be added to this map to ensure a correct UAST generation.
 	TokenKeys map[string]bool
 	// SyntheticTokens is a map of InternalType to string used to add
-	// synthetic tokens to nodes depending on its InternalType.
+	// synthetic tokens to nodes depending on its InternalType; sometimes native ASTs just use an
+	// InternalTypeKey for some node but we need to add a Token to the UAST node to
+	// improve the representation. In this case we can add both the InternalKey and
+	// what token it should generate. E.g.: an InternalTypeKey called "NullLiteral" in
+	// Java should be mapped using this map to "null" adding ```"NullLiteral":
+	// "null"``` to this map.
 	SyntheticTokens map[string]string
 	// PromotedPropertyLists allows to convert some properties in the native AST with a list value
-	// to its own node with the list elements as children. The key of the first map is the name
-	// of the InternalType which can have promotions and the value is a map where keys must be the names
-	// of the properties to be promoted if the value is true. For example to promote a "body" property
-	// inside an "If" InternalKey the map should contain: ["If"]["body"] = true.
+	// to its own node with the list elements as children. 	By default the UAST
+	// generation will set as children of a node any object that hangs from any of the
+	// original native AST node properties. In this process, object key serving as
+	// the parent is lost and its name is added as the "internalRole" key of the children.
+	// This is usually fine since the InternalTypeKey of the parent AST node will
+	// usually provide enough context and the node won't any other children. This map
+	// allows you to change this default behavior for specific nodes so the properties
+	// are "promoted" to a new node (with an InternalTypeKey named "Parent.KeyName")
+	// and the objects in its list will be shown in the UAST as children. E.g.: if you
+	// have a native AST where an "If" node has the JSON keys "body", "else" and
+	// "condition" each with its own list of children, you could add an entry to
+	// PromotedPropertyLists like
+	//
+	// "If": {"body": true, "orelse": true, "condition": true},
+	//
+	// In this case, the new nodes will have the InternalTypeKey "If.body", "If.orelse"
+	// and "If.condition" and with these names you should be able to write specific
+	// matching rules in the annotation.go file.
 	PromotedPropertyLists map[string]map[string]bool
 	// If this option is set, all properties mapped to a list will be promoted to its own node. Setting
 	// this option to true will ignore the PromotedPropertyLists settings.
