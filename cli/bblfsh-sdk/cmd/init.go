@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/bblfsh/sdk/cli"
-	"github.com/bblfsh/sdk/manifest"
 )
 
 const InitCommandDescription = "initializes a driver for a given language and OS"
@@ -32,9 +34,13 @@ func (c *InitCommand) processManifest() error {
 	}
 
 	cli.Notice.Printf("initializing driver %q, creating new manifest\n", c.Args.Language)
-	if _, err := c.readManifest(); err == nil {
-		cli.Warning.Printf("driver already initialized. %q detected\n", manifest.Filename)
-	}
+
+	c.Root = filepath.Join(c.Root, strings.ToLower(c.Args.Language)+"-driver")
+
+	// Empty directories are not included as assets, generate them manually
+	gitDir := filepath.Join(c.Root, ".git")
+	os.MkdirAll(filepath.Join(gitDir, "objects"), os.FileMode(0755))
+	os.Mkdir(filepath.Join(gitDir, "refs"), os.FileMode(0755))
 
 	return c.processTemplateAsset(manifestTpl, c.Args, false)
 }
