@@ -242,7 +242,7 @@ func TestCyclomaticComplexity(t *testing.T) {
 	require.Equal(CyclomaticComplexity(n), 6)
 }
 
-func TestCountChildrenOfRol(t *testing.T) {
+func TestCountChildrenOfRole(t *testing.T) {
 	require := require.New(t)
 
 	n1 := &Node{InternalType: "module", Children: []*Node{
