@@ -52,7 +52,7 @@ func (f *folder) fold(r *Rule) {
 	defer f.current.pop()
 
 	if len(r.actions) != 0 {
-		s := fmt.Sprintf("%s -> %s",
+		s := fmt.Sprintf("| %s | %s |",
 			f.current.String(), joinActions(r.actions, ", "))
 		f.descriptions = append(f.descriptions, abbreviate(s))
 	}
@@ -75,8 +75,8 @@ func joinActions(as []Action, sep string) string {
 // Idempotent.
 func abbreviate(s string) string {
 	// Replace the On(Any).Something at the begining with root
-	if !strings.HasPrefix(s, "/self::*[*] -> ") {
-		s = strings.TrimPrefix(s, "/self::*[*]")
+	if !strings.HasPrefix(s, "| /self::*[*] | ") {
+		s = strings.Replace(s, "/self::*[*]", "", 1)
 	}
 	// replace descendant:: with //
 	s = strings.Replace(s, "/descendant::*", "//*", -1) // no limit

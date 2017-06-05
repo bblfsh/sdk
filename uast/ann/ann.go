@@ -53,14 +53,20 @@ type Rule struct {
 	rules      []*Rule
 }
 
+const (
+	head = `| Path | Action |
+|------|--------|
+`
+)
+
 // String returns a string representation of the rule.  Every node in
 // the rule will end in '\n'.  The rule itself will be represented using
-// a format similar to an abbreviated XPath, then a arrow (' -> ') an
+// a format similar to an abbreviated XPath, then a pipe (' | ') an
 // the list of actions to perform on the node.
 func (r *Rule) String() string {
 	f := folder{}
 	f.fold(r)
-	return f.String()
+	return head + f.String()
 }
 
 // On is the *Rule constructor. It takes a list of predicates and returns a

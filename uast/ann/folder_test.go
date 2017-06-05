@@ -21,49 +21,49 @@ func TestNotationSuite(t *testing.T) {
 
 func (suite *NotationSuite) TestAny() {
 	rule := On(Any).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[*] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[*] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestNotAny() {
 	rule := On(Not(Any)).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[not(*)] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[not(*)] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestHasInternalType() {
 	rule := On(HasInternalType("foo")).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[@InternalType='foo'] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[@InternalType='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestHasProperty() {
 	rule := On(HasProperty("key", "value")).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[@key][@key='value'] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[@key][@key='value'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestHasInternalRole() {
 	rule := On(HasInternalRole("role")).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[@internalRole][@internalRole='role'] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[@internalRole][@internalRole='role'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestHasChild() {
 	rule := On(HasChild(HasInternalType("foo"))).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[child::@InternalType='foo'] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[child::@InternalType='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestToken() {
 	rule := On(HasToken("foo")).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[@Token='foo'] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
@@ -74,7 +74,8 @@ func (suite *NotationSuite) TestAnd() {
 		HasToken("bar"),
 		HasInternalType("bla"),
 	)).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[(@Token='foo') and (@Token='bar') and (@InternalType='bla')] -> SimpleIdentifier\n"
+	expected := head +
+		"| /self::*[(@Token='foo') and (@Token='bar') and (@InternalType='bla')] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
@@ -85,40 +86,41 @@ func (suite *NotationSuite) TestOr() {
 		HasToken("bar"),
 		HasInternalType("bla"),
 	)).Roles(uast.SimpleIdentifier)
-	expected := "/self::*[(@Token='foo') or (@Token='bar') or (@InternalType='bla')] -> SimpleIdentifier\n"
+	expected := head +
+		"| /self::*[(@Token='foo') or (@Token='bar') or (@InternalType='bla')] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestSelf() {
 	rule := On(Any).Self(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
-	expected := "/self::*[@Token='foo'] -> SimpleIdentifier\n"
+	expected := head + "| /self::*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 
 	rule = On(Any).Self(On(HasToken("foo"))).Roles(uast.SimpleIdentifier)
-	expected = "/self::*[*] -> SimpleIdentifier\n"
+	expected = head + "| /self::*[*] | SimpleIdentifier |\n"
 	obtained = rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestChildren() {
 	rule := On(Any).Children(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
-	expected := "/*[@Token='foo'] -> SimpleIdentifier\n"
+	expected := head + "| /*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestDescendants() {
 	rule := On(Any).Descendants(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
-	expected := "//*[@Token='foo'] -> SimpleIdentifier\n"
+	expected := head + "| //*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
 func (suite *NotationSuite) TestDescendantsOrSelf() {
 	rule := On(Any).DescendantsOrSelf(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
-	expected := "/descendant-or-self::*[@Token='foo'] -> SimpleIdentifier\n"
+	expected := head + "| /descendant-or-self::*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
@@ -131,10 +133,11 @@ func (suite *NotationSuite) TestMisc1() {
 			On(HasInternalType("binary expression")).Children(
 				On(HasInternalType("left")).Roles(uast.BinaryExpressionLeft)),
 		))
-	expected := "/self::*[not(@InternalType='FILE')] -> Error\n" +
-		"/self::*[@InternalType='FILE'] -> SimpleIdentifier\n" +
-		"/self::*[@InternalType='FILE']//*[@InternalType='identifier'] -> QualifiedIdentifier\n" +
-		"/self::*[@InternalType='FILE']//*[@InternalType='binary expression']/*[@InternalType='left'] -> BinaryExpressionLeft\n"
+	expected := head +
+		"| /self::*[not(@InternalType='FILE')] | Error |\n" +
+		"| /self::*[@InternalType='FILE'] | SimpleIdentifier |\n" +
+		"| /self::*[@InternalType='FILE']//*[@InternalType='identifier'] | QualifiedIdentifier |\n" +
+		"| /self::*[@InternalType='FILE']//*[@InternalType='binary expression']/*[@InternalType='left'] | BinaryExpressionLeft |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
