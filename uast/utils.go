@@ -77,56 +77,6 @@ func CyclomaticComplexity(n *Node) int {
 	return complx
 }
 
-func (n *Node) ChildrenOfRole(wanted Role) []*Node {
-	var children []*Node
-	for _, child := range n.Children {
-		for _, role := range child.Roles {
-			if role == wanted {
-				children = append(children, child)
-			}
-		}
-	}
-	return children
-}
-
-func (n *Node) CountChildrenOfRole(role Role) int {
-	count := 0
-	for _, child := range n.Children {
-		for _, cRole := range child.Roles {
-			if cRole == role {
-				count++
-			}
-		}
-	}
-	return count
-}
-
-func (n *Node) DeepChildrenOfRole(role Role) []*Node {
-	var childList []*Node
-	for _, child := range n.Children {
-		for _, cRole := range child.Roles {
-			if cRole == role {
-				childList = append(childList, child)
-			}
-		}
-		childList = append(childList, child.DeepChildrenOfRole(role)...)
-	}
-	return childList
-}
-
-func (n *Node) DeepCountChildrenOfRole(role Role) int {
-	count := 0
-	for _, child := range n.Children {
-		for _, cRole := range child.Roles {
-			if cRole == role {
-				count++
-			}
-		}
-		count += child.DeepCountChildrenOfRole(role)
-	}
-	return count
-}
-
 func (n *Node) ContainsRole(role Role) bool {
 	for _, r := range n.Roles {
 		if role == r {
@@ -134,4 +84,46 @@ func (n *Node) ContainsRole(role Role) bool {
 		}
 	}
 	return false
+}
+
+func (n *Node) ChildrenOfRole(role Role) []*Node {
+	var children []*Node
+	for _, child := range n.Children {
+		if child.ContainsRole(role) {
+			children = append(children, child)
+		}
+	}
+	return children
+}
+
+func (n *Node) DeepChildrenOfRole(role Role) []*Node {
+	var childList []*Node
+	for _, child := range n.Children {
+		if child.ContainsRole(role) {
+			childList = append(childList, child)
+		}
+		childList = append(childList, child.DeepChildrenOfRole(role)...)
+	}
+	return childList
+}
+
+func (n *Node) CountChildrenOfRole(role Role) int {
+	count := 0
+	for _, child := range n.Children {
+		if child.ContainsRole(role) {
+			count++
+		}
+	}
+	return count
+}
+
+func (n *Node) DeepCountChildrenOfRole(role Role) int {
+	count := 0
+	for _, child := range n.Children {
+		if child.ContainsRole(role) {
+			count++
+		}
+		count += child.DeepCountChildrenOfRole(role)
+	}
+	return count
 }
