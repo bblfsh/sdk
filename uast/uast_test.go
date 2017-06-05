@@ -224,20 +224,98 @@ func TestCyclomaticComplexity(t *testing.T) {
 		Children: []*Node{
 			{InternalType: "root"}, // 1 (initial)
 			// Prefix is the default so it doesnt need any role
-			{InternalType: "if1", Roles: []Role{If}, Children: []*Node{  // 2 (If)
+			{InternalType: "if1", Roles: []Role{If}, Children: []*Node{ // 2 (If)
 				{InternalType: "if1else1", Roles: []Role{IfElse}, Children: []*Node{ // 0
 					{InternalType: "if1else1foreach", Roles: []Role{ForEach}, Children: []*Node{ // 3 (ForEach)
-						{InternalType: "foreach_child1"}, // 0
+						{InternalType: "foreach_child1"},                                   // 0
 						{InternalType: "foreach_child2_continue", Roles: []Role{Continue}}, // 4 (Continue)
 					}},
 					{InternalType: "if1else1if", Roles: []Role{If}, Children: []*Node{ // 5 (If)
-						{InternalType: "elseif_child1"}, // 0
+						{InternalType: "elseif_child1"},                      // 0
 						{InternalType: "opAnd", Roles: []Role{OpBooleanAnd}}, // 6 (OpBooleanAnd)
-						{InternalType: "elseif_child2"}, // 0
+						{InternalType: "elseif_child2"},                      // 0
 					}},
 				}},
 				{InternalType: "break", Roles: []Role{Break}},
 			},
 			}}}
 	require.Equal(CyclomaticComplexity(n), 6)
+}
+
+func TestCountChildrenOfRole(t *testing.T) {
+	require := require.New(t)
+
+	n1 := &Node{InternalType: "module", Children: []*Node{
+		{InternalType: "Statement", Roles: []Role{Statement}},
+		{InternalType: "Statement", Roles: []Role{Statement}},
+		{InternalType: "If", Roles: []Role{If}},
+	}}
+	n2 := &Node{InternalType: "module", Children: []*Node{
+		{InternalType: "Statement", Roles: []Role{Statement}, Children: []*Node{
+			{InternalType: "Statement", Roles: []Role{Statement}, Children: []*Node{
+				{InternalType: "If", Roles: []Role{If}},
+				{InternalType: "Statemenet", Roles: []Role{Statement}},
+			}},
+		}},
+	}}
+	result := n1.CountChildrenOfRole(Statement)
+	expect := 2
+	require.Equal(expect, result)
+
+	result = n2.CountChildrenOfRole(Statement)
+	expect = 1
+	require.Equal(expect, result)
+
+	result = n1.DeepCountChildrenOfRole(Statement)
+	expect = 2
+	require.Equal(expect, result)
+
+	result = n2.DeepCountChildrenOfRole(Statement)
+	expect = 3
+	require.Equal(expect, result)
+}
+
+func TestChildrenOfRole(t *testing.T) {
+	require := require.New(t)
+
+	n1 := &Node{InternalType: "module", Children: []*Node{
+		{InternalType: "Statement", Roles: []Role{Statement}},
+		{InternalType: "Statement", Roles: []Role{Statement}},
+		{InternalType: "If", Roles: []Role{If}},
+	}}
+	n2 := &Node{InternalType: "module", Children: []*Node{
+		{InternalType: "Statement", Roles: []Role{Statement}, Children: []*Node{
+			{InternalType: "Statement", Roles: []Role{Statement}, Children: []*Node{
+				{InternalType: "If", Roles: []Role{If}},
+				{InternalType: "Statemenet", Roles: []Role{Statement}},
+			}},
+		}},
+	}}
+
+	result := n1.ChildrenOfRole(Statement)
+	expect := 2
+	require.Equal(expect, len(result))
+
+	result = n2.ChildrenOfRole(Statement)
+	expect = 1
+	require.Equal(expect, len(result))
+
+	result = n1.DeepChildrenOfRole(Statement)
+	expect = 2
+	require.Equal(expect, len(result))
+
+	result = n2.DeepChildrenOfRole(Statement)
+	expect = 3
+	require.Equal(expect, len(result))
+}
+
+func TestContainsRole(t *testing.T) {
+	require := require.New(t)
+	n := &Node{InternalType: "node", Roles: []Role{Statement, If}}
+
+	result := n.ContainsRole(If)
+	require.Equal(true, result)
+
+	result = n.ContainsRole(Switch)
+	require.Equal(false, result)
 }
