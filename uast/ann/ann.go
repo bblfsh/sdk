@@ -59,14 +59,13 @@ const (
 `
 )
 
-// String returns a string representation of the rule.  Every node in
-// the rule will end in '\n'.  The rule itself will be represented using
-// a format similar to an abbreviated XPath, then a pipe (' | ') an
-// the list of actions to perform on the node.
+// String returns a Markdown table representation of the rule.  The
+// table contains two columns: an XPath-like path for nodes and a human
+// readable description of the actions associated with those paths.
 func (r *Rule) String() string {
-	f := folder{}
-	f.fold(r)
-	return head + f.String()
+	body := xPathDescription{}
+	body.fold(r)
+	return head + body.String()
 }
 
 // On is the *Rule constructor. It takes a list of predicates and returns a

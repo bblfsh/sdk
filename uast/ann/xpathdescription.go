@@ -6,11 +6,12 @@ import (
 	"strings"
 )
 
-// folder as in "analyzer of recursive data structures combining the
-// information in its nodes", not as in "directory".  This particular
-// folder traverses Rules in pre-order, generating their string
-// XPath-like descriptions.
-type folder struct {
+// xPathDescription is a folder (as in "analyzer of recursive data
+// structures combining the information in its nodes", not as in
+// "directory").  It traverses Rules in pre-order, generating the
+// XPath-like description of each rule and a human readable description
+// of their associated actions.
+type xPathDescription struct {
 	current      path
 	descriptions []string
 }
@@ -43,7 +44,7 @@ func (p *path) String() string {
 }
 
 // Calculates the description for all the nodes in the rule.
-func (f *folder) fold(r *Rule) {
+func (f *xPathDescription) fold(r *Rule) {
 	if len(r.actions) == 0 && len(r.rules) == 0 {
 		return
 	}
@@ -86,7 +87,7 @@ func abbreviate(s string) string {
 }
 
 // Returns a string with all the description separated by a newline.
-func (f *folder) String() string {
+func (f *xPathDescription) String() string {
 	var buf bytes.Buffer
 	for _, e := range f.descriptions {
 		fmt.Fprintf(&buf, "%s\n", e)
