@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -37,10 +37,11 @@ func (c *InitCommand) processManifest() error {
 
 	c.Root = filepath.Join(c.Root, strings.ToLower(c.Args.Language)+"-driver")
 
-	// Empty directories are not included as assets, generate them manually
-	gitDir := filepath.Join(c.Root, ".git")
-	os.MkdirAll(filepath.Join(gitDir, "objects"), os.FileMode(0755))
-	os.Mkdir(filepath.Join(gitDir, "refs"), os.FileMode(0755))
+	cli.Notice.Printf("initializing new repo %q\n", c.Root)
+	cmd := exec.Command("git", "init", c.Root)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
 
 	return c.processTemplateAsset(manifestTpl, c.Args, false)
 }
