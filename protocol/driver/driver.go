@@ -58,6 +58,7 @@ func (d *Driver) Run(args []string) error {
 	parser.AddCommand("parse-native", "", "", &parseNativeASTCommand{cmd: cmd})
 	parser.AddCommand("parse-uast", "", "", &parseUASTCommand{cmd: cmd})
 	parser.AddCommand("tokenize", "", "", &tokenizeCommand{cmd: cmd})
+	parser.AddCommand("docgen", "", "", &docGenCommand{cmd: cmd})
 
 	if _, err := parser.ParseArgs(args[1:]); err != nil {
 		if err, ok := err.(*flags.Error); ok {
@@ -277,4 +278,13 @@ func (c *tokenizeCommand) Execute(args []string) error {
 	toks := uast.Tokens(resp.UAST)
 	_, err = fmt.Fprintf(c.Out, strings.Join(toks, "\t"))
 	return err
+}
+
+type docGenCommand struct {
+	cmd
+}
+
+func (c *docGenCommand) Execute(args []string) error {
+	fmt.Print(c.Driver.Annotate)
+	return nil
 }

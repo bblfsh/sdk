@@ -493,6 +493,7 @@ BUILD_IMAGE=$(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE) $(DOCKER_I
 
 # golang runtime commands
 GO_CMD = go
+GO_RUN = $(GO_CMD) run
 GO_TEST = $(GO_CMD) test -v
 GO_LDFLAGS = -X main.version=$(DRIVER_VERSION) -X main.build=$(BUILD_ID)
 
@@ -525,6 +526,10 @@ ALLOWED_IN_DOCKERFILE = \
 	RUNTIME_NATIVE_VERSION RUNTIME_GO_VERSION \
 	BUILD_USER BUILD_UID BUILD_PATH \
 	DOCKER_IMAGE DOCKER_IMAGE_VERSIONED DOCKER_BUILD_NATIVE_IMAGE
+
+# generated documentation
+DOCGEN_FILES += \
+	ANNOTATION.md
 
 # we export the variable to allow envsubst, substitute the vars in the
 # Dockerfiles
@@ -583,8 +588,10 @@ push: build
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest)
 
-docgen:
-	- echo "TODO: generate markdown table of the rules and store it at ANNOTATIONS.md"
+docgen: $(DOCGEN_FILES)
+
+ANNOTATION.md: driver/normalizer/annotation.go
+	@$(GO_RUN) driver/main.go docgen > $@
 
 validate:
 	@$(RUN) $(bblfsh-sdk) update --dry-run
@@ -603,7 +610,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 3951, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4053, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
