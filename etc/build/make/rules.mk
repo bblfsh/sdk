@@ -114,6 +114,9 @@ push: build
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest)
 
+docgen:
+	- echo "TODO: generate markdown table of the rules and store it at ANNOTATIONS.md"
+
 validate:
 	@$(RUN) $(bblfsh-sdk) update --dry-run
 
