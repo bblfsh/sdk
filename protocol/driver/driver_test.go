@@ -80,6 +80,7 @@ Help Options:
   -h, --help  Show this help message
 
 Available commands:
+  docgen
   parse-native
   parse-uast
   serve
