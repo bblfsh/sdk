@@ -2,6 +2,9 @@
 package ann
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/bblfsh/sdk/uast"
 )
 
@@ -14,9 +17,32 @@ const (
 	descendantOrSelf
 )
 
-// Predicate is a function that takes a node and returns a boolean. It
-// is provided as a convenient way of defining a PathMatcher.
-type Predicate func(n *uast.Node) bool
+// String returns the XPath (XML Path Language) string representation of
+// an axis.
+func (a axis) String() string {
+	switch a {
+	case self:
+		return "self"
+	case child:
+		return "child"
+	case descendant:
+		return "descendant"
+	case descendantOrSelf:
+		return "descendant-or-self"
+	default:
+		panic(fmt.Sprintf("unknown axis: %q", a))
+	}
+}
+
+// Predicate is the interface that wraps boolean tests for uast.Nodes.
+//
+// The Eval function evaluates the test over a node and returns its
+// boolean output.  The String function returns  a description of the
+// predicate in a syntax similar to XPath.
+type Predicate interface {
+	fmt.Stringer
+	Eval(n *uast.Node) bool
+}
 
 // Rule is a conversion rule that can visit a tree, match nodes against
 // path matchers and apply actions to the matching node.
@@ -25,6 +51,21 @@ type Rule struct {
 	predicates []Predicate
 	actions    []Action
 	rules      []*Rule
+}
+
+const (
+	head = `| Path | Action |
+|------|--------|
+`
+)
+
+// String returns a Markdown table representation of the rule.  The
+// table contains two columns: an XPath-like path for nodes and a human
+// readable description of the actions associated with those paths.
+func (r *Rule) String() string {
+	body := xPathDescription{}
+	body.fold(r)
+	return head + body.String()
 }
 
 // On is the *Rule constructor. It takes a list of predicates and returns a
@@ -76,7 +117,7 @@ func (r *Rule) Apply(n *uast.Node) error {
 
 		mn := p.Node()
 		for _, a := range r.actions {
-			if err := a(mn); err != nil {
+			if err := a.Do(mn); err != nil {
 				return err
 			}
 		}
@@ -134,29 +175,43 @@ func (r *Rule) Do(actions ...Action) *Rule {
 
 // HasInternalType matches a node if its internal type matches the given one.
 func HasInternalType(it string) Predicate {
-	return func(n *uast.Node) bool {
-		if n == nil {
-			return false
-		}
+	p := hasInternalType(it)
+	return &p
+}
 
-		return n.InternalType == it
+type hasInternalType string
+
+func (p *hasInternalType) String() string {
+	return fmt.Sprintf("@InternalType='%s'", string(*p))
+}
+
+func (p *hasInternalType) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+	return n.InternalType == string(*p)
 }
 
 // HasProperty matches a node if it has a property matching the given key and value.
-func HasProperty(k, v string) Predicate {
-	return func(n *uast.Node) bool {
-		if n == nil {
-			return false
-		}
+func HasProperty(k, v string) Predicate { return &hasProperty{k, v} }
 
-		if n.Properties == nil {
-			return false
-		}
+type hasProperty struct{ k, v string }
 
-		prop, ok := n.Properties[k]
-		return ok && prop == v
+func (p *hasProperty) String() string {
+	return fmt.Sprintf("@%s][@%[1]s='%s'", p.k, p.v)
+}
+
+func (p *hasProperty) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+
+	if n.Properties == nil {
+		return false
+	}
+
+	prop, ok := n.Properties[p.k]
+	return ok && prop == p.v
 }
 
 // HasInternalRole is a convenience shortcut for:
@@ -168,91 +223,159 @@ func HasInternalRole(r string) Predicate {
 }
 
 // HasChild matches a node that contains a child matching the given predicate.
-func HasChild(pred Predicate) Predicate {
-	return func(n *uast.Node) bool {
-		if n == nil {
-			return false
-		}
+func HasChild(pred Predicate) Predicate { return &hasChild{pred} }
 
-		for _, c := range n.Children {
-			if pred(c) {
-				return true
-			}
-		}
+type hasChild struct{ Predicate }
 
+func (p *hasChild) String() string {
+	return fmt.Sprintf("child::%s", p.Predicate)
+}
+
+func (p *hasChild) Eval(n *uast.Node) bool {
+	if n == nil {
 		return false
 	}
+
+	for _, c := range n.Children {
+		if p.Predicate.Eval(c) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // HasToken matches a node if its token matches the given one.
 func HasToken(tk string) Predicate {
-	return func(n *uast.Node) bool {
-		if n == nil {
-			return false
-		}
+	p := hasToken(tk)
+	return &p
+}
 
-		return n.Token == tk
+type hasToken string
+
+func (p *hasToken) String() string {
+	return fmt.Sprintf("@Token='%s'", string(*p))
+}
+
+func (p *hasToken) Eval(n *uast.Node) bool {
+	if n == nil {
+		return false
 	}
+
+	return n.Token == string(*p)
 }
 
 // Any matches any path.
-var Any Predicate = func(n *uast.Node) bool { return true }
+var Any = &any{}
+
+type any struct{}
+
+func (p *any) String() string { return "*" }
+
+func (p *any) Eval(n *uast.Node) bool { return true }
 
 // Not negates a node predicate.
 func Not(p Predicate) Predicate {
-	return func(n *uast.Node) bool {
-		return !p(n)
-	}
+	return &not{p}
 }
+
+type not struct{ Predicate }
+
+func (p *not) String() string { return fmt.Sprintf("not(%s)", p.Predicate) }
+
+func (p *not) Eval(n *uast.Node) bool { return !p.Predicate.Eval(n) }
 
 // And returns a predicate that returns true if all the given predicates returns
 // true.
-func And(ps ...Predicate) Predicate {
-	return func(n *uast.Node) bool {
-		for _, p := range ps {
-			if !p(n) {
-				return false
-			}
-		}
+func And(ps ...Predicate) Predicate { return &and{ps} }
 
-		return true
+type and struct{ data []Predicate }
+
+const andGlue = " and "
+
+func (p *and) String() string { return joinPredicates(p.data, andGlue) }
+
+func (p *and) Eval(n *uast.Node) bool {
+	for _, p := range p.data {
+		if !p.Eval(n) {
+			return false
+		}
 	}
+
+	return true
+}
+
+func joinPredicates(ps []Predicate, sep string) string {
+	var buf bytes.Buffer
+	_sep := ""
+	for _, e := range ps {
+		fmt.Fprintf(&buf, "%s(%s)", _sep, e)
+		_sep = sep
+	}
+	return buf.String()
 }
 
 // Or returns a predicate that returns true if any of the given predicates returns
 // true.
-func Or(ps ...Predicate) Predicate {
-	return func(n *uast.Node) bool {
-		for _, p := range ps {
-			if p(n) {
-				return true
-			}
-		}
+func Or(ps ...Predicate) Predicate { return &or{ps} }
 
-		return false
+type or struct{ data []Predicate }
+
+const orGlue = " or "
+
+func (p *or) String() string { return joinPredicates(p.data, orGlue) }
+
+func (p *or) Eval(n *uast.Node) bool {
+	for _, p := range p.data {
+		if p.Eval(n) {
+			return true
+		}
 	}
+
+	return false
 }
 
-// Action is a function that takes a node, does something with it
-// (possibly mutating it) and returns an optional error.
-type Action func(n *uast.Node) error
+// Action is the interface that wraps an operation to be made on a
+// uast.Node, possibly mutatin it.  The Do function applies the
+// operation to the provided node and returns an optional error.  The
+// string method returns a string describing the operation.
+type Action interface {
+	fmt.Stringer
+	Do(n *uast.Node) error
+}
+
+// action implements Action by returning desc when String is called.
+type action struct {
+	do   func(n *uast.Node) error
+	desc string
+}
+
+func (a *action) Do(n *uast.Node) error { return a.do(n) }
+
+func (a *action) String() string { return a.desc }
 
 // AddRoles creates an action to add the given roles to a node.
 func AddRoles(roles ...uast.Role) Action {
-	return func(n *uast.Node) error {
-		n.Roles = append(n.Roles, roles...)
-		return nil
+	return &action{
+		do: func(n *uast.Node) error {
+			n.Roles = append(n.Roles, roles...)
+			return nil
+		},
+		desc: fmt.Sprintf(roles[0].String()), // todo add all roles, not just one
 	}
 }
 
 // ReturnError creates an action that always returns a RuleError
 // wrapping the given error with the offending node information.
 func ReturnError(err error) Action {
-	return func(n *uast.Node) error {
-		return &ruleError{
-			error: err,
-			node:  n,
-		}
+	return &action{
+		do: func(n *uast.Node) error {
+			return &ruleError{
+				error: err,
+				node:  n,
+			}
+		},
+		desc: "Error",
 	}
 }
 
@@ -314,7 +437,7 @@ func matchPredicates(path uast.Path, preds []Predicate) bool {
 	}
 
 	for i, pred := range preds {
-		if !pred(path[i]) {
+		if !pred.Eval(path[i]) {
 			return false
 		}
 	}
@@ -329,7 +452,7 @@ func matchSuffixPredicates(path uast.Path, preds []Predicate) bool {
 
 	j := len(path) - 1
 	for i := len(preds) - 1; i >= 0; i-- {
-		if !preds[i](path[j]) {
+		if !preds[i].Eval(path[j]) {
 			return false
 		}
 

@@ -20,11 +20,11 @@ func TestHasInternalType(t *testing.T) {
 	}
 
 	pred := HasInternalType("foo")
-	require.True(pred(node("foo")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.False(pred(node("")))
-	require.False(pred(node("bar")))
+	require.True(pred.Eval(node("foo")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.False(pred.Eval(node("")))
+	require.False(pred.Eval(node("bar")))
 }
 
 func TestHasInternalRole(t *testing.T) {
@@ -37,11 +37,11 @@ func TestHasInternalRole(t *testing.T) {
 	}
 
 	pred := HasInternalRole("foo")
-	require.True(pred(node("foo")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.False(pred(node("")))
-	require.False(pred(node("bar")))
+	require.True(pred.Eval(node("foo")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.False(pred.Eval(node("")))
+	require.False(pred.Eval(node("bar")))
 }
 
 func TestHasProperty(t *testing.T) {
@@ -54,12 +54,12 @@ func TestHasProperty(t *testing.T) {
 	}
 
 	pred := HasProperty("myprop", "foo")
-	require.True(pred(node("myprop", "foo")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.False(pred(node("myprop", "bar")))
-	require.False(pred(node("otherprop", "foo")))
-	require.False(pred(node("otherprop", "bar")))
+	require.True(pred.Eval(node("myprop", "foo")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.False(pred.Eval(node("myprop", "bar")))
+	require.False(pred.Eval(node("otherprop", "foo")))
+	require.False(pred.Eval(node("otherprop", "bar")))
 }
 
 func TestHasToken(t *testing.T) {
@@ -72,28 +72,28 @@ func TestHasToken(t *testing.T) {
 	}
 
 	pred := HasToken("foo")
-	require.True(pred(node("foo")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.False(pred(node("")))
-	require.False(pred(node("bar")))
+	require.True(pred.Eval(node("foo")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.False(pred.Eval(node("")))
+	require.False(pred.Eval(node("bar")))
 
 	pred = HasToken("")
-	require.True(pred(&Node{}))
-	require.True(pred(node("")))
-	require.False(pred(nil))
-	require.False(pred(node("bar")))
+	require.True(pred.Eval(&Node{}))
+	require.True(pred.Eval(node("")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(node("bar")))
 }
 
 func TestAny(t *testing.T) {
 	require := require.New(t)
 
 	pred := Any
-	require.True(pred(nil))
-	require.True(pred(&Node{}))
-	require.True(pred(NewNode()))
-	require.True(pred(&Node{InternalType: "foo"}))
-	require.True(pred(&Node{Token: "foo"}))
+	require.True(pred.Eval(nil))
+	require.True(pred.Eval(&Node{}))
+	require.True(pred.Eval(NewNode()))
+	require.True(pred.Eval(&Node{InternalType: "foo"}))
+	require.True(pred.Eval(&Node{Token: "foo"}))
 }
 
 func TestNot(t *testing.T) {
@@ -106,11 +106,11 @@ func TestNot(t *testing.T) {
 	}
 
 	pred := Not(HasInternalType("foo"))
-	require.False(pred(node("foo")))
-	require.True(pred(nil))
-	require.True(pred(&Node{}))
-	require.True(pred(node("")))
-	require.True(pred(node("bar")))
+	require.False(pred.Eval(node("foo")))
+	require.True(pred.Eval(nil))
+	require.True(pred.Eval(&Node{}))
+	require.True(pred.Eval(node("")))
+	require.True(pred.Eval(node("bar")))
 }
 
 func TestOr(t *testing.T) {
@@ -123,12 +123,12 @@ func TestOr(t *testing.T) {
 	}
 
 	pred := Or(HasInternalType("foo"), HasInternalType("bar"))
-	require.True(pred(node("foo")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.False(pred(node("")))
-	require.True(pred(node("bar")))
-	require.False(pred(node("baz")))
+	require.True(pred.Eval(node("foo")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.False(pred.Eval(node("")))
+	require.True(pred.Eval(node("bar")))
+	require.False(pred.Eval(node("baz")))
 }
 
 func TestAnd(t *testing.T) {
@@ -142,14 +142,14 @@ func TestAnd(t *testing.T) {
 	}
 
 	pred := And(HasInternalType("foo"), HasToken("bar"))
-	require.False(pred(node("foo", "")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.False(pred(node("", "")))
-	require.False(pred(node("bar", "")))
-	require.False(pred(node("foo", "foo")))
-	require.False(pred(node("bar", "bar")))
-	require.True(pred(node("foo", "bar")))
+	require.False(pred.Eval(node("foo", "")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.False(pred.Eval(node("", "")))
+	require.False(pred.Eval(node("bar", "")))
+	require.False(pred.Eval(node("foo", "foo")))
+	require.False(pred.Eval(node("bar", "bar")))
+	require.True(pred.Eval(node("foo", "bar")))
 }
 
 func TestHasChild(t *testing.T) {
@@ -172,13 +172,13 @@ func TestHasChild(t *testing.T) {
 		return n
 	}
 
-	require.False(pred(path("foo")))
-	require.False(pred(path("foo", "bar")))
-	require.False(pred(path("", "")))
-	require.False(pred(nil))
-	require.False(pred(&Node{}))
-	require.True(pred(path("bar", "foo")))
-	require.False(pred(path("bar", "baz", "foo")))
+	require.False(pred.Eval(path("foo")))
+	require.False(pred.Eval(path("foo", "bar")))
+	require.False(pred.Eval(path("", "")))
+	require.False(pred.Eval(nil))
+	require.False(pred.Eval(&Node{}))
+	require.True(pred.Eval(path("bar", "foo")))
+	require.False(pred.Eval(path("bar", "baz", "foo")))
 }
 
 func TestAddRoles(t *testing.T) {
@@ -188,7 +188,7 @@ func TestAddRoles(t *testing.T) {
 	input := NewNode()
 	expected := NewNode()
 	expected.Roles = []Role{Statement, Expression}
-	err := a(input)
+	err := a.Do(input)
 	require.NoError(err)
 	require.Equal(expected, input)
 }
