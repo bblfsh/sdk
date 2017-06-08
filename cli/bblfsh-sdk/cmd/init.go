@@ -2,16 +2,18 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/bblfsh/sdk/cli"
-	"github.com/bblfsh/sdk/manifest"
 )
 
 const InitCommandDescription = "initializes a driver for a given language and OS"
 
 type InitCommand struct {
 	Args struct {
-		Language string `positional-arg-name:"language"  description:"target langunge of the driver"`
+		Language string `positional-arg-name:"language"  description:"target language of the driver"`
 		OS       string `positional-arg-name:"os" description:"distribution used to run the runtime. (Values: alpine or debian)"`
 	} `positional-args:"yes"`
 
@@ -32,8 +34,13 @@ func (c *InitCommand) processManifest() error {
 	}
 
 	cli.Notice.Printf("initializing driver %q, creating new manifest\n", c.Args.Language)
-	if _, err := c.readManifest(); err == nil {
-		cli.Warning.Printf("driver already initialized. %q detected\n", manifest.Filename)
+
+	c.Root = filepath.Join(c.Root, strings.ToLower(c.Args.Language)+"-driver")
+
+	cli.Notice.Printf("initializing new repo %q\n", c.Root)
+	cmd := exec.Command("git", "init", c.Root)
+	if err := cmd.Run(); err != nil {
+		return err
 	}
 
 	return c.processTemplateAsset(manifestTpl, c.Args, false)
