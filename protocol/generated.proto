@@ -26,6 +26,7 @@ message ParseUASTRequest {
 	string filename = 1;
 	string language = 2;
 	string content = 3;
+	github.com.bblfsh.sdk.protocol.Encoding encoding = 4;
 }
 
 // ParseUASTResponse is the reply to ParseUASTRequest.
@@ -35,6 +36,19 @@ message ParseUASTResponse {
 	github.com.bblfsh.sdk.protocol.Status status = 1;
 	repeated string errors = 2;
 	github.com.bblfsh.sdk.uast.Node uast = 3 [(gogoproto.customname) = "UAST"];
+}
+
+// Encoding is the encoding used for the content string. Currently only
+// UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
+// and Base64 as a fallback.
+enum Encoding {
+	option (gogoproto.enumdecl) = false;
+	option (gogoproto.goproto_enum_prefix) = false;
+	option (gogoproto.goproto_enum_stringer) = false;
+	// UTF8 encoding
+	UTF8 = 0 [(gogoproto.enumvalue_customname) = "UTF8"];
+	// Base64 encoding
+	BASE64 = 1 [(gogoproto.enumvalue_customname) = "Base64"];
 }
 
 // Status is the status of a response.

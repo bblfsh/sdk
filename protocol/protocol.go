@@ -63,6 +63,46 @@ func (s *Status) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Encoding is the encoding used for the content string. Currently only
+// UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
+// and Base64 as a fallback.
+//proteus:generate
+type Encoding byte
+
+const (
+	// UTF8 encoding
+	UTF8 Encoding = iota
+	// Base64 encoding
+	Base64
+)
+
+var encodingToString = map[Encoding]string{
+	UTF8:   "UTF8",
+	Base64: "Base64",
+}
+
+var stringToEncoding = map[string]Encoding{
+	"UTF8":   UTF8,
+	"Base64": Base64,
+}
+
+func (e Encoding) String() string {
+	return encodingToString[e]
+}
+
+func (e Encoding) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.String())
+}
+
+func (e *Encoding) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return fmt.Errorf("Encoding should be a string, got %s", data)
+	}
+
+	*e, _ = stringToEncoding[str]
+	return nil
+}
 // ParseUASTRequest is a request to parse a file and get its UAST.
 //proteus:generate
 type ParseUASTRequest struct {
@@ -74,6 +114,9 @@ type ParseUASTRequest struct {
 	Language string
 	// Content is the source code to be parsed.
 	Content string `json:"content"`
+	// Encoding is the encoding that the Content uses. Currently only UTF-8 and Base64
+	// are supported.
+	Encoding Encoding `json:"encoding"`
 }
 
 // ParseUASTResponse is the reply to ParseUASTRequest.

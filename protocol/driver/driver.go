@@ -148,12 +148,15 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 
 	nc, err := native.ExecClient(c.NativeBin)
 	if err != nil {
-		return fmt.Errorf("error executing native client: %s", c)
+		return fmt.Errorf("error executing native client: %s", err.Error())
 	}
 
 	defer func() { _ = nc.Close() }()
 
-	resp, err := nc.ParseNativeAST(&native.ParseASTRequest{Content: string(b)})
+	resp, err := nc.ParseNativeAST(&native.ParseASTRequest{
+		Content: string(b),
+	})
+
 	if err != nil {
 		return err
 	}
@@ -203,7 +206,9 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		Annotation: c.Driver.Annotate,
 	}
 
-	resp := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
+	resp := up.ParseUAST(&protocol.ParseUASTRequest{
+		Content: string(b),
+	})
 	return fmter(c.Out, resp)
 }
 
@@ -270,7 +275,9 @@ func (c *tokenizeCommand) Execute(args []string) error {
 		Annotation: c.Driver.Annotate,
 	}
 
-	resp := up.ParseUAST(&protocol.ParseUASTRequest{Content: string(b)})
+	resp := up.ParseUAST(&protocol.ParseUASTRequest{
+		Content: string(b),
+	})
 	if resp.Status == protocol.Fatal {
 		return errors.New("parsing error")
 	}

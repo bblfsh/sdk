@@ -2,9 +2,11 @@
 package native
 
 import (
+	"encoding/base64"
 	"io"
 	"os"
 	"os/exec"
+	"unicode/utf8"
 
 	"github.com/bblfsh/sdk/protocol"
 	"github.com/bblfsh/sdk/protocol/jsonlines"
@@ -36,7 +38,28 @@ func ExecParser(toNoder ToNoder, path string, args ...string) (*Parser, error) {
 }
 
 func (p *Parser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
-	nativeResp, err := p.Client.ParseNativeAST(&ParseASTRequest{Content: req.Content})
+	// If the request encoding is Base64 try to decode it as UTF8. Leave it
+	// as Base64 if it isn't possible.
+	if req.Encoding == protocol.Base64 {
+		data, err := base64.StdEncoding.DecodeString(req.Content)
+		if err != nil {
+			encError := "Encoding field is Base64 but content could not be decoded as such!"
+			return &protocol.ParseUASTResponse{
+				Status: protocol.Fatal,
+				Errors: []string{err.Error() + ": " + encError},
+			}
+		}
+		if utf8.Valid(data) {
+			req.Content = string(data)
+			req.Encoding = protocol.UTF8
+		}
+	}
+
+	nativeResp, err := p.Client.ParseNativeAST(&ParseASTRequest{
+		Content:  req.Content,
+		Encoding: req.Encoding,
+	})
+
 	if err != nil {
 		return &protocol.ParseUASTResponse{
 			Status: protocol.Fatal,
@@ -69,7 +92,8 @@ func (p *Parser) Close() error {
 
 // ParseASTRequest to use with the native AST parser. This is for internal use.
 type ParseASTRequest struct {
-	Content string `json:"content"`
+	Content  string            `json:"content"`
+	Encoding protocol.Encoding `json:"encoding"`
 }
 
 // ParseASTResponse is the reply to ParseASTRequest by the native AST parser.
