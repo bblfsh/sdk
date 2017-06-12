@@ -9,66 +9,66 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// go test -v -run 'TestNotationSuite' ./uast/ann
+// go test -v -run 'TestRulesDocSuite' ./uast/ann
 
-type NotationSuite struct {
+type RulesDocSuite struct {
 	suite.Suite
 }
 
-func TestNotationSuite(t *testing.T) {
-	suite.Run(t, new(NotationSuite))
+func TestRulesDocSuite(t *testing.T) {
+	suite.Run(t, new(RulesDocSuite))
 }
 
-func (suite *NotationSuite) TestAny() {
+func (suite *RulesDocSuite) TestAny() {
 	rule := On(Any).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[*] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestNotAny() {
+func (suite *RulesDocSuite) TestNotAny() {
 	rule := On(Not(Any)).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[not(*)] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestHasInternalType() {
+func (suite *RulesDocSuite) TestHasInternalType() {
 	rule := On(HasInternalType("foo")).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[@InternalType='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestHasProperty() {
+func (suite *RulesDocSuite) TestHasProperty() {
 	rule := On(HasProperty("key", "value")).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[@key][@key='value'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestHasInternalRole() {
+func (suite *RulesDocSuite) TestHasInternalRole() {
 	rule := On(HasInternalRole("role")).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[@internalRole][@internalRole='role'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestHasChild() {
+func (suite *RulesDocSuite) TestHasChild() {
 	rule := On(HasChild(HasInternalType("foo"))).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[child::@InternalType='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestToken() {
+func (suite *RulesDocSuite) TestToken() {
 	rule := On(HasToken("foo")).Roles(uast.SimpleIdentifier)
 	expected := head + "| /self::*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestAnd() {
+func (suite *RulesDocSuite) TestAnd() {
 	rule := On(And(
 		HasToken("foo"),
 		HasToken("bar"),
@@ -80,7 +80,7 @@ func (suite *NotationSuite) TestAnd() {
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestOr() {
+func (suite *RulesDocSuite) TestOr() {
 	rule := On(Or(
 		HasToken("foo"),
 		HasToken("bar"),
@@ -92,7 +92,7 @@ func (suite *NotationSuite) TestOr() {
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestSelf() {
+func (suite *RulesDocSuite) TestSelf() {
 	rule := On(Any).Self(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
 	expected := head + "| /self::*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
@@ -104,28 +104,28 @@ func (suite *NotationSuite) TestSelf() {
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestChildren() {
+func (suite *RulesDocSuite) TestChildren() {
 	rule := On(Any).Children(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
 	expected := head + "| /*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestDescendants() {
+func (suite *RulesDocSuite) TestDescendants() {
 	rule := On(Any).Descendants(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
 	expected := head + "| //*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestDescendantsOrSelf() {
+func (suite *RulesDocSuite) TestDescendantsOrSelf() {
 	rule := On(Any).DescendantsOrSelf(On(HasToken("foo")).Roles(uast.SimpleIdentifier))
 	expected := head + "| /descendant-or-self::*[@Token='foo'] | SimpleIdentifier |\n"
 	obtained := rule.String()
 	require.Equal(suite.T(), expected, obtained)
 }
 
-func (suite *NotationSuite) TestMisc1() {
+func (suite *RulesDocSuite) TestMisc1() {
 	rule := On(Any).Self(
 		On(Not(HasInternalType("FILE"))).Error(fmt.Errorf("root must be CompilationUnit")),
 		On(HasInternalType("FILE")).Roles(uast.SimpleIdentifier).Descendants(
