@@ -54,7 +54,8 @@ func (f *xPathDescription) fold(r *Rule) {
 
 	if len(r.actions) != 0 {
 		s := fmt.Sprintf("| %s | %s |",
-			f.current.String(), joinActions(r.actions, ", "))
+			markdownEscape(f.current.String()),
+			markdownEscape(joinActions(r.actions, ", ")))
 		f.descriptions = append(f.descriptions, abbreviate(s))
 	}
 
@@ -76,14 +77,43 @@ func joinActions(as []Action, sep string) string {
 // Idempotent.
 func abbreviate(s string) string {
 	// Replace the On(Any).Something at the begining with root
-	if !strings.HasPrefix(s, "| /self::*[*] | ") {
-		s = strings.Replace(s, "/self::*[*]", "", 1)
+	if !strings.HasPrefix(s, `| /self::\*\[\*\] | `) {
+		s = strings.Replace(s, `/self::\*\[\*\]`, "", 1)
 	}
 	// replace descendant:: with //
-	s = strings.Replace(s, "/descendant::*", "//*", -1) // no limit
+	s = strings.Replace(s, `/descendant::\*`, `//\*`, -1) // no limit
 	// replace child:: with /
 	s = strings.Replace(s, "/child::", "/", -1) // no limit
 	return s
+}
+
+func markdownEscape(s string) string {
+	var buf bytes.Buffer
+	for _, r := range s {
+		if mustEscape(r) {
+			buf.WriteRune('\\')
+		}
+		buf.WriteRune(r)
+	}
+	return buf.String()
+}
+
+func mustEscape(r rune) bool {
+	return r == '\\' ||
+		r == '|' ||
+		r == '*' ||
+		r == '_' ||
+		r == '{' ||
+		r == '}' ||
+		r == '[' ||
+		r == ']' ||
+		r == '(' ||
+		r == ')' ||
+		r == '#' ||
+		r == '+' ||
+		r == '-' ||
+		r == '.' ||
+		r == '!'
 }
 
 // Returns a string with all the description separated by a newline.
