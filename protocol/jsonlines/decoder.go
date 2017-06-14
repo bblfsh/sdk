@@ -10,7 +10,7 @@ import (
 const (
 	// DefaultBufferSize is the default buffer size for decoding. It will
 	// be used whenever the given reader is not buffered.
-	DefaultBufferSize = 1024 * 1024
+	DefaultBufferSize = 1024 * 1024 * 4
 )
 
 type lineReader interface {
