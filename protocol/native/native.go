@@ -36,7 +36,11 @@ func ExecParser(toNoder ToNoder, path string, args ...string) (*Parser, error) {
 }
 
 func (p *Parser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
-	nativeResp, err := p.Client.ParseNativeAST(&ParseASTRequest{Content: req.Content})
+	nativeResp, err := p.Client.ParseNativeAST(&ParseASTRequest{
+		Content:  req.Content,
+		Encoding: req.Encoding,
+	})
+
 	if err != nil {
 		return &protocol.ParseUASTResponse{
 			Status: protocol.Fatal,
@@ -69,7 +73,8 @@ func (p *Parser) Close() error {
 
 // ParseASTRequest to use with the native AST parser. This is for internal use.
 type ParseASTRequest struct {
-	Content string `json:"content"`
+	Content  string            `json:"content"`
+	Encoding protocol.Encoding `json:"encoding"`
 }
 
 // ParseASTResponse is the reply to ParseASTRequest by the native AST parser.
