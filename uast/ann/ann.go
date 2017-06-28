@@ -4,6 +4,7 @@ package ann
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/bblfsh/sdk/uast"
 )
@@ -356,12 +357,16 @@ func (a *action) String() string { return a.desc }
 
 // AddRoles creates an action to add the given roles to a node.
 func AddRoles(roles ...uast.Role) Action {
+	descs := make([]string, len(roles))
+	for i, role := range roles {
+		descs[i] = role.String()
+	}
 	return &action{
 		do: func(n *uast.Node) error {
 			n.Roles = append(n.Roles, roles...)
 			return nil
 		},
-		desc: fmt.Sprintf(roles[0].String()), // todo add all roles, not just one
+		desc: strings.Join(descs, ", "),
 	}
 }
 
