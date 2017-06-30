@@ -3,8 +3,8 @@ package jsonlines
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
+	"fmt"
 )
 
 const (
@@ -15,6 +15,7 @@ const (
 
 type lineReader interface {
 	ReadLine() ([]byte, bool, error)
+	ReadSlice(delim byte) (line[] byte, err error)
 }
 
 // Decoder decodes JSON lines.
@@ -40,17 +41,46 @@ func NewDecoder(r io.Reader) Decoder {
 	return &decoder{r: lr}
 }
 
+// Read and discard everything until the next newline
+func (d *decoder) discardPending() error {
+	for {
+		_, err := d.r.ReadSlice('\n')
+		switch(err) {
+		case io.EOF:
+			return nil
+		case bufio.ErrBufferFull:
+			continue
+		case nil:
+			continue
+		default:
+			return err
+		}
+	}
+}
+
 // Decode decodes the next line in the reader.
 // It does not check JSON for well-formedness before decoding, so in case of
 // error, the structure might be half-filled.
 func (d *decoder) Decode(v interface{}) error {
-	line, isPrefix, err := d.r.ReadLine()
-	if isPrefix {
-		return fmt.Errorf("buffer size exceeded")
-	}
+	var line []byte
 
-	if err != nil {
-		return err
+	for {
+		chunk, isPrefix, err := d.r.ReadLine()
+		if err != nil {
+			if !isPrefix {
+				if discardErr := d.discardPending(); discardErr != nil {
+					return fmt.Errorf("%s; aditionally, there was an error " +
+					                 "trying to dicard the input buffer: %s",
+					                 err, discardErr)
+				}
+			}
+			return err
+		}
+		line = append(line, chunk...)
+
+		if !isPrefix {
+			break
+		}
 	}
 
 	switch o := v.(type) {
