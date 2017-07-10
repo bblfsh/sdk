@@ -140,7 +140,7 @@ type Parser interface {
 // DefaultParser is the default parser used by Parse and ParseNative.
 var DefaultParser Parser
 
-// Parse uses DefaultParser to process the given UAST parsing request.
+// Parse uses DefaultParser to process the given parsing request to get the UAST.
 //proteus:generate
 func Parse(req *ParseRequest) *ParseResponse {
 	if DefaultParser == nil {

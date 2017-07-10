@@ -20,7 +20,7 @@ type Parser interface {
 	protocol.Parser
 }
 
-// TransformationParser wraps another ASTParser and applies a transformation
+// TransformationParser wraps another Parser and applies a transformation
 // to its results.
 type TransformationParser struct {
 	// Parser to delegate parsing.
@@ -32,7 +32,7 @@ type TransformationParser struct {
 	Transformation func([]byte, *uast.Node) error
 }
 
-// Parse calls the wrapped ASTParser and applies the transformation to its
+// Parse calls the wrapped Parser and applies the transformation to its
 // result.
 func (p *TransformationParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	resp := p.Parser.Parse(req)

@@ -72,13 +72,13 @@ func (p *Parser) Close() error {
 	return p.Client.Close()
 }
 
-// ParseNativeRequest to use with the native AST parser. This is for internal use.
+// ParseNativeRequest to use with the native parser. This is for internal use.
 type ParseNativeRequest struct {
 	Content  string            `json:"content"`
 	Encoding protocol.Encoding `json:"encoding"`
 }
 
-// ParseNativeResponse is the reply to ParseNativeRequest by the native AST parser.
+// ParseNativeResponse is the reply to ParseNativeRequest by the native parser.
 type ParseNativeResponse struct {
 	Status protocol.Status `json:"status"`
 	Errors []string        `json:"errors"`

@@ -23,7 +23,7 @@ type Driver struct {
 	Version string
 	// Build identifier.
 	Build string
-	// ParserBuilder creates a ASTParser.
+	// ParserBuilder creates a Parser.
 	ParserBuilder ParserBuilder
 	// Annotate contains an *ann.Rule to convert AST to UAST.
 	Annotate *ann.Rule

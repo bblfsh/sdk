@@ -127,7 +127,7 @@ func (c *protocolServiceClient) Parse(ctx context.Context, in *ParseRequest, opt
 // Server API for ProtocolService service
 
 type ProtocolServiceServer interface {
-	// Parse uses DefaultParser to process the given UAST parsing request.
+	// Parse uses DefaultParser to process the given parsing request to get the UAST.
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
 }
 
