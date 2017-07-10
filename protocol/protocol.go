@@ -104,9 +104,9 @@ func (e *Encoding) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ParseUASTRequest is a request to parse a file and get its UAST.
+// ParseRequest is a request to parse a file and get its UAST.
 //proteus:generate
-type ParseUASTRequest struct {
+type ParseRequest struct {
 	// Path is the path of the file containing the source code. Used for
 	// language detection. This is optional.
 	Path string
@@ -120,9 +120,9 @@ type ParseUASTRequest struct {
 	Encoding Encoding `json:"encoding"`
 }
 
-// ParseUASTResponse is the reply to ParseUASTRequest.
+// ParseResponse is the reply to ParseRequest.
 //proteus:generate
-type ParseUASTResponse struct {
+type ParseResponse struct {
 	// Status is the status of the parsing request.
 	Status Status `json:"status"`
 	// Errors contains a list of parsing errors. If Status is ok, this list
@@ -134,21 +134,21 @@ type ParseUASTResponse struct {
 
 // Parser can parse UAST.
 type Parser interface {
-	ParseUAST(*ParseUASTRequest) *ParseUASTResponse
+	Parse(*ParseRequest) *ParseResponse
 }
 
 // DefaultParser is the default parser used by Parse and ParseNative.
 var DefaultParser Parser
 
-// ParseUAST uses DefaultParser to process the given UAST parsing request.
+// Parse uses DefaultParser to process the given UAST parsing request.
 //proteus:generate
-func ParseUAST(req *ParseUASTRequest) *ParseUASTResponse {
+func Parse(req *ParseRequest) *ParseResponse {
 	if DefaultParser == nil {
-		return &ParseUASTResponse{
+		return &ParseResponse{
 			Status: Fatal,
 			Errors: []string{"no default parser registered"},
 		}
 	}
 
-	return DefaultParser.ParseUAST(req)
+	return DefaultParser.Parse(req)
 }

@@ -28,14 +28,14 @@ type TransformationUASTParser struct {
 	// Transformation function to apply to resulting *uast.Node. The first
 	// argument is the original source code from the request. Any
 	// transformation to *uast.Node should be performed in-place. If error
-	// is returned, it will be propagated to the ParseUAST call.
+	// is returned, it will be propagated to the Parse call.
 	Transformation func([]byte, *uast.Node) error
 }
 
-// ParseUAST calls the wrapped ASTParser and applies the transformation to its
+// Parse calls the wrapped ASTParser and applies the transformation to its
 // result.
-func (p *TransformationUASTParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
-	resp := p.UASTParser.ParseUAST(req)
+func (p *TransformationUASTParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+	resp := p.UASTParser.Parse(req)
 	if resp.Status == protocol.Fatal {
 		return resp
 	}
@@ -53,8 +53,8 @@ type annotationParser struct {
 	Annotation *ann.Rule
 }
 
-func (p *annotationParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
-	resp := p.UASTParser.ParseUAST(&protocol.ParseUASTRequest{
+func (p *annotationParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+	resp := p.UASTParser.Parse(&protocol.ParseRequest{
 		Content:  req.Content,
 		Encoding: req.Encoding,
 	})

@@ -17,11 +17,11 @@ func TestServerOneGood(t *testing.T) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		p.Response = &protocol.ParseUASTResponse{}
-		err := enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		p.Response = &protocol.ParseResponse{}
+		err := enc.Encode(&protocol.ParseRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp := &protocol.ParseUASTResponse{}
+		resp := &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -35,19 +35,19 @@ func TestServerOneMalformedAndOneGood(t *testing.T) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		p.Response = &protocol.ParseUASTResponse{}
+		p.Response = &protocol.ParseResponse{}
 		err := enc.Encode("BAD REQUEST")
 		require.NoError(err)
 
-		resp := &protocol.ParseUASTResponse{}
+		resp := &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 		require.Equal(protocol.Fatal, resp.Status)
 
-		err = enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		err = enc.Encode(&protocol.ParseRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp = &protocol.ParseUASTResponse{}
+		resp = &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -61,20 +61,20 @@ func TestServerOneFatalAndOneGood(t *testing.T) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		p.Response = &protocol.ParseUASTResponse{Status: protocol.Fatal}
-		err := enc.Encode(&protocol.ParseUASTRequest{Content: "FATAL"})
+		p.Response = &protocol.ParseResponse{Status: protocol.Fatal}
+		err := enc.Encode(&protocol.ParseRequest{Content: "FATAL"})
 		require.NoError(err)
 
-		resp := &protocol.ParseUASTResponse{}
+		resp := &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 		require.Equal(protocol.Fatal, resp.Status)
 
-		p.Response = &protocol.ParseUASTResponse{}
-		err = enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		p.Response = &protocol.ParseResponse{}
+		err = enc.Encode(&protocol.ParseRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp = &protocol.ParseUASTResponse{}
+		resp = &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 

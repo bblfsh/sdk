@@ -230,7 +230,7 @@ parse_native_ast() {
 
 parse_uast() {
 	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast --format=pretty /code/$(readlink -f $1)
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse --format=pretty /code/$(readlink -f $1)
 }
 
 check_result() {

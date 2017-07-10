@@ -7,7 +7,6 @@
 // distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
-// the License.
 
 package protocol
 
@@ -21,8 +20,8 @@ type protocolServiceServer struct {
 func NewProtocolServiceServer() *protocolServiceServer {
 	return &protocolServiceServer{}
 }
-func (s *protocolServiceServer) ParseUAST(ctx context.Context, in *ParseUASTRequest) (result *ParseUASTResponse, err error) {
-	result = new(ParseUASTResponse)
-	result = ParseUAST(in)
+func (s *protocolServiceServer) Parse(ctx context.Context, in *ParseRequest) (result *ParseResponse, err error) {
+	result = new(ParseResponse)
+	result = Parse(in)
 	return
 }

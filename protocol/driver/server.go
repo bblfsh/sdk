@@ -58,7 +58,7 @@ func (s *Server) serve() {
 }
 
 func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
-	req := &protocol.ParseUASTRequest{}
+	req := &protocol.ParseRequest{}
 	if err := dec.Decode(req); err != nil {
 		if err == io.EOF {
 			return noErrClose
@@ -67,7 +67,7 @@ func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 		return s.error(enc, ErrDecodingRequest.Wrap(err))
 	}
 
-	resp := s.UASTParser.ParseUAST(req)
+	resp := s.UASTParser.Parse(req)
 	if err := enc.Encode(resp); err != nil {
 		return ErrEncodingResponse.Wrap(err)
 	}
@@ -83,8 +83,8 @@ func (s *Server) error(enc jsonlines.Encoder, err error) error {
 	return nil
 }
 
-func newFatalResponse(err error) *protocol.ParseUASTResponse {
-	return &protocol.ParseUASTResponse{
+func newFatalResponse(err error) *protocol.ParseResponse {
+	return &protocol.ParseResponse{
 		Status: protocol.Fatal,
 		Errors: []string{err.Error()},
 	}

@@ -20,19 +20,19 @@ func TestClient(t *testing.T) {
 	outr, outw := io.Pipe()
 
 	client := NewClient(inw, outr)
-	req := &protocol.ParseUASTRequest{Content: "foo"}
+	req := &protocol.ParseRequest{Content: "foo"}
 
 	done := make(chan struct{})
 	go func() {
-		resp := client.ParseUAST(req)
+		resp := client.Parse(req)
 		require.Equal(protocol.Ok, resp.Status)
 		require.Equal("bar", resp.UAST.InternalType)
 
-		resp = client.ParseUAST(req)
+		resp = client.Parse(req)
 		require.Equal(protocol.Fatal, resp.Status)
 
 		inw.Close()
-		resp = client.ParseUAST(req)
+		resp = client.Parse(req)
 		require.Equal(protocol.Fatal, resp.Status)
 
 		close(done)
@@ -40,12 +40,12 @@ func TestClient(t *testing.T) {
 
 	srvDec := jsonlines.NewDecoder(inr)
 	srvEnc := jsonlines.NewEncoder(outw)
-	srvReq := &protocol.ParseUASTRequest{}
+	srvReq := &protocol.ParseRequest{}
 	err := srvDec.Decode(srvReq)
 	require.NoError(err)
 	require.Equal(req, srvReq)
 
-	err = srvEnc.Encode(&protocol.ParseUASTResponse{
+	err = srvEnc.Encode(&protocol.ParseResponse{
 		Status: protocol.Ok,
 		UAST:   &uast.Node{InternalType: "bar"},
 	})
