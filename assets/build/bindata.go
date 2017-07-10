@@ -286,7 +286,7 @@ func etcItBash() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/it.bash", size: 2254, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/it.bash", size: 2249, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
