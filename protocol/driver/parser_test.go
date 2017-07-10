@@ -11,10 +11,10 @@ import (
 )
 
 type mockUASTParser struct {
-	Response *protocol.ParseUASTResponse
+	Response *protocol.ParseResponse
 }
 
-func (p *mockUASTParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+func (p *mockUASTParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	return p.Response
 }
 
@@ -26,11 +26,11 @@ func TestTransformationUASTParserUnderlyingError(t *testing.T) {
 	require := require.New(t)
 
 	e := "test error"
-	p := &mockUASTParser{Response: &protocol.ParseUASTResponse{Status: protocol.Fatal, Errors: []string{e}}}
+	p := &mockUASTParser{Response: &protocol.ParseResponse{Status: protocol.Fatal, Errors: []string{e}}}
 	tf := func(d []byte, n *uast.Node) error { return nil }
 	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
 
-	resp := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
+	resp := tp.Parse(&protocol.ParseRequest{Content: "foo"})
 	require.Equal(protocol.Fatal, resp.Status)
 }
 
@@ -38,11 +38,11 @@ func TestTransformationUASTParserTransformationError(t *testing.T) {
 	require := require.New(t)
 
 	e := errors.New("test error")
-	p := &mockUASTParser{Response: &protocol.ParseUASTResponse{Status: protocol.Ok}}
+	p := &mockUASTParser{Response: &protocol.ParseResponse{Status: protocol.Ok}}
 	tf := func(d []byte, n *uast.Node) error { return e }
 	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
 
-	resp := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
+	resp := tp.Parse(&protocol.ParseRequest{Content: "foo"})
 	require.Equal(protocol.Error, resp.Status)
 	require.Equal([]string{e.Error()}, resp.Errors)
 }
@@ -50,14 +50,14 @@ func TestTransformationUASTParserTransformationError(t *testing.T) {
 func TestTransformationUASTParser(t *testing.T) {
 	require := require.New(t)
 
-	p := &mockUASTParser{Response: &protocol.ParseUASTResponse{Status: protocol.Ok, UAST: &uast.Node{}}}
+	p := &mockUASTParser{Response: &protocol.ParseResponse{Status: protocol.Ok, UAST: &uast.Node{}}}
 	tf := func(d []byte, n *uast.Node) error {
 		n.InternalType = "foo"
 		return nil
 	}
 	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
 
-	resp := tp.ParseUAST(&protocol.ParseUASTRequest{Content: "foo"})
+	resp := tp.Parse(&protocol.ParseRequest{Content: "foo"})
 	require.NotNil(resp)
 	require.NotNil(resp.UAST)
 	require.Equal("foo", resp.UAST.InternalType)

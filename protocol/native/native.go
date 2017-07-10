@@ -35,20 +35,20 @@ func ExecParser(toNoder ToNoder, path string, args ...string) (*Parser, error) {
 	return &Parser{Client: c, ToNoder: toNoder}, nil
 }
 
-func (p *Parser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+func (p *Parser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	nativeResp, err := p.Client.ParseNative(&ParseNativeRequest{
 		Content:  req.Content,
 		Encoding: req.Encoding,
 	})
 
 	if err != nil {
-		return &protocol.ParseUASTResponse{
+		return &protocol.ParseResponse{
 			Status: protocol.Fatal,
 			Errors: []string{err.Error()},
 		}
 	}
 
-	resp := &protocol.ParseUASTResponse{
+	resp := &protocol.ParseResponse{
 		Status: nativeResp.Status,
 		Errors: nativeResp.Errors,
 	}
