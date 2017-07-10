@@ -137,7 +137,7 @@ type Parser interface {
 	ParseUAST(*ParseUASTRequest) *ParseUASTResponse
 }
 
-// DefaultParser is the default parser used by ParseAST and ParseUAST.
+// DefaultParser is the default parser used by Parse and ParseNative.
 var DefaultParser Parser
 
 // ParseUAST uses DefaultParser to process the given UAST parsing request.
