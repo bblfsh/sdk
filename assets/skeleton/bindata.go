@@ -988,10 +988,10 @@ var build string
 
 func main() {
 	d := driver.Driver{
-		Version:           version,
-		Build:             build,
+		Version:       version,
+		Build:         build,
 		ParserBuilder: normalizer.ParserBuilder,
-		Annotate:          normalizer.AnnotationRules,
+		Annotate:      normalizer.AnnotationRules,
 	}
 	d.Exec()
 }
@@ -1007,7 +1007,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 382, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 362, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1067,7 +1067,7 @@ func driverNormalizerParserGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 441, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 425, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
