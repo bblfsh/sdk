@@ -23,7 +23,7 @@ option go_package = "protocol";
 message ParseUASTRequest {
 	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
-	string filename = 1;
+	string path = 1;
 	string language = 2;
 	string content = 3;
 	github.com.bblfsh.sdk.protocol.Encoding encoding = 4;

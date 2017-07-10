@@ -103,12 +103,13 @@ func (e *Encoding) UnmarshalJSON(data []byte) error {
 	*e, _ = stringToEncoding[str]
 	return nil
 }
+
 // ParseUASTRequest is a request to parse a file and get its UAST.
 //proteus:generate
 type ParseUASTRequest struct {
-	// Filename is the name of the file containing the source code. Used for
+	// Path is the path of the file containing the source code. Used for
 	// language detection. This is optional.
-	Filename string
+	Path string
 	// Language. If specified, it will override language detection. This is
 	// optional.
 	Language string
