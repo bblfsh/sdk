@@ -17,7 +17,7 @@ func TestExecClient(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(n)
 
-	resp, err := n.ParseNativeAST(&ParseASTRequest{
+	resp, err := n.ParseNative(&ParseNativeRequest{
 		Content: "foo",
 	})
 	require.NoError(err)
@@ -42,7 +42,7 @@ func TestExecClientMalfunctioning(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(n)
 
-	_, err = n.ParseNativeAST(&ParseASTRequest{
+	_, err = n.ParseNative(&ParseNativeRequest{
 		Content: "foo",
 	})
 
@@ -56,7 +56,7 @@ func TestExecClientMalformed(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(n)
 
-	_, err = n.ParseNativeAST(&ParseASTRequest{
+	_, err = n.ParseNative(&ParseNativeRequest{
 		Content: "foo",
 	})
 

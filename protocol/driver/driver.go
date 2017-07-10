@@ -55,7 +55,7 @@ func (d *Driver) Run(args []string) error {
 
 	parser := flags.NewNamedParser(args[0], flags.HelpFlag)
 	parser.AddCommand("serve", "", "", &serveCommand{cmd: cmd})
-	parser.AddCommand("parse-native", "", "", &parseNativeASTCommand{cmd: cmd})
+	parser.AddCommand("parse-native", "", "", &parseNativeCommand{cmd: cmd})
 	parser.AddCommand("parse-uast", "", "", &parseUASTCommand{cmd: cmd})
 	parser.AddCommand("tokenize", "", "", &tokenizeCommand{cmd: cmd})
 	parser.AddCommand("docgen", "", "", &docGenCommand{cmd: cmd})
@@ -130,7 +130,7 @@ func (c *serveCommand) Execute(args []string) error {
 	return nil
 }
 
-type parseNativeASTCommand struct {
+type parseNativeCommand struct {
 	cmd
 	Format string `long:"format" default:"json" description:"json, prettyjson (default: json)"`
 	Args   struct {
@@ -138,7 +138,7 @@ type parseNativeASTCommand struct {
 	} `positional-args:"yes"`
 }
 
-func (c *parseNativeASTCommand) Execute(args []string) error {
+func (c *parseNativeCommand) Execute(args []string) error {
 	f := c.Args.File
 
 	b, err := ioutil.ReadFile(f)
@@ -153,7 +153,7 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 
 	defer func() { _ = nc.Close() }()
 
-	resp, err := nc.ParseNativeAST(&native.ParseASTRequest{
+	resp, err := nc.ParseNative(&native.ParseNativeRequest{
 		Content: string(b),
 	})
 

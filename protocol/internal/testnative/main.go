@@ -8,7 +8,7 @@ import (
 	"github.com/bblfsh/sdk/protocol/jsonlines"
 )
 
-type ParseASTResponse struct {
+type ParseNativeResponse struct {
 	Status protocol.Status
 	Errors []string
 	AST    interface{}
@@ -31,7 +31,7 @@ func main() {
 			continue
 		}
 
-		resp := &ParseASTResponse{
+		resp := &ParseNativeResponse{
 			Status: protocol.Ok,
 			AST: map[string]interface{}{
 				"root": map[string]interface{}{
@@ -39,14 +39,15 @@ func main() {
 				},
 			},
 		}
+
 		if err := enc.Encode(resp); err != nil {
 			os.Exit(-1)
 		}
 	}
 }
 
-func newFatalResponse(err error) *ParseASTResponse {
-	return &ParseASTResponse{
+func newFatalResponse(err error) *ParseNativeResponse {
+	return &ParseNativeResponse{
 		Status: protocol.Fatal,
 		Errors: []string{err.Error()},
 	}
