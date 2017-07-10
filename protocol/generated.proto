@@ -64,7 +64,7 @@ enum Status {
 }
 
 service ProtocolService {
-	// Parse uses DefaultParser to process the given UAST parsing request.
+	// Parse uses DefaultParser to process the given parsing request to get the UAST.
 	rpc Parse (github.com.bblfsh.sdk.protocol.ParseRequest) returns (github.com.bblfsh.sdk.protocol.ParseResponse);
 }
 
