@@ -8,23 +8,23 @@ import (
 	"github.com/bblfsh/sdk/uast/ann"
 )
 
-type UASTParserOptions struct {
+type ParserOptions struct {
 	NativeBin string `long:"native-bin" description:"alternative path for the native binary" default:"/opt/driver/bin/native"`
 }
 
-// UASTParserBuilder is a function that given ParserOptions creates a Parser.
-type UASTParserBuilder func(UASTParserOptions) (UASTParser, error)
+// ParserBuilder is a function that given ParserOptions creates a Parser.
+type ParserBuilder func(ParserOptions) (Parser, error)
 
-type UASTParser interface {
+type Parser interface {
 	io.Closer
 	protocol.Parser
 }
 
-// TransformationUASTParser wraps another ASTParser and applies a transformation
+// TransformationParser wraps another ASTParser and applies a transformation
 // to its results.
-type TransformationUASTParser struct {
-	// UASTParser to delegate parsing.
-	UASTParser
+type TransformationParser struct {
+	// Parser to delegate parsing.
+	Parser
 	// Transformation function to apply to resulting *uast.Node. The first
 	// argument is the original source code from the request. Any
 	// transformation to *uast.Node should be performed in-place. If error
@@ -34,8 +34,8 @@ type TransformationUASTParser struct {
 
 // Parse calls the wrapped ASTParser and applies the transformation to its
 // result.
-func (p *TransformationUASTParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
-	resp := p.UASTParser.Parse(req)
+func (p *TransformationParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+	resp := p.Parser.Parse(req)
 	if resp.Status == protocol.Fatal {
 		return resp
 	}
@@ -49,12 +49,12 @@ func (p *TransformationUASTParser) Parse(req *protocol.ParseRequest) *protocol.P
 }
 
 type annotationParser struct {
-	UASTParser
+	Parser
 	Annotation *ann.Rule
 }
 
 func (p *annotationParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
-	resp := p.UASTParser.Parse(&protocol.ParseRequest{
+	resp := p.Parser.Parse(&protocol.ParseRequest{
 		Content:  req.Content,
 		Encoding: req.Encoding,
 	})

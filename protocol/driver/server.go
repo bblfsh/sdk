@@ -17,7 +17,7 @@ var (
 )
 
 type Server struct {
-	UASTParser
+	Parser
 
 	In  io.Reader
 	Out io.Writer
@@ -67,7 +67,7 @@ func (s *Server) process(enc jsonlines.Encoder, dec jsonlines.Decoder) error {
 		return s.error(enc, ErrDecodingRequest.Wrap(err))
 	}
 
-	resp := s.UASTParser.Parse(req)
+	resp := s.Parser.Parse(req)
 	if err := enc.Encode(resp); err != nil {
 		return ErrEncodingResponse.Wrap(err)
 	}

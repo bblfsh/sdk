@@ -13,7 +13,7 @@ func main() {
 	d := driver.Driver{
 		Version:           version,
 		Build:             build,
-		UASTParserBuilder: normalizer.UASTParserBuilder,
+		ParserBuilder: normalizer.ParserBuilder,
 		Annotate:          normalizer.AnnotationRules,
 	}
 	d.Exec()

@@ -10,52 +10,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockUASTParser struct {
+type mockParser struct {
 	Response *protocol.ParseResponse
 }
 
-func (p *mockUASTParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+func (p *mockParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	return p.Response
 }
 
-func (p *mockUASTParser) Close() error {
+func (p *mockParser) Close() error {
 	return nil
 }
 
-func TestTransformationUASTParserUnderlyingError(t *testing.T) {
+func TestTransformationParserUnderlyingError(t *testing.T) {
 	require := require.New(t)
 
 	e := "test error"
-	p := &mockUASTParser{Response: &protocol.ParseResponse{Status: protocol.Fatal, Errors: []string{e}}}
+	p := &mockParser{Response: &protocol.ParseResponse{Status: protocol.Fatal, Errors: []string{e}}}
 	tf := func(d []byte, n *uast.Node) error { return nil }
-	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
+	tp := &TransformationParser{Parser: p, Transformation: tf}
 
 	resp := tp.Parse(&protocol.ParseRequest{Content: "foo"})
 	require.Equal(protocol.Fatal, resp.Status)
 }
 
-func TestTransformationUASTParserTransformationError(t *testing.T) {
+func TestTransformationParserTransformationError(t *testing.T) {
 	require := require.New(t)
 
 	e := errors.New("test error")
-	p := &mockUASTParser{Response: &protocol.ParseResponse{Status: protocol.Ok}}
+	p := &mockParser{Response: &protocol.ParseResponse{Status: protocol.Ok}}
 	tf := func(d []byte, n *uast.Node) error { return e }
-	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
+	tp := &TransformationParser{Parser: p, Transformation: tf}
 
 	resp := tp.Parse(&protocol.ParseRequest{Content: "foo"})
 	require.Equal(protocol.Error, resp.Status)
 	require.Equal([]string{e.Error()}, resp.Errors)
 }
 
-func TestTransformationUASTParser(t *testing.T) {
+func TestTransformationParser(t *testing.T) {
 	require := require.New(t)
 
-	p := &mockUASTParser{Response: &protocol.ParseResponse{Status: protocol.Ok, UAST: &uast.Node{}}}
+	p := &mockParser{Response: &protocol.ParseResponse{Status: protocol.Ok, UAST: &uast.Node{}}}
 	tf := func(d []byte, n *uast.Node) error {
 		n.InternalType = "foo"
 		return nil
 	}
-	tp := &TransformationUASTParser{UASTParser: p, Transformation: tf}
+	tp := &TransformationParser{Parser: p, Transformation: tf}
 
 	resp := tp.Parse(&protocol.ParseRequest{Content: "foo"})
 	require.NotNil(resp)
