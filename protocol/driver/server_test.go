@@ -13,7 +13,7 @@ import (
 
 func TestServerOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
@@ -31,7 +31,7 @@ func TestServerOneGood(t *testing.T) {
 
 func TestServerOneMalformedAndOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
@@ -57,7 +57,7 @@ func TestServerOneMalformedAndOneGood(t *testing.T) {
 
 func TestServerOneFatalAndOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
@@ -82,17 +82,17 @@ func TestServerOneFatalAndOneGood(t *testing.T) {
 	})
 }
 
-func testServer(t *testing.T, exitError bool, f func(*mockUASTParser, io.WriteCloser, io.Reader)) {
+func testServer(t *testing.T, exitError bool, f func(*mockParser, io.WriteCloser, io.Reader)) {
 	require := require.New(t)
 
 	sIn, cIn := io.Pipe()
 	cOut, sOut := io.Pipe()
 
-	p := &mockUASTParser{}
+	p := &mockParser{}
 	s := &Server{
-		In:         sIn,
-		Out:        sOut,
-		UASTParser: p,
+		In:     sIn,
+		Out:    sOut,
+		Parser: p,
 	}
 
 	err := s.Start()
