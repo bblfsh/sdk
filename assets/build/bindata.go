@@ -496,6 +496,8 @@ GO_CMD = go
 GO_RUN = $(GO_CMD) run
 GO_TEST = $(GO_CMD) test -v
 GO_LDFLAGS = -X main.version=$(DRIVER_VERSION) -X main.build=$(BUILD_ID)
+# If GOPATH has multiple dir entries, pick the first one
+GO_PATH := $(shell echo ${GOPATH}|cut -f1 -d':')
 
 # build enviroment variables
 BUILD_USER ?= bblfsh
@@ -511,7 +513,7 @@ BUILD_NATIVE_CMD ?= $(DOCKER_RUN) \
 BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
 	-u $(BUILD_USER):$(BUILD_UID) \
 	-v $(BUILD_VOLUME_PATH):$(BUILD_VOLUME_TARGET) \
-	-v $(GOPATH):/go \
+	-v $(GO_PATH):/go \
 	-e ENVIRONMENT=$(DOCKER_BUILD_DRIVER_IMAGE) \
 	-e HOST_PLATFORM=$(shell uname) \
 	$(DOCKER_BUILD_DRIVER_IMAGE)
@@ -610,7 +612,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4060, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4167, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
