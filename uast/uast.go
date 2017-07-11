@@ -414,6 +414,15 @@ const (
 	// annotations.
 	OtherLiteral
 
+	// Async is a role that usually will be combined to others to indicate
+	// asynchronous operation, e.g. with FunctionDeclaration declares a function
+	// that will always run asynchonously, with Call declares that only a specific
+	// call is to be run asynchnously (like Go's "go f()", with ForEach could mark
+	// a concurrent ForEach, etc.
+	Async
+	// Await represents a waiting for the completion of asynchronous operations
+	Await
+
 	// MapEntry is the expression pairing a map key and a value usually on MapLiteral expressions. It must
 	// have both a MapKey and a MapValue children (e.g. {"key": "value", "otherkey": "otherval"} in Python).
 	MapEntry
