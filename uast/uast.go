@@ -28,11 +28,12 @@ type Hash uint32
 type Role int16
 
 const (
-	_ = iota
+	// Invalid Role is assigned as a zero value since protobuf enum definition must start at 0.
+	Invalid Role = iota
 
 	// SimpleIdentifier is the most basic form of identifier, used for variable
 	// names, functions, packages, etc.
-	SimpleIdentifier Role = iota
+	SimpleIdentifier
 	// QualifiedIdentifier is form of identifier composed of multiple
 	// SimpleIdentifier. One main identifier (usually the last one) and one
 	// or more qualifiers.
