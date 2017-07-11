@@ -450,6 +450,12 @@ const (
 
 	Comment
 
+	// Annotation represents the concept of some languages of symbols that
+	// doesn't have a runtime effect but serve to provide information to
+	// the compiler or external tools like linters (e.g. C++/D pragma, Python type annotations,
+	// Java @annotations).
+	Annotation
+
 	// Documentation is a node that represents documentation of another node,
 	// such as function or package. Documentation is usually in the form of
 	// a string in certain position (e.g. Python docstring) or comment
