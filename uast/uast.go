@@ -414,6 +414,19 @@ const (
 	// annotations.
 	OtherLiteral
 
+	// SymbolCaptureExpression is for use with some languages that support specfic
+	// keywords or syntax to capture globals or outer (typically for
+	// closures and lambdas) variables. These depending on the language
+	// can be specified for value or reference access. These several roles should be
+	// combined to express the specific way the capture is done.
+	// (e.g. Python's "global" and "nonlocal" keywords, C++ captures, Kotlin receivers).
+	SymbolCaptureExpression
+	SymbolCaptureAll
+	SymbolCaptureGlobal
+	SymbolCaptureClosure
+	SymbolCaptureValue
+	SymbolCaptureReference
+
 	// MapEntry is the expression pairing a map key and a value usually on MapLiteral expressions. It must
 	// have both a MapKey and a MapValue children (e.g. {"key": "value", "otherkey": "otherval"} in Python).
 	MapEntry
