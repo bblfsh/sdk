@@ -402,9 +402,11 @@ const (
 	SetLiteral
 	// StringLiteral is a string literal. This applies both to single-line and
 	// multi-line literals and it does not imply any particular encoding.
-	//
-	// TODO: Decide what to do with interpolated strings.
 	StringLiteral
+	// StringInterpolatedExpression represents a symbol or expression inserted in
+	// some way in the string that will be evaluated and replaced by its result. This
+	// is similar to the $value of many languages or the {expression} of Python's fstrings.
+	StringInterpolatedExpression
 	// TupleLiteral is a literal for a tuple. For example, in Python and Scala.
 	TupleLiteral
 	// TypeLiteral is a literal that identifies a type. It might contain a
