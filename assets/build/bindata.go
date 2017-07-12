@@ -350,9 +350,14 @@ ifneq ($(TRAVIS_TAG), )
     DRIVER_VERSION := $(TRAVIS_TAG)
 endif
 
-# if we are not in tag, the push is disabled
-ifeq ($(firstword $(subst -, ,$(DRIVER_VERSION))), $(DRIVER_DEV_PREFIX))
-	pushdisabled = "push disabled for development versions"
+# if we are not in master, the push is disabled
+ifneq ($(TRAVIS_BRANCH), master)
+        pushdisabled = "push disabled for non-master branches"
+endif
+
+# if this is a pull request, the push is disabled
+ifneq ($(TRAVIS_PULL_REQUEST), false)
+        pushdisabled = "push disabled for pull-requests"
 endif
 `)
 
@@ -366,7 +371,7 @@ func makeBootstrapMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/bootstrap.mk", size: 951, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1072, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -585,10 +590,12 @@ push: build
 		$(DOCKER_CMD) login -u="$$DOCKER_USERNAME" -p="$$DOCKER_PASSWORD"; \
 	fi;
 
-	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
-		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
-	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest)
+	@if [ "$$TRAVIS_TAG" != "" ]; then \
+		@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
+			$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest; \
+		@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest); \
+	fi;
 
 docgen: $(DOCGEN_FILES)
 
@@ -612,7 +619,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4167, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4219, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

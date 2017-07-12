@@ -24,7 +24,12 @@ ifneq ($(TRAVIS_TAG), )
     DRIVER_VERSION := $(TRAVIS_TAG)
 endif
 
-# if we are not in tag, the push is disabled
-ifeq ($(firstword $(subst -, ,$(DRIVER_VERSION))), $(DRIVER_DEV_PREFIX))
-	pushdisabled = "push disabled for development versions"
+# if we are not in master, the push is disabled
+ifneq ($(TRAVIS_BRANCH), master)
+        pushdisabled = "push disabled for non-master branches"
+endif
+
+# if this is a pull request, the push is disabled
+ifneq ($(TRAVIS_PULL_REQUEST), false)
+        pushdisabled = "push disabled for pull-requests"
 endif

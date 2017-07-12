@@ -116,10 +116,12 @@ push: build
 		$(DOCKER_CMD) login -u="$$DOCKER_USERNAME" -p="$$DOCKER_PASSWORD"; \
 	fi;
 
-	@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
-		$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
-	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest)
+	@if [ "$$TRAVIS_TAG" != "" ]; then \
+		@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
+			$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest; \
+		@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest); \
+	fi;
 
 docgen: $(DOCGEN_FILES)
 
