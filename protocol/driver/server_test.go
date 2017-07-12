@@ -13,15 +13,15 @@ import (
 
 func TestServerOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		p.Response = &protocol.ParseUASTResponse{}
-		err := enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		p.Response = &protocol.ParseResponse{}
+		err := enc.Encode(&protocol.ParseRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp := &protocol.ParseUASTResponse{}
+		resp := &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -31,23 +31,23 @@ func TestServerOneGood(t *testing.T) {
 
 func TestServerOneMalformedAndOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		p.Response = &protocol.ParseUASTResponse{}
+		p.Response = &protocol.ParseResponse{}
 		err := enc.Encode("BAD REQUEST")
 		require.NoError(err)
 
-		resp := &protocol.ParseUASTResponse{}
+		resp := &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 		require.Equal(protocol.Fatal, resp.Status)
 
-		err = enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		err = enc.Encode(&protocol.ParseRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp = &protocol.ParseUASTResponse{}
+		resp = &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -57,24 +57,24 @@ func TestServerOneMalformedAndOneGood(t *testing.T) {
 
 func TestServerOneFatalAndOneGood(t *testing.T) {
 	require := require.New(t)
-	testServer(t, false, func(p *mockUASTParser, in io.WriteCloser, out io.Reader) {
+	testServer(t, false, func(p *mockParser, in io.WriteCloser, out io.Reader) {
 		enc := jsonlines.NewEncoder(in)
 		dec := jsonlines.NewDecoder(out)
 
-		p.Response = &protocol.ParseUASTResponse{Status: protocol.Fatal}
-		err := enc.Encode(&protocol.ParseUASTRequest{Content: "FATAL"})
+		p.Response = &protocol.ParseResponse{Status: protocol.Fatal}
+		err := enc.Encode(&protocol.ParseRequest{Content: "FATAL"})
 		require.NoError(err)
 
-		resp := &protocol.ParseUASTResponse{}
+		resp := &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 		require.Equal(protocol.Fatal, resp.Status)
 
-		p.Response = &protocol.ParseUASTResponse{}
-		err = enc.Encode(&protocol.ParseUASTRequest{Content: "foo"})
+		p.Response = &protocol.ParseResponse{}
+		err = enc.Encode(&protocol.ParseRequest{Content: "foo"})
 		require.NoError(err)
 
-		resp = &protocol.ParseUASTResponse{}
+		resp = &protocol.ParseResponse{}
 		err = dec.Decode(resp)
 		require.NoError(err)
 
@@ -82,17 +82,17 @@ func TestServerOneFatalAndOneGood(t *testing.T) {
 	})
 }
 
-func testServer(t *testing.T, exitError bool, f func(*mockUASTParser, io.WriteCloser, io.Reader)) {
+func testServer(t *testing.T, exitError bool, f func(*mockParser, io.WriteCloser, io.Reader)) {
 	require := require.New(t)
 
 	sIn, cIn := io.Pipe()
 	cOut, sOut := io.Pipe()
 
-	p := &mockUASTParser{}
+	p := &mockParser{}
 	s := &Server{
-		In:         sIn,
-		Out:        sOut,
-		UASTParser: p,
+		In:     sIn,
+		Out:    sOut,
+		Parser: p,
 	}
 
 	err := s.Start()

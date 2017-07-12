@@ -35,23 +35,24 @@ func ExecParser(toNoder ToNoder, path string, args ...string) (*Parser, error) {
 	return &Parser{Client: c, ToNoder: toNoder}, nil
 }
 
-func (p *Parser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
-	nativeResp, err := p.Client.ParseNativeAST(&ParseASTRequest{
+func (p *Parser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+	nativeResp, err := p.Client.ParseNative(&ParseNativeRequest{
 		Content:  req.Content,
 		Encoding: req.Encoding,
 	})
 
 	if err != nil {
-		return &protocol.ParseUASTResponse{
+		return &protocol.ParseResponse{
 			Status: protocol.Fatal,
 			Errors: []string{err.Error()},
 		}
 	}
 
-	resp := &protocol.ParseUASTResponse{
+	resp := &protocol.ParseResponse{
 		Status: nativeResp.Status,
 		Errors: nativeResp.Errors,
 	}
+
 	if resp.Status == protocol.Fatal {
 		return resp
 	}
@@ -71,14 +72,14 @@ func (p *Parser) Close() error {
 	return p.Client.Close()
 }
 
-// ParseASTRequest to use with the native AST parser. This is for internal use.
-type ParseASTRequest struct {
+// ParseNativeRequest to use with the native parser. This is for internal use.
+type ParseNativeRequest struct {
 	Content  string            `json:"content"`
 	Encoding protocol.Encoding `json:"encoding"`
 }
 
-// ParseASTResponse is the reply to ParseASTRequest by the native AST parser.
-type ParseASTResponse struct {
+// ParseNativeResponse is the reply to ParseNativeRequest by the native parser.
+type ParseNativeResponse struct {
 	Status protocol.Status `json:"status"`
 	Errors []string        `json:"errors"`
 	AST    interface{}     `json:"ast"`
@@ -124,9 +125,9 @@ func ExecClient(path string, args ...string) (*Client, error) {
 	}, nil
 }
 
-// ParseNativeAST sends a request to the native client and returns its response.
-func (c *Client) ParseNativeAST(req *ParseASTRequest) (*ParseASTResponse, error) {
-	resp := &ParseASTResponse{}
+// ParseNative sends a request to the native client and returns its response.
+func (c *Client) ParseNative(req *ParseNativeRequest) (*ParseNativeResponse, error) {
+	resp := &ParseNativeResponse{}
 	_ = c.enc.Encode(req)
 	return resp, c.dec.Decode(resp)
 }

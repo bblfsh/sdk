@@ -22,12 +22,12 @@ func NewClient(in io.WriteCloser, out io.Reader) *Client {
 	}
 }
 
-func (c *Client) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+func (c *Client) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	if err := c.enc.Encode(req); err != nil {
 		return newFatalResponse(err)
 	}
 
-	resp := &protocol.ParseUASTResponse{}
+	resp := &protocol.ParseResponse{}
 	if err := c.dec.Decode(resp); err != nil {
 		return newFatalResponse(err)
 	}

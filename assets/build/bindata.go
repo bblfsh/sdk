@@ -230,7 +230,7 @@ parse_native_ast() {
 
 parse_uast() {
 	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-uast --format=pretty /code/$(readlink -f $1)
+	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse --format=pretty /code/$(readlink -f $1)
 }
 
 check_result() {
@@ -286,7 +286,7 @@ func etcItBash() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/it.bash", size: 2254, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/it.bash", size: 2249, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

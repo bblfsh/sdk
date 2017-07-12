@@ -15,8 +15,8 @@ import (
 
 type mockParser struct{}
 
-func (p *mockParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
-	return &protocol.ParseUASTResponse{Status: protocol.Ok}
+func (p *mockParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+	return &protocol.ParseResponse{Status: protocol.Ok}
 }
 
 func (p *mockParser) Close() error {
@@ -26,11 +26,11 @@ func (p *mockParser) Close() error {
 // This mockparser will check that be receive a Encoding: base64 field
 type mockCheckBase64EncodingParser struct{}
 
-func (p *mockCheckBase64EncodingParser) ParseUAST(req *protocol.ParseUASTRequest) *protocol.ParseUASTResponse {
+func (p *mockCheckBase64EncodingParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	if req.Encoding != protocol.Base64 {
-		return &protocol.ParseUASTResponse{Status: protocol.Error}
+		return &protocol.ParseResponse{Status: protocol.Error}
 	}
-	return &protocol.ParseUASTResponse{Status: protocol.Ok}
+	return &protocol.ParseResponse{Status: protocol.Ok}
 }
 
 func (p *mockCheckBase64EncodingParser) Close() error {
@@ -57,10 +57,10 @@ func TestInvalidParser(t *testing.T) {
 
 	client := protocol.NewProtocolServiceClient(conn)
 
-	ureq := &protocol.ParseUASTRequest{
+	ureq := &protocol.ParseRequest{
 		Content: "my source code",
 	}
-	uresp, err := client.ParseUAST(context.TODO(), ureq)
+	uresp, err := client.Parse(context.TODO(), ureq)
 	require.NoError(err)
 	require.Equal(protocol.Fatal, uresp.Status)
 
@@ -87,22 +87,22 @@ func Example() {
 
 	client := protocol.NewProtocolServiceClient(conn)
 
-	req := &protocol.ParseUASTRequest{Content: "my source code"}
-	fmt.Println("Sending ParseUAST for:", req.Content)
-	resp, err := client.ParseUAST(context.TODO(), req)
+	req := &protocol.ParseRequest{Content: "my source code"}
+	fmt.Println("Sending Parse for:", req.Content)
+	resp, err := client.Parse(context.TODO(), req)
 	checkError(err)
 	fmt.Println("Got response with status:", resp.Status.String())
 
 	server.GracefulStop()
 
-	//Output: Sending ParseUAST for: my source code
+	//Output: Sending Parse for: my source code
 	// Got response with status: ok
 }
 
 // do a reply to a mock server that except the encoding to be protocol.Base64 or
 // returns error. If the encoding is -1, no Encoding field will the added to the
 // request.
-func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseUASTResponse,
+func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseResponse,
 	server *grpc.Server, err error) {
 
 	lis, err := net.Listen("tcp", ":0")
@@ -130,24 +130,24 @@ func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseUASTResponse,
 	client := protocol.NewProtocolServiceClient(conn)
 
 	var typedEncoding protocol.Encoding
-	var req *protocol.ParseUASTRequest
+	var req *protocol.ParseRequest
 
-	if (intEncoding >= 0) {
+	if intEncoding >= 0 {
 		// mockCheckBase64EncodingParser will return Ok if the Encoding is Base64
 		typedEncoding = protocol.Encoding(intEncoding)
 
-		req = &protocol.ParseUASTRequest{
+		req = &protocol.ParseRequest{
 			Content:  "some source code",
 			Encoding: typedEncoding,
 		}
 	} else {
 		// Request without encoding
-		req = &protocol.ParseUASTRequest{
-			Content:  "some source code",
+		req = &protocol.ParseRequest{
+			Content: "some source code",
 		}
 	}
 
-	resp, err = client.ParseUAST(context.TODO(), req)
+	resp, err = client.Parse(context.TODO(), req)
 	if err != nil {
 		return
 	}
