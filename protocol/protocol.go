@@ -108,7 +108,8 @@ func (e *Encoding) UnmarshalJSON(data []byte) error {
 //proteus:generate
 type ParseRequest struct {
 	// Filename is the name of the file containing the source code. Used for
-	// language detection. This is optional.
+	// language detection. Only filename is required, path might be used but
+	// ignored. This is optional.
 	Filename string
 	// Language. If specified, it will override language detection. This is
 	// optional.
