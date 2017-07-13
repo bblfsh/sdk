@@ -28,6 +28,9 @@ all: bindata
 
 bindata: $(ASSETS)
 
+install:
+	go get -t -v ./...
+
 $(DEPENDENCIES):
 	$(GO_GET) $@/...
 
@@ -70,4 +73,4 @@ validate-commit: bindata
 		exit 2; \
 	fi
 
-.PHONY: bindata test test-coverage validate-commit driver-tpl $(ASSETS) $(DEPENDENCIES)
+.PHONY: bindata test test-coverage validate-commit driver-tpl $(ASSETS) $(DEPENDENCIES) install

@@ -17,13 +17,19 @@ GOPATH](https://golang.org/doc/code.html#Workspaces) environment variables.
 
 ### Install
 
-Babelfish SDK gets installed using Go:
+Babelfish SDK gets installed using either Go:
 
 ```bash
 $ go get -t -v ./...
 ```
 
-This command will install both `bblfsh-sdk` and `bblfsh-sdk-tools` programs
+or make command:
+
+```bash
+$ make install
+```
+
+These commands will install both `bblfsh-sdk` and `bblfsh-sdk-tools` programs
 at `$GOPATH/bin/`.
 
 ### Contribute
