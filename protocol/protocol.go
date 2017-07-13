@@ -129,11 +129,11 @@ type ParseResponse struct {
 	// Errors contains a list of parsing errors. If Status is ok, this list
 	// should always be empty.
 	Errors []string `json:"errors"`
-	// UAST contains the parsed UAST.
+	// UAST contains the UAST from the parsed code.
 	UAST *uast.Node `json:"uast"`
 }
 
-// Parser can parse UAST.
+// Parser can parse code to UAST.
 type Parser interface {
 	Parse(*ParseRequest) *ParseResponse
 }
