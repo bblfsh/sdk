@@ -21,8 +21,8 @@ type protocolServiceServer struct {
 func NewProtocolServiceServer() *protocolServiceServer {
 	return &protocolServiceServer{}
 }
-func (s *protocolServiceServer) ParseUAST(ctx context.Context, in *ParseUASTRequest) (result *ParseUASTResponse, err error) {
-	result = new(ParseUASTResponse)
-	result = ParseUAST(in)
+func (s *protocolServiceServer) Parse(ctx context.Context, in *ParseRequest) (result *ParseResponse, err error) {
+	result = new(ParseResponse)
+	result = Parse(in)
 	return
 }

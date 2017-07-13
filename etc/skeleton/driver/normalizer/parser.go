@@ -5,8 +5,8 @@ import (
 	"github.com/bblfsh/sdk/protocol/native"
 )
 
-// UASTParserBuilder creates a parser that transform source code files into *uast.Node.
-func UASTParserBuilder(opts driver.UASTParserOptions) (driver.UASTParser, error) {
+// ParserBuilder creates a parser that transform source code files into *uast.Node.
+func ParserBuilder(opts driver.ParserOptions) (driver.Parser, error) {
 	toNoder := &native.ObjectToNoder{}
 	parser, err := native.ExecParser(toNoder, opts.NativeBin)
 	if err != nil {

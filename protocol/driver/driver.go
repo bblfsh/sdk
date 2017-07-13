@@ -23,8 +23,8 @@ type Driver struct {
 	Version string
 	// Build identifier.
 	Build string
-	// UASTParserBuilder creates a ASTParser.
-	UASTParserBuilder UASTParserBuilder
+	// ParserBuilder creates a Parser.
+	ParserBuilder ParserBuilder
 	// Annotate contains an *ann.Rule to convert AST to UAST.
 	Annotate *ann.Rule
 	// In is the input of the driver. Defaults to os.Stdin.
@@ -55,8 +55,8 @@ func (d *Driver) Run(args []string) error {
 
 	parser := flags.NewNamedParser(args[0], flags.HelpFlag)
 	parser.AddCommand("serve", "", "", &serveCommand{cmd: cmd})
-	parser.AddCommand("parse-native", "", "", &parseNativeASTCommand{cmd: cmd})
-	parser.AddCommand("parse-uast", "", "", &parseUASTCommand{cmd: cmd})
+	parser.AddCommand("parse-native", "", "", &parseNativeCommand{cmd: cmd})
+	parser.AddCommand("parse", "", "", &parseCommand{cmd: cmd})
 	parser.AddCommand("tokenize", "", "", &tokenizeCommand{cmd: cmd})
 	parser.AddCommand("docgen", "", "", &docGenCommand{cmd: cmd})
 
@@ -91,7 +91,7 @@ func (d *Driver) initialize() {
 
 type cmd struct {
 	*Driver
-	UASTParserOptions
+	ParserOptions
 }
 
 type serveCommand struct {
@@ -99,7 +99,7 @@ type serveCommand struct {
 }
 
 func (c *serveCommand) Execute(args []string) error {
-	p, err := c.UASTParserBuilder(c.UASTParserOptions)
+	p, err := c.ParserBuilder(c.ParserOptions)
 	if err != nil {
 		return err
 	}
@@ -107,8 +107,8 @@ func (c *serveCommand) Execute(args []string) error {
 	server := &Server{
 		In:  c.In,
 		Out: c.Out,
-		UASTParser: &annotationParser{
-			UASTParser: p,
+		Parser: &annotationParser{
+			Parser:     p,
 			Annotation: c.Driver.Annotate,
 		},
 	}
@@ -130,7 +130,7 @@ func (c *serveCommand) Execute(args []string) error {
 	return nil
 }
 
-type parseNativeASTCommand struct {
+type parseNativeCommand struct {
 	cmd
 	Format string `long:"format" default:"json" description:"json, prettyjson (default: json)"`
 	Args   struct {
@@ -138,7 +138,7 @@ type parseNativeASTCommand struct {
 	} `positional-args:"yes"`
 }
 
-func (c *parseNativeASTCommand) Execute(args []string) error {
+func (c *parseNativeCommand) Execute(args []string) error {
 	f := c.Args.File
 
 	b, err := ioutil.ReadFile(f)
@@ -153,7 +153,7 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 
 	defer func() { _ = nc.Close() }()
 
-	resp, err := nc.ParseNativeAST(&native.ParseASTRequest{
+	resp, err := nc.ParseNative(&native.ParseNativeRequest{
 		Content: string(b),
 	})
 
@@ -174,7 +174,7 @@ func (c *parseNativeASTCommand) Execute(args []string) error {
 	return nil
 }
 
-type parseUASTCommand struct {
+type parseCommand struct {
 	cmd
 	Format string `long:"format" default:"json" description:"json, prettyjson, pretty (default: json)"`
 	Args   struct {
@@ -182,7 +182,7 @@ type parseUASTCommand struct {
 	} `positional-args:"yes"`
 }
 
-func (c *parseUASTCommand) Execute(args []string) error {
+func (c *parseCommand) Execute(args []string) error {
 	fmter, err := formatter(c.Format)
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func (c *parseUASTCommand) Execute(args []string) error {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	p, err := c.UASTParserBuilder(c.UASTParserOptions)
+	p, err := c.ParserBuilder(c.ParserOptions)
 	if err != nil {
 		return err
 	}
@@ -202,17 +202,17 @@ func (c *parseUASTCommand) Execute(args []string) error {
 	defer func() { _ = p.Close() }()
 
 	up := &annotationParser{
-		UASTParser: p,
+		Parser:     p,
 		Annotation: c.Driver.Annotate,
 	}
 
-	resp := up.ParseUAST(&protocol.ParseUASTRequest{
+	resp := up.Parse(&protocol.ParseRequest{
 		Content: string(b),
 	})
 	return fmter(c.Out, resp)
 }
 
-func formatter(f string) (func(io.Writer, *protocol.ParseUASTResponse) error, error) {
+func formatter(f string) (func(io.Writer, *protocol.ParseResponse) error, error) {
 	switch f {
 	case "pretty":
 		return prettyPrinter, nil
@@ -225,20 +225,20 @@ func formatter(f string) (func(io.Writer, *protocol.ParseUASTResponse) error, er
 	}
 }
 
-func jsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
+func jsonPrinter(w io.Writer, r *protocol.ParseResponse) error {
 	e := json.NewEncoder(w)
 	e.SetEscapeHTML(false)
 	return e.Encode(r)
 }
 
-func prettyJsonPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
+func prettyJsonPrinter(w io.Writer, r *protocol.ParseResponse) error {
 	e := json.NewEncoder(w)
 	e.SetIndent("", "    ")
 	e.SetEscapeHTML(false)
 	return e.Encode(r)
 }
 
-func prettyPrinter(w io.Writer, r *protocol.ParseUASTResponse) error {
+func prettyPrinter(w io.Writer, r *protocol.ParseResponse) error {
 	fmt.Fprintln(w, "Status: ", r.Status)
 	fmt.Fprintln(w, "Errors: ")
 	for _, err := range r.Errors {
@@ -263,7 +263,7 @@ func (c *tokenizeCommand) Execute(args []string) error {
 		return fmt.Errorf("error reading file %s: %s", f, err.Error())
 	}
 
-	p, err := c.UASTParserBuilder(c.UASTParserOptions)
+	p, err := c.ParserBuilder(c.ParserOptions)
 	if err != nil {
 		return err
 	}
@@ -271,11 +271,11 @@ func (c *tokenizeCommand) Execute(args []string) error {
 	defer func() { _ = p.Close() }()
 
 	up := &annotationParser{
-		UASTParser: p,
+		Parser:     p,
 		Annotation: c.Driver.Annotate,
 	}
 
-	resp := up.ParseUAST(&protocol.ParseUASTRequest{
+	resp := up.Parse(&protocol.ParseRequest{
 		Content: string(b),
 	})
 	if resp.Status == protocol.Fatal {

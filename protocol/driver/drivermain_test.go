@@ -46,11 +46,11 @@ func TestDriverMain(t *testing.T) {
 	enc := jsonlines.NewEncoder(in)
 	dec := jsonlines.NewDecoder(out)
 
-	req := &protocol.ParseUASTRequest{Content: "foo"}
+	req := &protocol.ParseRequest{Content: "foo"}
 	err = enc.Encode(req)
 	require.NoError(err)
 
-	resp := &protocol.ParseUASTResponse{}
+	resp := &protocol.ParseResponse{}
 	err = dec.Decode(resp)
 	require.NoError(err)
 	require.Equal(protocol.Ok, resp.Status)

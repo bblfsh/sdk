@@ -20,13 +20,13 @@ func testDriver(t *testing.T, args []string, expectedErr bool, expectedStdout, e
 	stderr := bytes.NewBuffer(nil)
 
 	d := &Driver{
-		Version:           "test",
-		Build:             "test",
-		UASTParserBuilder: normalizer.UASTParserBuilder,
-		Annotate:          ann.On(ann.Any).Roles(uast.SimpleIdentifier),
-		In:                stdin,
-		Out:               stdout,
-		Err:               stderr,
+		Version:       "test",
+		Build:         "test",
+		ParserBuilder: normalizer.ParserBuilder,
+		Annotate:      ann.On(ann.Any).Roles(uast.SimpleIdentifier),
+		In:            stdin,
+		Out:           stdout,
+		Err:           stderr,
 	}
 
 	err := d.Run(args)
@@ -39,12 +39,12 @@ func testDriver(t *testing.T, args []string, expectedErr bool, expectedStdout, e
 	require.Equal(expectedStderr, string(stderr.Bytes()))
 }
 
-func TestDriverParseUAST(t *testing.T) {
+func TestDriverParse(t *testing.T) {
 	testDriver(
 		t,
 		[]string{
 			"driver",
-			"parse-uast",
+			"parse",
 			"--native-bin=../internal/testnative/native",
 			"./driver_test.go",
 		},
@@ -81,8 +81,8 @@ Help Options:
 
 Available commands:
   docgen
+  parse
   parse-native
-  parse-uast
   serve
   tokenize
 
