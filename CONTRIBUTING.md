@@ -1,23 +1,18 @@
 The Babelfish project is open source and we're happy to receive external
 contributions. But, as in any licensed project, there is some important legal
-information that you need to be aware of.
+information that you need to be aware of:
 
-First, most of the components of the Babelfish project are licensed under the GPU
-v3 or the Apache License 2.0. So, in order to contribute, you must accept to license
-your contribution using either one of those licenses, depending on the subproject
-(every project should have a LICENSE file with the specific license used).
+First, your contributions to each project will be licensed under the appropriate license
+as found in the LICENSE file at the root directory of each project. 
 
-Also, we require that you read and accept our [Developer Certificate
-of Origin](https://developercertificate.org) which is exactly the same one that
-the Linux kernel uses. You can find a copy in this repository in the file `DCO` in
-the project root.  Please read it, but it basically says that you, for the best of
-your knowledge, know that the code you're contributing doesn't have licensing
-problems.
+Second, similar to what other open source projects do (i.e. the Linux kernel), we require
+that you read and accept our [Developer Certificate of
+Origin](https://developercertificate.org).
 
-The way to easily communicate that you've read and accepted it for a specific
-contribution is to add a `Signed-off-by` line to your commits. With git you can do
-it by just adding the `--signoff` parameter. The `Signed-off-by` line must have
-your **real name and surname** and your email.
+The way to easily communicate that you've read and accepted the DCO for every
+contribution is to add a `Signed-off-by` line to your commits. With git, you can do
+it by adding the `--signoff` parameter. The `Signed-off-by` line must have your
+**real name and surname** and your email.
 
 This is how a `Signed-off-by` line typically looks:
 
