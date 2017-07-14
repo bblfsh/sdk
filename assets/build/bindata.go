@@ -350,9 +350,11 @@ ifneq ($(TRAVIS_TAG), )
     DRIVER_VERSION := $(TRAVIS_TAG)
 endif
 
-# if we are not in master, the push is disabled
+# if we are not in master, and it's not a tag the push is disabled
 ifneq ($(TRAVIS_BRANCH), master)
+	ifeq ($(TRAVIS_TAG), )
         pushdisabled = "push disabled for non-master branches"
+	endif
 endif
 
 # if this is a pull request, the push is disabled
@@ -371,7 +373,7 @@ func makeBootstrapMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1072, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1122, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
