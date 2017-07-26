@@ -31,11 +31,19 @@ type ObjectToNoder struct {
 	// OffsetKey is the key used in the native AST to indicate the absolute offset,
 	// from the file start position, where the code mapped to the AST node starts.
 	OffsetKey string
+	// EndOffsetKey is the key used in the native AST to indicate the absolute offset,
+	// from the file start position, where the code mapped to the AST node ends.
+	EndOffsetKey string
 	// LineKey is the key used in the native AST to indicate
-    // the line number where the code mapped to the AST node starts.
+	// the line number where the code mapped to the AST node starts.
 	LineKey string
+	// EndLineKey is the key used in the native AST to indicate
+	// the line number where the code mapped to the AST node ends.
+	EndLineKey string
 	// ColumnKey is a key that indicates the column inside the line
 	ColumnKey string
+	// EndColumnKey is a key that indicates the column inside the line where the node ends.
+	EndColumnKey string
 	// TokenKeys establishes what properties (as in JSON
 	// keys) in the native AST nodes can be mapped to Tokens in the UAST. If the
 	// InternalTypeKey is the "type" of a node, the Token could be tough of as the
@@ -276,6 +284,17 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		n.StartPosition.Offset = i
+	case c.EndOffsetKey == k:
+		i, err := toUint32(o)
+		if err != nil {
+			return err
+		}
+
+		if n.EndPosition == nil {
+			n.EndPosition = &uast.Position{}
+		}
+
+		n.EndPosition.Offset = i
 	case c.LineKey == k:
 		i, err := toUint32(o)
 		if err != nil {
@@ -287,6 +306,17 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		n.StartPosition.Line = i
+	case c.EndLineKey == k:
+		i, err := toUint32(o)
+		if err != nil {
+			return err
+		}
+
+		if n.EndPosition == nil {
+			n.EndPosition = &uast.Position{}
+		}
+
+		n.EndPosition.Line = i
 	case c.ColumnKey == k:
 		i, err := toUint32(o)
 		if err != nil {
@@ -298,6 +328,17 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		n.StartPosition.Col = i
+	case c.EndColumnKey == k:
+		i, err := toUint32(o)
+		if err != nil {
+			return err
+		}
+
+		if n.EndPosition == nil {
+			n.EndPosition = &uast.Position{}
+		}
+
+		n.EndPosition.Col = i
 	default:
 		n.Properties[k] = fmt.Sprint(o)
 	}
