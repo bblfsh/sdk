@@ -448,6 +448,32 @@ const (
 	// (e.g. Visual Basic).
 	This
 
+	// List/Map/Set comprehensions are expressions that iterate over a container, optionally
+	// using restricting conditions, and generate a new List/Dict/Set with a subset of the
+	// elements of the original container optionally with some transformation applied to
+	// every element. These are parent nodes where the expression sublements will be mapped
+	// on the Comprehension* roles. The parent node is [List|Map|Set]ComprehensionExpression.
+	ListComprehensionExpression
+	// Parent node for Map comprehensions.
+	MapComprehensionExpression
+	// Parent node for Set comprehensions.
+	SetComprehensionExpression
+	// This is the parent node of all the loops contained inside the comprehension. Sometimes
+	// comprehensions can contain more than one loop to iterate over sub-containers inside a
+	// container. This will have one or more ComprehensionLoop children.
+	ComprehensionLoops
+	// These ara the individual loops over a container. Their children are the same
+	// as the ones in the For/Foreach roles (ForUpdate and ForExpression).
+	ComprehensionLoop
+	// This is the parent node for the conditions filtering the obtained elements in a
+	// comprehension expression. Their child elements are normal If nodes without the body.
+	ComprehensionConditions
+	// This is the child node of ComprehensionExpressions that hold the operations done on every
+	// container element that results from the ComprehensionLoops and pass the filtering of the
+	// ComprehensionConditions. It could be a symbol name or it could express operations in the
+	// element (e. g. "i*2").
+	ComprehensionElementExpression
+
 	Comment
 
 	// Documentation is a node that represents documentation of another node,
