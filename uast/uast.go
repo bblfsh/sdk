@@ -459,6 +459,14 @@ const (
 	// Whitespace
 	Whitespace
 
+	// Incomplete express that the semantic meaning of the node roles doesn't express
+	// the full semantic information. Added in BIP-002.
+	Incomplete
+
+	// Unannotated will be automatically added by the SDK for nodes that did not receive
+	// any annotations with the current version of the driver's `annotations.go` file.
+	Unannotated
+
 	// TODO: types
 	// TODO: references/pointer member access
 	// TODO: variable declarations
