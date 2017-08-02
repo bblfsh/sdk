@@ -435,12 +435,10 @@ const (
 	// AugmentedAssignment is an augmented assignment usually combining the equal operator with
 	// another one (e. g. +=, -=, *=, etc). It is expected that children contains an
 	// AugmentedAssignmentOperator with a child or aditional role for the specific Bitwise or
-	// Arithmetic operator used. The AugmentedAssignmentVariable and AugmentedAssignmentValue roles
-	// have the same meaning than in Assignment.
+	// Arithmetic operator used. For the variable and value nodes use the normal AssignmentVariable and
+	// AssignmentValue roles.
 	AugmentedAssignment
 	AugmentedAssignmentOperator
-	AugmentedAssignmentVariable
-	AugmentedAssignmentValue
 
 	// This represents the self-reference of an object instance in
 	// one of its methods. This corresponds to the `this` keyword
