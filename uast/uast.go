@@ -140,6 +140,45 @@ const (
 	// stored in a pointer or reference type (e. g. &x).
 	OpTakeAddress
 
+	// OpIndex operator and subroles. OpIdex is the parent of the "name[whatever]" expressions. It
+	// must have a child with the symbol/expression representing what is being accessed (before the
+	// first "[", the "name" in the example) with the IndexedValue role and zero or one children of
+	// type IndexerExpression (no children represents the empty index e.g. stuff[]).
+	// The IndexerExpression child can have itself one or more children that can be:
+	//
+	// - Any valid expression (Expression, Identifier, Literal, etc) like in "name[1]".
+	// - A OpSlice node (see the documentation on OpSlice below) like in "name[2:x]".
+	//
+	// There can be multiple children if the language allows for it, for example in Python/Julia/C# several
+	// tokens separated by commas are used to index multi dimensional containers (name[0:3, 2:7]).
+	// If the language instead indexes multi dimensional containers using several OpIndex operators
+	// (e. g. "stuff[2][3]") it should be represented as anidated OpIndex nodes.
+	OpIndex
+
+	// IndexedValue is the indexed element inside an OpIndex like "stuff" in "stuff[1]".
+	IndexedValue
+
+	// IndexerExpression is the expression inside the index operator like "a+1" in "stuff[a+1]". An OpIndex
+	// can have more than one IndexerExpression children if the language allows it (see above).
+	IndexerExpression
+
+	// OpSlice represents an slice between two elements. An OpSlice can have children with roles
+	// SliceStart and SliceEnd. It must always be a child of an IndexerExpression (tough the
+	// IndexerExpression itself could have more than one OpSlice children) (e.g. the "1:4" in "stuff[1:4]").
+	// The SliceStart, SliceEnd and even both nodes than be ommited for languages that allow the idioms
+	// (e.g. stuff[:1], stuff[1:], stuff[:])
+	// TODO: think about how to represent the differences with languages that define slices as open, half-open,
+	// or closed.
+	OpSlice
+
+	// SliceStart represent the initial element of the OpSlice. It can be any valid expression, literal
+	// or name (e.g. the "2" in "stuff[2:4]").
+	SliceStart
+
+	// SliceEnd represent the last element of the OpSlice. It can be any valid expression, literal or name
+	// (e.g. the "4" in "stuff[2:4]").
+	SliceEnd
+
 	// File is the root node of a single file AST.
 	File
 
