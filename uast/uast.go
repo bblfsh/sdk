@@ -422,6 +422,7 @@ const (
 
 	Type
 	// TODO: should we distinguish between primitive and builtin types?
+	// TODO: TypeImplements, TypeSuperclasses, etc
 	PrimitiveType
 
 	// Assignment represents a variable assignment or binding.
@@ -447,6 +448,13 @@ const (
 	// (e.g. Java, C++, PHP), `self` (e.g. Smalltalk, Perl, Swift) and `Me`
 	// (e.g. Visual Basic).
 	This
+
+	// Delete for the languages that have it usually deletes a (usually allocated
+	// on the heap) variable, freeing its resources and (usually) calling the
+	// destructors. It needs a child DeleteTarget node which can be an expression
+	// giving as result the instance to be deallocated.
+	Delete
+	DeleteTarget
 
 	Comment
 
