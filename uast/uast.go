@@ -420,6 +420,17 @@ const (
 	MapKey
 	MapValue
 
+	// OpUnpackList is the operator used to unpack a sequence type values
+	// to anywhere that can take consecutive values like function calls
+	// or pattern matching (e.g. Python/Groovy/TCL/Ruby "*", Scala ":_*", etc).
+	// It should have a child with the compound type var being unpacked
+	OpUnpackList
+
+	// OpMapUnpack is the operator used to expand maps type values into a series of
+	// key=value arguments. This is usually only useful for using it on
+	// function calls
+	OpUnpackMap
+
 	Type
 	// TODO: should we distinguish between primitive and builtin types?
 	PrimitiveType
