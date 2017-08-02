@@ -465,6 +465,7 @@ const (
 
 	// Unannotated will be automatically added by the SDK for nodes that did not receive
 	// any annotations with the current version of the driver's `annotations.go` file.
+	// Added in BIP-002.
 	Unannotated
 
 	// TODO: types
