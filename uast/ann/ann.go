@@ -31,7 +31,7 @@ func (a axis) String() string {
 	case descendantOrSelf:
 		return "descendant-or-self"
 	default:
-		panic(fmt.Sprintf("unknown axis: %q", a))
+		panic(fmt.Sprintf("unknown axis: %q", int(a)))
 	}
 }
 
@@ -363,6 +363,9 @@ func AddRoles(roles ...uast.Role) Action {
 	}
 	return &action{
 		do: func(n *uast.Node) error {
+			if len(n.Roles) > 0 && n.Roles[0] == uast.Unannotated {
+				n.Roles = n.Roles[:0]
+			}
 			n.Roles = append(n.Roles, roles...)
 			return nil
 		},

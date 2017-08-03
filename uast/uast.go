@@ -526,6 +526,7 @@ type Node struct {
 func NewNode() *Node {
 	return &Node{
 		Properties: make(map[string]string, 0),
+		Roles: []Role{Unannotated},
 	}
 }
 
