@@ -118,9 +118,9 @@ push: build
 
 	@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))
 	@if [ "$$TRAVIS_TAG" != "" ]; then \
-		@$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
+		$(RUN) $(DOCKER_TAG) $(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED)) \
 			$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest; \
-		@$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest); \
+		$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest); \
 	fi;
 
 docgen: $(DOCGEN_FILES)
