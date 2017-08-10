@@ -425,5 +425,12 @@ enum Role {
 	DOCUMENTATION = 139 [(gogoproto.enumvalue_customname) = "Documentation"];
 	// Whitespace
 	WHITESPACE = 140 [(gogoproto.enumvalue_customname) = "Whitespace"];
+	// Incomplete express that the semantic meaning of the node roles doesn't express
+	// the full semantic information. Added in BIP-002.
+	INCOMPLETE = 141 [(gogoproto.enumvalue_customname) = "Incomplete"];
+	// Unannotated will be automatically added by the SDK for nodes that did not receive
+	// any annotations with the current version of the driver's `annotations.go` file.
+	// Added in BIP-002.
+	UNANNOTATED = 142 [(gogoproto.enumvalue_customname) = "Unannotated"];
 }
 
