@@ -158,6 +158,44 @@ func TestPropertyListPromotionSpecific(t *testing.T) {
 	n, err = p.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
+
+	child = findChildWithInternalType(n, "CompilationUnit.types")
+	require.NotNil(child)
+}
+
+// Test for promoting a property with a string value to its own node
+func TestPropertyString(t *testing.T) {
+	require := require.New(t)
+
+	f, err := getFixture("java_example_1.json")
+	require.NoError(err)
+
+	p := &ObjectToNoder{
+		InternalTypeKey: "internalClass",
+		LineKey:         "line",
+	}
+	n, err := p.ToNode(f)
+	require.NoError(err)
+	require.NotNil(n)
+
+	child := findChildWithInternalType(n, "CompilationUnit.internalClass")
+	require.Nil(child)
+
+	p = &ObjectToNoder{
+		InternalTypeKey: "internalClass",
+		LineKey:         "line",
+		PromotedPropertyStrings: map[string]map[string]bool{
+			"CompilationUnit": {"internalClass": true},
+		},
+	}
+
+	n, err = p.ToNode(f)
+	require.NoError(err)
+	require.NotNil(n)
+
+	child = findChildWithInternalType(n, "CompilationUnit.internalClass")
+	require.NotNil(child)
+	require.Equal(child.Token, "CompilationUnit")
 }
 
 // Test promoting all property-list elements to its own node

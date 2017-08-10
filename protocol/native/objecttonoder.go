@@ -85,6 +85,15 @@ type ObjectToNoder struct {
 	// If this option is set, all properties mapped to a list will be promoted to its own node. Setting
 	// this option to true will ignore the PromotedPropertyLists settings.
 	PromoteAllPropertyLists bool
+	// PromotedPropertyStrings allows to convert some properties which value is a string
+	// in the native AST as a full node with the string value as Token like:
+	//
+	// "SomeKey": "SomeValue"
+	//
+	// that would be converted to a child node like:
+	//
+	// {"internalType": "SomeKey", "Token": "SomeValue"}
+	PromotedPropertyStrings map[string]map[string]bool
 	// TopLevelIsRootNode tells ToNode where to find the root node of
 	// the AST.  If true, the root will be its input argument. If false,
 	// the root will be the value of the only key present in its input
@@ -142,9 +151,13 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 		return nil, err
 	}
 
-	var promotedKeys map[string]bool
+	var promotedListKeys map[string]bool
 	if !c.PromoteAllPropertyLists && c.PromotedPropertyLists != nil {
-		promotedKeys = c.PromotedPropertyLists[internalKey]
+		promotedListKeys = c.PromotedPropertyLists[internalKey]
+	}
+	var promotedStrKeys map[string]bool
+	if c.PromotedPropertyStrings != nil {
+		promotedStrKeys = c.PromotedPropertyStrings[internalKey]
 	}
 
 	if err := c.setInternalKey(n, internalKey); err != nil {
@@ -170,7 +183,7 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 
 			n.Children = append(n.Children, child)
 		case []interface{}:
-			if c.PromoteAllPropertyLists || (promotedKeys != nil && promotedKeys[k]) {
+			if c.PromoteAllPropertyLists || (promotedListKeys != nil && promotedListKeys[k]) {
 				// This property->List  must be promoted to its own node
 				child, err := c.sliceToNodeWithChildren(k, ov, internalKey)
 				if err != nil {
@@ -190,6 +203,15 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 
 			n.Children = append(n.Children, children...)
 		default:
+			if s, ok := o.(string); ok {
+				if len(s) > 0 && promotedStrKeys != nil && promotedStrKeys[k] {
+					child := c.stringToNode(k, s, internalKey)
+					if child != nil {
+						n.Children = append(n.Children, child)
+					}
+				}
+			}
+
 			if err := c.addProperty(n, k, o); err != nil {
 				return nil, err
 			}
@@ -234,6 +256,16 @@ func (c *ObjectToNoder) sliceToNodeWithChildren(k string, s []interface{}, paren
 	kn.Children = append(kn.Children, ns...)
 
 	return kn, nil
+}
+
+func (c *ObjectToNoder) stringToNode(k, v, parentKey string) *uast.Node {
+	kn := uast.NewNode()
+
+	c.setInternalKey(kn, parentKey+"."+k)
+	kn.Properties["promotedPropertyString"] = "true"
+	kn.Token = v
+
+	return kn
 }
 
 func (c *ObjectToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*uast.Node, error) {
