@@ -203,8 +203,10 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 
 			n.Children = append(n.Children, children...)
 		default:
+			newKey := k
 			if s, ok := o.(string); ok {
 				if len(s) > 0 && promotedStrKeys != nil && promotedStrKeys[k] {
+					newKey = internalKey + "." + k
 					child := c.stringToNode(k, s, internalKey)
 					if child != nil {
 						n.Children = append(n.Children, child)
@@ -212,7 +214,7 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 				}
 			}
 
-			if err := c.addProperty(n, k, o); err != nil {
+			if err := c.addProperty(n, newKey, o); err != nil {
 				return nil, err
 			}
 		}
