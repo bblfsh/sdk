@@ -153,3 +153,34 @@ func Parse(req *ParseRequest) *ParseResponse {
 
 	return DefaultParser.Parse(req)
 }
+
+// VersionRequest is a request to get server version
+//proteus:generate
+type VersionRequest struct {
+}
+
+// VersionResponse is the reply to VersionRequest
+//proteus:generate
+type VersionResponse struct {
+	// Version is the server version
+	Version string `json:"version"`
+}
+
+type Versioner interface {
+	Version(*VersionRequest) *VersionResponse
+}
+
+// DefaultVersioner is the default versioner user by Version
+var DefaultVersioner Versioner
+
+// Version uses DefaultVersioner to process the given version request to get the version.
+//proteus:generate
+func Version(req *VersionRequest) *VersionResponse {
+	if DefaultVersioner == nil {
+		return &VersionResponse{
+			Version: "unknown",
+		}
+	}
+
+	return DefaultVersioner.Version(req)
+}
