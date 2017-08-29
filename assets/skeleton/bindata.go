@@ -1050,27 +1050,25 @@ var ToNoder = &native.ObjectToNoder{}
 
 // ParserBuilder creates a parser that transform source code files into *uast.Node.
 func ParserBuilder(opts driver.ParserOptions) (parser driver.Parser, err error) {
-	psr, err := native.ExecParser(ToNoder, opts.NativeBin)
+	parser, err = native.ExecParser(ToNoder, opts.NativeBin)
 	if err != nil {
-		return psr, err
+		return
 	}
 
 	switch ToNoder.PositionFill {
-	case native.None:
-		parser = psr
 	case native.OffsetFromLineCol:
 		parser = &driver.TransformationParser{
-			Parser:         psr,
+			Parser:         parser,
 			Transformation: driver.FillOffsetFromLineCol,
 		}
 	case native.LineColFromOffset:
 		parser = &driver.TransformationParser{
-			Parser:         psr,
+			Parser:         parser,
 			Transformation: driver.FillLineColFromOffset,
 		}
 	}
 
-	return parser, nil
+	return
 }
 `)
 
@@ -1084,7 +1082,7 @@ func driverNormalizerParserGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 880, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 833, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

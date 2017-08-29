@@ -10,25 +10,23 @@ var ToNoder = &native.ObjectToNoder{}
 
 // ParserBuilder creates a parser that transform source code files into *uast.Node.
 func ParserBuilder(opts driver.ParserOptions) (parser driver.Parser, err error) {
-	psr, err := native.ExecParser(ToNoder, opts.NativeBin)
+	parser, err = native.ExecParser(ToNoder, opts.NativeBin)
 	if err != nil {
-		return psr, err
+		return
 	}
 
 	switch ToNoder.PositionFill {
-	case native.None:
-		parser = psr
 	case native.OffsetFromLineCol:
 		parser = &driver.TransformationParser{
-			Parser:         psr,
+			Parser:         parser,
 			Transformation: driver.FillOffsetFromLineCol,
 		}
 	case native.LineColFromOffset:
 		parser = &driver.TransformationParser{
-			Parser:         psr,
+			Parser:         parser,
 			Transformation: driver.FillLineColFromOffset,
 		}
 	}
 
-	return parser, nil
+	return
 }
