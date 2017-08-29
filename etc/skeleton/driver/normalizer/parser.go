@@ -6,11 +6,25 @@ import (
 )
 
 // ParserBuilder creates a parser that transform source code files into *uast.Node.
-func ParserBuilder(opts driver.ParserOptions) (driver.Parser, error) {
-	toNoder := &native.ObjectToNoder{}
-	parser, err := native.ExecParser(toNoder, opts.NativeBin)
+func ParserBuilder(opts driver.ParserOptions) (parser driver.Parser, err error) {
+	psr, err := native.ExecParser(ToNoder, opts.NativeBin)
 	if err != nil {
-		return nil, err
+		return psr, err
+	}
+
+	switch ToNoder.PositionFill {
+	case native.None:
+		parser = psr
+	case native.OffsetFromLineCol:
+		parser = &driver.TransformationParser{
+			Parser:         psr,
+			Transformation: driver.FillOffsetFromLineCol,
+		}
+	case native.LineColFromOffset:
+		parser = &driver.TransformationParser{
+			Parser:         psr,
+			Transformation: driver.FillLineColFromOffset,
+		}
 	}
 
 	return parser, nil
