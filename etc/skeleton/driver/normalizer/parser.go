@@ -5,13 +5,28 @@ import (
 	"github.com/bblfsh/sdk/protocol/native"
 )
 
+// ToNoder specifies the driver options. Driver programmers should fill it
+var ToNoder = &native.ObjectToNoder{}
+
 // ParserBuilder creates a parser that transform source code files into *uast.Node.
-func ParserBuilder(opts driver.ParserOptions) (driver.Parser, error) {
-	toNoder := &native.ObjectToNoder{}
-	parser, err := native.ExecParser(toNoder, opts.NativeBin)
+func ParserBuilder(opts driver.ParserOptions) (parser driver.Parser, err error) {
+	parser, err = native.ExecParser(ToNoder, opts.NativeBin)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	return parser, nil
+	switch ToNoder.PositionFill {
+	case native.OffsetFromLineCol:
+		parser = &driver.TransformationParser{
+			Parser:         parser,
+			Transformation: driver.FillOffsetFromLineCol,
+		}
+	case native.LineColFromOffset:
+		parser = &driver.TransformationParser{
+			Parser:         parser,
+			Transformation: driver.FillLineColFromOffset,
+		}
+	}
+
+	return
 }

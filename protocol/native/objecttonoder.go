@@ -19,6 +19,13 @@ var (
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
 )
 
+type FillType int
+const (
+	None FillType = iota
+	OffsetFromLineCol
+	LineColFromOffset
+)
+
 // ObjectToNoder is a ToNoder for trees that are represented as nested JSON objects.
 // That is, an interface{} containing maps, slices, strings and integers. It
 // then converts from that structure to *Node.
@@ -99,6 +106,11 @@ type ObjectToNoder struct {
 	// the root will be the value of the only key present in its input
 	// argument.
 	TopLevelIsRootNode bool
+	// PositionFill specifies if the noder has to fill missing positions (col, line, offset)
+	// from ones that the native AST fills. The possible values are "None" (don't fill
+	// anything), "OffsetFromLineCol" (fill the offset from the line and column values) and
+	// "LineColFromOffset" (fill line and col from the offset).
+	PositionFill FillType
 }
 
 func (c *ObjectToNoder) ToNode(v interface{}) (*uast.Node, error) {
