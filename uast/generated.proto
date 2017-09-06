@@ -10,7 +10,7 @@
 // the License.
 
 syntax = "proto3";
-package github.com.bblfsh.sdk.uast;
+package gopkg.in.bblfsh.sdk.v0.uast;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
@@ -25,11 +25,11 @@ message Node {
 	option (gogoproto.typedecl) = false;
 	string internal_type = 1;
 	map<string, string> properties = 2;
-	repeated github.com.bblfsh.sdk.uast.Node children = 3;
+	repeated gopkg.in.bblfsh.sdk.v0.uast.Node children = 3;
 	string token = 4;
-	github.com.bblfsh.sdk.uast.Position start_position = 5;
-	github.com.bblfsh.sdk.uast.Position end_position = 6;
-	repeated github.com.bblfsh.sdk.uast.Role roles = 7;
+	gopkg.in.bblfsh.sdk.v0.uast.Position start_position = 5;
+	gopkg.in.bblfsh.sdk.v0.uast.Position end_position = 6;
+	repeated gopkg.in.bblfsh.sdk.v0.uast.Role roles = 7;
 }
 
 // Position represents a position in a source code file.
