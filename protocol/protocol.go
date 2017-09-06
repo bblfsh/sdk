@@ -15,7 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/bblfsh/sdk/uast"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 )
 
 //go:generate proteus  -f $GOPATH/src -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast

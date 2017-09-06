@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bblfsh/sdk/cli"
-	"github.com/bblfsh/sdk/manifest"
+	"gopkg.in/bblfsh/sdk.v0/cli"
+	"gopkg.in/bblfsh/sdk.v0/manifest"
 )
 
 const ManifestCommandDescription = "" +

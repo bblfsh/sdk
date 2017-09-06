@@ -1,8 +1,8 @@
 package normalizer
 
 import (
-	"github.com/bblfsh/sdk/protocol/driver"
-	"github.com/bblfsh/sdk/protocol/native"
+	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v0/protocol/native"
 )
 
 // ToNoder specifies the driver options. Driver programmers should fill it

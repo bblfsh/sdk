@@ -5,7 +5,7 @@ import (
 
 	errors "gopkg.in/src-d/go-errors.v0"
 
-	. "github.com/bblfsh/sdk/uast"
+	. "gopkg.in/bblfsh/sdk.v0/uast"
 
 	"github.com/stretchr/testify/require"
 )
@@ -201,10 +201,10 @@ func TestRuleOnApply(t *testing.T) {
 
 	input := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	expected := &Node{
@@ -212,7 +212,7 @@ func TestRuleOnApply(t *testing.T) {
 		Roles:        []Role{role},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	err := rule.Apply(input)
@@ -228,16 +228,16 @@ func TestRuleOnSelfApply(t *testing.T) {
 
 	input := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "bar",
-				Roles: []Role{Unannotated},
+				Roles:        []Role{Unannotated},
 				Children: []*Node{{
 					InternalType: "baz",
-					Roles: []Role{Unannotated},
+					Roles:        []Role{Unannotated},
 				}},
 			}},
 		}},
@@ -247,13 +247,13 @@ func TestRuleOnSelfApply(t *testing.T) {
 		Roles:        []Role{role},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "bar",
-				Roles: []Role{Unannotated},
+				Roles:        []Role{Unannotated},
 				Children: []*Node{{
 					InternalType: "baz",
-					Roles: []Role{Unannotated},
+					Roles:        []Role{Unannotated},
 				}},
 			}},
 		}},
@@ -271,15 +271,15 @@ func TestRuleOnChildrenApply(t *testing.T) {
 
 	input := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	expected := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
 			Roles:        []Role{role},
@@ -291,18 +291,18 @@ func TestRuleOnChildrenApply(t *testing.T) {
 
 	input = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	expected = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	err = rule.Apply(input)
@@ -311,25 +311,25 @@ func TestRuleOnChildrenApply(t *testing.T) {
 
 	input = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "foo",
-				Roles: []Role{Unannotated},
+				Roles:        []Role{Unannotated},
 			}},
 		}},
 	}
 	expected = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "foo",
-				Roles: []Role{Unannotated},
+				Roles:        []Role{Unannotated},
 			}},
 		}},
 	}
@@ -346,15 +346,15 @@ func TestRuleOnDescendantsApply(t *testing.T) {
 
 	input := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	expected := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
 			Roles:        []Role{role},
@@ -366,18 +366,18 @@ func TestRuleOnDescendantsApply(t *testing.T) {
 
 	input = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	expected = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	err = rule.Apply(input)
@@ -386,22 +386,22 @@ func TestRuleOnDescendantsApply(t *testing.T) {
 
 	input = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "foo",
-				Roles: []Role{Unannotated},
+				Roles:        []Role{Unannotated},
 			}},
 		}},
 	}
 	expected = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "foo",
 				Roles:        []Role{role},
@@ -421,15 +421,15 @@ func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
 
 	input := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	expected := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
 			Roles:        []Role{role},
@@ -441,13 +441,13 @@ func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
 
 	input = &Node{
 		InternalType: "foo",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "foo",
-				Roles: []Role{Unannotated},
+				Roles:        []Role{Unannotated},
 			}},
 		}},
 	}
@@ -456,7 +456,7 @@ func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
 		Roles:        []Role{role},
 		Children: []*Node{{
 			InternalType: "bar",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 			Children: []*Node{{
 				InternalType: "foo",
 				Roles:        []Role{role},
@@ -477,10 +477,10 @@ func TestRuleOnRulesActionError(t *testing.T) {
 
 	input := &Node{
 		InternalType: "root",
-		Roles: []Role{Unannotated},
+		Roles:        []Role{Unannotated},
 		Children: []*Node{{
 			InternalType: "foo",
-			Roles: []Role{Unannotated},
+			Roles:        []Role{Unannotated},
 		}},
 	}
 	err := rule.Apply(input)

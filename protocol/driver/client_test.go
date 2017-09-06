@@ -6,9 +6,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/bblfsh/sdk/protocol"
-	"github.com/bblfsh/sdk/protocol/jsonlines"
-	"github.com/bblfsh/sdk/uast"
+	"gopkg.in/bblfsh/sdk.v0/protocol"
+	"gopkg.in/bblfsh/sdk.v0/protocol/jsonlines"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 
 	"github.com/stretchr/testify/require"
 )

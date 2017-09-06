@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/bblfsh/sdk/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
 
-	"github.com/bblfsh/sdk/etc/skeleton/driver/normalizer" //REPLACE:"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
+	"gopkg.in/bblfsh/sdk.v0/etc/skeleton/driver/normalizer" //REPLACE:"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
 
 var version string

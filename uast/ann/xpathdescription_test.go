@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bblfsh/sdk/uast"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 )
 
 // go test -v -run 'TestRulesDocSuite' ./uast/ann
