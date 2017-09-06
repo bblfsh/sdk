@@ -9,10 +9,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bblfsh/sdk/protocol"
-	"github.com/bblfsh/sdk/protocol/native"
-	"github.com/bblfsh/sdk/uast"
-	"github.com/bblfsh/sdk/uast/ann"
+	"gopkg.in/bblfsh/sdk.v0/protocol"
+	"gopkg.in/bblfsh/sdk.v0/protocol/native"
+	"gopkg.in/bblfsh/sdk.v0/uast"
+	"gopkg.in/bblfsh/sdk.v0/uast/ann"
 
 	"github.com/jessevdk/go-flags"
 )

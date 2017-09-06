@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bblfsh/sdk/uast"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 )
 
 var (

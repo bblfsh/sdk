@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/bblfsh/sdk/uast"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 
 	"gopkg.in/src-d/go-errors.v0"
 )
@@ -20,6 +20,7 @@ var (
 )
 
 type FillType int
+
 const (
 	None FillType = iota
 	OffsetFromLineCol

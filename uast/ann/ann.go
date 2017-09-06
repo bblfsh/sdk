@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bblfsh/sdk/uast"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 )
 
 type axis int

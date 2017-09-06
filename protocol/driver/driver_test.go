@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/bblfsh/sdk/etc/skeleton/driver/normalizer"
-	. "github.com/bblfsh/sdk/protocol/driver"
-	"github.com/bblfsh/sdk/uast"
-	"github.com/bblfsh/sdk/uast/ann"
+	"gopkg.in/bblfsh/sdk.v0/etc/skeleton/driver/normalizer"
+	. "gopkg.in/bblfsh/sdk.v0/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v0/uast"
+	"gopkg.in/bblfsh/sdk.v0/uast/ann"
 
 	"github.com/stretchr/testify/require"
 )

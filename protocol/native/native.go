@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/bblfsh/sdk/protocol"
-	"github.com/bblfsh/sdk/protocol/jsonlines"
-	"github.com/bblfsh/sdk/uast"
+	"gopkg.in/bblfsh/sdk.v0/protocol"
+	"gopkg.in/bblfsh/sdk.v0/protocol/jsonlines"
+	"gopkg.in/bblfsh/sdk.v0/uast"
 )
 
 // ToNoder transforms a decoded JSON into a *uast.Node. This decoded JSON can be

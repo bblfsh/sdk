@@ -4,8 +4,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/bblfsh/sdk/protocol"
-	"github.com/bblfsh/sdk/protocol/jsonlines"
+	"gopkg.in/bblfsh/sdk.v0/protocol"
+	"gopkg.in/bblfsh/sdk.v0/protocol/jsonlines"
 )
 
 type ParseNativeResponse struct {

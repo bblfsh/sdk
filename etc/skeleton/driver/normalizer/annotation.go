@@ -1,8 +1,8 @@
 package normalizer
 
 import (
-	. "github.com/bblfsh/sdk/uast"
-	. "github.com/bblfsh/sdk/uast/ann"
+	. "gopkg.in/bblfsh/sdk.v0/uast"
+	. "gopkg.in/bblfsh/sdk.v0/uast/ann"
 )
 
 // AnnotationRules annotate a UAST with roles.
