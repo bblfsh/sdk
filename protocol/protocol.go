@@ -18,7 +18,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v0/uast"
 )
 
-//go:generate proteus  -f $GOPATH/src -p github.com/bblfsh/sdk/protocol -p github.com/bblfsh/sdk/uast
+//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v0/protocol -p gopkg.in/bblfsh/sdk.v0/uast
 
 // Status is the status of a response.
 //proteus:generate

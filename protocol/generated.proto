@@ -10,10 +10,10 @@
 // the License.
 
 syntax = "proto3";
-package github.com.bblfsh.sdk.protocol;
+package gopkg.in.bblfsh.sdk.v0.protocol;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "github.com/bblfsh/sdk/uast/generated.proto";
+import "gopkg.in/bblfsh/sdk.v0/uast/generated.proto";
 
 option (gogoproto.protosizer_all) = true;
 option (gogoproto.sizer_all) = false;
@@ -26,16 +26,16 @@ message ParseRequest {
 	string filename = 1;
 	string language = 2;
 	string content = 3;
-	github.com.bblfsh.sdk.protocol.Encoding encoding = 4;
+	gopkg.in.bblfsh.sdk.v0.protocol.Encoding encoding = 4;
 }
 
 // ParseResponse is the reply to ParseRequest.
 message ParseResponse {
 	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
-	github.com.bblfsh.sdk.protocol.Status status = 1;
+	gopkg.in.bblfsh.sdk.v0.protocol.Status status = 1;
 	repeated string errors = 2;
-	github.com.bblfsh.sdk.uast.Node uast = 3 [(gogoproto.customname) = "UAST"];
+	gopkg.in.bblfsh.sdk.v0.uast.Node uast = 3 [(gogoproto.customname) = "UAST"];
 }
 
 // VersionRequest is a request to get server version
@@ -51,19 +51,6 @@ message VersionResponse {
 	string version = 1;
 }
 
-// Encoding is the encoding used for the content string. Currently only
-// UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
-// and Base64 as a fallback.
-enum Encoding {
-	option (gogoproto.enumdecl) = false;
-	option (gogoproto.goproto_enum_prefix) = false;
-	option (gogoproto.goproto_enum_stringer) = false;
-	// UTF8 encoding
-	UTF8 = 0 [(gogoproto.enumvalue_customname) = "UTF8"];
-	// Base64 encoding
-	BASE64 = 1 [(gogoproto.enumvalue_customname) = "Base64"];
-}
-
 // Status is the status of a response.
 enum Status {
 	option (gogoproto.enumdecl) = false;
@@ -77,10 +64,23 @@ enum Status {
 	FATAL = 2 [(gogoproto.enumvalue_customname) = "Fatal"];
 }
 
+// Encoding is the encoding used for the content string. Currently only
+// UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
+// and Base64 as a fallback.
+enum Encoding {
+	option (gogoproto.enumdecl) = false;
+	option (gogoproto.goproto_enum_prefix) = false;
+	option (gogoproto.goproto_enum_stringer) = false;
+	// UTF8 encoding
+	UTF8 = 0 [(gogoproto.enumvalue_customname) = "UTF8"];
+	// Base64 encoding
+	BASE64 = 1 [(gogoproto.enumvalue_customname) = "Base64"];
+}
+
 service ProtocolService {
 	// Parse uses DefaultParser to process the given parsing request to get the UAST.
-	rpc Parse (github.com.bblfsh.sdk.protocol.ParseRequest) returns (github.com.bblfsh.sdk.protocol.ParseResponse);
+	rpc Parse (gopkg.in.bblfsh.sdk.v0.protocol.ParseRequest) returns (gopkg.in.bblfsh.sdk.v0.protocol.ParseResponse);
 	// Version uses DefaultVersioner to process the given version request to get the version.
-	rpc Version (github.com.bblfsh.sdk.protocol.VersionRequest) returns (github.com.bblfsh.sdk.protocol.VersionResponse);
+	rpc Version (gopkg.in.bblfsh.sdk.v0.protocol.VersionRequest) returns (gopkg.in.bblfsh.sdk.v0.protocol.VersionResponse);
 }
 
