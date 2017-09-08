@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )

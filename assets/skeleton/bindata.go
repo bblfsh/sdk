@@ -82,7 +82,7 @@ services:
   - docker
 
 before_script:
-  - go get -v gopkg.in/bblfsh/sdk.v0/...
+  - go get -v gopkg.in/bblfsh/sdk.v1/...
   - bblfsh-sdk prepare-build .
   - go get -v -t ./...
 
@@ -978,7 +978,7 @@ func readmeMdTpl() (*asset, error) {
 var _driverMainGoTpl = []byte(`package main
 
 import (
-	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
@@ -1015,8 +1015,8 @@ func driverMainGoTpl() (*asset, error) {
 var _driverNormalizerAnnotationGo = []byte(`package normalizer
 
 import (
-	. "gopkg.in/bblfsh/sdk.v0/uast"
-	. "gopkg.in/bblfsh/sdk.v0/uast/ann"
+	. "gopkg.in/bblfsh/sdk.v1/uast"
+	. "gopkg.in/bblfsh/sdk.v1/uast/ann"
 )
 
 // AnnotationRules annotate a UAST with roles.
@@ -1041,8 +1041,8 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 var _driverNormalizerParserGo = []byte(`package normalizer
 
 import (
-	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
-	"gopkg.in/bblfsh/sdk.v0/protocol/native"
+	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v1/protocol/native"
 )
 
 // ToNoder specifies the driver options. Driver programmers should fill it

@@ -5,7 +5,7 @@ import (
 
 	errors "gopkg.in/src-d/go-errors.v0"
 
-	. "gopkg.in/bblfsh/sdk.v0/uast"
+	. "gopkg.in/bblfsh/sdk.v1/uast"
 
 	"github.com/stretchr/testify/require"
 )

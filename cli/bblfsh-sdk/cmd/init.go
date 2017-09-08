@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v0/cli"
+	"gopkg.in/bblfsh/sdk.v1/cli"
 )
 
 const InitCommandDescription = "initializes a driver for a given language and OS"
