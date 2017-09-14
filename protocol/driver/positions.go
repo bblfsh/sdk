@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v0/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
 // FillOffsetFromLineCol gets the original source code and its parsed form
