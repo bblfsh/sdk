@@ -41,16 +41,16 @@ const (
 	// Operator is any form of operator.
 	Operator
 
-	// Binary is any form of binary operator, in contrast with unary operators
+	// Binary is any form of binary operator, in contrast with unary operators.
 	Binary
 
-	// Unary is any form of unary operator, in contrast with binary operators
+	// Unary is any form of unary operator, in contrast with binary operators.
 	Unary
-	// Left is a left hand side in a binary expression
 
+	// Left is a left hand side in a binary expression.
 	Left
-	// Right is a right hand side if a binary expression
 
+	// Right is a right hand side if a binary expression.
 	Right
 
 	// Infix should mark the nodes which are parents of expression nodes using infix notation, e.g.: a+b.
@@ -61,13 +61,13 @@ const (
 	// Nodes without Infix or Postfix mark are considered in prefix order by default.
 	Postfix
 
-	// Bitwise is any form of bitwise operation
+	// Bitwise is any form of bitwise operation.
 	Bitwise
 
-	// Boolean is any form of boolean operation
+	// Boolean is any form of boolean operation.
 	Boolean
 
-	// Unsigned is an form of unsigned operation
+	// Unsigned is an form of unsigned operation.
 	Unsigned
 
 	// LeftShift is a left shift operation (i.e. `<<`, `rol`, etc.)
@@ -85,10 +85,10 @@ const (
 	// And is an AND operation (i.e. `&&`, `&`, `and`, etc.)
 	And
 
-	// Expression is a construct computed to produce some value
+	// Expression is a construct computed to produce some value.
 	Expression
 
-	// Statement is some action to be carried out
+	// Statement is some action to be carried out.
 	Statement
 
 	// Equal is an eaquality predicate (i.e. `=`, `==`, etc.)
@@ -97,79 +97,79 @@ const (
 	// Not is a negation operation. It may be used to annotate a complement of an operator.
 	Not
 
-	// LessThan is a comparison predicate that checks if the lhs value is smaller than the rhs value (i. e. `<`).
+	// LessThan is a comparison predicate that checks if the lhs value is smaller than the rhs value (i. e. `<`.)
 	LessThan
 
-	// LessThanOrEqual is a comparison predicate that checks if the lhs value is smaller or equal to the rhs value (i.e. `<=`).
+	// LessThanOrEqual is a comparison predicate that checks if the lhs value is smaller or equal to the rhs value (i.e. `<=`.)
 	LessThanOrEqual
 
-	// GreaterThan is a comparison predicate that checks if the lhs value is greather than the rhs value (i. e. `>`)
+	// GreaterThan is a comparison predicate that checks if the lhs value is greather than the rhs value (i. e. `>`.)
 	GreaterThan
 
-	// GreaterThanOrEqual is a comparison predicate that checks if the lhs value is greather than or equal to the rhs value (i.e. 1>=`)
+	// GreaterThanOrEqual is a comparison predicate that checks if the lhs value is greather than or equal to the rhs value (i.e. 1>=`.)
 	GreaterThanOrEqual
 
 	// Identical is an identity predicate (i. e. `===`, `is`, etc.)
 	Identical
 
-	// Contains is a membership predicate that checks if the lhs value is a member of the rhs container (i.e. `in` in Python).
+	// Contains is a membership predicate that checks if the lhs value is a member of the rhs container (i.e. `in` in Python.)
 	Contains
 
-	// Increment is an arithmetic operator that increments a value (i. e. `++i`)
+	// Increment is an arithmetic operator that increments a value (i. e. `++i`.)
 	Increment
 
-	// Decrement is an arithmetic operator that decrements a value (i. e. `--i`)
+	// Decrement is an arithmetic operator that decrements a value (i. e. `--i`.)
 	Decrement
 
-	// Negative is an arithmetic operator that negates a value (i.e. `-x`)
+	// Negative is an arithmetic operator that negates a value (i.e. `-x`.)
 	Negative
 
-	// Positive is an arithmetic operator that makes a value positive. It's usually redundant (i.e. `+x`)
+	// Positive is an arithmetic operator that makes a value positive. It's usually redundant (i.e. `+x`.)
 	Positive
 
-	// Dereference is an operation that gets the actual value of a pointer or reference (i.e. `*x`)
+	// Dereference is an operation that gets the actual value of a pointer or reference (i.e. `*x`.)
 	Dereference
 
-	// TakeAddress is an operation that gets the memory address of a value (i. e. `&x`)
+	// TakeAddress is an operation that gets the memory address of a value (i. e. `&x`.)
 	TakeAddress
 
 	// File is the root node of a single file AST.
 	File
 
-	// Add is an arithmetic operator (i.e. `+`).
+	// Add is an arithmetic operator (i.e. `+`.)
 	Add
 
-	// Substract in an arithmetic operator (i.e. `-`).
+	// Substract in an arithmetic operator (i.e. `-`.)
 	Substract
 
-	// Multiply is an arithmetic operator (i.e. `*`).
+	// Multiply is an arithmetic operator (i.e. `*`.)
 	Multiply
 
-	// Divide is an arithmetic operator (i.e. `/`).
+	// Divide is an arithmetic operator (i.e. `/`.)
 	Divide
 
-	// Modulo is an arithmetic operator (i.e. `%`, `mod`, etc.).
+	// Modulo is an arithmetic operator (i.e. `%`, `mod`, etc.)
 	Modulo
 
-	// Package indicates that a package level property
+	// Package indicates that a package level property.
 	Package
 
-	// Declaration is a construct to specify properties of an identifier
+	// Declaration is a construct to specify properties of an identifier.
 	Declaration
 
-	// Import indicates an import level property
+	// Import indicates an import level property.
 	Import
 
-	// Path is a qualified name of some construct
+	// Path is a qualified name of some construct.
 	Path
 
-	// Alias is an alternative name for some construct
+	// Alias is an alternative name for some construct.
 	Alias
 
-	// Function is a sequence of instructions packaged as a unit
+	// Function is a sequence of instructions packaged as a unit.
 	Function
 
-	// Body is a sequence of instructions in a block
+	// Body is a sequence of instructions in a block.
 	Body
 
 	// Name is an identifier used to reference a value.
@@ -178,13 +178,13 @@ const (
 	// Receiver is the target of a construct (message, function, etc.)
 	Receiver
 
-	// Argument is variable used as input/output in a function
+	// Argument is variable used as input/output in a function.
 	Argument
 
 	// Value is an expression that cannot be evaluated any further.
 	Value
 
-	// ArgsList is variable number of arguments (i.e. `...`, `Object...`, `*args`, etc.).
+	// ArgsList is variable number of arguments (i.e. `...`, `Object...`, `*args`, etc.)
 	ArgsList
 
 	// Base is the parent type of which another type inherits.
@@ -196,19 +196,19 @@ const (
 	// Instance is a concrete occurrence of an object.
 	Instance
 
-	// Subtype is a type that can be used to substitute another type
+	// Subtype is a type that can be used to substitute another type.
 	Subtype
 
-	// Subpackage is a package that is below another package in the hierarchy
+	// Subpackage is a package that is below another package in the hierarchy.
 	Subpackage
 
-	// Module is a set of funcitonality grouped
+	// Module is a set of funcitonality grouped.
 	Module
 
-	// Friend is an access granter for some private resources
+	// Friend is an access granter for some private resources.
 	Friend
 
-	// World is a set of every component
+	// World is a set of every component.
 	World
 
 	// If is used for if-then[-else] statements or expressions.
@@ -239,10 +239,10 @@ const (
 	// IfCondition is a condition in an IfStatement or IfExpression.
 	Condition
 
-	// Then is the clause executed when the Condition is true
+	// Then is the clause executed when the Condition is true.
   Then
 
-	// Else is the clause executed when the Condition is false
+	// Else is the clause executed when the Condition is false.
 	Else
 
 	// Switch is used to represent a broad of switch flavors. An expression
@@ -253,58 +253,59 @@ const (
 	// with Switch.
 	Switch
 
-	// Case is a clause whose expression is compared with the condition
+	// Case is a clause whose expression is compared with the condition.
 	Case
 
-	// Default is a clause that is called when no other clause is matches
+	// Default is a clause that is called when no other clause is matches.
 	Default
 
-	// For is a loop with an initialization, a condition, an update and a body
+	// For is a loop with an initialization, a condition, an update and a body.
 	For
 
 	// Initialization is the assignment of an initial value to a variable
 	// (i.e. a for loop variable initialization.)
 	Initialization
 
-	// Update is 
+	// Update is the assignment of a new value to a variable
+	// (i.e. a for loop variable update.)
 	Update
 	Iterator
-	// While is a loop construct with a condition and a body
+	// While is a loop construct with a condition and a body.
 	While
 
 	// DoWhile is a loop construct with a body and a condition.
 	DoWhile
 
-	// Break is a construct for early exiting a block
+	// Break is a construct for early exiting a block.
 	Break
 
-	// Continue is a construct for continuation with the next iteration of a loop
+	// Continue is a construct for continuation with the next iteration of a loop.
 	Continue
 
-	// Goto is an unconditional transfer of control statement
+	// Goto is an unconditional transfer of control statement.
 	Goto
 
 	// Block is a group of statements. If the source language has block scope,
 	// it should be annotated both with Block and BlockScope.
 	Block
 
-	// Scope is a range in which a variable can be referred
+	// Scope is a range in which a variable can be referred.
 	Scope
 
 	// Return is a return statement. It might have a child expression or not
 	// as with naked returns in Go or return in void methods in Java.
 	Return
 
-	// Try is a statement for exception handling
+	// Try is a statement for exception handling.
 	Try
 
-	// Catch is a clause to capture exceptions
+	// Catch is a clause to capture exceptions.
 	Catch
 
-	// Finally is a clause for a block executed after a block with exception handling
+	// Finally is a clause for a block executed after a block with exception handling.
 	Finally
 
-	// Throw is a statement that creates an exception
+	// Throw is a statement that creates an exception.
 	Throw
 
 	// Assert checks if an expression is true and if it is not, it signals
@@ -372,13 +373,13 @@ const (
 	// Entry is a collection element.
 	Entry
 
-	// Key is the index value of a map
+	// Key is the index value of a map.
 	Key
 
-	// Primitive is a language builtin
+	// Primitive is a language builtin.
 	Primitive
 
-	// Assignment is an assignment operator
+	// Assignment is an assignment operator.
 	Assignment
 
 	// This represents the self-reference of an object instance in
@@ -396,7 +397,7 @@ const (
 	// (e.g. Javadoc, godoc).
 	Documentation
 
-	// Whitespace
+	// Whitespace.
 	Whitespace
 
 	// Incomplete express that the semantic meaning of the node roles doesn't express
