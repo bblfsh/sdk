@@ -51,386 +51,275 @@ enum Role {
 	option (gogoproto.goproto_enum_stringer) = false;
 	// Invalid Role is assigned as a zero value since protobuf enum definition must start at 0.
 	INVALID = 0 [(gogoproto.enumvalue_customname) = "Invalid"];
-	// SimpleIdentifier is the most basic form of identifier, used for variable
-	// names, functions, packages, etc.
-	SIMPLE_IDENTIFIER = 1 [(gogoproto.enumvalue_customname) = "SimpleIdentifier"];
-	// QualifiedIdentifier is form of identifier composed of multiple
-	// SimpleIdentifier. One main identifier (usually the last one) and one
-	// or more qualifiers.
-	QUALIFIED_IDENTIFIER = 2 [(gogoproto.enumvalue_customname) = "QualifiedIdentifier"];
-	// BinaryExpression is the parent node of all binary expressions of any type. It must have
-	// BinaryExpressionLeft, BinaryExpressionRight and BinaryExpressionOp children.
-	// Those children must have aditional roles specifying the specific type (e.g. Expression,
-	// QualifiedIdentifier or Literal for the left and right nodes and one of the specific operator roles
-	// for the binary operator). BinaryExpresion can be considered a derivation of Expression and thus
-	// could be its child or implemented as an additional node.
-	BINARY_EXPRESSION = 3 [(gogoproto.enumvalue_customname) = "BinaryExpression"];
-	BINARY_EXPRESSION_LEFT = 4 [(gogoproto.enumvalue_customname) = "BinaryExpressionLeft"];
-	BINARY_EXPRESSION_RIGHT = 5 [(gogoproto.enumvalue_customname) = "BinaryExpressionRight"];
-	BINARY_EXPRESSION_OP = 6 [(gogoproto.enumvalue_customname) = "BinaryExpressionOp"];
+	// Identifier is any form of identifier, used for variable names, functions, packages, etc.
+	IDENTIFIER = 1 [(gogoproto.enumvalue_customname) = "Identifier"];
+	// Qualified is a kind of property identifiers may have, when it's composed
+	// of multiple simple identifiers.
+	QUALIFIED = 2 [(gogoproto.enumvalue_customname) = "Qualified"];
+	// Operator is any form of operator.
+	OPERATOR = 3 [(gogoproto.enumvalue_customname) = "Operator"];
+	// Binary is any form of binary operator, in contrast with unary operators.
+	BINARY = 4 [(gogoproto.enumvalue_customname) = "Binary"];
+	// Unary is any form of unary operator, in contrast with binary operators.
+	UNARY = 5 [(gogoproto.enumvalue_customname) = "Unary"];
+	// Left is a left hand side in a binary expression.
+	LEFT = 6 [(gogoproto.enumvalue_customname) = "Left"];
+	// Right is a right hand side if a binary expression.
+	RIGHT = 7 [(gogoproto.enumvalue_customname) = "Right"];
 	// Infix should mark the nodes which are parents of expression nodes using infix notation, e.g.: a+b.
 	// Nodes without Infix or Postfix mark are considered in prefix order by default.
-	INFIX = 7 [(gogoproto.enumvalue_customname) = "Infix"];
+	INFIX = 8 [(gogoproto.enumvalue_customname) = "Infix"];
 	// Postfix should mark the nodes which are parents of nodes using postfix notation, e.g.: ab+.
 	// Nodes without Infix or Postfix mark are considered in prefix order by default.
-	POSTFIX = 8 [(gogoproto.enumvalue_customname) = "Postfix"];
-	// OpBitwiseLeftShift is the binary bitwise shift to the left operator (i.e. << in most languages)
-	OP_BITWISE_LEFT_SHIFT = 9 [(gogoproto.enumvalue_customname) = "OpBitwiseLeftShift"];
-	// OpBitwiseRightShift is the binary bitwise shift to the right operator (i.e. >> in most languages)
-	OP_BITWISE_RIGHT_SHIFT = 10 [(gogoproto.enumvalue_customname) = "OpBitwiseRightShift"];
-	// OpBitwiseUnsignedRightShift is the binary bitwise unsigned shift to the
-	// right operator (e.g. >>> in Java or C#)
-	OP_BITWISE_UNSIGNED_RIGHT_SHIFT = 11 [(gogoproto.enumvalue_customname) = "OpBitwiseUnsignedRightShift"];
-	// OpBitwiseOr is the binary bitwise OR operator  (i.e. | in most languages)
-	OP_BITWISE_OR = 12 [(gogoproto.enumvalue_customname) = "OpBitwiseOr"];
-	// OpBitwiseXor is the binary bitwise Xor operator  (i.e. ~ in most languages)
-	OP_BITWISE_XOR = 13 [(gogoproto.enumvalue_customname) = "OpBitwiseXor"];
-	// OpBitwiseAnd is the binary bitwise And/complement operator  (i.e. & in most languages)
-	OP_BITWISE_AND = 14 [(gogoproto.enumvalue_customname) = "OpBitwiseAnd"];
-	EXPRESSION = 15 [(gogoproto.enumvalue_customname) = "Expression"];
-	STATEMENT = 16 [(gogoproto.enumvalue_customname) = "Statement"];
-	// OpEqual is the operator that tests for logical equality between two expressions
-	OP_EQUAL = 17 [(gogoproto.enumvalue_customname) = "OpEqual"];
-	// OpEqual is the operator that tests for logical inequality between two expressions
-	// (i.e. != or != or <> in most languages).
-	OP_NOT_EQUAL = 18 [(gogoproto.enumvalue_customname) = "OpNotEqual"];
-	// OpEqual is the operator that tests if the expression on the left is worth logically less
-	// than the expression on the right. (i.e. < in most languages).
-	OP_LESS_THAN = 19 [(gogoproto.enumvalue_customname) = "OpLessThan"];
-	// OpEqual is the operator that tests if the expression on the left is worth logically less
-	// or has equality with the expression on the right. (i.e. >= in most languages).
-	OP_LESS_THAN_EQUAL = 20 [(gogoproto.enumvalue_customname) = "OpLessThanEqual"];
-	// OpEqual is the operator that tests if the expression on the left is worth logically more
-	// than the expression on the right. (i.e. > in most languages).
-	OP_GREATER_THAN = 21 [(gogoproto.enumvalue_customname) = "OpGreaterThan"];
-	// OpEqual is the operator that tests if the expression on the left is worth logically more
-	// or has equality with the expression on the right. (i.e. >= in most languages).
-	OP_GREATER_THAN_EQUAL = 22 [(gogoproto.enumvalue_customname) = "OpGreaterThanEqual"];
-	// OpSame tests if the result of the expressions tested is the same object, like the "is"
-	// operator in node or === in Javascript.
-	OP_SAME = 23 [(gogoproto.enumvalue_customname) = "OpSame"];
-	// OpNotSame tests if the result of the expressions tested are different objects, like the "is not"
-	// operator in node or !== in Javascript.
-	OP_NOT_SAME = 24 [(gogoproto.enumvalue_customname) = "OpNotSame"];
-	// OpContains tests if the left expression result is contained inside, or has an item contained
-	// with equality, the result of the expression of the right which usually will be a container type
-	// (e.g. "in" in Python).
-	OP_CONTAINS = 25 [(gogoproto.enumvalue_customname) = "OpContains"];
-	// OpNotContains tests if the left expression result is not contained inside
-	// the result of the expression of the right which usually will be a container type
-	// (e.g. "not in" in Python).
-	OP_NOT_CONTAINS = 26 [(gogoproto.enumvalue_customname) = "OpNotContains"];
-	// OpPreIncrement increments in place the value before it is evaluated. It's
-	// typical of C-inspired languages (e. g. ++x).
-	OP_PRE_INCREMENT = 27 [(gogoproto.enumvalue_customname) = "OpPreIncrement"];
-	// OpPostIncrement increments in place the value after it is evaluated. It's
-	// typical of C-inspired languages (e. g. x++).
-	OP_POST_INCREMENT = 28 [(gogoproto.enumvalue_customname) = "OpPostIncrement"];
-	// OpPreDecrement decrement in place the value before it is evaluated. It's
-	// typical of C-inspired languages (e. g. --x).
-	OP_PRE_DECREMENT = 29 [(gogoproto.enumvalue_customname) = "OpPreDecrement"];
-	// OpPostDecrement decrement in place the value after it is evaluated. It's
-	// typical of C-inspired languages (e. g. x--).
-	OP_POST_DECREMENT = 30 [(gogoproto.enumvalue_customname) = "OpPostDecrement"];
-	// OpNegative changes the sign of the numeric type (e. g. -x in most languages).
-	OP_NEGATIVE = 31 [(gogoproto.enumvalue_customname) = "OpNegative"];
-	// OpPositive usually is a no-op for basic numeric types but exists in the AST of some languages.
-	// On some languages like C it could perform an aritmetic conversion to a signed type without
-	// changing the sign or could be overloaded (e. g. +x).
-	OP_POSITIVE = 32 [(gogoproto.enumvalue_customname) = "OpPositive"];
-	// OpBitwiseComplement will invert all the bits of a type. (e. g. ~x in C-inspired languages).
-	OP_BITWISE_COMPLEMENT = 33 [(gogoproto.enumvalue_customname) = "OpBitwiseComplement"];
-	// OpDereference will get the actual value pointed by a pointer or reference type (e.g. *x).
-	OP_DEREFERENCE = 34 [(gogoproto.enumvalue_customname) = "OpDereference"];
-	// OpTakeAddress will get the memory address of the associated variable which will usually be
-	// stored in a pointer or reference type (e. g. &x).
-	OP_TAKE_ADDRESS = 35 [(gogoproto.enumvalue_customname) = "OpTakeAddress"];
+	POSTFIX = 9 [(gogoproto.enumvalue_customname) = "Postfix"];
+	// Bitwise is any form of bitwise operation.
+	BITWISE = 10 [(gogoproto.enumvalue_customname) = "Bitwise"];
+	// Boolean is any form of boolean operation.
+	BOOLEAN = 11 [(gogoproto.enumvalue_customname) = "Boolean"];
+	// Unsigned is an form of unsigned operation.
+	UNSIGNED = 12 [(gogoproto.enumvalue_customname) = "Unsigned"];
+	// LeftShift is a left shift operation (i.e. `<<`, `rol`, etc.)
+	LEFT_SHIFT = 13 [(gogoproto.enumvalue_customname) = "LeftShift"];
+	// RightShift is a right shift operation (i.e. `>>`, `ror`, etc.)
+	RIGHT_SHIFT = 14 [(gogoproto.enumvalue_customname) = "RightShift"];
+	// Or is an OR operation (i.e. `||`, `or`, `|`, etc.)
+	OR = 15 [(gogoproto.enumvalue_customname) = "Or"];
+	// Xor is an exclusive OR operation  (i.e. `~`, `^`, etc.)
+	XOR = 16 [(gogoproto.enumvalue_customname) = "Xor"];
+	// And is an AND operation (i.e. `&&`, `&`, `and`, etc.)
+	AND = 17 [(gogoproto.enumvalue_customname) = "And"];
+	// Expression is a construct computed to produce some value.
+	EXPRESSION = 18 [(gogoproto.enumvalue_customname) = "Expression"];
+	// Statement is some action to be carried out.
+	STATEMENT = 19 [(gogoproto.enumvalue_customname) = "Statement"];
+	// Equal is an eaquality predicate (i.e. `=`, `==`, etc.)
+	EQUAL = 20 [(gogoproto.enumvalue_customname) = "Equal"];
+	// Not is a negation operation. It may be used to annotate a complement of an operator.
+	NOT = 21 [(gogoproto.enumvalue_customname) = "Not"];
+	// LessThan is a comparison predicate that checks if the lhs value is smaller than the rhs value (i. e. `<`.)
+	LESS_THAN = 22 [(gogoproto.enumvalue_customname) = "LessThan"];
+	// LessThanOrEqual is a comparison predicate that checks if the lhs value is smaller or equal to the rhs value (i.e. `<=`.)
+	LESS_THAN_OR_EQUAL = 23 [(gogoproto.enumvalue_customname) = "LessThanOrEqual"];
+	// GreaterThan is a comparison predicate that checks if the lhs value is greather than the rhs value (i. e. `>`.)
+	GREATER_THAN = 24 [(gogoproto.enumvalue_customname) = "GreaterThan"];
+	// GreaterThanOrEqual is a comparison predicate that checks if the lhs value is greather than or equal to the rhs value (i.e. 1>=`.)
+	GREATER_THAN_OR_EQUAL = 25 [(gogoproto.enumvalue_customname) = "GreaterThanOrEqual"];
+	// Identical is an identity predicate (i. e. `===`, `is`, etc.)
+	IDENTICAL = 26 [(gogoproto.enumvalue_customname) = "Identical"];
+	// Contains is a membership predicate that checks if the lhs value is a member of the rhs container (i.e. `in` in Python.)
+	CONTAINS = 27 [(gogoproto.enumvalue_customname) = "Contains"];
+	// Increment is an arithmetic operator that increments a value (i. e. `++i`.)
+	INCREMENT = 28 [(gogoproto.enumvalue_customname) = "Increment"];
+	// Decrement is an arithmetic operator that decrements a value (i. e. `--i`.)
+	DECREMENT = 29 [(gogoproto.enumvalue_customname) = "Decrement"];
+	// Negative is an arithmetic operator that negates a value (i.e. `-x`.)
+	NEGATIVE = 30 [(gogoproto.enumvalue_customname) = "Negative"];
+	// Positive is an arithmetic operator that makes a value positive. It's usually redundant (i.e. `+x`.)
+	POSITIVE = 31 [(gogoproto.enumvalue_customname) = "Positive"];
+	// Dereference is an operation that gets the actual value of a pointer or reference (i.e. `*x`.)
+	DEREFERENCE = 32 [(gogoproto.enumvalue_customname) = "Dereference"];
+	// TakeAddress is an operation that gets the memory address of a value (i. e. `&x`.)
+	TAKE_ADDRESS = 33 [(gogoproto.enumvalue_customname) = "TakeAddress"];
 	// File is the root node of a single file AST.
-	FILE = 36 [(gogoproto.enumvalue_customname) = "File"];
-	// OpBooleanAnd is the boolean AND operator (i.e. "and" or && in most languages)
-	OP_BOOLEAN_AND = 37 [(gogoproto.enumvalue_customname) = "OpBooleanAnd"];
-	// OpBooleanOr is the boolean OR operator (i.e. "or" or || in most languages)
-	OP_BOOLEAN_OR = 38 [(gogoproto.enumvalue_customname) = "OpBooleanOr"];
-	// OpBooleanNot is the boolean NOT operator (i.e. "NOT" or ! in most languages)
-	OP_BOOLEAN_NOT = 39 [(gogoproto.enumvalue_customname) = "OpBooleanNot"];
-	// OpBooleanXor is the boolean XOR operator (i.e. "XOR" or ^ in most languages)
-	OP_BOOLEAN_XOR = 40 [(gogoproto.enumvalue_customname) = "OpBooleanXor"];
-	// OpAdd is the binary add operator (i.e. + in most languages).
-	OP_ADD = 41 [(gogoproto.enumvalue_customname) = "OpAdd"];
-	// OpSubstract is the binary subtract operator (i.e. - in most languages).
-	OP_SUBSTRACT = 42 [(gogoproto.enumvalue_customname) = "OpSubstract"];
-	// OpMultiply is the binary multiply operator (i.e. * in most languages).
-	OP_MULTIPLY = 43 [(gogoproto.enumvalue_customname) = "OpMultiply"];
-	// OpDivide is the binary division operator (i.e. / in most languages).
-	OP_DIVIDE = 44 [(gogoproto.enumvalue_customname) = "OpDivide"];
-	// OpMod is the binary division module operator (i.e. % or "mod" in most languages).
-	OP_MOD = 45 [(gogoproto.enumvalue_customname) = "OpMod"];
-	// PackageDeclaration identifies the package that all its children
-	// belong to. Its children include, at least, QualifiedIdentifier or
-	// SimpleIdentifier with the package name.
-	PACKAGE_DECLARATION = 46 [(gogoproto.enumvalue_customname) = "PackageDeclaration"];
-	// ImportDeclaration represents the import of another package in the
-	// current scope. Its children may include an ImportPath and ImportInclude.
-	IMPORT_DECLARATION = 47 [(gogoproto.enumvalue_customname) = "ImportDeclaration"];
-	// ImportPath is the (usually) fully qualified package name to import.
-	IMPORT_PATH = 48 [(gogoproto.enumvalue_customname) = "ImportPath"];
-	// ImportAlias is an identifier used as an alias for an imported package
-	// in a certain scope.
-	IMPORT_ALIAS = 49 [(gogoproto.enumvalue_customname) = "ImportAlias"];
-	// FunctionDeclaration is the parent node of all function or method declarations. It should have a
-	// FunctionDeclarationName, a FunctionDeclarationBody (except for pure declarations like the ones in C/C++
-	// header files or forward declarations in other languages) and, if the function has formal arguments,
-	// FunctionDeclarationArgument children.
-	FUNCTION_DECLARATION = 50 [(gogoproto.enumvalue_customname) = "FunctionDeclaration"];
-	// FunctionDeclarationBody is the grouping node for all nodes in the function body.
-	FUNCTION_DECLARATION_BODY = 51 [(gogoproto.enumvalue_customname) = "FunctionDeclarationBody"];
-	// FunctionDeclarationName contains the unqualified name of the function.
-	FUNCTION_DECLARATION_NAME = 52 [(gogoproto.enumvalue_customname) = "FunctionDeclarationName"];
-	// FunctionDeclarationReceiver is the target Type of a method or struct.
-	FUNCTION_DECLARATION_RECEIVER = 53 [(gogoproto.enumvalue_customname) = "FunctionDeclarationReceiver"];
-	// FunctionDeclarationArgument is the parent node for the function formal arguments. The name will be
-	// specified as the token of the child FunctionDeclarationArgumentName and depending on the language it
-	// could have one or more child nodes of different types to implement them in the UAST like
-	// FunctionDeclarationArgumentDefaultValue, type declarations (TODO), annotations (TODO), etc.
-	// FunctionDeclarationArguments
-	FUNCTION_DECLARATION_ARGUMENT = 54 [(gogoproto.enumvalue_customname) = "FunctionDeclarationArgument"];
-	// FunctionDeclarationArgumentName is the symbolic name of the argument. On languages that support
-	// argument passing by name this will be the name used by the CallNamedArgument roles.
-	FUNCTION_DECLARATION_ARGUMENT_NAME = 55 [(gogoproto.enumvalue_customname) = "FunctionDeclarationArgumentName"];
-	// For languages that support setting a default value for a formal argument,
-	// FunctionDeclarationArgumentDefaultValue is the node that contains the default value.
-	// Depending on the language his child node representing the actual value could be some kind or
-	// literal or even expressions that can resolved at runtime (if interpreted) or compile time.
-	FUNCTION_DECLARATION_ARGUMENT_DEFAULT_VALUE = 56 [(gogoproto.enumvalue_customname) = "FunctionDeclarationArgumentDefaultValue"];
-	// FunctionDeclarationVarArgsList is the node representing whatever syntax the language has to
-	// indicate that from that point in the argument list the function can get a variable number
-	// of arguments (e.g. "..." in C-ish languages, "Object..." in Java, "*args" in Python, etc).
-	FUNCTION_DECLARATION_VAR_ARGS_LIST = 57 [(gogoproto.enumvalue_customname) = "FunctionDeclarationVarArgsList"];
-	// TypeDeclaration is the declaration of a type. It could be a class or
-	// interface in Java, a struct, interface or alias in Go, etc. Except for pure or forward declarations
-	// it will usually have a TypeDeclarationBody child and for OOP languages a TypeDeclarationBases and/or
-	// TypeDeclarationInterfaces.
-	TYPE_DECLARATION = 58 [(gogoproto.enumvalue_customname) = "TypeDeclaration"];
-	TYPE_DECLARATION_BODY = 59 [(gogoproto.enumvalue_customname) = "TypeDeclarationBody"];
-	// TypeDeclarationBases are the Types that the current inherits from in OOP languages.
-	TYPE_DECLARATION_BASES = 60 [(gogoproto.enumvalue_customname) = "TypeDeclarationBases"];
-	// TypeDeclarationImplements are the Types (usually interfaces) that the Type implements.
-	TYPE_DECLARATION_IMPLEMENTS = 61 [(gogoproto.enumvalue_customname) = "TypeDeclarationImplements"];
-	// VisibleFromInstance marks modifiers that declare visibility from instance.
-	VISIBLE_FROM_INSTANCE = 62 [(gogoproto.enumvalue_customname) = "VisibleFromInstance"];
-	// VisibleFromType marks modifiers that declare visibility from the same
-	// type (e.g. class, trait).
-	// Implies VisibleFromInstance.
-	VISIBLE_FROM_TYPE = 63 [(gogoproto.enumvalue_customname) = "VisibleFromType"];
-	// VisibleFromSubtype marks modifiers that declare visibility from
-	// subtypes (e.g. subclasses).
-	// Implies VisibleFromInstance and VisibleFromType.
-	VISIBLE_FROM_SUBTYPE = 64 [(gogoproto.enumvalue_customname) = "VisibleFromSubtype"];
-	// VisibleFromSubpackage marks modifiers that declare visibility from the
-	// same package.
-	VISIBLE_FROM_PACKAGE = 65 [(gogoproto.enumvalue_customname) = "VisibleFromPackage"];
-	// VisibleFromSubpackage marks modifiers that declare visibility from
-	// subpackages.
-	// Implies VisibleFromInstance, VisibleFromType and VisibleFromPackage.
-	VISIBLE_FROM_SUBPACKAGE = 66 [(gogoproto.enumvalue_customname) = "VisibleFromSubpackage"];
-	// VisibleFromModule marks modifiers that declare visibility from the
-	// same module (e.g. Java JAR).
-	// Implies VisibleFromInstance and VisibleFromType.
-	VISIBLE_FROM_MODULE = 67 [(gogoproto.enumvalue_customname) = "VisibleFromModule"];
-	// VisibleFromFriend marks modifiers that declare visibility from friends
-	// (e.g. C++ friends).
-	// Implies VisibleFromInstance and VisibleFromType.
-	VISIBLE_FROM_FRIEND = 68 [(gogoproto.enumvalue_customname) = "VisibleFromFriend"];
-	// VisibleFromWorld implies full public visibility. Implies all other
-	// visibility levels.
-	VISIBLE_FROM_WORLD = 69 [(gogoproto.enumvalue_customname) = "VisibleFromWorld"];
+	FILE = 34 [(gogoproto.enumvalue_customname) = "File"];
+	// Add is an arithmetic operator (i.e. `+`.)
+	ADD = 35 [(gogoproto.enumvalue_customname) = "Add"];
+	// Substract in an arithmetic operator (i.e. `-`.)
+	SUBSTRACT = 36 [(gogoproto.enumvalue_customname) = "Substract"];
+	// Multiply is an arithmetic operator (i.e. `*`.)
+	MULTIPLY = 37 [(gogoproto.enumvalue_customname) = "Multiply"];
+	// Divide is an arithmetic operator (i.e. `/`.)
+	DIVIDE = 38 [(gogoproto.enumvalue_customname) = "Divide"];
+	// Modulo is an arithmetic operator (i.e. `%`, `mod`, etc.)
+	MODULO = 39 [(gogoproto.enumvalue_customname) = "Modulo"];
+	// Package indicates that a package level property.
+	PACKAGE = 40 [(gogoproto.enumvalue_customname) = "Package"];
+	// Declaration is a construct to specify properties of an identifier.
+	DECLARATION = 41 [(gogoproto.enumvalue_customname) = "Declaration"];
+	// Import indicates an import level property.
+	IMPORT = 42 [(gogoproto.enumvalue_customname) = "Import"];
+	// Pathname is a qualified name of some construct.
+	PATHNAME = 43 [(gogoproto.enumvalue_customname) = "Pathname"];
+	// Alias is an alternative name for some construct.
+	ALIAS = 44 [(gogoproto.enumvalue_customname) = "Alias"];
+	// Function is a sequence of instructions packaged as a unit.
+	FUNCTION = 45 [(gogoproto.enumvalue_customname) = "Function"];
+	// Body is a sequence of instructions in a block.
+	BODY = 46 [(gogoproto.enumvalue_customname) = "Body"];
+	// Name is an identifier used to reference a value.
+	NAME = 47 [(gogoproto.enumvalue_customname) = "Name"];
+	// Receiver is the target of a construct (message, function, etc.)
+	RECEIVER = 48 [(gogoproto.enumvalue_customname) = "Receiver"];
+	// Argument is variable used as input/output in a function.
+	ARGUMENT = 49 [(gogoproto.enumvalue_customname) = "Argument"];
+	// Value is an expression that cannot be evaluated any further.
+	VALUE = 50 [(gogoproto.enumvalue_customname) = "Value"];
+	// ArgsList is variable number of arguments (i.e. `...`, `Object...`, `*args`, etc.)
+	ARGS_LIST = 51 [(gogoproto.enumvalue_customname) = "ArgsList"];
+	// Base is the parent type of which another type inherits.
+	BASE = 52 [(gogoproto.enumvalue_customname) = "Base"];
+	// Implements is the type (usually an interface) that another type implements.
+	IMPLEMENTS = 53 [(gogoproto.enumvalue_customname) = "Implements"];
+	// Instance is a concrete occurrence of an object.
+	INSTANCE = 54 [(gogoproto.enumvalue_customname) = "Instance"];
+	// Subtype is a type that can be used to substitute another type.
+	SUBTYPE = 55 [(gogoproto.enumvalue_customname) = "Subtype"];
+	// Subpackage is a package that is below another package in the hierarchy.
+	SUBPACKAGE = 56 [(gogoproto.enumvalue_customname) = "Subpackage"];
+	// Module is a set of funcitonality grouped.
+	MODULE = 57 [(gogoproto.enumvalue_customname) = "Module"];
+	// Friend is an access granter for some private resources.
+	FRIEND = 58 [(gogoproto.enumvalue_customname) = "Friend"];
+	// World is a set of every component.
+	WORLD = 59 [(gogoproto.enumvalue_customname) = "World"];
 	// If is used for if-then[-else] statements or expressions.
 	// An if-then tree will look like:
 	// 
-	// 	IfStatement {
+	// 	If, Statement {
 	// 		**[non-If nodes] {
-	// 			IfCondition {
+	// 			If, Condition {
 	// 				[...]
 	//                      }
 	// 		}
 	// 		**[non-If* nodes] {
-	// 			IfBody {
+	// 			If, Then {
 	// 				[...]
 	// 			}
 	// 		}
 	// 		**[non-If* nodes] {
-	// 			IfElse {
+	// 			If, Else {
 	// 				[...]
 	// 			}
 	// 		}
 	// 	}
 	// 
-	// The IfElse node is optional. The order of IfCondition, IfBody and
-	// IfElse is not defined.
-	IF = 70 [(gogoproto.enumvalue_customname) = "If"];
+	// The Else node is optional. The order of Condition, Then and
+	// Else is not defined.
+	IF = 60 [(gogoproto.enumvalue_customname) = "If"];
 	// IfCondition is a condition in an IfStatement or IfExpression.
-	IF_CONDITION = 71 [(gogoproto.enumvalue_customname) = "IfCondition"];
-	// IfBody is the code following a then clause in an IfStatement or
-	// IfExpression.
-	IF_BODY = 72 [(gogoproto.enumvalue_customname) = "IfBody"];
-	// IfBody is the code following a else clause in an IfStatement or
-	// IfExpression.
-	IF_ELSE = 73 [(gogoproto.enumvalue_customname) = "IfElse"];
+	CONDITION = 61 [(gogoproto.enumvalue_customname) = "Condition"];
+	// Then is the clause executed when the Condition is true.
+	THEN = 62 [(gogoproto.enumvalue_customname) = "Then"];
+	// Else is the clause executed when the Condition is false.
+	ELSE = 63 [(gogoproto.enumvalue_customname) = "Else"];
 	// Switch is used to represent a broad of switch flavors. An expression
 	// is evaluated and then compared to the values returned by different
 	// case expressions, executing a body associated to the first case that
 	// matches. Similar constructions that go beyond expression comparison
 	// (such as pattern matching in Scala's match) should not be annotated
 	// with Switch.
-	// 
-	// TODO: We still have to decide how to annotate fallthrough and
-	//      non-fallthrough variants. As well as crazy variants such as Perl
-	//      and Bash with its optional fallthrough.
-	SWITCH = 74 [(gogoproto.enumvalue_customname) = "Switch"];
-	SWITCH_CASE = 75 [(gogoproto.enumvalue_customname) = "SwitchCase"];
-	SWITCH_CASE_CONDITION = 76 [(gogoproto.enumvalue_customname) = "SwitchCaseCondition"];
-	SWITCH_CASE_BODY = 77 [(gogoproto.enumvalue_customname) = "SwitchCaseBody"];
-	SWITCH_DEFAULT = 78 [(gogoproto.enumvalue_customname) = "SwitchDefault"];
-	FOR = 79 [(gogoproto.enumvalue_customname) = "For"];
-	FOR_INIT = 80 [(gogoproto.enumvalue_customname) = "ForInit"];
-	FOR_EXPRESSION = 81 [(gogoproto.enumvalue_customname) = "ForExpression"];
-	FOR_UPDATE = 82 [(gogoproto.enumvalue_customname) = "ForUpdate"];
-	FOR_BODY = 83 [(gogoproto.enumvalue_customname) = "ForBody"];
-	FOR_EACH = 84 [(gogoproto.enumvalue_customname) = "ForEach"];
-	WHILE = 85 [(gogoproto.enumvalue_customname) = "While"];
-	WHILE_CONDITION = 86 [(gogoproto.enumvalue_customname) = "WhileCondition"];
-	WHILE_BODY = 87 [(gogoproto.enumvalue_customname) = "WhileBody"];
-	DO_WHILE = 88 [(gogoproto.enumvalue_customname) = "DoWhile"];
-	DO_WHILE_CONDITION = 89 [(gogoproto.enumvalue_customname) = "DoWhileCondition"];
-	DO_WHILE_BODY = 90 [(gogoproto.enumvalue_customname) = "DoWhileBody"];
-	BREAK = 91 [(gogoproto.enumvalue_customname) = "Break"];
-	CONTINUE = 92 [(gogoproto.enumvalue_customname) = "Continue"];
-	GOTO = 93 [(gogoproto.enumvalue_customname) = "Goto"];
+	SWITCH = 64 [(gogoproto.enumvalue_customname) = "Switch"];
+	// Case is a clause whose expression is compared with the condition.
+	CASE = 65 [(gogoproto.enumvalue_customname) = "Case"];
+	// Default is a clause that is called when no other clause is matches.
+	DEFAULT = 66 [(gogoproto.enumvalue_customname) = "Default"];
+	// For is a loop with an initialization, a condition, an update and a body.
+	FOR = 67 [(gogoproto.enumvalue_customname) = "For"];
+	// Initialization is the assignment of an initial value to a variable
+	// (i.e. a for loop variable initialization.)
+	INITIALIZATION = 68 [(gogoproto.enumvalue_customname) = "Initialization"];
+	// Update is the assignment of a new value to a variable
+	// (i.e. a for loop variable update.)
+	UPDATE = 69 [(gogoproto.enumvalue_customname) = "Update"];
+	ITERATOR = 70 [(gogoproto.enumvalue_customname) = "Iterator"];
+	// While is a loop construct with a condition and a body.
+	WHILE = 71 [(gogoproto.enumvalue_customname) = "While"];
+	// DoWhile is a loop construct with a body and a condition.
+	DO_WHILE = 72 [(gogoproto.enumvalue_customname) = "DoWhile"];
+	// Break is a construct for early exiting a block.
+	BREAK = 73 [(gogoproto.enumvalue_customname) = "Break"];
+	// Continue is a construct for continuation with the next iteration of a loop.
+	CONTINUE = 74 [(gogoproto.enumvalue_customname) = "Continue"];
+	// Goto is an unconditional transfer of control statement.
+	GOTO = 75 [(gogoproto.enumvalue_customname) = "Goto"];
 	// Block is a group of statements. If the source language has block scope,
 	// it should be annotated both with Block and BlockScope.
-	BLOCK = 94 [(gogoproto.enumvalue_customname) = "Block"];
-	// BlockScope is a block with its own block scope.
-	// TODO: Should we replace BlockScope with a more general Scope role that
-	//       can be combined with Block?
-	BLOCK_SCOPE = 95 [(gogoproto.enumvalue_customname) = "BlockScope"];
+	BLOCK = 76 [(gogoproto.enumvalue_customname) = "Block"];
+	// Scope is a range in which a variable can be referred.
+	SCOPE = 77 [(gogoproto.enumvalue_customname) = "Scope"];
 	// Return is a return statement. It might have a child expression or not
 	// as with naked returns in Go or return in void methods in Java.
-	RETURN = 96 [(gogoproto.enumvalue_customname) = "Return"];
-	TRY = 97 [(gogoproto.enumvalue_customname) = "Try"];
-	TRY_BODY = 98 [(gogoproto.enumvalue_customname) = "TryBody"];
-	TRY_CATCH = 99 [(gogoproto.enumvalue_customname) = "TryCatch"];
-	TRY_FINALLY = 100 [(gogoproto.enumvalue_customname) = "TryFinally"];
-	THROW = 101 [(gogoproto.enumvalue_customname) = "Throw"];
+	RETURN = 78 [(gogoproto.enumvalue_customname) = "Return"];
+	// Try is a statement for exception handling.
+	TRY = 79 [(gogoproto.enumvalue_customname) = "Try"];
+	// Catch is a clause to capture exceptions.
+	CATCH = 80 [(gogoproto.enumvalue_customname) = "Catch"];
+	// Finally is a clause for a block executed after a block with exception handling.
+	FINALLY = 81 [(gogoproto.enumvalue_customname) = "Finally"];
+	// Throw is a statement that creates an exception.
+	THROW = 82 [(gogoproto.enumvalue_customname) = "Throw"];
 	// Assert checks if an expression is true and if it is not, it signals
 	// an error/exception, possibly stopping the execution.
-	ASSERT = 102 [(gogoproto.enumvalue_customname) = "Assert"];
+	ASSERT = 83 [(gogoproto.enumvalue_customname) = "Assert"];
 	// Call is any call, whether it is a function, procedure, method or macro.
 	// In its simplest form, a call will have a single child with a function
-	// name (CallCallee). Arguments are marked with CallPositionalArgument
-	// and CallNamedArgument. In OO languages there is usually a CallReceiver
-	// too.
-	CALL = 103 [(gogoproto.enumvalue_customname) = "Call"];
-	// CallReceiver is an optional expression receiving the call. This
-	// corresponds to the method invocant in OO languages, receiving in Go, etc.
-	CALL_RECEIVER = 104 [(gogoproto.enumvalue_customname) = "CallReceiver"];
-	// CallCallee is the callable being called. It might be the name of a
+	// name (callee). Arguments are marked with Argument and Positional or Name.
+	// In OO languages there is usually a Receiver too.
+	CALL = 84 [(gogoproto.enumvalue_customname) = "Call"];
+	// Callee is the callable being called. It might be the name of a
 	// function or procedure, it might be a method, it might a simple name
 	// or qualified with a namespace.
-	CALL_CALLEE = 105 [(gogoproto.enumvalue_customname) = "CallCallee"];
-	// CallPositionalArgument is a positional argument in a call.
-	CALL_POSITIONAL_ARGUMENT = 106 [(gogoproto.enumvalue_customname) = "CallPositionalArgument"];
-	// CallNamedArgument is a named argument in a call. It should have a
-	// child with role CallNamedArgumentName and another child with role
-	// CallNamedArgumentValue.
-	CALL_NAMED_ARGUMENT = 107 [(gogoproto.enumvalue_customname) = "CallNamedArgument"];
-	// CallNamedArgumentName is the name of a named argument.
-	CALL_NAMED_ARGUMENT_NAME = 108 [(gogoproto.enumvalue_customname) = "CallNamedArgumentName"];
-	// CallNamedArgumentValue is the value of a named argument.
-	CALL_NAMED_ARGUMENT_VALUE = 109 [(gogoproto.enumvalue_customname) = "CallNamedArgumentValue"];
-	NOOP = 110 [(gogoproto.enumvalue_customname) = "Noop"];
-	// BooleanLiteral is a boolean literal. It is expected that BooleanLiteral
-	// nodes contain a token with some form of boolean literal (e.g. true,
-	// false, yes, no, 1, 0).
-	BOOLEAN_LITERAL = 111 [(gogoproto.enumvalue_customname) = "BooleanLiteral"];
-	// ByteLiteral is a single-byte literal. For example, in Rust.
-	BYTE_LITERAL = 112 [(gogoproto.enumvalue_customname) = "ByteLiteral"];
-	// ByteStringLiteral is a literal for a raw byte string. For example, in Rust.
-	BYTE_STRING_LITERAL = 113 [(gogoproto.enumvalue_customname) = "ByteStringLiteral"];
-	// CharacterLiteral is a character literal. It is expected that
-	// CharacterLiteral nodes contain a token with a single character with
-	// optional quoting (e.g. c, 'c', "c").
-	CHARACTER_LITERAL = 114 [(gogoproto.enumvalue_customname) = "CharacterLiteral"];
-	// ListLiteral is a literal array or list.
-	LIST_LITERAL = 115 [(gogoproto.enumvalue_customname) = "ListLiteral"];
-	// MapLiteral is a literal map-like structure.
-	MAP_LITERAL = 116 [(gogoproto.enumvalue_customname) = "MapLiteral"];
-	// NullLiteral is a null literal. It is expected that NullLiteral nodes
-	// contain a token equivalent to null (e.g. null, nil, None).
-	NULL_LITERAL = 117 [(gogoproto.enumvalue_customname) = "NullLiteral"];
-	// NumberLiteral is a numeric literal. This applies to any numeric literal
+	CALLEE = 85 [(gogoproto.enumvalue_customname) = "Callee"];
+	// Positional is an element which position has meaning (i.e. a positional argument in a call).
+	POSITIONAL = 86 [(gogoproto.enumvalue_customname) = "Positional"];
+	// A construct that does nothing.
+	NOOP = 87 [(gogoproto.enumvalue_customname) = "Noop"];
+	// Literal is a literal value.
+	LITERAL = 88 [(gogoproto.enumvalue_customname) = "Literal"];
+	// Byte is a single-byte element.
+	BYTE = 89 [(gogoproto.enumvalue_customname) = "Byte"];
+	// ByteString is a raw byte string.
+	BYTE_STRING = 90 [(gogoproto.enumvalue_customname) = "ByteString"];
+	// Character is an encoded character.
+	CHARACTER = 91 [(gogoproto.enumvalue_customname) = "Character"];
+	// List is a sequence.
+	LIST = 92 [(gogoproto.enumvalue_customname) = "List"];
+	// Map is a collection of key, value pairs.
+	MAP = 93 [(gogoproto.enumvalue_customname) = "Map"];
+	// Null is an empty value.
+	NULL = 94 [(gogoproto.enumvalue_customname) = "Null"];
+	// Number is a numeric value. This applies to any numeric value
 	// whether it is integer or float, any base, scientific notation or not,
 	// etc.
-	NUMBER_LITERAL = 118 [(gogoproto.enumvalue_customname) = "NumberLiteral"];
-	// RegexpLiteral is a literal for a regular expression.
-	REGEXP_LITERAL = 119 [(gogoproto.enumvalue_customname) = "RegexpLiteral"];
-	// SetLiteral is a literal for a set. For example, in Python 3.
-	SET_LITERAL = 120 [(gogoproto.enumvalue_customname) = "SetLiteral"];
-	// StringLiteral is a string literal. This applies both to single-line and
-	// multi-line literals and it does not imply any particular encoding.
-	// 
-	// TODO: Decide what to do with interpolated strings.
-	STRING_LITERAL = 121 [(gogoproto.enumvalue_customname) = "StringLiteral"];
-	// TupleLiteral is a literal for a tuple. For example, in Python and Scala.
-	TUPLE_LITERAL = 122 [(gogoproto.enumvalue_customname) = "TupleLiteral"];
-	// TypeLiteral is a literal that identifies a type. It might contain a
-	// token with the type literal itself, or children that define the type.
-	TYPE_LITERAL = 123 [(gogoproto.enumvalue_customname) = "TypeLiteral"];
-	// OtherLiteral is a literal of a type not covered by other literal
-	// annotations.
-	OTHER_LITERAL = 124 [(gogoproto.enumvalue_customname) = "OtherLiteral"];
-	// MapEntry is the expression pairing a map key and a value usually on MapLiteral expressions. It must
-	// have both a MapKey and a MapValue children (e.g. {"key": "value", "otherkey": "otherval"} in Python).
-	MAP_ENTRY = 125 [(gogoproto.enumvalue_customname) = "MapEntry"];
-	MAP_KEY = 126 [(gogoproto.enumvalue_customname) = "MapKey"];
-	MAP_VALUE = 127 [(gogoproto.enumvalue_customname) = "MapValue"];
-	TYPE = 128 [(gogoproto.enumvalue_customname) = "Type"];
-	// TODO: should we distinguish between primitive and builtin types?
-	PRIMITIVE_TYPE = 129 [(gogoproto.enumvalue_customname) = "PrimitiveType"];
-	// Assignment represents a variable assignment or binding.
-	// The variable that is being assigned to is annotated with the
-	// AssignmentVariable role, while the value is annotated with
-	// AssignmentValue.
-	ASSIGNMENT = 130 [(gogoproto.enumvalue_customname) = "Assignment"];
-	ASSIGNMENT_VARIABLE = 131 [(gogoproto.enumvalue_customname) = "AssignmentVariable"];
-	ASSIGNMENT_VALUE = 132 [(gogoproto.enumvalue_customname) = "AssignmentValue"];
-	// AugmentedAssignment is an augmented assignment usually combining the equal operator with
-	// another one (e. g. +=, -=, *=, etc). It is expected that children contains an
-	// AugmentedAssignmentOperator with a child or aditional role for the specific Bitwise or
-	// Arithmetic operator used. The AugmentedAssignmentVariable and AugmentedAssignmentValue roles
-	// have the same meaning than in Assignment.
-	AUGMENTED_ASSIGNMENT = 133 [(gogoproto.enumvalue_customname) = "AugmentedAssignment"];
-	AUGMENTED_ASSIGNMENT_OPERATOR = 134 [(gogoproto.enumvalue_customname) = "AugmentedAssignmentOperator"];
-	AUGMENTED_ASSIGNMENT_VARIABLE = 135 [(gogoproto.enumvalue_customname) = "AugmentedAssignmentVariable"];
-	AUGMENTED_ASSIGNMENT_VALUE = 136 [(gogoproto.enumvalue_customname) = "AugmentedAssignmentValue"];
+	NUMBER = 95 [(gogoproto.enumvalue_customname) = "Number"];
+	// Regexp is a regular expression.
+	REGEXP = 96 [(gogoproto.enumvalue_customname) = "Regexp"];
+	// Set is a collection of values.
+	SET = 97 [(gogoproto.enumvalue_customname) = "Set"];
+	// String is a sequence of characters.
+	STRING = 98 [(gogoproto.enumvalue_customname) = "String"];
+	// Tuple is an finite ordered sequence of elements.
+	TUPLE = 99 [(gogoproto.enumvalue_customname) = "Tuple"];
+	// Type is a classification of data.
+	TYPE = 100 [(gogoproto.enumvalue_customname) = "Type"];
+	// Entry is a collection element.
+	ENTRY = 101 [(gogoproto.enumvalue_customname) = "Entry"];
+	// Key is the index value of a map.
+	KEY = 102 [(gogoproto.enumvalue_customname) = "Key"];
+	// Primitive is a language builtin.
+	PRIMITIVE = 103 [(gogoproto.enumvalue_customname) = "Primitive"];
+	// Assignment is an assignment operator.
+	ASSIGNMENT = 104 [(gogoproto.enumvalue_customname) = "Assignment"];
 	// This represents the self-reference of an object instance in
 	// one of its methods. This corresponds to the `this` keyword
 	// (e.g. Java, C++, PHP), `self` (e.g. Smalltalk, Perl, Swift) and `Me`
 	// (e.g. Visual Basic).
-	THIS = 137 [(gogoproto.enumvalue_customname) = "This"];
-	COMMENT = 138 [(gogoproto.enumvalue_customname) = "Comment"];
+	THIS = 105 [(gogoproto.enumvalue_customname) = "This"];
+	// Comment is a code comment.
+	COMMENT = 106 [(gogoproto.enumvalue_customname) = "Comment"];
 	// Documentation is a node that represents documentation of another node,
 	// such as function or package. Documentation is usually in the form of
 	// a string in certain position (e.g. Python docstring) or comment
 	// (e.g. Javadoc, godoc).
-	DOCUMENTATION = 139 [(gogoproto.enumvalue_customname) = "Documentation"];
-	// Whitespace
-	WHITESPACE = 140 [(gogoproto.enumvalue_customname) = "Whitespace"];
+	DOCUMENTATION = 107 [(gogoproto.enumvalue_customname) = "Documentation"];
+	// Whitespace.
+	WHITESPACE = 108 [(gogoproto.enumvalue_customname) = "Whitespace"];
 	// Incomplete express that the semantic meaning of the node roles doesn't express
 	// the full semantic information. Added in BIP-002.
-	INCOMPLETE = 141 [(gogoproto.enumvalue_customname) = "Incomplete"];
+	INCOMPLETE = 109 [(gogoproto.enumvalue_customname) = "Incomplete"];
 	// Unannotated will be automatically added by the SDK for nodes that did not receive
 	// any annotations with the current version of the driver's `annotations.go` file.
 	// Added in BIP-002.
-	UNANNOTATED = 142 [(gogoproto.enumvalue_customname) = "Unannotated"];
+	UNANNOTATED = 110 [(gogoproto.enumvalue_customname) = "Unannotated"];
 }
 

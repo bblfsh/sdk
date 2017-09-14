@@ -30,7 +30,7 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
-import gopkg_in_bblfsh_sdk_v0_uast "gopkg.in/bblfsh/sdk.v0/uast"
+import gopkg_in_bblfsh_sdk_v1_uast "gopkg.in/bblfsh/sdk.v1/uast"
 
 import (
 	context "golang.org/x/net/context"
