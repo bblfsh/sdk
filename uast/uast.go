@@ -160,8 +160,8 @@ const (
 	// Import indicates an import level property.
 	Import
 
-	// Path is a qualified name of some construct.
-	Path
+	// Pathname is a qualified name of some construct.
+	Pathname
 
 	// Alias is an alternative name for some construct.
 	Alias
