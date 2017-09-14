@@ -23,7 +23,7 @@ func testDriver(t *testing.T, args []string, expectedErr bool, expectedStdout, e
 		Version:       "test",
 		Build:         "test",
 		ParserBuilder: normalizer.ParserBuilder,
-		Annotate:      ann.On(ann.Any).Roles(uast.SimpleIdentifier),
+		Annotate:      ann.On(ann.Any).Roles(uast.Identifier),
 		In:            stdin,
 		Out:           stdout,
 		Err:           stderr,

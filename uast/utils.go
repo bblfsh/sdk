@@ -26,7 +26,7 @@ func Tokens(n *Node) []string {
 
 // This implementation uses PMD implementation as reference and uses the method of
 // counting one + one of the following UAST Roles if present on any children:
-// If | SwitchCase |  For[Each] | [Do]While | TryCatch | Continue | OpBoolean* | Goto
+// If | Case |  For | [Do]While | Catch | Continue | And | Or | Xor | Goto
 // Important: since some languages allow for code defined
 // outside function definitions, this won't check that the Node has the role FunctionDeclarationRole
 // so the user should check that if the intended use is calculating the complexity of a function/method.
@@ -55,7 +55,7 @@ func Tokens(n *Node) []string {
 // evaluate more than two items with a single operator.  (FIXME when both things are solved in the UAST
 // definition and the SDK).
 func CyclomaticComplexity(n *Node)  int {
-	complx := 1
+	complexity := 1
 
 	iter := NewOrderPathIter(NewPath(n))
 
@@ -65,14 +65,14 @@ func CyclomaticComplexity(n *Node)  int {
 			break
 		}
 		n := p.Node()
+		roles := make(map[Role]bool)
 		for _, r := range n.Roles {
-			switch(r) {
-			case If, SwitchCase, For, ForEach, While,
-			     DoWhile, TryCatch, Continue, OpBooleanAnd, OpBooleanOr,
-			     OpBooleanXor:
-				complx++
-			}
+			roles[r] = true
+		}
+		if roles[If] || roles[Case] || roles[For] || roles[While] || roles[DoWhile] ||
+			roles[Catch] || roles[Continue] || (roles[Operator] && roles[Boolean]) {
+			complexity++
 		}
 	}
-	return complx
+	return complexity
 }

@@ -1015,12 +1015,12 @@ func driverMainGoTpl() (*asset, error) {
 var _driverNormalizerAnnotationGo = []byte(`package normalizer
 
 import (
-	. "gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast"
 	. "gopkg.in/bblfsh/sdk.v1/uast/ann"
 )
 
 // AnnotationRules annotate a UAST with roles.
-var AnnotationRules = On(Any).Roles(File)
+var AnnotationRules = On(Any).Roles(uast.File)
 `)
 
 func driverNormalizerAnnotationGoBytes() ([]byte, error) {
@@ -1033,7 +1033,7 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 191, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 194, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
