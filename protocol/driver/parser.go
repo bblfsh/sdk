@@ -3,9 +3,9 @@ package driver
 import (
 	"io"
 
-	"gopkg.in/bblfsh/sdk.v0/protocol"
-	"gopkg.in/bblfsh/sdk.v0/uast"
-	"gopkg.in/bblfsh/sdk.v0/uast/ann"
+	"gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/ann"
 )
 
 type ParserOptions struct {

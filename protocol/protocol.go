@@ -15,10 +15,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gopkg.in/bblfsh/sdk.v0/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
-//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v0/protocol -p gopkg.in/bblfsh/sdk.v0/uast
+//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/protocol -p gopkg.in/bblfsh/sdk.v1/uast
 
 // Status is the status of a response.
 //proteus:generate

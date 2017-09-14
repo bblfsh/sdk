@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v0/etc/skeleton/driver/normalizer"
-	. "gopkg.in/bblfsh/sdk.v0/protocol/driver"
-	"gopkg.in/bblfsh/sdk.v0/uast"
-	"gopkg.in/bblfsh/sdk.v0/uast/ann"
+	"gopkg.in/bblfsh/sdk.v1/etc/skeleton/driver/normalizer"
+	. "gopkg.in/bblfsh/sdk.v1/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/ann"
 
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +23,7 @@ func testDriver(t *testing.T, args []string, expectedErr bool, expectedStdout, e
 		Version:       "test",
 		Build:         "test",
 		ParserBuilder: normalizer.ParserBuilder,
-		Annotate:      ann.On(ann.Any).Roles(uast.SimpleIdentifier),
+		Annotate:      ann.On(ann.Any).Roles(uast.Identifier),
 		In:            stdin,
 		Out:           stdout,
 		Err:           stderr,

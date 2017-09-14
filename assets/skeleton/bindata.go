@@ -82,7 +82,7 @@ services:
   - docker
 
 before_script:
-  - go get -v gopkg.in/bblfsh/sdk.v0/...
+  - go get -v gopkg.in/bblfsh/sdk.v1/...
   - bblfsh-sdk prepare-build .
   - go get -v -t ./...
 
@@ -978,7 +978,7 @@ func readmeMdTpl() (*asset, error) {
 var _driverMainGoTpl = []byte(`package main
 
 import (
-	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
@@ -1015,12 +1015,12 @@ func driverMainGoTpl() (*asset, error) {
 var _driverNormalizerAnnotationGo = []byte(`package normalizer
 
 import (
-	. "gopkg.in/bblfsh/sdk.v0/uast"
-	. "gopkg.in/bblfsh/sdk.v0/uast/ann"
+	"gopkg.in/bblfsh/sdk.v1/uast"
+	. "gopkg.in/bblfsh/sdk.v1/uast/ann"
 )
 
 // AnnotationRules annotate a UAST with roles.
-var AnnotationRules = On(Any).Roles(File)
+var AnnotationRules = On(Any).Roles(uast.File)
 `)
 
 func driverNormalizerAnnotationGoBytes() ([]byte, error) {
@@ -1033,7 +1033,7 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 191, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 194, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1041,8 +1041,8 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 var _driverNormalizerParserGo = []byte(`package normalizer
 
 import (
-	"gopkg.in/bblfsh/sdk.v0/protocol/driver"
-	"gopkg.in/bblfsh/sdk.v0/protocol/native"
+	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
+	"gopkg.in/bblfsh/sdk.v1/protocol/native"
 )
 
 // ToNoder specifies the driver options. Driver programmers should fill it

@@ -224,15 +224,15 @@ func TestCyclomaticComplexity(t *testing.T) {
 		Children: []*Node{
 			{InternalType: "root"}, // 1 (initial)
 			// Prefix is the default so it doesnt need any role
-			{InternalType: "if1", Roles: []Role{If}, Children: []*Node{  // 2 (If)
-				{InternalType: "if1else1", Roles: []Role{IfElse}, Children: []*Node{ // 0
-					{InternalType: "if1else1foreach", Roles: []Role{ForEach}, Children: []*Node{ // 3 (ForEach)
+			{InternalType: "if1", Roles: []Role{Statement, If}, Children: []*Node{  // 2 (If)
+				{InternalType: "if1else1", Roles: []Role{Statement, Then}, Children: []*Node{ // 0
+					{InternalType: "if1else1foreach", Roles: []Role{Statement, For, Iterator}, Children: []*Node{ // 3 (For)
 						{InternalType: "foreach_child1"}, // 0
-						{InternalType: "foreach_child2_continue", Roles: []Role{Continue}}, // 4 (Continue)
+						{InternalType: "foreach_child2_continue", Roles: []Role{Statement, Continue}}, // 4 (Continue)
 					}},
-					{InternalType: "if1else1if", Roles: []Role{If}, Children: []*Node{ // 5 (If)
+					{InternalType: "if1else1if", Roles: []Role{Statement, If}, Children: []*Node{ // 5 (If)
 						{InternalType: "elseif_child1"}, // 0
-						{InternalType: "opAnd", Roles: []Role{OpBooleanAnd}}, // 6 (OpBooleanAnd)
+						{InternalType: "opAnd", Roles: []Role{Operator, Binary, Boolean, And}}, // 6 (And)
 						{InternalType: "elseif_child2"}, // 0
 					}},
 				}},

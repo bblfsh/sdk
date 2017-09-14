@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v0/protocol"
+	"gopkg.in/bblfsh/sdk.v1/protocol"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"

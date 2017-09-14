@@ -3,8 +3,8 @@ package cmd
 import (
 	"path/filepath"
 
-	"gopkg.in/bblfsh/sdk.v0/assets/build"
-	"gopkg.in/bblfsh/sdk.v0/cli"
+	"gopkg.in/bblfsh/sdk.v1/assets/build"
+	"gopkg.in/bblfsh/sdk.v1/cli"
 )
 
 const sdkPath = ".sdk"

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"gopkg.in/bblfsh/sdk.v0/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast"
 
 	"gopkg.in/src-d/go-errors.v0"
 )

@@ -3,8 +3,8 @@ package driver
 import (
 	"io"
 
-	"gopkg.in/bblfsh/sdk.v0/protocol"
-	"gopkg.in/bblfsh/sdk.v0/protocol/jsonlines"
+	"gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v1/protocol/jsonlines"
 )
 
 // Client is a client to communicate with a driver.
