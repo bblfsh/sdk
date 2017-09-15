@@ -199,6 +199,9 @@ const (
 	// Subtype is a type that can be used to substitute another type.
 	Subtype
 
+	// Visibility is an access granter role, usually together with an specifier role
+	Visibility
+
 	// Subpackage is a package that is below another package in the hierarchy.
 	Subpackage
 
@@ -240,7 +243,7 @@ const (
 	Condition
 
 	// Then is the clause executed when the Condition is true.
-  Then
+	Then
 
 	// Else is the clause executed when the Condition is false.
 	Else
@@ -452,7 +455,7 @@ type Node struct {
 func NewNode() *Node {
 	return &Node{
 		Properties: make(map[string]string, 0),
-		Roles: []Role{Unannotated},
+		Roles:      []Role{Unannotated},
 	}
 }
 
