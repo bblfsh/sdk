@@ -239,7 +239,7 @@ const (
 	// Else is not defined.
 	If
 
-	// IfCondition is a condition in an IfStatement or IfExpression.
+	// Condition is a condition in an IfStatement or IfExpression.
 	Condition
 
 	// Then is the clause executed when the Condition is true.
@@ -272,7 +272,10 @@ const (
 	// Update is the assignment of a new value to a variable
 	// (i.e. a for loop variable update.)
 	Update
+
+	// Iterator is the element that iterates over something.
 	Iterator
+
 	// While is a loop construct with a condition and a body.
 	While
 
@@ -329,7 +332,7 @@ const (
 	// Positional is an element which position has meaning (i.e. a positional argument in a call).
 	Positional
 
-	// A construct that does nothing.
+	// Noop is a construct that does nothing.
 	Noop
 
 	// Literal is a literal value.
