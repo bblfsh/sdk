@@ -3,7 +3,6 @@ package jsonlines
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -14,8 +13,7 @@ const (
 )
 
 type lineReader interface {
-	ReadLine() ([]byte, bool, error)
-	ReadSlice(delim byte) (line []byte, err error)
+	ReadBytes(delim byte) ([]byte, error)
 }
 
 // Decoder decodes JSON lines.
@@ -41,54 +39,11 @@ func NewDecoder(r io.Reader) Decoder {
 	return &decoder{r: lr}
 }
 
-// Read and discard everything until the next newline
-func (d *decoder) discardPending() error {
-	for {
-		_, err := d.r.ReadSlice('\n')
-		switch err {
-		case io.EOF:
-			return nil
-		case bufio.ErrBufferFull:
-			continue
-		case nil:
-			continue
-		default:
-			return err
-		}
-	}
-}
-
-func (d *decoder) readLine() (line []byte, err error) {
-	for {
-		chunk, isPrefix, err := d.r.ReadLine()
-		if err != nil {
-			if !isPrefix {
-				// Discard pending contents in the input buffer to avoid IO blocking
-				discardErr := d.discardPending()
-				if discardErr != nil {
-					err = fmt.Errorf("%s; aditionally, there was an error "+
-						"trying to dicard the input buffer: %s",
-						err, discardErr)
-				}
-			}
-			return nil, err
-		}
-		line = append(line, chunk...)
-
-		if !isPrefix {
-			// EOL found.
-			break
-		}
-	}
-
-	return line, nil
-}
-
 // Decode decodes the next line in the reader.
 // It does not check JSON for well-formedness before decoding, so in case of
 // error, the structure might be half-filled.
 func (d *decoder) Decode(v interface{}) error {
-	line, err := d.readLine()
+	line, err := d.r.ReadBytes('\n')
 	if err != nil {
 		return err
 	}
