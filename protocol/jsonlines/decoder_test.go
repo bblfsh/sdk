@@ -14,7 +14,8 @@ func TestDecoder(t *testing.T) {
 
 	input := `{"example":1}
 	{"example":2}
-	{"example":3}`
+	{"example":3}
+	`
 	d := NewDecoder(strings.NewReader(input))
 	out := map[string]int{}
 
@@ -39,7 +40,8 @@ func TestDecoderWithBufferedReader(t *testing.T) {
 
 	input := `{"example":1}
 	{"example":2}
-	{"example":3}`
+	{"example":3}
+	`
 	d := NewDecoder(bufio.NewReader(strings.NewReader(input)))
 	out := map[string]int{}
 
