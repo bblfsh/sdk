@@ -4,23 +4,28 @@ import (
 	"fmt"
 	"sort"
 
+	"gopkg.in/bblfsh/sdk.v0/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
 // FillOffsetFromLineCol gets the original source code and its parsed form
 // as *Node and fills every Offset field using its Line and Column.
-func FillOffsetFromLineCol(data []byte, n *uast.Node) error {
-	return fillPositions(data, n, fillOffsetFromLineCol)
+func NewFillOffsetFromLineCol() *Positioner {
+	return &Positioner{method: fillOffsetFromLineCol}
 }
 
 // FillLineColFromOffset gets the original source code and its parsed form
 // as *Node and fills every Line and Column field using its Offset.
-func FillLineColFromOffset(data []byte, n *uast.Node) error {
-	return fillPositions(data, n, fillLineColFromOffset)
+func NewFillLineColFromOffset() *Positioner {
+	return &Positioner{method: fillLineColFromOffset}
 }
 
-func fillPositions(data []byte, n *uast.Node, f func(*positionIndex, *uast.Position) error) error {
-	idx := newPositionIndex(data)
+type Positioner struct {
+	method func(*positionIndex, *uast.Position) error
+}
+
+func (t *Positioner) Do(data string, e protocol.Encoding, n *uast.Node) error {
+	idx := newPositionIndex([]byte(data))
 	iter := uast.NewOrderPathIter(uast.NewPath(n))
 	for {
 		p := iter.Next()
@@ -29,11 +34,11 @@ func fillPositions(data []byte, n *uast.Node, f func(*positionIndex, *uast.Posit
 		}
 
 		n := p.Node()
-		if err := f(idx, n.StartPosition); err != nil {
+		if err := t.method(idx, n.StartPosition); err != nil {
 			return err
 		}
 
-		if err := f(idx, n.EndPosition); err != nil {
+		if err := t.method(idx, n.EndPosition); err != nil {
 			return err
 		}
 	}

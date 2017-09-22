@@ -1,4 +1,4 @@
-package native
+package uast
 
 import (
 	"encoding/json"
@@ -8,11 +8,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
 var (
-	fixtureDir = "../../uast/fixtures"
+	fixtureDir = "fixtures"
 )
 
 func TestToNodeErrUnsupported(t *testing.T) {
@@ -119,11 +118,11 @@ func TestToNoderJava(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var p ToNoder = &ObjectToNoder{
+	tn := &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
-	n, err := p.ToNode(f)
+	n, err := tn.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 }
@@ -235,7 +234,7 @@ func TestSyntheticTokens(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c ToNoder = &ObjectToNoder{
+	c := &ObjectToNoder{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		SyntheticTokens: map[string]string{
@@ -255,7 +254,7 @@ func TestSyntheticTokens(t *testing.T) {
 
 }
 
-func findChildWithInternalType(n *uast.Node, internalType string) *uast.Node {
+func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
 			return child

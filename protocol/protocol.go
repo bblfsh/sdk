@@ -133,6 +133,19 @@ type ParseResponse struct {
 	UAST *uast.Node `json:"uast"`
 }
 
+// ParseNativeRequest to use with the native parser. This is for internal use.
+type ParseNativeRequest struct {
+	Content  string `json:"status"`
+	Encoding Encoding
+}
+
+// ParseNativeResponse is the reply to ParseNativeRequest by the native parser.
+type ParseNativeResponse struct {
+	Status Status      `json:"status"`
+	Errors []string    `json:"errors"`
+	AST    interface{} `json:"ast"`
+}
+
 // Parser can parse code to UAST.
 type Parser interface {
 	Parse(*ParseRequest) *ParseResponse
