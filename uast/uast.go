@@ -199,9 +199,6 @@ const (
 	// Subtype is a type that can be used to substitute another type.
 	Subtype
 
-	// Visibility is an access granter role, usually together with an specifier role
-	Visibility
-
 	// Subpackage is a package that is below another package in the hierarchy.
 	Subpackage
 
@@ -414,6 +411,9 @@ const (
 	// any annotations with the current version of the driver's `annotations.go` file.
 	// Added in BIP-002.
 	Unannotated
+
+	// Visibility is an access granter role, usually together with an specifier role
+	Visibility
 )
 
 // Position represents a position in a source code file.
