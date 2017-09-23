@@ -13,41 +13,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-type mockParser struct{}
-
-func (p *mockParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
-	return &protocol.ParseResponse{Status: protocol.Ok}
-}
-
-func (p *mockParser) ParseNative(req *protocol.ParseNativeRequest) *protocol.ParseNativeResponse {
-	return &protocol.ParseNativeResponse{Status: protocol.Ok}
-}
-
-func (p *mockParser) Close() error {
-	return nil
-}
-
-// This mockparser will check that be receive a Encoding: base64 field
-type mockCheckBase64EncodingParser struct{}
-
-func (p *mockCheckBase64EncodingParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
-	if req.Encoding != protocol.Base64 {
-		return &protocol.ParseResponse{Status: protocol.Error}
-	}
-	return &protocol.ParseResponse{Status: protocol.Ok}
-}
-
-func (p *mockCheckBase64EncodingParser) ParseNative(req *protocol.ParseNativeRequest) *protocol.ParseNativeResponse {
-	if req.Encoding != protocol.Base64 {
-		return &protocol.ParseNativeResponse{Status: protocol.Error}
-	}
-	return &protocol.ParseNativeResponse{Status: protocol.Ok}
-}
-
-func (p *mockCheckBase64EncodingParser) Close() error {
-	return nil
-}
-
 func TestInvalidParser(t *testing.T) {
 	require := require.New(t)
 
@@ -79,11 +44,10 @@ func TestInvalidParser(t *testing.T) {
 }
 
 func Example() {
+	protocol.DefaultParser = NewServiceMock()
+
 	lis, err := net.Listen("tcp", ":0")
 	checkError(err)
-
-	// Use a mock parser on the server.
-	protocol.DefaultParser = &mockParser{}
 
 	server := grpc.NewServer()
 	protocol.RegisterProtocolServiceServer(
@@ -100,14 +64,15 @@ func Example() {
 
 	req := &protocol.ParseRequest{Content: "my source code"}
 	fmt.Println("Sending Parse for:", req.Content)
+
 	resp, err := client.Parse(context.TODO(), req)
 	checkError(err)
-	fmt.Println("Got response with status:", resp.Status.String())
+	fmt.Println("Got response with status:", resp.Status)
 
 	server.GracefulStop()
 
 	//Output: Sending Parse for: my source code
-	// Got response with status: ok
+	// Got response with status: Ok
 }
 
 // do a reply to a mock server that except the encoding to be protocol.Base64 or
@@ -124,7 +89,14 @@ func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseResponse,
 	checkError(err)
 
 	// Use a mock parser on the server.
-	protocol.DefaultParser = &mockCheckBase64EncodingParser{}
+	protocol.DefaultParser = &ServiceMock{
+		P: func(req *protocol.ParseRequest) *protocol.ParseResponse {
+			if req.Encoding != protocol.Base64 {
+				return &protocol.ParseResponse{Status: protocol.Error}
+			}
+			return &protocol.ParseResponse{Status: protocol.Ok}
+		},
+	}
 
 	server = grpc.NewServer()
 	protocol.RegisterProtocolServiceServer(
@@ -201,4 +173,36 @@ func checkError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// ServiceMock implements protocol.Service interface implement the methods to
+// be used in the test.
+type ServiceMock struct {
+	P func(req *protocol.ParseRequest) *protocol.ParseResponse
+	N func(req *protocol.NativeParseRequest) *protocol.NativeParseResponse
+	V func(*protocol.VersionRequest) *protocol.VersionResponse
+}
+
+func NewServiceMock() *ServiceMock {
+	return &ServiceMock{
+		P: func(req *protocol.ParseRequest) *protocol.ParseResponse {
+			return &protocol.ParseResponse{Status: protocol.Ok}
+		},
+
+		N: func(req *protocol.NativeParseRequest) *protocol.NativeParseResponse {
+			return &protocol.NativeParseResponse{Status: protocol.Ok}
+		},
+	}
+}
+
+func (m *ServiceMock) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+	return m.P(req)
+}
+
+func (m *ServiceMock) NativeParse(req *protocol.NativeParseRequest) *protocol.NativeParseResponse {
+	return m.N(req)
+}
+
+func (m *ServiceMock) Version(req *protocol.VersionRequest) *protocol.VersionResponse {
+	return m.V(req)
 }

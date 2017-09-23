@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/protocol/jsonlines"
+	"gopkg.in/bblfsh/sdk.v1/sdk/jsonlines"
 )
 
-// NativeBin default localtion of the native driver binary.
+// NativeBin default location of the native driver binary.
 const NativeBin = "/opt/driver/bin/native"
 
 // NativeDriver is a wrapper of the native command.
@@ -57,8 +57,8 @@ func (d *NativeDriver) Start() error {
 	return d.cmd.Start()
 }
 
-// ParseNative sends a request to the native driver and returns its response.
-func (d *NativeDriver) ParseNative(req *protocol.ParseNativeRequest) *protocol.ParseNativeResponse {
+// NativeParse sends a request to the native driver and returns its response.
+func (d *NativeDriver) NativeParse(req *protocol.NativeParseRequest) *protocol.NativeParseResponse {
 	start := time.Now()
 	resp := &protocol.ParseNativeResponse{}
 

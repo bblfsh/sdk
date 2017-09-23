@@ -8,7 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/protocol/server"
+	"gopkg.in/bblfsh/sdk.v1/sdk/server"
 )
 
 var (

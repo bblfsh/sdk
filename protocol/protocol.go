@@ -9,17 +9,23 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/protocol -p gopkg.in/bblfsh/sdk.v1/uast
+//go:generate stringer -type=Status,Encoding -output stringer.go
+
 package protocol
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
-//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/protocol -p gopkg.in/bblfsh/sdk.v1/uast
+// Service can parse code to UAST or AST.
+type Service interface {
+	Parse(*ParseRequest) *ParseResponse
+	NativeParse(*NativeParseRequest) *NativeParseResponse
+	Version(*VersionRequest) *VersionResponse
+}
 
 // Status is the status of a response.
 //proteus:generate
@@ -34,36 +40,6 @@ const (
 	Fatal
 )
 
-var statusToString = map[Status]string{
-	Ok:    "ok",
-	Error: "error",
-	Fatal: "fatal",
-}
-
-var stringToStatus = map[string]Status{
-	"ok":    Ok,
-	"error": Error,
-	"fatal": Fatal,
-}
-
-func (s Status) String() string {
-	return statusToString[s]
-}
-
-func (s Status) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.String())
-}
-
-func (s *Status) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return fmt.Errorf("Status should be a string, got %s", data)
-	}
-
-	*s, _ = stringToStatus[str]
-	return nil
-}
-
 // Encoding is the encoding used for the content string. Currently only
 // UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
 // and Base64 as a fallback.
@@ -76,34 +52,6 @@ const (
 	// Base64 encoding
 	Base64
 )
-
-var encodingToString = map[Encoding]string{
-	UTF8:   "UTF8",
-	Base64: "Base64",
-}
-
-var stringToEncoding = map[string]Encoding{
-	"UTF8":   UTF8,
-	"Base64": Base64,
-}
-
-func (e Encoding) String() string {
-	return encodingToString[e]
-}
-
-func (e Encoding) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.String())
-}
-
-func (e *Encoding) UnmarshalJSON(data []byte) error {
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return fmt.Errorf("Encoding should be a string, got %s", data)
-	}
-
-	*e, _ = stringToEncoding[str]
-	return nil
-}
 
 // ParseRequest is a request to parse a file and get its UAST.
 //proteus:generate
@@ -136,11 +84,13 @@ type ParseResponse struct {
 	Elapsed time.Duration `json:"elapsed"`
 }
 
-// ParseNativeRequest to use with the native parser. This is for internal use.
-type ParseNativeRequest ParseRequest
+// NativeParseRequest is a request to parse a file and get its native AST.
+//proteus:generate
+type NativeParseRequest ParseRequest
 
-// ParseNativeResponse is the reply to ParseNativeRequest by the native parser.
-type ParseNativeResponse struct {
+// NativeParseResponse is the reply to NativeParseRequest by the native parser.
+//proteus:generate
+type NativeParseResponse struct {
 	// Status is the status of the parsing request.
 	Status Status `json:"status"`
 	// Status is the status of the parsing request.
@@ -151,14 +101,8 @@ type ParseNativeResponse struct {
 	Elapsed time.Duration `json:"elapsed"`
 }
 
-// Parser can parse code to UAST or AST.
-type Parser interface {
-	Parse(*ParseRequest) *ParseResponse
-	ParseNative(*ParseNativeRequest) *ParseNativeResponse
-}
-
 // DefaultParser is the default parser used by Parse and ParseNative.
-var DefaultParser Parser
+var DefaultParser Service
 
 // Parse uses DefaultParser to process the given parsing request to get the UAST.
 //proteus:generate
@@ -189,12 +133,8 @@ type VersionResponse struct {
 	Commit string `json:"commit"`
 }
 
-type Versioner interface {
-	Version(*VersionRequest) *VersionResponse
-}
-
 // DefaultVersioner is the default versioner user by Version
-var DefaultVersioner Versioner
+var DefaultVersioner Service
 
 // Version uses DefaultVersioner to process the given version request to get the version.
 //proteus:generate

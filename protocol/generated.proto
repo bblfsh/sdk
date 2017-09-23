@@ -1,23 +1,32 @@
-// Copyright 2017 Sourced Technologies SL
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not
-// use this file except in compliance with the License. You may obtain a copy
-// of the License at
-//     http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations under
-// the License.
-
 syntax = "proto3";
 package gopkg.in.bblfsh.sdk.v1.protocol;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
 import "gopkg.in/bblfsh/sdk.v1/uast/generated.proto";
 
 option (gogoproto.protosizer_all) = true;
 option (gogoproto.sizer_all) = false;
 option go_package = "protocol";
+
+// NativeParseRequest is a request to parse a file and get its native AST.
+message NativeParseRequest {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	string filename = 1;
+	string language = 2;
+	string content = 3;
+	gopkg.in.bblfsh.sdk.v1.protocol.Encoding encoding = 4;
+}
+
+// NativeParseResponse is the reply to NativeParseRequest by the native parser.
+message NativeParseResponse {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	gopkg.in.bblfsh.sdk.v1.protocol.Status status = 1;
+	repeated string errors = 2;
+	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+}
 
 // ParseRequest is a request to parse a file and get its UAST.
 message ParseRequest {
@@ -36,6 +45,7 @@ message ParseResponse {
 	gopkg.in.bblfsh.sdk.v1.protocol.Status status = 1;
 	repeated string errors = 2;
 	gopkg.in.bblfsh.sdk.v1.uast.Node uast = 3 [(gogoproto.customname) = "UAST"];
+	google.protobuf.Duration elapsed = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 // VersionRequest is a request to get server version
@@ -49,6 +59,8 @@ message VersionResponse {
 	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
 	string version = 1;
+	string build = 2;
+	string commit = 3;
 }
 
 // Encoding is the encoding used for the content string. Currently only

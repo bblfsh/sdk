@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/protocol/jsonlines"
+	"gopkg.in/bblfsh/sdk.v1/sdk/jsonlines"
 )
 
 type ParseNativeResponse struct {
