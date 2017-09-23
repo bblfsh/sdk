@@ -4,11 +4,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/protocol/jsonlines"
 )
 
+// NativeBin default localtion of the native driver binary.
 const NativeBin = "/opt/driver/bin/native"
 
 // NativeDriver is a wrapper of the native command.
@@ -24,7 +26,7 @@ type NativeDriver struct {
 	cmd    *exec.Cmd
 }
 
-// NewNativeDriver executes the given command and returns a *NativeDriver for it.
+// Start executes the given native driver and prepares it to parse code.
 func (d *NativeDriver) Start() error {
 	if d.Binary == "" {
 		d.Binary = NativeBin
@@ -55,22 +57,24 @@ func (d *NativeDriver) Start() error {
 	return d.cmd.Start()
 }
 
-// ParseNative sends a request to the native NativeDriver and returns its response.
+// ParseNative sends a request to the native driver and returns its response.
 func (d *NativeDriver) ParseNative(req *protocol.ParseNativeRequest) *protocol.ParseNativeResponse {
+	start := time.Now()
 	resp := &protocol.ParseNativeResponse{}
-	_ = d.enc.Encode(req)
 
+	_ = d.enc.Encode(req)
 	if err := d.dec.Decode(resp); err != nil {
-		return &protocol.ParseNativeResponse{
+		resp = &protocol.ParseNativeResponse{
 			Status: protocol.Fatal,
 			Errors: []string{err.Error()},
 		}
 	}
 
+	resp.Elapsed = time.Since(start)
 	return resp
 }
 
-// Close closes the native NativeDriver.
+// Stop stops the execution of the native driver.
 func (d *NativeDriver) Stop() error {
 	if err := d.closer.Close(); err != nil {
 		return err

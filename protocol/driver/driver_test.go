@@ -12,7 +12,7 @@ func TestDriverParser(t *testing.T) {
 	require := require.New(t)
 
 	d := &Driver{}
-	d.Binary = "../internal/testnative/native"
+	d.Binary = "internal/native/mock"
 
 	err := d.Start()
 	require.NoError(err)
