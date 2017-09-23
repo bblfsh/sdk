@@ -80,10 +80,10 @@ const (
 	InternalRoleKey = "internalRole"
 )
 
-// ObjectToNoder is a ToNoder for trees that are represented as nested JSON objects.
+// ObjectToNode transform trees that are represented as nested JSON objects.
 // That is, an interface{} containing maps, slices, strings and integers. It
 // then converts from that structure to *Node.
-type ObjectToNoder struct {
+type ObjectToNode struct {
 	// InternalTypeKey is the name of the key that the native AST uses
 	// to differentiate the type of the AST nodes. This internal key will then be
 	// checkable in the AnnotationRules with the `HasInternalType` predicate. This
@@ -162,7 +162,7 @@ type ObjectToNoder struct {
 	TopLevelIsRootNode bool
 }
 
-func (c *ObjectToNoder) ToNode(v interface{}) (*Node, error) {
+func (c *ObjectToNode) ToNode(v interface{}) (*Node, error) {
 	src, ok := v.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnsupported.New("non-object root node")
@@ -198,7 +198,7 @@ func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (
 	panic("unreachable")
 }
 
-func (c *ObjectToNoder) toNode(obj interface{}) (*Node, error) {
+func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnexpectedObject.New("map[string]interface{}", obj)
@@ -286,7 +286,7 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*Node, error) {
 	return n, nil
 }
 
-func (c *ObjectToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
+func (c *ObjectToNode) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
 	n, err := c.toNode(obj)
 	if err != nil {
 		return nil, err
@@ -297,7 +297,7 @@ func (c *ObjectToNoder) mapToNode(k string, obj map[string]interface{}) (*Node, 
 	return n, nil
 }
 
-func (c *ObjectToNoder) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*Node, error) {
+func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*Node, error) {
 	kn := NewNode()
 
 	var ns []*Node
@@ -321,7 +321,7 @@ func (c *ObjectToNoder) sliceToNodeWithChildren(k string, s []interface{}, paren
 	return kn, nil
 }
 
-func (c *ObjectToNoder) stringToNode(k, v, parentKey string) *Node {
+func (c *ObjectToNode) stringToNode(k, v, parentKey string) *Node {
 	kn := NewNode()
 
 	c.setInternalKey(kn, parentKey+"."+k)
@@ -331,7 +331,7 @@ func (c *ObjectToNoder) stringToNode(k, v, parentKey string) *Node {
 	return kn
 }
 
-func (c *ObjectToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*Node, error) {
+func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, error) {
 	var ns []*Node
 	for _, v := range s {
 		n, err := c.toNode(v)
@@ -346,7 +346,7 @@ func (c *ObjectToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*Node, er
 	return ns, nil
 }
 
-func (c *ObjectToNoder) addProperty(n *Node, k string, o interface{}) error {
+func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
 		s := fmt.Sprint(o)
@@ -441,11 +441,11 @@ func (c *ObjectToNoder) addProperty(n *Node, k string, o interface{}) error {
 	return nil
 }
 
-func (c *ObjectToNoder) isTokenKey(key string) bool {
+func (c *ObjectToNode) isTokenKey(key string) bool {
 	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
-func (c *ObjectToNoder) syntheticToken(key string) string {
+func (c *ObjectToNode) syntheticToken(key string) string {
 	if c.SyntheticTokens == nil {
 		return ""
 	}
@@ -453,7 +453,7 @@ func (c *ObjectToNoder) syntheticToken(key string) string {
 	return c.SyntheticTokens[key]
 }
 
-func (c *ObjectToNoder) setInternalKey(n *Node, k string) error {
+func (c *ObjectToNode) setInternalKey(n *Node, k string) error {
 	if n.InternalType != "" && n.InternalType != k {
 		return ErrTwoTypesSameNode.New(n.InternalType, k)
 	}
@@ -462,7 +462,7 @@ func (c *ObjectToNoder) setInternalKey(n *Node, k string) error {
 	return nil
 }
 
-func (c *ObjectToNoder) getInternalKeyFromObject(obj interface{}) (string, error) {
+func (c *ObjectToNode) getInternalKeyFromObject(obj interface{}) (string, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return "", ErrUnexpectedObject.New("map[string]interface{}", obj)

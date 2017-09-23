@@ -14,6 +14,7 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
@@ -116,8 +117,8 @@ type ParseRequest struct {
 	Language string
 	// Content is the source code to be parsed.
 	Content string `json:"content"`
-	// Encoding is the encoding that the Content uses. Currently only UTF-8 and Base64
-	// are supported.
+	// Encoding is the encoding that the Content uses. Currently only UTF-8 and
+	// Base64 are supported.
 	Encoding Encoding `json:"encoding"`
 }
 
@@ -131,24 +132,29 @@ type ParseResponse struct {
 	Errors []string `json:"errors"`
 	// UAST contains the UAST from the parsed code.
 	UAST *uast.Node `json:"uast"`
+	// Elapsed is the amount of time consume processing the request.
+	Elapsed time.Duration `json:"elapsed"`
 }
 
 // ParseNativeRequest to use with the native parser. This is for internal use.
-type ParseNativeRequest struct {
-	Content  string `json:"status"`
-	Encoding Encoding
-}
+type ParseNativeRequest ParseRequest
 
 // ParseNativeResponse is the reply to ParseNativeRequest by the native parser.
 type ParseNativeResponse struct {
-	Status Status      `json:"status"`
-	Errors []string    `json:"errors"`
-	AST    interface{} `json:"ast"`
+	// Status is the status of the parsing request.
+	Status Status `json:"status"`
+	// Status is the status of the parsing request.
+	Errors []string `json:"errors"`
+	// AST contains the AST from the parsed code.
+	AST interface{} `json:"ast"`
+	// Elapsed is the amount of time consume processing the request.
+	Elapsed time.Duration `json:"elapsed"`
 }
 
-// Parser can parse code to UAST.
+// Parser can parse code to UAST or AST.
 type Parser interface {
 	Parse(*ParseRequest) *ParseResponse
+	ParseNative(*ParseNativeRequest) *ParseNativeResponse
 }
 
 // DefaultParser is the default parser used by Parse and ParseNative.
@@ -169,14 +175,18 @@ func Parse(req *ParseRequest) *ParseResponse {
 
 // VersionRequest is a request to get server version
 //proteus:generate
-type VersionRequest struct {
-}
+type VersionRequest struct{}
 
 // VersionResponse is the reply to VersionRequest
 //proteus:generate
 type VersionResponse struct {
-	// Version is the server version
+	// Version is the server version.
 	Version string `json:"version"`
+	// Build contains the timestamp at the time of the build.
+	Build string `json:"build"`
+	// Commit used to compile this code, the commit will contain a `+` at the
+	// end of hash when the repository contained uncommitted changes.
+	Commit string `json:"commit"`
 }
 
 type Versioner interface {
@@ -189,9 +199,13 @@ var DefaultVersioner Versioner
 // Version uses DefaultVersioner to process the given version request to get the version.
 //proteus:generate
 func Version(req *VersionRequest) *VersionResponse {
+	const noset = "no-set"
+
 	if DefaultVersioner == nil {
 		return &VersionResponse{
-			Version: "unknown",
+			Version: noset,
+			Build:   noset,
+			Commit:  noset,
 		}
 	}
 

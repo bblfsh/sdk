@@ -19,6 +19,10 @@ func (p *mockParser) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	return &protocol.ParseResponse{Status: protocol.Ok}
 }
 
+func (p *mockParser) ParseNative(req *protocol.ParseNativeRequest) *protocol.ParseNativeResponse {
+	return &protocol.ParseNativeResponse{Status: protocol.Ok}
+}
+
 func (p *mockParser) Close() error {
 	return nil
 }
@@ -31,6 +35,13 @@ func (p *mockCheckBase64EncodingParser) Parse(req *protocol.ParseRequest) *proto
 		return &protocol.ParseResponse{Status: protocol.Error}
 	}
 	return &protocol.ParseResponse{Status: protocol.Ok}
+}
+
+func (p *mockCheckBase64EncodingParser) ParseNative(req *protocol.ParseNativeRequest) *protocol.ParseNativeResponse {
+	if req.Encoding != protocol.Base64 {
+		return &protocol.ParseNativeResponse{Status: protocol.Error}
+	}
+	return &protocol.ParseNativeResponse{Status: protocol.Ok}
 }
 
 func (p *mockCheckBase64EncodingParser) Close() error {
