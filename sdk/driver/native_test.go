@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"sync"
 	"testing"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
@@ -25,6 +26,41 @@ func TestNativeDriverNativeParse(t *testing.T) {
 	require.Equal(r.Status, Status(protocol.Ok))
 	require.NotNil(r.AST)
 
+	err = d.Stop()
+	require.NoError(err)
+}
+
+func TestNativeDriverNativeParse_Lock(t *testing.T) {
+	require := require.New(t)
+	NativeBinary = "internal/native/mock"
+
+	d := &NativeDriver{}
+	err := d.Start()
+	require.NoError(err)
+
+	// it fails even with two, but is better having a big number, to identify
+	// concurrency issues.
+	count := 1000
+
+	var wg sync.WaitGroup
+	call := func() {
+		defer wg.Done()
+		r := d.Parse(&InternalParseRequest{
+			Content: "foo",
+		})
+
+		require.NotNil(r)
+		require.Equal(len(r.Errors), 0)
+		require.Equal(r.Status, Status(protocol.Ok))
+		require.NotNil(r.AST)
+	}
+
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go call()
+	}
+
+	wg.Wait()
 	err = d.Stop()
 	require.NoError(err)
 }

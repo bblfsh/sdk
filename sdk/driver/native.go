@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/sdk/jsonlines"
@@ -15,18 +16,23 @@ import (
 )
 
 var (
-	// NativeBinary default location of the native driver binary.
+	// NativeBinary default location of the native driver binary. Should not
+	// override this variable unless you know what are you doing.
 	NativeBinary = "/opt/driver/bin/native"
 
 	ErrUnsupportedLanguage = errors.NewKind("unsupported language got %q, expected %q")
 )
 
-// NativeDriver is a wrapper of the native command.
+// NativeDriver is a wrapper of the native command. The operations with the
+// driver are synchronous by design, this is controlled by a mutex. This means
+// that only one parse request can attend at the same time.
 type NativeDriver struct {
 	enc    jsonlines.Encoder
 	dec    jsonlines.Decoder
 	closer io.Closer
 	cmd    *exec.Cmd
+
+	m sync.Mutex
 }
 
 // Start executes the given native driver and prepares it to parse code.
@@ -58,6 +64,9 @@ func (d *NativeDriver) Start() error {
 
 // Parse sends a request to the native driver and returns its response.
 func (d *NativeDriver) Parse(req *InternalParseRequest) *InternalParseResponse {
+	d.m.Lock()
+	defer d.m.Unlock()
+
 	_ = d.enc.Encode(&InternalParseRequest{
 		Content:  req.Content,
 		Encoding: Encoding(req.Encoding),

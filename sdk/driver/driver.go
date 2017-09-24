@@ -11,11 +11,18 @@ import (
 )
 
 var (
-	// ManifestLocation location of the manifest file.
+	// ManifestLocation location of the manifest file. Should not override
+	// this variable unless you know what are you doing.
 	ManifestLocation = "/etc/" + manifest.Filename
 )
 
-// Driver implements a driver.
+// Driver implements a bblfsh driver, a driver is on charge of transforming a
+// source code into an AST and a UAST. To transform the AST into a UAST, a
+// `uast.ObjectToNode`` and a series of `tranformer.Transformer` are used.
+//
+// The `Parse` and `NativeParse` requests block the driver until the request is
+// done, since the communication with the native driver is a single-channel
+// synchronous communication over stdin/stdout.
 type Driver struct {
 	NativeDriver
 	m *manifest.Manifest
@@ -34,9 +41,9 @@ func NewDriver(o *uast.ObjectToNode, t []transformer.Tranformer) (*Driver, error
 	return &Driver{m: m, o: o, t: t}, nil
 }
 
-// Parse process a protocol.ParseRequest, calling to the native driver. It calls
-// to NativeDriver.NativeParse and transform the native AST to UAST using
-// *uast.ObjectToNode and apply the transformers to  it.
+// Parse process a protocol.ParseRequest, calling to the native driver. It a
+// parser request is done to the internal native driver and the the returned
+// native AST is transform to UAST.
 func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	r := &protocol.ParseResponse{}
 
