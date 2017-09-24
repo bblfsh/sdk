@@ -9,7 +9,7 @@
 // etc/skeleton/README.md.tpl
 // etc/skeleton/driver/main.go.tpl
 // etc/skeleton/driver/normalizer/annotation.go
-// etc/skeleton/driver/normalizer/parser.go
+// etc/skeleton/driver/normalizer/tonode.go
 // etc/skeleton/git/hooks/pre-commit
 // etc/skeleton/manifest.toml.tpl
 // DO NOT EDIT!
@@ -168,7 +168,8 @@ var _dockerfileTplTpl = []byte(`# Dockerfile represents the container being use 
 #   bblfsh/<language>-driver-build
 FROM {{.Manifest.Runtime.OS.AsImage}}
 
-CMD /opt/driver/bin/driver
+ADD build /opt/driver
+ENTRYPOINT /opt/driver/bin/driver
 `)
 
 func dockerfileTplTplBytes() ([]byte, error) {
@@ -181,7 +182,7 @@ func dockerfileTplTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl.tpl", size: 568, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl.tpl", size: 597, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -888,8 +889,8 @@ test-native-internal:
 build-native-internal:
 	cd native; \
 	echo "not implemented"
-	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/native
-	chmod +x $(BUILD_PATH)/native
+	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/bin/native
+	chmod +x $(BUILD_PATH)/bin/native
 `)
 
 func makefileBytes() ([]byte, error) {
@@ -902,7 +903,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 320, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 328, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -978,22 +979,21 @@ func readmeMdTpl() (*asset, error) {
 var _driverMainGoTpl = []byte(`package main
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
-
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
+
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
 )
 
-var version string
-var build string
-
 func main() {
-	d := driver.Driver{
-		Version:       version,
-		Build:         build,
-		ParserBuilder: normalizer.ParserBuilder,
-		Annotate:      normalizer.AnnotationRules,
+	d, err := driver.NewDriver(normalizer.ToNode, normalizer.Transformers)
+	if err != nil {
+		panic(err)
 	}
-	d.Exec()
+
+	s := driver.NewServer(d)
+	if err := s.Start(); err != nil {
+		panic(err)
+	}
 }
 `)
 
@@ -1007,7 +1007,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 363, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 332, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1017,9 +1017,20 @@ var _driverNormalizerAnnotationGo = []byte(`package normalizer
 import (
 	"gopkg.in/bblfsh/sdk.v1/uast"
 	. "gopkg.in/bblfsh/sdk.v1/uast/ann"
+	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
+	"gopkg.in/bblfsh/sdk.v1/uast/transformer/annotatter"
 )
 
-// AnnotationRules annotate a UAST with roles.
+// Transformers is the of list `+"`"+`transformer.Transfomer`+"`"+` to apply to a UAST, to
+// learn more about the Transformers and the available ones take a look to:
+// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/transformers
+var Transformers = []transformer.Tranformer{
+	annotatter.NewAnnotatter(AnnotationRules),
+}
+
+// AnnotationRules describes how a UAST should be annotated with `+"`"+`uast.Role`+"`"+`.
+//
+// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/ann
 var AnnotationRules = On(Any).Roles(uast.File)
 `)
 
@@ -1033,56 +1044,33 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 194, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 687, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _driverNormalizerParserGo = []byte(`package normalizer
+var _driverNormalizerTonodeGo = []byte(`package normalizer
 
-import (
-	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
-	"gopkg.in/bblfsh/sdk.v1/protocol/native"
-)
+import "gopkg.in/bblfsh/sdk.v1/uast"
 
-// ToNoder specifies the driver options. Driver programmers should fill it
-var ToNoder = &native.ObjectToNoder{}
-
-// ParserBuilder creates a parser that transform source code files into *uast.Node.
-func ParserBuilder(opts driver.ParserOptions) (parser driver.Parser, err error) {
-	parser, err = native.ExecParser(ToNoder, opts.NativeBin)
-	if err != nil {
-		return
-	}
-
-	switch ToNoder.PositionFill {
-	case native.OffsetFromLineCol:
-		parser = &driver.TransformationParser{
-			Parser:         parser,
-			Transformation: driver.FillOffsetFromLineCol,
-		}
-	case native.LineColFromOffset:
-		parser = &driver.TransformationParser{
-			Parser:         parser,
-			Transformation: driver.FillLineColFromOffset,
-		}
-	}
-
-	return
-}
+// ToNode is an instance of `+"`"+`uast.ObjectToNode`+"`"+`, defining how to transform an
+// into a UAST (`+"`"+`uast.Node`+"`"+`).
+//
+// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast#ObjectToNode
+var ToNode = &uast.ObjectToNode{}
 `)
 
-func driverNormalizerParserGoBytes() ([]byte, error) {
-	return _driverNormalizerParserGo, nil
+func driverNormalizerTonodeGoBytes() ([]byte, error) {
+	return _driverNormalizerTonodeGo, nil
 }
 
-func driverNormalizerParserGo() (*asset, error) {
-	bytes, err := driverNormalizerParserGoBytes()
+func driverNormalizerTonodeGo() (*asset, error) {
+	bytes, err := driverNormalizerTonodeGoBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/parser.go", size: 835, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/tonode.go", size: 265, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1224,7 +1212,7 @@ var _bindata = map[string]func() (*asset, error){
 	"README.md.tpl": readmeMdTpl,
 	"driver/main.go.tpl": driverMainGoTpl,
 	"driver/normalizer/annotation.go": driverNormalizerAnnotationGo,
-	"driver/normalizer/parser.go": driverNormalizerParserGo,
+	"driver/normalizer/tonode.go": driverNormalizerTonodeGo,
 	"git/hooks/pre-commit": gitHooksPreCommit,
 	"manifest.toml.tpl": manifestTomlTpl,
 }
@@ -1280,7 +1268,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"main.go.tpl": &bintree{driverMainGoTpl, map[string]*bintree{}},
 		"normalizer": &bintree{nil, map[string]*bintree{
 			"annotation.go": &bintree{driverNormalizerAnnotationGo, map[string]*bintree{}},
-			"parser.go": &bintree{driverNormalizerParserGo, map[string]*bintree{}},
+			"tonode.go": &bintree{driverNormalizerTonodeGo, map[string]*bintree{}},
 		}},
 	}},
 	"git": &bintree{nil, map[string]*bintree{

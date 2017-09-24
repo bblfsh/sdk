@@ -22,7 +22,7 @@ ifdef bblfsh-sdk-tools # run only with Golang
     endif
     endif
 
-    $(shell $(bblfsh-sdk-tools) manifest > $(manifest))
+    $(shell $(bblfsh-sdk-tools) envvars > $(manifest))
 endif
 
 include $(sdklocation)/make/manifest.mk

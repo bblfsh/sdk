@@ -9,5 +9,5 @@ test-native-internal:
 build-native-internal:
 	cd native; \
 	echo "not implemented"
-	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/native
-	chmod +x $(BUILD_PATH)/native
+	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/bin/native
+	chmod +x $(BUILD_PATH)/bin/native

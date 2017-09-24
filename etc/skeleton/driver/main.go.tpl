@@ -1,20 +1,19 @@
 package main
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
-
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
+
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
 )
 
-var version string
-var build string
-
 func main() {
-	d := driver.Driver{
-		Version:       version,
-		Build:         build,
-		ParserBuilder: normalizer.ParserBuilder,
-		Annotate:      normalizer.AnnotationRules,
+	d, err := driver.NewDriver(normalizer.ToNode, normalizer.Transformers)
+	if err != nil {
+		panic(err)
 	}
-	d.Exec()
+
+	s := driver.NewServer(d)
+	if err := s.Start(); err != nil {
+		panic(err)
+	}
 }

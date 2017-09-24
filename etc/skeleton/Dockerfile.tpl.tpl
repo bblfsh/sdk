@@ -9,4 +9,5 @@
 #   bblfsh/<language>-driver-build
 FROM {{.Manifest.Runtime.OS.AsImage}}
 
-CMD /opt/driver/bin/driver
+ADD build /opt/driver
+ENTRYPOINT /opt/driver/bin/driver

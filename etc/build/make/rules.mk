@@ -1,4 +1,3 @@
-BUILD_ID := $(shell date +"%m-%d-%Y_%H_%M_%S")
 BUILD_PATH := $(location)/build
 
 RUN := $(sdklocation)/etc/run.sh
@@ -26,7 +25,6 @@ BUILD_IMAGE=$(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE) $(DOCKER_I
 GO_CMD = go
 GO_RUN = $(GO_CMD) run
 GO_TEST = $(GO_CMD) test -v
-GO_LDFLAGS = -X main.version=$(DRIVER_VERSION) -X main.build=$(BUILD_ID)
 # If GOPATH has multiple dir entries, pick the first one
 GO_PATH := $(shell echo ${GOPATH}|cut -f1 -d':')
 
@@ -76,7 +74,8 @@ ifeq ($(GOPATH),)
 endif
 
 $(BUILD_PATH):
-	@$(RUN) mkdir -p $(BUILD_PATH)
+	@$(RUN) mkdir -p $(BUILD_PATH)/bin
+	@$(RUN) mkdir -p $(BUILD_PATH)/etc
 
 $(BUILD_IMAGE):
 	@$(eval TEMP_FILE := $(shell mktemp -p $(tmplocation)))
@@ -102,9 +101,10 @@ build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 build-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
 	@$(RUN) $(BUILD_DRIVER_CMD) make build-driver-internal
 
-build-driver-internal:
+build-driver-internal: $(BUILD_PATH)
+	@$(RUN) $(bblfsh-sdk-tools) build $(DRIVER_VERSION) --output $(BUILD_PATH)/etc/manifest.toml
 	@cd driver; \
-	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
+	$(RUN) $(GO_CMD) build -o $(BUILD_PATH)/bin/driver .
 
 integration-test: build
 	@$(RUN_VERBOSE) $(RUN_IT) "$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))"

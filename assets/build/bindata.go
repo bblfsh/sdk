@@ -76,7 +76,7 @@ ifdef bblfsh-sdk-tools # run only with Golang
     endif
     endif
 
-    $(shell $(bblfsh-sdk-tools) manifest > $(manifest))
+    $(shell $(bblfsh-sdk-tools) envvars > $(manifest))
 endif
 
 include $(sdklocation)/make/manifest.mk
@@ -97,7 +97,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 1241, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 1240, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -330,9 +330,13 @@ RUNTIME_OS ?=
 RUNTIME_NATIVE_VERSION ?=
 RUNTIME_GO_VERSION ?=
 
+# get the git commit
+GIT_COMMIT=$(shell git rev-parse HEAD | cut -c1-7)
+GIT_DIRTY=$(shell test -n "`+"`"+`git status --porcelain`+"`"+`" && echo "-dirty" || true)
+
 # optional variables
 DRIVER_DEV_PREFIX := dev
-DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
+DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(GIT_COMMIT)$(GIT_DIRTY)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
 DOCKER_IMAGE_VERSIONED ?= $(call escape_docker_tag,$(DOCKER_IMAGE):$(DRIVER_VERSION))
@@ -373,7 +377,7 @@ func makeBootstrapMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1122, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1260, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -474,8 +478,7 @@ func makeHelpMk() (*asset, error) {
 	return a, nil
 }
 
-var _makeRulesMk = []byte(`BUILD_ID := $(shell date +"%m-%d-%Y_%H_%M_%S")
-BUILD_PATH := $(location)/build
+var _makeRulesMk = []byte(`BUILD_PATH := $(location)/build
 
 RUN := $(sdklocation)/etc/run.sh
 RUN_VERBOSE := VERBOSE=1 $(RUN)
@@ -502,7 +505,6 @@ BUILD_IMAGE=$(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE) $(DOCKER_I
 GO_CMD = go
 GO_RUN = $(GO_CMD) run
 GO_TEST = $(GO_CMD) test -v
-GO_LDFLAGS = -X main.version=$(DRIVER_VERSION) -X main.build=$(BUILD_ID)
 # If GOPATH has multiple dir entries, pick the first one
 GO_PATH := $(shell echo ${GOPATH}|cut -f1 -d':')
 
@@ -552,7 +554,8 @@ ifeq ($(GOPATH),)
 endif
 
 $(BUILD_PATH):
-	@$(RUN) mkdir -p $(BUILD_PATH)
+	@$(RUN) mkdir -p $(BUILD_PATH)/bin
+	@$(RUN) mkdir -p $(BUILD_PATH)/etc
 
 $(BUILD_IMAGE):
 	@$(eval TEMP_FILE := $(shell mktemp -p $(tmplocation)))
@@ -578,9 +581,10 @@ build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 build-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
 	@$(RUN) $(BUILD_DRIVER_CMD) make build-driver-internal
 
-build-driver-internal:
+build-driver-internal: $(BUILD_PATH)
+	@$(RUN) $(bblfsh-sdk-tools) build $(DRIVER_VERSION) --output $(BUILD_PATH)/etc/manifest.toml
 	@cd driver; \
-	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
+	$(RUN) $(GO_CMD) build -o $(BUILD_PATH)/bin/driver .
 
 integration-test: build
 	@$(RUN_VERBOSE) $(RUN_IT) "$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))"
@@ -621,7 +625,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4217, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4222, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
