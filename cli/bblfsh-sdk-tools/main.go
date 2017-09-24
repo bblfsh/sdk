@@ -14,7 +14,8 @@ var build string
 
 func main() {
 	parser := flags.NewNamedParser("bblfsh-sdk-tools", flags.Default)
-	parser.AddCommand("manifest", cmd.ManifestCommandDescription, "", &cmd.ManifestCommand{})
+	parser.AddCommand("envvars", cmd.EnvVarsCommandDescription, "", &cmd.EnvVarsCommand{})
+	parser.AddCommand("build", cmd.BuildCommandDescription, "", &cmd.BuildCommand{})
 
 	if _, err := parser.Parse(); err != nil {
 		if _, ok := err.(*flags.Error); ok {
