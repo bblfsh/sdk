@@ -43,6 +43,7 @@ message ParseRequest {
 // ParseResponse is the reply to ParseRequest.
 message ParseResponse {
 	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.goproto_stringer) = false;
 	option (gogoproto.typedecl) = false;
 	gopkg.in.bblfsh.sdk.v1.protocol.Status status = 1;
 	repeated string errors = 2;

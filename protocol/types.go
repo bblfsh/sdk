@@ -15,6 +15,9 @@
 package protocol
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
@@ -89,6 +92,20 @@ type ParseResponse struct {
 	Response
 	// UAST contains the UAST from the parsed code.
 	UAST *uast.Node `json:"uast"`
+}
+
+func (r *ParseResponse) String() string {
+	buf := bytes.NewBuffer(nil)
+	fmt.Fprintln(buf, "Status: ", strings.ToLower(r.Status.String()))
+	fmt.Fprintln(buf, "Errors: ")
+	for _, err := range r.Errors {
+		fmt.Fprintln(buf, " . ", err)
+	}
+
+	fmt.Fprintln(buf, "UAST: ")
+	fmt.Fprintln(buf, r.UAST.String())
+
+	return buf.String()
 }
 
 // NativeParseRequest is a request to parse a file and get its native AST.
