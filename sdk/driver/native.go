@@ -21,6 +21,7 @@ var (
 	NativeBinary = "/opt/driver/bin/native"
 
 	ErrUnsupportedLanguage = errors.NewKind("unsupported language got %q, expected %q")
+	ErrNativeNotRunning    = errors.NewKind("native driver is not running")
 )
 
 // NativeDriver is a wrapper of the native command. The operations with the
@@ -31,8 +32,9 @@ type NativeDriver struct {
 	dec    jsonlines.Decoder
 	closer io.Closer
 	cmd    *exec.Cmd
+	m      sync.Mutex
 
-	m sync.Mutex
+	isRunning bool
 }
 
 // Start executes the given native driver and prepares it to parse code.
@@ -59,11 +61,20 @@ func (d *NativeDriver) Start() error {
 
 	go io.Copy(os.Stderr, stderr)
 
-	return d.cmd.Start()
+	err = d.cmd.Start()
+	if err == nil {
+		d.isRunning = true
+	}
+
+	return err
 }
 
 // Parse sends a request to the native driver and returns its response.
 func (d *NativeDriver) Parse(req *InternalParseRequest) *InternalParseResponse {
+	if !d.isRunning {
+		panic(ErrNativeNotRunning.New())
+	}
+
 	d.m.Lock()
 	defer d.m.Unlock()
 

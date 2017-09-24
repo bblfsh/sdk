@@ -25,6 +25,7 @@ var (
 // synchronous communication over stdin/stdout.
 type Driver struct {
 	NativeDriver
+
 	m *manifest.Manifest
 	o *uast.ObjectToNode
 	t []transformer.Tranformer
@@ -59,31 +60,22 @@ func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	}
 
 	var err error
-	r.UAST, err = d.convertToUAST(req.Content, req.Encoding, ast)
+	r.UAST, err = d.o.ToNode(ast)
 	if err != nil {
 		r.Status = protocol.Fatal
 		r.Errors = append(r.Errors, err.Error())
 		return r
 	}
 
-	return r
-}
-
-func (d *Driver) convertToUAST(
-	content string, encoding protocol.Encoding, ast interface{},
-) (*uast.Node, error) {
-	n, err := d.o.ToNode(ast)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, t := range d.t {
-		if err := t.Do(content, encoding, n); err != nil {
-			return nil, err
+		if err := t.Do(req.Content, req.Encoding, r.UAST); err != nil {
+			r.Status = protocol.Error
+			r.Errors = append(r.Errors, err.Error())
+			return r
 		}
 	}
 
-	return n, nil
+	return r
 }
 
 // NativeParse sends a request to the native driver and returns its response.
