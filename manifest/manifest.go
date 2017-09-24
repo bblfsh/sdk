@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -63,6 +64,7 @@ func (os OS) AsImage() string {
 type Manifest struct {
 	Language        string            `toml:"language"`
 	Version         string            `toml:"version,omitempty"`
+	Build           *time.Time        `toml:"build,omitempty"`
 	Status          DevelopmentStatus `toml:"status"`
 	InformationLoss []InformationLoss `toml:"loss"`
 	Documentation   struct {

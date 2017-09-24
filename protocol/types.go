@@ -111,11 +111,10 @@ type VersionRequest struct{}
 //proteus:generate
 type VersionResponse struct {
 	Response
-	// Version is the server version.
+	// Version is the server version. If is a local compilation the version
+	// follows the pattern dev-<short-commit>[-dirty], dirty means that was
+	// compile from a repository with un-committed changes.
 	Version string `json:"version"`
 	// Build contains the timestamp at the time of the build.
 	Build time.Time `json:"build"`
-	// Commit used to compile this code, the commit will contain a `+` at the
-	// end of hash when the repository contained uncommitted changes.
-	Commit string `json:"commit"`
 }

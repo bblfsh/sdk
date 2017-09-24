@@ -65,7 +65,6 @@ message VersionResponse {
 	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 	string version = 4;
 	google.protobuf.Timestamp build = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
-	string commit = 6;
 }
 
 // Encoding is the encoding used for the content string. Currently only

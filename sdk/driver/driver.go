@@ -13,7 +13,7 @@ import (
 var (
 	// ManifestLocation location of the manifest file. Should not override
 	// this variable unless you know what are you doing.
-	ManifestLocation = "/etc/" + manifest.Filename
+	ManifestLocation = "/opt/driver/etc/" + manifest.Filename
 )
 
 // Driver implements a bblfsh driver, a driver is on charge of transforming a
@@ -147,7 +147,6 @@ func (d *Driver) Version(req *protocol.VersionRequest) *protocol.VersionResponse
 	r := &protocol.VersionResponse{}
 
 	r.Version = d.m.Version
-	r.Commit = d.m.Commit
 	if d.m.Build != nil {
 		r.Build = *d.m.Build
 	}

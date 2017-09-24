@@ -58,10 +58,10 @@ func (s *Server) initialize() error {
 		return err
 	}
 
-	s.Logger.Infof("version: %q, commit: %q, build: %q",
+	s.Logger.Infof("%s-driver version: %s (build: %s)",
+		s.d.m.Language,
 		s.d.m.Version,
-		s.d.m.Commit,
-		s.d.m.Build,
+		s.d.m.Build.Format("2006-01-02T15:04:05Z"),
 	)
 
 	return nil
