@@ -8,21 +8,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNativeDriverParser(t *testing.T) {
+func TestNativeDriverNativeParse(t *testing.T) {
 	require := require.New(t)
+	NativeBinary = "internal/native/mock"
 
-	d := &NativeDriver{
-		Binary: "internal/native/mock",
-	}
+	d := &NativeDriver{}
 	err := d.Start()
 	require.NoError(err)
 
-	r := d.ParseNative(&protocol.ParseNativeRequest{
+	r := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
 
 	require.NotNil(r)
-	require.Equal(r.Status, protocol.Ok)
+	require.Equal(len(r.Errors), 0)
+	require.Equal(r.Status, Status(protocol.Ok))
+	require.NotNil(r.AST)
+
+	err = d.Stop()
+	require.NoError(err)
+}
+
+func aaTestNativeDriverNativeParse_MissingLanguage(t *testing.T) {
+	require := require.New(t)
+	NativeBinary = "internal/native/mock"
+
+	d := &NativeDriver{}
+	err := d.Start()
+	require.NoError(err)
+
+	r := d.Parse(&InternalParseRequest{
+		Content: "foo",
+	})
+
+	require.NotNil(r)
+	require.Equal(r.Status, Status(protocol.Fatal))
+	require.Equal(len(r.Errors), 1)
+	require.Nil(r.AST)
 
 	err = d.Stop()
 	require.NoError(err)
@@ -30,44 +52,43 @@ func TestNativeDriverParser(t *testing.T) {
 
 func TestNativeDriverStart_BadPath(t *testing.T) {
 	require := require.New(t)
+	NativeBinary = "non-existent"
 
-	d := &NativeDriver{Binary: "non-existent"}
+	d := &NativeDriver{}
 	err := d.Start()
 	require.Error(err)
 }
 
-func TestNativeDriverParser_Malfunctioning(t *testing.T) {
+func TestNativeDriverNativeParse_Malfunctioning(t *testing.T) {
 	require := require.New(t)
+	NativeBinary = "echo"
 
-	d := &NativeDriver{
-		Binary: "echo",
-	}
+	d := &NativeDriver{}
 
 	err := d.Start()
 	require.Nil(err)
 
-	r := d.ParseNative(&protocol.ParseNativeRequest{
+	r := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
 
-	require.Equal(r.Status, protocol.Fatal)
+	require.Equal(r.Status, Status(protocol.Fatal))
 	require.Equal(len(r.Errors), 1)
 }
 
-func TestNativeDriverParser_Malformed(t *testing.T) {
+func TestNativeDriverNativeParse_Malformed(t *testing.T) {
 	require := require.New(t)
+	NativeBinary = "yes"
 
-	d := &NativeDriver{
-		Binary: "yes",
-	}
+	d := &NativeDriver{}
 
 	err := d.Start()
 	require.NoError(err)
 
-	r := d.ParseNative(&protocol.ParseNativeRequest{
+	r := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
 
-	require.Equal(r.Status, protocol.Fatal)
+	require.Equal(r.Status, Status(protocol.Fatal))
 	require.Equal(len(r.Errors), 1)
 }

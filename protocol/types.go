@@ -20,6 +20,9 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
+// DefaultService is the default service used to process requests.
+var DefaultService Service
+
 // Service can parse code to UAST or AST.
 type Service interface {
 	Parse(*ParseRequest) *ParseResponse
@@ -53,6 +56,16 @@ const (
 	Base64
 )
 
+// Response basic response, never used directly.
+type Response struct {
+	// Status is the status of the parsing request.
+	Status Status `json:"status"`
+	// Status is the status of the parsing request.
+	Errors []string `json:"errors"`
+	// Elapsed is the amount of time consume processing the request.
+	Elapsed time.Duration `json:"elapsed"`
+}
+
 // ParseRequest is a request to parse a file and get its UAST.
 //proteus:generate
 type ParseRequest struct {
@@ -73,15 +86,9 @@ type ParseRequest struct {
 // ParseResponse is the reply to ParseRequest.
 //proteus:generate
 type ParseResponse struct {
-	// Status is the status of the parsing request.
-	Status Status `json:"status"`
-	// Errors contains a list of parsing errors. If Status is ok, this list
-	// should always be empty.
-	Errors []string `json:"errors"`
+	Response
 	// UAST contains the UAST from the parsed code.
 	UAST *uast.Node `json:"uast"`
-	// Elapsed is the amount of time consume processing the request.
-	Elapsed time.Duration `json:"elapsed"`
 }
 
 // NativeParseRequest is a request to parse a file and get its native AST.
@@ -91,30 +98,9 @@ type NativeParseRequest ParseRequest
 // NativeParseResponse is the reply to NativeParseRequest by the native parser.
 //proteus:generate
 type NativeParseResponse struct {
-	// Status is the status of the parsing request.
-	Status Status `json:"status"`
-	// Status is the status of the parsing request.
-	Errors []string `json:"errors"`
-	// AST contains the AST from the parsed code.
-	AST interface{} `json:"ast"`
-	// Elapsed is the amount of time consume processing the request.
-	Elapsed time.Duration `json:"elapsed"`
-}
-
-// DefaultParser is the default parser used by Parse and ParseNative.
-var DefaultParser Service
-
-// Parse uses DefaultParser to process the given parsing request to get the UAST.
-//proteus:generate
-func Parse(req *ParseRequest) *ParseResponse {
-	if DefaultParser == nil {
-		return &ParseResponse{
-			Status: Fatal,
-			Errors: []string{"no default parser registered"},
-		}
-	}
-
-	return DefaultParser.Parse(req)
+	Response
+	// AST contains the AST from the parsed code in json format.
+	AST string `json:"ast"`
 }
 
 // VersionRequest is a request to get server version
@@ -124,30 +110,12 @@ type VersionRequest struct{}
 // VersionResponse is the reply to VersionRequest
 //proteus:generate
 type VersionResponse struct {
+	Response
 	// Version is the server version.
 	Version string `json:"version"`
 	// Build contains the timestamp at the time of the build.
-	Build string `json:"build"`
+	Build time.Time `json:"build"`
 	// Commit used to compile this code, the commit will contain a `+` at the
 	// end of hash when the repository contained uncommitted changes.
 	Commit string `json:"commit"`
-}
-
-// DefaultVersioner is the default versioner user by Version
-var DefaultVersioner Service
-
-// Version uses DefaultVersioner to process the given version request to get the version.
-//proteus:generate
-func Version(req *VersionRequest) *VersionResponse {
-	const noset = "no-set"
-
-	if DefaultVersioner == nil {
-		return &VersionResponse{
-			Version: noset,
-			Build:   noset,
-			Commit:  noset,
-		}
-	}
-
-	return DefaultVersioner.Version(req)
 }

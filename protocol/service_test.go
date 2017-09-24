@@ -16,7 +16,7 @@ import (
 func TestInvalidParser(t *testing.T) {
 	require := require.New(t)
 
-	protocol.DefaultParser = nil
+	protocol.DefaultService = nil
 	lis, err := net.Listen("tcp", ":0")
 	require.NoError(err)
 
@@ -44,7 +44,7 @@ func TestInvalidParser(t *testing.T) {
 }
 
 func Example() {
-	protocol.DefaultParser = NewServiceMock()
+	protocol.DefaultService = NewServiceMock()
 
 	lis, err := net.Listen("tcp", ":0")
 	checkError(err)
@@ -89,12 +89,17 @@ func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseResponse,
 	checkError(err)
 
 	// Use a mock parser on the server.
-	protocol.DefaultParser = &ServiceMock{
+	protocol.DefaultService = &ServiceMock{
 		P: func(req *protocol.ParseRequest) *protocol.ParseResponse {
+			r := &protocol.ParseResponse{}
+			r.Status = protocol.Ok
+
 			if req.Encoding != protocol.Base64 {
-				return &protocol.ParseResponse{Status: protocol.Error}
+				r.Status = protocol.Error
+				return r
 			}
-			return &protocol.ParseResponse{Status: protocol.Ok}
+
+			return r
 		},
 	}
 
@@ -186,11 +191,15 @@ type ServiceMock struct {
 func NewServiceMock() *ServiceMock {
 	return &ServiceMock{
 		P: func(req *protocol.ParseRequest) *protocol.ParseResponse {
-			return &protocol.ParseResponse{Status: protocol.Ok}
+			return &protocol.ParseResponse{
+				Response: protocol.Response{Status: protocol.Ok},
+			}
 		},
 
 		N: func(req *protocol.NativeParseRequest) *protocol.NativeParseResponse {
-			return &protocol.NativeParseResponse{Status: protocol.Ok}
+			return &protocol.NativeParseResponse{
+				Response: protocol.Response{Status: protocol.Ok},
+			}
 		},
 	}
 }

@@ -5,34 +5,32 @@ import (
 	"os"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
 	"gopkg.in/bblfsh/sdk.v1/sdk/jsonlines"
 )
-
-type ParseNativeResponse struct {
-	Status protocol.Status
-	Errors []string
-	AST    interface{}
-}
 
 func main() {
 	dec := jsonlines.NewDecoder(os.Stdin)
 	enc := jsonlines.NewEncoder(os.Stdout)
 	for {
-		req := &protocol.ParseRequest{}
+		req := &driver.InternalParseRequest{}
 		if err := dec.Decode(req); err != nil {
 			if err == io.EOF {
 				os.Exit(0)
 			}
 
-			if err := enc.Encode(newFatalResponse(err)); err != nil {
+			if err := enc.Encode(&driver.InternalParseResponse{
+				Status: driver.Status(protocol.Fatal),
+				Errors: []string{err.Error()},
+			}); err != nil {
 				os.Exit(-1)
 			}
 
 			continue
 		}
 
-		resp := &ParseNativeResponse{
-			Status: protocol.Ok,
+		resp := &driver.InternalParseResponse{
+			Status: driver.Status(protocol.Ok),
 			AST: map[string]interface{}{
 				"root": map[string]interface{}{
 					"key": "val",
@@ -43,12 +41,5 @@ func main() {
 		if err := enc.Encode(resp); err != nil {
 			os.Exit(-1)
 		}
-	}
-}
-
-func newFatalResponse(err error) *ParseNativeResponse {
-	return &ParseNativeResponse{
-		Status: protocol.Fatal,
-		Errors: []string{err.Error()},
 	}
 }

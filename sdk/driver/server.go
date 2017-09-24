@@ -20,7 +20,12 @@ var (
 // Server is a grpc server for the communication with the driver.
 type Server struct {
 	server.Server
-	Driver
+	d *Driver
+}
+
+// NewServer returns a new server for a given Driver.
+func NewServer(d *Driver) *Server {
+	return &Server{d: d}
 }
 
 // Start executes the binary driver and start to listen in the network and
@@ -30,8 +35,8 @@ func (s *Server) Start() error {
 		return err
 	}
 
-	s.Logger.Debugf("executing native binary %q ...", s.Binary)
-	if err := s.Driver.Start(); err != nil {
+	s.Logger.Debugf("executing native binary ...")
+	if err := s.d.Start(); err != nil {
 		return err
 	}
 
@@ -42,8 +47,7 @@ func (s *Server) Start() error {
 
 	s.Logger.Infof("server listening in %s (%s)", *address, *network)
 
-	protocol.DefaultParser = s
-	protocol.DefaultVersioner = s
+	protocol.DefaultService = s.d
 
 	return s.Serve(l)
 }
@@ -55,9 +59,9 @@ func (s *Server) initialize() error {
 	}
 
 	s.Logger.Infof("version: %q, commit: %q, build: %q",
-		s.Driver.Version,
-		s.Driver.Commit,
-		s.Driver.Build,
+		s.d.m.Version,
+		s.d.m.Commit,
+		s.d.m.Build,
 	)
 
 	return nil
@@ -94,18 +98,9 @@ func (s *Server) initializeLogger() error {
 
 // Parse handles a ParserRequest.
 func (s *Server) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
-	resp := s.Driver.Parse(req)
+	resp := s.d.Parse(req)
 	s.Logger.Infof("request processed content %d bytes, encoding %s, status %s in %s",
 		len(req.Content), req.Encoding, resp.Status, resp.Elapsed)
 
 	return resp
-}
-
-// Version handles a VersionRequest.
-func (s *Server) Version(req *protocol.VersionRequest) *protocol.VersionResponse {
-	return &protocol.VersionResponse{
-		Version: s.Driver.Version,
-		Build:   s.Driver.Build,
-		Commit:  s.Driver.Commit,
-	}
 }

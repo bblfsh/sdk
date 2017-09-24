@@ -55,14 +55,6 @@ func (s *Server) initialize() error {
 }
 
 func (s *Server) validate() error {
-	if protocol.DefaultParser == nil {
-		return ErrMissingParameter.New("protocol.DefaultParser")
-	}
-
-	if protocol.DefaultVersioner == nil {
-		return ErrMissingParameter.New("protocol.DefaultVersioner")
-	}
-
 	if s.Logger == nil {
 		return ErrMissingParameter.New("logger")
 	}
