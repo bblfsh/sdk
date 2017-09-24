@@ -2,7 +2,6 @@ BUILD_PATH := $(location)/build
 
 RUN := $(sdklocation)/etc/run.sh
 RUN_VERBOSE := VERBOSE=1 $(RUN)
-RUN_IT := $(sdklocation)/etc/it.bash
 
 # docker runtime commands
 DOCKER_CMD ?= docker
@@ -107,7 +106,7 @@ build-driver-internal: $(BUILD_PATH)
 	$(RUN) $(GO_CMD) build -o $(BUILD_PATH)/bin/driver .
 
 integration-test: build
-	@$(RUN_VERBOSE) $(RUN_IT) "$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))"
+	@$(RUN_VERBOSE) $(bblfsh-sdk-tools) test
 
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))
