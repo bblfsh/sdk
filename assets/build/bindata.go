@@ -291,7 +291,7 @@ func etcItBash() (*asset, error) {
 	return a, nil
 }
 
-var _etcRunSh = []byte(`#!/bin/bash
+var _etcRunSh = []byte(`#!/bin/sh
 darkcyan='\033[0;31m'
 normal=$'\e[0m'
 
@@ -307,7 +307,8 @@ if [ $RETVAL -gt 0 ] || [ $VERBOSE ] ; then
     echo "$LOG"
 fi
 
-exit $RETVAL`)
+exit $RETVAL
+`)
 
 func etcRunShBytes() ([]byte, error) {
 	return _etcRunSh, nil
@@ -319,7 +320,7 @@ func etcRunSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/run.sh", size: 257, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/run.sh", size: 256, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
