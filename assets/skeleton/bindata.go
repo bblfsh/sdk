@@ -980,7 +980,7 @@ var _driverMainGoTpl = []byte(`package main
 import (
 	"gopkg.in/bblfsh/sdk.v1/protocol/driver"
 
-	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
+	"gopkg.in/bblfsh/sdk.v1/etc/skeleton/driver/normalizer" //REPLACE:"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 )
 
 var version string
@@ -1007,7 +1007,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 363, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 429, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
