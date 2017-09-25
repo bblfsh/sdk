@@ -555,7 +555,7 @@ $(BUILD_PATH):
 	@$(RUN) mkdir -p $(BUILD_PATH)
 
 $(BUILD_IMAGE):
-	@$(eval TEMP_FILE := $(shell mktemp -p $(tmplocation)))
+	@$(eval TEMP_FILE := "$(tmplocation)/tmp.$(shell date "+%s-%N")")
 	@eval "envsubst '$(foreach v,$(ALLOWED_IN_DOCKERFILE),\$${$(v)})' < $(DOCKER_FILE_$@) > $(TEMP_FILE)"
 	@$(RUN) $(DOCKER_BUILD) $(BUILD_ARGS) -t $(call unescape_docker_tag,$@) -f $(TEMP_FILE) .
 	@rm $(TEMP_FILE)
@@ -621,7 +621,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4217, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4227, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
