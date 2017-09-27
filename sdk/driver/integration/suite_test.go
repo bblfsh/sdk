@@ -12,13 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc"
-
-	"gopkg.in/bblfsh/client-go.v1"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -43,8 +41,7 @@ type suite struct {
 	// Fixture to use against the driver
 	Fixtures string
 
-	c *bblfsh.BblfshClient
-	g protocol.ProtocolServiceClient
+	c protocol.ProtocolServiceClient
 }
 
 func (s *suite) SetUpTest(t *testing.T) {
@@ -53,16 +50,11 @@ func (s *suite) SetUpTest(t *testing.T) {
 	}
 
 	r := require.New(t)
-	client, err := bblfsh.NewBblfshClient(s.Endpoint)
-	r.Nil(err)
-
-	s.c = client
-
 	// TODO: use client-go as soon NativeParse request is availabe on it.
 	conn, err := grpc.Dial(s.Endpoint, grpc.WithTimeout(time.Second*2), grpc.WithInsecure())
 	r.Nil(err)
 
-	s.g = protocol.NewProtocolServiceClient(conn)
+	s.c = protocol.NewProtocolServiceClient(conn)
 }
 
 func (s *suite) TestParse(t *testing.T) {
@@ -97,9 +89,12 @@ func (s *suite) doTestParse(t *testing.T, filename string) {
 	r := require.New(t)
 
 	source := getSourceCode(r, filename)
-	req := s.c.NewParseRequest().Language(s.Language).Content(source)
+	req := &protocol.ParseRequest{
+		Language: s.Language,
+		Content:  source,
+	}
 
-	res, err := req.Do()
+	res, err := s.c.Parse(context.Background(), req)
 	r.Nil(err)
 
 	expected := getUAST(r, filename)
@@ -115,7 +110,7 @@ func (s *suite) doTestNativeParse(t *testing.T, filename string) {
 		Content:  source,
 	}
 
-	res, err := s.g.NativeParse(context.Background(), req)
+	res, err := s.c.NativeParse(context.Background(), req)
 	r.Nil(err)
 
 	expected := getAST(r, filename)
@@ -151,6 +146,10 @@ func NativeParseResponseToString(r *require.Assertions, res *protocol.NativePars
 }
 
 func EqualText(r *require.Assertions, expected, actual string) {
+	if expected == actual {
+		return
+	}
+
 	diff := difflib.ContextDiff{
 		A:        difflib.SplitLines(expected),
 		B:        difflib.SplitLines(actual),
