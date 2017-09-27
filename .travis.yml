@@ -13,6 +13,13 @@ matrix:
 
 
 before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libxml2-dev
+  - go get -v gopkg.in/bblfsh/client-go.v1/... || true
+  - cd $GOPATH/src/gopkg.in/bblfsh/client-go.v1
+  - make dependencies
+
+  - cd $GOPATH/src/gopkg.in/bblfsh/sdk.v1
   - make validate-commit
   - go get -t -v ./...
 
