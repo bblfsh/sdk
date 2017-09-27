@@ -178,8 +178,8 @@ func checkError(err error) {
 	}
 }
 
-// ServiceMock implements protocol.Service interface implement the methods to
-// be used in the test.
+// ServiceMock implements the protocol.Servce interface and the methods to be
+// used in the test.
 type ServiceMock struct {
 	P func(req *protocol.ParseRequest) *protocol.ParseResponse
 	N func(req *protocol.NativeParseRequest) *protocol.NativeParseResponse
