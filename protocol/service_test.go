@@ -17,7 +17,7 @@ func TestInvalidParser(t *testing.T) {
 	require := require.New(t)
 
 	protocol.DefaultService = nil
-	lis, err := net.Listen("tcp", ":0")
+	lis, err := net.Listen("tcp", "localhost:0")
 	require.NoError(err)
 
 	server := grpc.NewServer()
@@ -46,7 +46,7 @@ func TestInvalidParser(t *testing.T) {
 func Example() {
 	protocol.DefaultService = NewServiceMock()
 
-	lis, err := net.Listen("tcp", ":0")
+	lis, err := net.Listen("tcp", "localhost:0")
 	checkError(err)
 
 	server := grpc.NewServer()
@@ -81,13 +81,6 @@ func Example() {
 func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseResponse,
 	server *grpc.Server, err error) {
 
-	lis, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return
-	}
-
-	checkError(err)
-
 	// Use a mock parser on the server.
 	protocol.DefaultService = &ServiceMock{
 		P: func(req *protocol.ParseRequest) *protocol.ParseResponse {
@@ -108,6 +101,11 @@ func doEncodingTesterRequest(intEncoding int) (resp *protocol.ParseResponse,
 		server,
 		protocol.NewProtocolServiceServer(),
 	)
+
+	lis, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		checkError(err)
+	}
 
 	go server.Serve(lis)
 
