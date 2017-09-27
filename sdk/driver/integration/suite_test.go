@@ -48,6 +48,10 @@ type suite struct {
 }
 
 func (s *suite) SetUpTest(t *testing.T) {
+	if s.Endpoint == "" || s.Language == "" {
+		t.Skip("please use `bblfsh-sdk-tools test`")
+	}
+
 	r := require.New(t)
 	client, err := bblfsh.NewBblfshClient(s.Endpoint)
 	r.Nil(err)

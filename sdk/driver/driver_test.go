@@ -133,5 +133,4 @@ func TestDriverParserVersion(t *testing.T) {
 	v := d.Version(nil)
 	require.Equal(v.Version, "42")
 	require.Equal(v.Build.String(), "2015-10-21 04:29:00 +0000 UTC")
-	require.Equal(v.Commit, "424242+")
 }
