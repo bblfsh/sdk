@@ -3,11 +3,10 @@ package ann
 import (
 	"testing"
 
-	errors "gopkg.in/src-d/go-errors.v0"
-
 	"gopkg.in/bblfsh/sdk.v1/uast"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/src-d/go-errors.v1"
 )
 
 func TestHasInternalType(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/sdk/jsonlines"
 
-	"srcd.works/go-errors.v0"
+	"gopkg.in/src-d/go-errors.v1"
 )
 
 var (
