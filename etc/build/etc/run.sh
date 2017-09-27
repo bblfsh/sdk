@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 darkcyan='\033[0;31m'
 normal=$'\e[0m'
 
