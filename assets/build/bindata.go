@@ -3,7 +3,6 @@
 // etc/build/Makefile
 // etc/build/etc/build/Dockerfile.build.alpine.tpl
 // etc/build/etc/build/Dockerfile.build.debian.tpl
-// etc/build/etc/it.bash
 // etc/build/etc/run.sh
 // etc/build/make/bootstrap.mk
 // etc/build/make/functions.mk
@@ -76,7 +75,7 @@ ifdef bblfsh-sdk-tools # run only with Golang
     endif
     endif
 
-    $(shell $(bblfsh-sdk-tools) manifest > $(manifest))
+    $(shell $(bblfsh-sdk-tools) envvars > $(manifest))
 endif
 
 include $(sdklocation)/make/manifest.mk
@@ -97,7 +96,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 1242, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 1241, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -178,119 +177,6 @@ func etcBuildDockerfileBuildDebianTpl() (*asset, error) {
 	return a, nil
 }
 
-var _etcItBash = []byte(`#!/bin/bash -e
-
-DRIVER_IMAGE="$1"
-
-if [[ -z ${DRIVER_IMAGE} ]] ; then
-	echo "Usage: $0 <driver image>"
-	exit 1
-fi
-
-DOCKER="${DOCKER:-docker}"
-TOOLS="bblfsh-sdk-tools"
-
-MANIFEST=""
-
-TESTS_DIR="tests"
-SOURCES_SUFFIX="source"
-NATIVE_SUFFIX="native"
-UAST_SUFFIX="uast"
-
-green() {
-	echo -e "\e[32m$1\e[0m"
-}
-
-red() {
-	echo -e "\e[31m$1\e[0m"
-}
-
-yellow() {
-	echo -e "\e[33m$1\e[0m"
-}
-
-require() {
-	if ! which &> /dev/null $1 ; then
-		red "$1 not found: $2"
-		exit 1
-	fi
-}
-
-# check requirements
-require "${TOOLS}" "install bblfsh-sdk"
-require "${DOCKER}" "install Docker or set its path in DOCKER environment variable"
-
-# LANGUAGE is defined by manifest
-eval $("${TOOLS}" manifest)
-
-parse_native_ast() {
-	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse-native --format=prettyjson /code/$(readlink -f $1)
-}
-
-parse_uast() {
-	#TODO: replace with actual command
-	"${DOCKER}" run -v /:/code -i "${DRIVER_IMAGE}" /opt/driver/bin/driver parse --format=pretty /code/$(readlink -f $1)
-}
-
-check_result() {
-	local typ="$1"
-	local target="$2"
-	local tmp="$3"
-	if [[ ! -e ${target} ]] ; then
-                mv "${tmp}" "${target}"
-                yellow "\tgenerated ${target}"
-        elif [[ -f ${target} ]] ; then
-                if cmp --silent "${target}" "${tmp}" ; then
-                        green "\t ✔ ${typ}"
-                else
-                        red "\t ✖ ${typ} does not match"
-                        diff -ur "${target}" "${tmp}"
-                fi
-        else
-                red "\t✖ ${target} path not valid"
-        fi
-        rm -f "${tmp}"
-}
-
-mkdir -p "${TESTS_DIR}"
-
-echo -e "Scanning sources: ${TESTS_DIR}/*.${SOURCES_SUFFIX}"
-for src in $(find "${TESTS_DIR}" -type f -name '*'.${SOURCES_SUFFIX}) ; do
-	NAME="$(basename "${src}")"
-	NATIVE_NAME="$(echo "${NAME}" | sed -e "s/${SOURCES_SUFFIX}\$/${NATIVE_SUFFIX}/g")"
-	UAST_NAME="$(echo "${NAME}" | sed -e "s/${SOURCES_SUFFIX}\$/${UAST_SUFFIX}/g")"
-
-	green "${NAME}"
-
-	# NATIVE
-	tmp="$(mktemp)"
-	parse_native_ast "${src}" > "${tmp}"
-	check_result "native" "${TESTS_DIR}/${NATIVE_NAME}" "${tmp}"
-
-	# UAST
-	tmp="$(mktemp)"
-	parse_uast "${src}" > "${tmp}"
-	check_result "uast" "${TESTS_DIR}/${UAST_NAME}" "${tmp}"
-done
-
-`)
-
-func etcItBashBytes() ([]byte, error) {
-	return _etcItBash, nil
-}
-
-func etcItBash() (*asset, error) {
-	bytes, err := etcItBashBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "etc/it.bash", size: 2249, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _etcRunSh = []byte(`#!/bin/sh
 darkcyan='\033[0;31m'
 normal=$'\e[0m'
@@ -331,9 +217,13 @@ RUNTIME_OS ?=
 RUNTIME_NATIVE_VERSION ?=
 RUNTIME_GO_VERSION ?=
 
+# get the git commit
+GIT_COMMIT=$(shell git rev-parse HEAD | cut -c1-7)
+GIT_DIRTY=$(shell test -n "`+"`"+`git status --porcelain`+"`"+`" && echo "-dirty" || true)
+
 # optional variables
 DRIVER_DEV_PREFIX := dev
-DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
+DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(GIT_COMMIT)$(GIT_DIRTY)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
 DOCKER_IMAGE_VERSIONED ?= $(call escape_docker_tag,$(DOCKER_IMAGE):$(DRIVER_VERSION))
@@ -374,7 +264,7 @@ func makeBootstrapMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1122, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1260, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -475,12 +365,10 @@ func makeHelpMk() (*asset, error) {
 	return a, nil
 }
 
-var _makeRulesMk = []byte(`BUILD_ID := $(shell date +"%m-%d-%Y_%H_%M_%S")
-BUILD_PATH := $(location)/build
+var _makeRulesMk = []byte(`BUILD_PATH := $(location)/build
 
 RUN := $(sdklocation)/etc/run.sh
 RUN_VERBOSE := VERBOSE=1 $(RUN)
-RUN_IT := $(sdklocation)/etc/it.bash
 
 # docker runtime commands
 DOCKER_CMD ?= docker
@@ -503,7 +391,6 @@ BUILD_IMAGE=$(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE) $(DOCKER_I
 GO_CMD = go
 GO_RUN = $(GO_CMD) run
 GO_TEST = $(GO_CMD) test -v
-GO_LDFLAGS = -X main.version=$(DRIVER_VERSION) -X main.build=$(BUILD_ID)
 # If GOPATH has multiple dir entries, pick the first one
 GO_PATH := $(shell echo ${GOPATH}|cut -f1 -d':')
 
@@ -553,7 +440,8 @@ ifeq ($(GOPATH),)
 endif
 
 $(BUILD_PATH):
-	@$(RUN) mkdir -p $(BUILD_PATH)
+	@$(RUN) mkdir -p $(BUILD_PATH)/bin
+	@$(RUN) mkdir -p $(BUILD_PATH)/etc
 
 $(BUILD_IMAGE):
 	@$(eval TEMP_FILE := "$(tmplocation)/tmp.$(shell date "+%s-%N")")
@@ -579,12 +467,13 @@ build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 build-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_DRIVER_IMAGE) build-native
 	@$(RUN) $(BUILD_DRIVER_CMD) make build-driver-internal
 
-build-driver-internal:
+build-driver-internal: $(BUILD_PATH)
+	@$(RUN) $(bblfsh-sdk-tools) build $(DRIVER_VERSION) --output $(BUILD_PATH)/etc/manifest.toml
 	@cd driver; \
-	LDFLAGS="$(GO_LDFLAGS)" $(RUN) $(GO_CMD) build -o $(BUILD_PATH)/driver .; \
+	$(RUN) $(GO_CMD) build -o $(BUILD_PATH)/bin/driver .
 
 integration-test: build
-	@$(RUN_VERBOSE) $(RUN_IT) "$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))"
+	@$(RUN_VERBOSE) $(bblfsh-sdk-tools) test
 
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))
@@ -622,7 +511,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4227, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4154, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -682,7 +571,6 @@ var _bindata = map[string]func() (*asset, error){
 	"Makefile": makefile,
 	"etc/build/Dockerfile.build.alpine.tpl": etcBuildDockerfileBuildAlpineTpl,
 	"etc/build/Dockerfile.build.debian.tpl": etcBuildDockerfileBuildDebianTpl,
-	"etc/it.bash": etcItBash,
 	"etc/run.sh": etcRunSh,
 	"make/bootstrap.mk": makeBootstrapMk,
 	"make/functions.mk": makeFunctionsMk,
@@ -736,7 +624,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"Dockerfile.build.alpine.tpl": &bintree{etcBuildDockerfileBuildAlpineTpl, map[string]*bintree{}},
 			"Dockerfile.build.debian.tpl": &bintree{etcBuildDockerfileBuildDebianTpl, map[string]*bintree{}},
 		}},
-		"it.bash": &bintree{etcItBash, map[string]*bintree{}},
 		"run.sh": &bintree{etcRunSh, map[string]*bintree{}},
 	}},
 	"make": &bintree{nil, map[string]*bintree{

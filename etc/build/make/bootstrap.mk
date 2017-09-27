@@ -4,9 +4,13 @@ RUNTIME_OS ?=
 RUNTIME_NATIVE_VERSION ?=
 RUNTIME_GO_VERSION ?=
 
+# get the git commit
+GIT_COMMIT=$(shell git rev-parse HEAD | cut -c1-7)
+GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "-dirty" || true)
+
 # optional variables
 DRIVER_DEV_PREFIX := dev
-DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(shell git rev-parse HEAD | cut -c1-7)
+DRIVER_VERSION ?= $(DRIVER_DEV_PREFIX)-$(GIT_COMMIT)$(GIT_DIRTY)
 
 DOCKER_IMAGE ?= bblfsh/$(LANGUAGE)-driver
 DOCKER_IMAGE_VERSIONED ?= $(call escape_docker_tag,$(DOCKER_IMAGE):$(DRIVER_VERSION))

@@ -9,6 +9,10 @@ import (
 
 // Pretty writes a pretty string representation of the *Node to a writer.
 func Pretty(n *Node, w io.Writer, includes IncludeFlag) error {
+	if n == nil {
+		return nil
+	}
+
 	return printNode(w, 0, n, includes)
 }
 

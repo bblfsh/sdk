@@ -34,11 +34,7 @@ install:
 $(DEPENDENCIES):
 	$(GO_GET) $@/...
 
-driver-tpl:
-	cat protocol/internal/testdriver/main.go | sed -e 's|\([[:space:]]\+\).*//REPLACE:\(.*\)|\1\2|g' \
-		> etc/skeleton/driver/main.go.tpl
-
-$(ASSETS): $(DEPENDENCIES) driver-tpl
+$(ASSETS): $(DEPENDENCIES)
 	chmod -R go=r $(ASSETS_PATH)/$@; \
 	$(BINDATA_CMD) \
 		-pkg $@ \

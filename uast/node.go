@@ -1,13 +1,12 @@
-package native
+package uast
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strconv"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
-
-	"gopkg.in/src-d/go-errors.v0"
+	"gopkg.in/src-d/go-errors.v1"
 )
 
 var (
@@ -19,18 +18,72 @@ var (
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
 )
 
-type FillType int
+// Node is a node in a UAST.
+//
+//proteus:generate
+type Node struct {
+	// InternalType is the internal type of the node in the AST, in the source
+	// language.
+	InternalType string `json:",omitempty"`
+	// Properties are arbitrary, language-dependent, metadata of the
+	// original AST.
+	Properties map[string]string `json:",omitempty"`
+	// Children are the children nodes of this node.
+	Children []*Node `json:",omitempty"`
+	// Token is the token content if this node represents a token from the
+	// original source file. If it is empty, there is no token attached.
+	Token string `json:",omitempty"`
+	// StartPosition is the position where this node starts in the original
+	// source code file.
+	StartPosition *Position `json:",omitempty"`
+	// EndPosition is the position where this node ends in the original
+	// source code file.
+	EndPosition *Position `json:",omitempty"`
+	// Roles is a list of Role that this node has. It is a language-independent
+	// annotation.
+	Roles []Role `json:",omitempty"`
+}
+
+// NewNode creates a new empty *Node.
+func NewNode() *Node {
+	return &Node{
+		Properties: make(map[string]string, 0),
+		Roles:      []Role{Unannotated},
+	}
+}
+
+// Hash returns the hash of the node.
+func (n *Node) Hash() Hash {
+	return n.HashWith(IncludeChildren)
+}
+
+// HashWith returns the hash of the node, computed with the given set of fields.
+func (n *Node) HashWith(includes IncludeFlag) Hash {
+	//TODO
+	return 0
+}
+
+// String converts the *Node to a string using pretty printing.
+func (n *Node) String() string {
+	buf := bytes.NewBuffer(nil)
+	err := Pretty(n, buf, IncludeAll)
+	if err != nil {
+		return "error"
+	}
+
+	return buf.String()
+}
 
 const (
-	None FillType = iota
-	OffsetFromLineCol
-	LineColFromOffset
+	// InternalRoleKey is a key string uses in properties to use the internal
+	// role of a node in the AST, if any.
+	InternalRoleKey = "internalRole"
 )
 
-// ObjectToNoder is a ToNoder for trees that are represented as nested JSON objects.
+// ObjectToNode transform trees that are represented as nested JSON objects.
 // That is, an interface{} containing maps, slices, strings and integers. It
 // then converts from that structure to *Node.
-type ObjectToNoder struct {
+type ObjectToNode struct {
 	// InternalTypeKey is the name of the key that the native AST uses
 	// to differentiate the type of the AST nodes. This internal key will then be
 	// checkable in the AnnotationRules with the `HasInternalType` predicate. This
@@ -72,7 +125,7 @@ type ObjectToNoder struct {
 	SyntheticTokens map[string]string
 	// PromotedPropertyLists allows to convert some properties in the native AST with a list value
 	// to its own node with the list elements as children. 	By default the UAST
-	// generation will set as children of a node any object that hangs from any of the
+	// generation will set as children of a node any uast. that hangs from any of the
 	// original native AST node properties. In this process, object key serving as
 	// the parent is lost and its name is added as the "internalRole" key of the children.
 	// This is usually fine since the InternalTypeKey of the parent AST node will
@@ -107,14 +160,9 @@ type ObjectToNoder struct {
 	// the root will be the value of the only key present in its input
 	// argument.
 	TopLevelIsRootNode bool
-	// PositionFill specifies if the noder has to fill missing positions (col, line, offset)
-	// from ones that the native AST fills. The possible values are "None" (don't fill
-	// anything), "OffsetFromLineCol" (fill the offset from the line and column values) and
-	// "LineColFromOffset" (fill line and col from the offset).
-	PositionFill FillType
 }
 
-func (c *ObjectToNoder) ToNode(v interface{}) (*uast.Node, error) {
+func (c *ObjectToNode) ToNode(v interface{}) (*Node, error) {
 	src, ok := v.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnsupported.New("non-object root node")
@@ -150,13 +198,13 @@ func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (
 	panic("unreachable")
 }
 
-func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
+func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnexpectedObject.New("map[string]interface{}", obj)
 	}
 
-	n := uast.NewNode()
+	n := NewNode()
 
 	// We need to have the internalkey before iterating others
 	internalKey, err := c.getInternalKeyFromObject(obj)
@@ -238,21 +286,21 @@ func (c *ObjectToNoder) toNode(obj interface{}) (*uast.Node, error) {
 	return n, nil
 }
 
-func (c *ObjectToNoder) mapToNode(k string, obj map[string]interface{}) (*uast.Node, error) {
+func (c *ObjectToNode) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
 	n, err := c.toNode(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	n.Properties[uast.InternalRoleKey] = k
+	n.Properties[InternalRoleKey] = k
 
 	return n, nil
 }
 
-func (c *ObjectToNoder) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*uast.Node, error) {
-	kn := uast.NewNode()
+func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*Node, error) {
+	kn := NewNode()
 
-	var ns []*uast.Node
+	var ns []*Node
 	for _, v := range s {
 		n, err := c.toNode(v)
 		if err != nil {
@@ -273,8 +321,8 @@ func (c *ObjectToNoder) sliceToNodeWithChildren(k string, s []interface{}, paren
 	return kn, nil
 }
 
-func (c *ObjectToNoder) stringToNode(k, v, parentKey string) *uast.Node {
-	kn := uast.NewNode()
+func (c *ObjectToNode) stringToNode(k, v, parentKey string) *Node {
+	kn := NewNode()
 
 	c.setInternalKey(kn, parentKey+"."+k)
 	kn.Properties["promotedPropertyString"] = "true"
@@ -283,22 +331,22 @@ func (c *ObjectToNoder) stringToNode(k, v, parentKey string) *uast.Node {
 	return kn
 }
 
-func (c *ObjectToNoder) sliceToNodeSlice(k string, s []interface{}) ([]*uast.Node, error) {
-	var ns []*uast.Node
+func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, error) {
+	var ns []*Node
 	for _, v := range s {
 		n, err := c.toNode(v)
 		if err != nil {
 			return nil, err
 		}
 
-		n.Properties[uast.InternalRoleKey] = k
+		n.Properties[InternalRoleKey] = k
 		ns = append(ns, n)
 	}
 
 	return ns, nil
 }
 
-func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error {
+func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
 	switch {
 	case c.isTokenKey(k):
 		s := fmt.Sprint(o)
@@ -327,7 +375,7 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		if n.StartPosition == nil {
-			n.StartPosition = &uast.Position{}
+			n.StartPosition = &Position{}
 		}
 
 		n.StartPosition.Offset = i
@@ -338,7 +386,7 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		if n.EndPosition == nil {
-			n.EndPosition = &uast.Position{}
+			n.EndPosition = &Position{}
 		}
 
 		n.EndPosition.Offset = i
@@ -349,7 +397,7 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		if n.StartPosition == nil {
-			n.StartPosition = &uast.Position{}
+			n.StartPosition = &Position{}
 		}
 
 		n.StartPosition.Line = i
@@ -360,7 +408,7 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		if n.EndPosition == nil {
-			n.EndPosition = &uast.Position{}
+			n.EndPosition = &Position{}
 		}
 
 		n.EndPosition.Line = i
@@ -371,7 +419,7 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		if n.StartPosition == nil {
-			n.StartPosition = &uast.Position{}
+			n.StartPosition = &Position{}
 		}
 
 		n.StartPosition.Col = i
@@ -382,7 +430,7 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 		}
 
 		if n.EndPosition == nil {
-			n.EndPosition = &uast.Position{}
+			n.EndPosition = &Position{}
 		}
 
 		n.EndPosition.Col = i
@@ -393,11 +441,11 @@ func (c *ObjectToNoder) addProperty(n *uast.Node, k string, o interface{}) error
 	return nil
 }
 
-func (c *ObjectToNoder) isTokenKey(key string) bool {
+func (c *ObjectToNode) isTokenKey(key string) bool {
 	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
-func (c *ObjectToNoder) syntheticToken(key string) string {
+func (c *ObjectToNode) syntheticToken(key string) string {
 	if c.SyntheticTokens == nil {
 		return ""
 	}
@@ -405,7 +453,7 @@ func (c *ObjectToNoder) syntheticToken(key string) string {
 	return c.SyntheticTokens[key]
 }
 
-func (c *ObjectToNoder) setInternalKey(n *uast.Node, k string) error {
+func (c *ObjectToNode) setInternalKey(n *Node, k string) error {
 	if n.InternalType != "" && n.InternalType != k {
 		return ErrTwoTypesSameNode.New(n.InternalType, k)
 	}
@@ -414,7 +462,7 @@ func (c *ObjectToNoder) setInternalKey(n *uast.Node, k string) error {
 	return nil
 }
 
-func (c *ObjectToNoder) getInternalKeyFromObject(obj interface{}) (string, error) {
+func (c *ObjectToNode) getInternalKeyFromObject(obj interface{}) (string, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return "", ErrUnexpectedObject.New("map[string]interface{}", obj)
@@ -447,7 +495,7 @@ func toUint32(v interface{}) (uint32, error) {
 	}
 }
 
-type byOffset []*uast.Node
+type byOffset []*Node
 
 func (s byOffset) Len() int      { return len(s) }
 func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
@@ -467,12 +515,12 @@ func (s byOffset) Less(i, j int) bool {
 	return apos.Offset < bpos.Offset
 }
 
-func startPosition(n *uast.Node) *uast.Position {
+func startPosition(n *Node) *Position {
 	if n.StartPosition != nil {
 		return n.StartPosition
 	}
 
-	var min *uast.Position
+	var min *Position
 	for _, c := range n.Children {
 		other := startPosition(c)
 		if other == nil {

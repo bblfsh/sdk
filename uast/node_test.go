@@ -1,4 +1,4 @@
-package native
+package uast
 
 import (
 	"encoding/json"
@@ -8,16 +8,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
 var (
-	fixtureDir = "../../uast/fixtures"
+	fixtureDir = "fixtures"
 )
 
 func TestToNodeErrUnsupported(t *testing.T) {
 	require := require.New(t)
-	p := &ObjectToNoder{}
+	p := &ObjectToNode{}
 	n, err := p.ToNode(struct{}{})
 	require.Error(err)
 	require.Nil(n)
@@ -34,7 +33,7 @@ func TestToNodeErrEmptyAST(t *testing.T) {
 func testToNodeErrEmptyAST(t *testing.T, topIsRoot bool) {
 	require := require.New(t)
 	empty := make(map[string]interface{})
-	p := &ObjectToNoder{TopLevelIsRootNode: topIsRoot}
+	p := &ObjectToNode{TopLevelIsRootNode: topIsRoot}
 	n, err := p.ToNode(empty)
 	require.Error(err)
 	require.Nil(n)
@@ -46,7 +45,7 @@ func TestToNodeErrUnexpectedObjectSize(t *testing.T) {
 	multiRoot := make(map[string]interface{})
 	multiRoot["a"] = 0
 	multiRoot["b"] = 0
-	p := &ObjectToNoder{}
+	p := &ObjectToNode{}
 	n, err := p.ToNode(multiRoot)
 	require.Error(err)
 	require.Nil(n)
@@ -59,7 +58,7 @@ func TestToNodeWithTopLevelRoot(t *testing.T) {
 	root, err := getRootAtTopLevelFromFixture()
 	require.Nil(err)
 
-	p := &ObjectToNoder{
+	p := &ObjectToNode{
 		TopLevelIsRootNode: true,
 		InternalTypeKey:    "internalClass",
 		LineKey:            "line",
@@ -119,11 +118,11 @@ func TestToNoderJava(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var p ToNoder = &ObjectToNoder{
+	tn := &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
-	n, err := p.ToNode(f)
+	n, err := tn.ToNode(f)
 	require.NoError(err)
 	require.NotNil(n)
 }
@@ -135,7 +134,7 @@ func TestPropertyListPromotionSpecific(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	p := &ObjectToNoder{
+	p := &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
@@ -146,7 +145,7 @@ func TestPropertyListPromotionSpecific(t *testing.T) {
 	child := findChildWithInternalType(n, "CompilationUnit.types")
 	require.Nil(child)
 
-	p = &ObjectToNoder{
+	p = &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		PromotedPropertyLists: map[string]map[string]bool{
@@ -170,7 +169,7 @@ func TestPropertyString(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	p := &ObjectToNoder{
+	p := &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
@@ -181,7 +180,7 @@ func TestPropertyString(t *testing.T) {
 	child := findChildWithInternalType(n, "CompilationUnit.internalClass")
 	require.Nil(child)
 
-	p = &ObjectToNoder{
+	p = &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		PromotedPropertyStrings: map[string]map[string]bool{
@@ -205,7 +204,7 @@ func TestPropertyListPromotionAll(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	p := &ObjectToNoder{
+	p := &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 	}
@@ -215,7 +214,7 @@ func TestPropertyListPromotionAll(t *testing.T) {
 	child := findChildWithInternalType(n, "CompilationUnit.types")
 	require.Nil(child)
 
-	p = &ObjectToNoder{
+	p = &ObjectToNode{
 		InternalTypeKey:         "internalClass",
 		LineKey:                 "line",
 		PromoteAllPropertyLists: true,
@@ -235,7 +234,7 @@ func TestSyntheticTokens(t *testing.T) {
 	f, err := getFixture("java_example_1.json")
 	require.NoError(err)
 
-	var c ToNoder = &ObjectToNoder{
+	c := &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
 		SyntheticTokens: map[string]string{
@@ -255,7 +254,7 @@ func TestSyntheticTokens(t *testing.T) {
 
 }
 
-func findChildWithInternalType(n *uast.Node, internalType string) *uast.Node {
+func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
 			return child

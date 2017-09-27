@@ -13,10 +13,6 @@
 // and operations to manipulate them.
 package uast
 
-import (
-	"bytes"
-)
-
 // Hash is a hash value.
 type Hash uint32
 
@@ -427,68 +423,6 @@ type Position struct {
 	// a line. It is a 1-based index.
 	Col uint32
 }
-
-// Node is a node in a UAST.
-//
-//proteus:generate
-type Node struct {
-	// InternalType is the internal type of the node in the AST, in the source
-	// language.
-	InternalType string `json:",omitempty"`
-	// Properties are arbitrary, language-dependent, metadata of the
-	// original AST.
-	Properties map[string]string `json:",omitempty"`
-	// Children are the children nodes of this node.
-	Children []*Node `json:",omitempty"`
-	// Token is the token content if this node represents a token from the
-	// original source file. If it is empty, there is no token attached.
-	Token string `json:",omitempty"`
-	// StartPosition is the position where this node starts in the original
-	// source code file.
-	StartPosition *Position `json:",omitempty"`
-	// EndPosition is the position where this node ends in the original
-	// source code file.
-	EndPosition *Position `json:",omitempty"`
-	// Roles is a list of Role that this node has. It is a language-independent
-	// annotation.
-	Roles []Role `json:",omitempty"`
-}
-
-// NewNode creates a new empty *Node.
-func NewNode() *Node {
-	return &Node{
-		Properties: make(map[string]string, 0),
-		Roles:      []Role{Unannotated},
-	}
-}
-
-// Hash returns the hash of the node.
-func (n *Node) Hash() Hash {
-	return n.HashWith(IncludeChildren)
-}
-
-// HashWith returns the hash of the node, computed with the given set of fields.
-func (n *Node) HashWith(includes IncludeFlag) Hash {
-	//TODO
-	return 0
-}
-
-// String converts the *Node to a string using pretty printing.
-func (n *Node) String() string {
-	buf := bytes.NewBuffer(nil)
-	err := Pretty(n, buf, IncludeAll)
-	if err != nil {
-		return "error"
-	}
-
-	return buf.String()
-}
-
-const (
-	// InternalRoleKey is a key string uses in properties to use the internal
-	// role of a node in the AST, if any.
-	InternalRoleKey = "internalRole"
-)
 
 // IncludeFlag represents a set of fields to be included in a Hash or String.
 type IncludeFlag int64
