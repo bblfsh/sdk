@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"gopkg.in/src-d/go-errors.v1"
 )
