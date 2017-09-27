@@ -18,7 +18,7 @@ host-platform := $(shell echo $$HOST_PLATFORM)
 ifdef bblfsh-sdk-tools # run only with Golang
     ifdef in-container
     ifneq ($(host-platform),Linux)
-        bblfsh-sdk-tools :=  go run /go/src/github.com/bblfsh/sdk/cli/bblfsh-sdk-tools/main.go
+        bblfsh-sdk-tools :=  go run /go/src/gopkg.in/bblfsh/sdk.v1/cli/bblfsh-sdk-tools/main.go
     endif
     endif
 

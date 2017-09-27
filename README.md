@@ -87,22 +87,10 @@ $ go generate
 
 It regenerates all *[proto](https://developers.google.com/protocol-buffers/)* and *[proteus](https://github.com/src-d/proteus)* files under *[protocol/](https://github.com/bblfsh/sdk/tree/master/protocol)* and *[uast/](https://github.com/bblfsh/sdk/tree/master/uast)* directories.
 
-These auto generated files shouldn't be edited by hand, however at the moment, you have to manually add a license header:
-
-```
-// Copyright 2017 Sourced Technologies SL
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not
-// use this file except in compliance with the License. You may obtain a copy
-// of the License at
-//     http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations under
-// the License.
-```
-
-It's necessary to modify *[protocol/generated.pb.go](https://github.com/bblfsh/sdk/blob/master/protocol/generated.pb.go)* too to change an import:
+These auto generated files shouldn't be edited by hand, however at the moment,
+tt's necessary to modify
+*[protocol/generated.pb.go](https://github.com/bblfsh/sdk/blob/master/protocol/generated.pb.go)*
+too to change an import:
 
 ```go
 import github_com_bblfsh_sdk_uast "github.com/bblfsh/sdk/uast"

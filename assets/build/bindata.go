@@ -71,7 +71,7 @@ host-platform := $(shell echo $$HOST_PLATFORM)
 ifdef bblfsh-sdk-tools # run only with Golang
     ifdef in-container
     ifneq ($(host-platform),Linux)
-        bblfsh-sdk-tools :=  go run /go/src/github.com/bblfsh/sdk/cli/bblfsh-sdk-tools/main.go
+        bblfsh-sdk-tools :=  go run /go/src/gopkg.in/bblfsh/sdk.v1/cli/bblfsh-sdk-tools/main.go
     endif
     endif
 
@@ -96,7 +96,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 1240, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 1241, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -177,7 +177,7 @@ func etcBuildDockerfileBuildDebianTpl() (*asset, error) {
 	return a, nil
 }
 
-var _etcRunSh = []byte(`#!/bin/bash
+var _etcRunSh = []byte(`#!/bin/sh
 darkcyan='\033[0;31m'
 normal=$'\e[0m'
 
@@ -193,7 +193,8 @@ if [ $RETVAL -gt 0 ] || [ $VERBOSE ] ; then
     echo "$LOG"
 fi
 
-exit $RETVAL`)
+exit $RETVAL
+`)
 
 func etcRunShBytes() ([]byte, error) {
 	return _etcRunSh, nil
@@ -205,7 +206,7 @@ func etcRunSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/run.sh", size: 257, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/run.sh", size: 256, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -443,7 +444,7 @@ $(BUILD_PATH):
 	@$(RUN) mkdir -p $(BUILD_PATH)/etc
 
 $(BUILD_IMAGE):
-	@$(eval TEMP_FILE := $(shell mktemp -p $(tmplocation)))
+	@$(eval TEMP_FILE := "$(tmplocation)/tmp.$(shell date "+%s-%N")")
 	@eval "envsubst '$(foreach v,$(ALLOWED_IN_DOCKERFILE),\$${$(v)})' < $(DOCKER_FILE_$@) > $(TEMP_FILE)"
 	@$(RUN) $(DOCKER_BUILD) $(BUILD_ARGS) -t $(call unescape_docker_tag,$@) -f $(TEMP_FILE) .
 	@rm $(TEMP_FILE)
@@ -510,7 +511,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4144, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4154, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
