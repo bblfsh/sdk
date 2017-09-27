@@ -87,15 +87,6 @@ $ go generate
 
 It regenerates all *[proto](https://developers.google.com/protocol-buffers/)* and *[proteus](https://github.com/src-d/proteus)* files under *[protocol/](https://github.com/bblfsh/sdk/tree/master/protocol)* and *[uast/](https://github.com/bblfsh/sdk/tree/master/uast)* directories.
 
-These auto generated files shouldn't be edited by hand, however at the moment,
-tt's necessary to modify
-*[protocol/generated.pb.go](https://github.com/bblfsh/sdk/blob/master/protocol/generated.pb.go)*
-too to change an import:
-
-```go
-import github_com_bblfsh_sdk_uast "github.com/bblfsh/sdk/uast"
-```
-
 ## Usage
 
 Babelfish SDK helps both setting up the initial structure of a new driver
