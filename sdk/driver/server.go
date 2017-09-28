@@ -7,14 +7,20 @@ import (
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/sdk/server"
-
-	"github.com/sirupsen/logrus"
+	"gopkg.in/src-d/go-errors.v1"
 )
+
+var ErrInvalidLogger = errors.NewKind("invalid logger configuration")
 
 var (
 	network *string
 	address *string
 	verbose *string
+	log     struct {
+		level  *string
+		format *string
+		fields *string
+	}
 )
 
 // Server is a grpc server for the communication with the driver.
@@ -72,25 +78,30 @@ func (s *Server) initializeFlags() {
 		defaultNetwork = "tcp"
 		defaultAddress = "localhost:9432"
 		defaultVerbose = "info"
+		defaultFormat  = "text"
 	)
 
 	cmd := flag.NewFlagSet("server", flag.ExitOnError)
 	network = cmd.String("network", defaultNetwork, "network type: tcp, tcp4, tcp6, unix or unixpacket.")
-	address = cmd.String("address", defaultAddress, "address to listen")
-	verbose = cmd.String("verbose", defaultVerbose, "verbose level: panic, fatal, error, warning, info, debug.")
+	address = cmd.String("address", defaultAddress, "address to listen.")
+	log.level = cmd.String("log-level", defaultVerbose, "log level: panic, fatal, error, warning, info, debug.")
+	log.format = cmd.String("log-format", defaultFormat, "format of the logs: text or json.")
+	log.fields = cmd.String("log-fields", "", "extra fields to add to every log line in json format.")
 
 	cmd.Parse(os.Args[1:])
 }
 
 func (s *Server) initializeLogger() error {
-	s.Logger = logrus.New()
-	if *verbose != "" {
-		level, err := logrus.ParseLevel(*verbose)
-		if err != nil {
-			return err
-		}
+	f := server.LoggerFactory{
+		Level:  *log.level,
+		Format: *log.format,
+		Fields: *log.fields,
+	}
 
-		s.Logger.Level = level
+	var err error
+	s.Logger, err = f.New()
+	if err != nil {
+		return ErrInvalidLogger.Wrap(err)
 	}
 
 	return nil

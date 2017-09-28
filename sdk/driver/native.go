@@ -16,9 +16,7 @@ import (
 )
 
 var (
-	// NativeBinary default location of the native driver binary. Should not
-	// override this variable unless you know what are you doing.
-	NativeBinary = "/opt/driver/bin/native"
+
 
 	ErrUnsupportedLanguage = errors.NewKind("unsupported language got %q, expected %q")
 	ErrNativeNotRunning    = errors.NewKind("native driver is not running")

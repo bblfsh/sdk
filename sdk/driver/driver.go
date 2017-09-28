@@ -10,12 +10,6 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
 )
 
-var (
-	// ManifestLocation location of the manifest file. Should not override
-	// this variable unless you know what are you doing.
-	ManifestLocation = "/opt/driver/etc/" + manifest.Filename
-)
-
 // Driver implements a bblfsh driver, a driver is on charge of transforming a
 // source code into an AST and a UAST. To transform the AST into a UAST, a
 // `uast.ObjectToNode`` and a series of `tranformer.Transformer` are used.
