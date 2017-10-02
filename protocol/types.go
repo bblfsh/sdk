@@ -75,15 +75,17 @@ type ParseRequest struct {
 	// Filename is the name of the file containing the source code. Used for
 	// language detection. Only filename is required, path might be used but
 	// ignored. This is optional.
-	Filename string
+	Filename string `json:"filename"`
 	// Language. If specified, it will override language detection. This is
 	// optional.
-	Language string
+	Language string `json:"language"`
 	// Content is the source code to be parsed.
 	Content string `json:"content"`
 	// Encoding is the encoding that the Content uses. Currently only UTF-8 and
 	// Base64 are supported.
 	Encoding Encoding `json:"encoding"`
+	// Timeout amount of time for wait until the request is proccessed.
+	Timeout time.Duration `json:"timeout"`
 }
 
 // ParseResponse is the reply to ParseRequest.
