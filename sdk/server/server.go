@@ -5,6 +5,7 @@ import (
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"gopkg.in/src-d/go-errors.v1"
 )
@@ -17,8 +18,6 @@ var (
 type Server struct {
 	// Options list of grpc.ServerOption's.
 	Options []grpc.ServerOption
-	// Logger a logger to be used by the server.
-	Logger Logger
 
 	*grpc.Server
 }
@@ -31,32 +30,20 @@ func (s *Server) Serve(listener net.Listener) error {
 	}
 
 	defer func() {
-		s.Logger.Infof("grpc server ready")
+		logrus.Infof("grpc server ready")
 	}()
 
 	return s.Server.Serve(listener)
 }
 
 func (s *Server) initialize() error {
-	if err := s.validate(); err != nil {
-		return err
-	}
-
 	s.Server = grpc.NewServer(s.Options...)
 
-	s.Logger.Debugf("registering grpc service")
+	logrus.Debugf("registering grpc service")
 	protocol.RegisterProtocolServiceServer(
 		s.Server,
 		protocol.NewProtocolServiceServer(),
 	)
-
-	return nil
-}
-
-func (s *Server) validate() error {
-	if s.Logger == nil {
-		return ErrMissingParameter.New("logger")
-	}
 
 	return nil
 }

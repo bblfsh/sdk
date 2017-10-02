@@ -26,6 +26,9 @@ var (
 // Server is a grpc server for the communication with the driver.
 type Server struct {
 	server.Server
+	// Logger a logger to be used by the server.
+	Logger server.Logger
+
 	d *Driver
 }
 
@@ -105,13 +108,4 @@ func (s *Server) initializeLogger() error {
 	}
 
 	return nil
-}
-
-// Parse handles a ParserRequest.
-func (s *Server) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
-	resp := s.d.Parse(req)
-	s.Logger.Infof("request processed content %d bytes, encoding %s, status %s in %s",
-		len(req.Content), req.Encoding, resp.Status, resp.Elapsed)
-
-	return resp
 }
