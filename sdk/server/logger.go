@@ -24,6 +24,7 @@ type LoggerFactory struct {
 	Format string
 }
 
+// New returns a new logger based on the LoggerFactory values.
 func (c LoggerFactory) New() (Logger, error) {
 	l := logrus.New()
 	if err := c.setLevel(l); err != nil {
@@ -35,6 +36,15 @@ func (c LoggerFactory) New() (Logger, error) {
 	}
 
 	return c.setFields(l)
+}
+
+// Apply configures the standard logrus Logger with the LoggerFactory values.
+func (c LoggerFactory) Apply() error {
+	if err := c.setLevel(logrus.StandardLogger()); err != nil {
+		return err
+	}
+
+	return c.setFormat(logrus.StandardLogger())
 }
 
 func (c LoggerFactory) setLevel(l *logrus.Logger) error {
