@@ -3,6 +3,9 @@ BUILD_PATH := $(location)/build
 RUN := $(sdklocation)/etc/run.sh
 RUN_VERBOSE := VERBOSE=1 $(RUN)
 
+GRPC_PORT := 9432
+GRPC_PORT_INTEGRATION ?= 39432
+
 # docker runtime commands
 DOCKER_CMD ?= docker
 DOCKER_BUILD ?= $(DOCKER_CMD) build
@@ -106,7 +109,12 @@ build-driver-internal: $(BUILD_PATH)
 	$(RUN) $(GO_CMD) build -o $(BUILD_PATH)/bin/driver .
 
 integration-test: build
-	@$(RUN_VERBOSE) $(bblfsh-sdk-tools) test
+	CONTAINER_ID=`$(DOCKER_CMD) run -d \
+		-p $(GRPC_PORT_INTEGRATION):$(GRPC_PORT) \
+		$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))`; \
+	echo "CONTAINER_ID: $$CONTAINER_ID"; \
+	$(bblfsh-sdk-tools) test --endpoint localhost:$(GRPC_PORT_INTEGRATION) || true; \
+	docker kill $$CONTAINER_ID;
 
 push: build
 	$(if $(pushdisabled),$(error $(pushdisabled)))

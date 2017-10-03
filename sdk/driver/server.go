@@ -79,7 +79,7 @@ func (s *Server) initialize() error {
 func (s *Server) initializeFlags() {
 	const (
 		defaultNetwork = "tcp"
-		defaultAddress = "localhost:9432"
+		defaultAddress = "0.0.0.0:9432"
 		defaultVerbose = "info"
 		defaultFormat  = "text"
 	)
