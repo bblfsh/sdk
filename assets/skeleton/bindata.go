@@ -933,7 +933,7 @@ To initialize the build system execute: `+"`"+`bblfsh-sdk prepare-build`+"`"+`, 
 To execute the tests just execute `+"`"+`make test`+"`"+`, this will execute the test over the native and the go components of the driver. Use `+"`"+`make test-native`+"`"+` to run the test only over the native component or `+"`"+`make test-driver`+"`"+` to run the test just over the go component.
 
 The build is done executing `+"`"+`make build`+"`"+`. To evaluate the result using a docker container, execute:
-`+"`"+`docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:7]>`+"`"+`
+`+"`"+`docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:7]>-dirty`+"`"+`
 
 
 License
@@ -971,7 +971,7 @@ func readmeMdTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "README.md.tpl", size: 1966, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "README.md.tpl", size: 1972, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
