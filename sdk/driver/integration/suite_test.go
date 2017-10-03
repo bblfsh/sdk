@@ -51,7 +51,7 @@ func (s *suite) SetUpTest(t *testing.T) {
 
 	r := require.New(t)
 	// TODO: use client-go as soon NativeParse request is availabe on it.
-	conn, err := grpc.Dial(s.Endpoint, grpc.WithTimeout(time.Second*2), grpc.WithInsecure())
+	conn, err := grpc.Dial(s.Endpoint, grpc.WithTimeout(time.Second*2), grpc.WithInsecure(), grpc.WithBlock())
 	r.Nil(err)
 
 	s.c = protocol.NewProtocolServiceClient(conn)
