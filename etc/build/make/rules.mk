@@ -60,10 +60,6 @@ ALLOWED_IN_DOCKERFILE = \
 	BUILD_USER BUILD_UID BUILD_PATH \
 	DOCKER_IMAGE DOCKER_IMAGE_VERSIONED DOCKER_BUILD_NATIVE_IMAGE
 
-# generated documentation
-DOCGEN_FILES += \
-	ANNOTATION.md
-
 # we export the variable to allow envsubst, substitute the vars in the
 # Dockerfiles
 export
@@ -96,7 +92,7 @@ test-driver-internal: build-native-internal
 	@cd driver; \
 	$(RUN_VERBOSE) $(GO_TEST) ./...
 
-build: docgen | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
+build: | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
 build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
 	@$(RUN) $(BUILD_NATIVE_CMD) make build-native-internal
 
@@ -129,11 +125,6 @@ push: build
 			$(call unescape_docker_tag,$(DOCKER_IMAGE)):latest; \
 		$(RUN) $(DOCKER_PUSH) $(call unescape_docker_tag,$(DOCKER_IMAGE):latest); \
 	fi;
-
-docgen: $(DOCGEN_FILES)
-
-ANNOTATION.md: driver/normalizer/annotation.go
-	@$(GO_RUN) driver/main.go docgen > $@
 
 validate:
 	@$(RUN) $(bblfsh-sdk) update --dry-run
