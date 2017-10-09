@@ -1,4 +1,4 @@
-# sdk [![Build Status](https://travis-ci.org/bblfsh/sdk.svg?branch=master)](https://travis-ci.org/bblfsh/sdk) [![codecov](https://codecov.io/gh/bblfsh/sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/bblfsh/sdk)
+# sdk [![Build Status](https://travis-ci.org/bblfsh/sdk.svg?branch=master)](https://travis-ci.org/bblfsh/sdk) [![codecov](https://codecov.io/gh/bblfsh/sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/bblfsh/sdk) [![license](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://github.com/bblfsh/sdk/blob/master/LICENSE) [![GitHub release](https://img.shields.io/github/release/bblfsh/sdk.svg)](https://github.com/bblfsh/sdk/releases)
 
 Babelfish SDK contains the tools and libraries
 required to create a Babelfish driver for a programming language.
