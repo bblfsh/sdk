@@ -410,6 +410,24 @@ const (
 
 	// Visibility is an access granter role, usually together with an specifier role
 	Visibility
+
+	// Annotation is syntactic metadata
+	Annotation
+
+	// Anonymous is an unbound construct
+	Anonymous
+
+	// Enumeration is a distinct type that represents a set of named constants
+	Enumeration
+
+	// Arithmetic is a type of operation
+	Arithmetic
+
+	// Relational is a type of operation
+	Relational
+
+	// Variable is a symbolic name associatend with a value
+	Variable
 )
 
 // Position represents a position in a source code file.

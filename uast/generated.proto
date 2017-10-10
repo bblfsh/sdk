@@ -313,5 +313,17 @@ enum Role {
 	UNANNOTATED = 110 [(gogoproto.enumvalue_customname) = "Unannotated"];
 	// Visibility is an access granter role, usually together with an specifier role
 	VISIBILITY = 111 [(gogoproto.enumvalue_customname) = "Visibility"];
+	// Annotation is syntactic metadata
+	ANNOTATION = 112 [(gogoproto.enumvalue_customname) = "Annotation"];
+	// Anonymous is an unbound construct
+	ANONYMOUS = 113 [(gogoproto.enumvalue_customname) = "Anonymous"];
+	// Enumeration is a distinct type that represents a set of named constants
+	ENUMERATION = 114 [(gogoproto.enumvalue_customname) = "Enumeration"];
+	// Arithmetic is a type of operation
+	ARITHMETIC = 115 [(gogoproto.enumvalue_customname) = "Arithmetic"];
+	// Relational is a type of operation
+	RELATIONAL = 116 [(gogoproto.enumvalue_customname) = "Relational"];
+	// Variable is a symbolic name associatend with a value
+	VARIABLE = 117 [(gogoproto.enumvalue_customname) = "Variable"];
 }
 

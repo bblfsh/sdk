@@ -18,6 +18,7 @@ message NativeParseRequest {
 	string language = 2;
 	string content = 3;
 	gopkg.in.bblfsh.sdk.v1.protocol.Encoding encoding = 4;
+	google.protobuf.Duration timeout = 5 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 // NativeParseResponse is the reply to NativeParseRequest by the native parser.
@@ -38,6 +39,7 @@ message ParseRequest {
 	string language = 2;
 	string content = 3;
 	gopkg.in.bblfsh.sdk.v1.protocol.Encoding encoding = 4;
+	google.protobuf.Duration timeout = 5 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 // ParseResponse is the reply to ParseRequest.
