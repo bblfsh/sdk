@@ -509,7 +509,7 @@ func (s byOffset) Less(i, j int) bool {
 	}
 
 	if bpos == nil {
-		return true
+		return false
 	}
 
 	return apos.Offset < bpos.Offset
