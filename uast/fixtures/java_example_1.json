@@ -2702,6 +2702,7 @@
          }
       ],
       "internalClass" : "CompilationUnit",
+      "specificToken": "SomeSpecificToken",
       "package" : {
          "name" : {
             "qualifier" : {
