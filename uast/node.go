@@ -115,6 +115,11 @@ type ObjectToNode struct {
 	// different fields as tokens depending on the node type; in that case, all should
 	// be added to this map to ensure a correct UAST generation.
 	TokenKeys map[string]bool
+	// SpecificTokenKeys allow to map specific nodes, by their internal type, to a
+	// concrete field of the node. This can solve conflicts on some nodes that the token
+	// represented by a very unique field or have more than one of the fields specified in
+	// TokenKeys.
+	SpecificTokenKeys map[string]string
 	// SyntheticTokens is a map of InternalType to string used to add
 	// synthetic tokens to nodes depending on its InternalType; sometimes native ASTs just use an
 	// InternalTypeKey for some node but we need to add a Token to the UAST node to
@@ -348,7 +353,7 @@ func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, err
 
 func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
 	switch {
-	case c.isTokenKey(k):
+	case c.isTokenKey(n, k):
 		s := fmt.Sprint(o)
 		if n.Token != "" && n.Token != s {
 			return ErrTwoTokensSameNode.New(n.Token, s)
@@ -441,11 +446,20 @@ func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
 	return nil
 }
 
-func (c *ObjectToNode) isTokenKey(key string) bool {
+func (c *ObjectToNode) isTokenKey(n *Node, key string) bool {
+
+	if c.SpecificTokenKeys != nil && n.InternalType != "" {
+		if tokenKey, ok := c.SpecificTokenKeys[n.InternalType]; ok {
+			// Nodes of this internalType use a specific property as token
+			return tokenKey == key
+		}
+	}
+
 	return c.TokenKeys != nil && c.TokenKeys[key]
 }
 
 func (c *ObjectToNode) syntheticToken(key string) string {
+
 	if c.SyntheticTokens == nil {
 		return ""
 	}
