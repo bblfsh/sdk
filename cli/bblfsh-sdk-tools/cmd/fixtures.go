@@ -118,12 +118,12 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 		}
 	}
 
-	strres, err := integration.NativeParseResponseToString(res)
+	str, err := integration.NativeParseResponseToString(res)
 	if err != nil {
 		return "", err
 	}
 
-	return strres, nil
+	return str, nil
 }
 
 func (c *FixturesCommand) getUast(source string, filename string) (string, error) {

@@ -3,6 +3,7 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"path"
 	"strings"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
@@ -50,7 +51,7 @@ func NativeParseResponseToString(res *protocol.NativeParseResponse) (string, err
 
 // RemoveExtension removes the last extension from a file
 func RemoveExtension(filename string) string {
-	parts := strings.Split(filename, ".")
-	return strings.Join(parts[:len(parts)-1], ".")
+	i := strings.LastIndex(filename, path.Ext(filename))
+	return filename[:i]
 }
 
