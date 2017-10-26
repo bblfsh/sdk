@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	common "gopkg.in/bblfsh/sdk.v1"
@@ -26,7 +27,6 @@ type FixturesCommand struct {
 	ExtNative     string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
 	ExtUast       string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
 	Quiet         bool   `long:"quiet" short:"q" description:"Don't print any output"`
-	KeepSourceExt bool   `long:"keepext" short:"r" description:"Don't remove the source file extension"`
 
 	manifestCommand
 	cli protocol.ProtocolServiceClient
@@ -98,11 +98,11 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 	return nil
 }
 
-func (c *FixturesCommand) getNative(source string, file string) (string, error) {
+func (c *FixturesCommand) getNative(source string, filename string) (string, error) {
 	req := &protocol.NativeParseRequest{
 		Language: c.Language,
 		Content:  source,
-		Filename: file,
+		Filename: removeSourceSuffix(filename),
 	}
 
 	res, err := c.cli.NativeParse(context.Background(), req)
@@ -128,11 +128,11 @@ func (c *FixturesCommand) getNative(source string, file string) (string, error) 
 	return strres, nil
 }
 
-func (c *FixturesCommand) getUast(source string, file string) (string, error) {
+func (c *FixturesCommand) getUast(source string, filename string) (string, error) {
 	req := &protocol.ParseRequest{
 		Language: c.Language,
 		Content:  source,
-		Filename: file,
+		Filename: removeSourceSuffix(filename),
 	}
 
 	res, err := c.cli.Parse(context.Background(), req)
@@ -154,14 +154,7 @@ func (c *FixturesCommand) getUast(source string, file string) (string, error) {
 }
 
 func (c *FixturesCommand) writeResult(origName, content, extension string) error {
-	var baseName string
-	if !c.KeepSourceExt {
-		baseName = common.RemoveExtension(origName)
-	} else {
-		baseName = origName
-	}
-
-	outname := baseName + "." + extension
+	outname := removeSourceSuffix(origName) + "." + extension
 	if !c.Quiet {
 		fmt.Println("\tWriting", outname, "...")
 	}
@@ -180,4 +173,12 @@ func getSourceFile(f string) (string, error) {
 		return "", err
 	}
 	return string(content), nil
+}
+
+func removeSourceSuffix(f string) string {
+	if strings.HasSuffix(f, ".source") {
+		return common.RemoveExtension(f)
+	}
+
+	return f
 }
