@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"time"
+	"os"
 
+	common "gopkg.in/bblfsh/sdk.v1"
 	"gopkg.in/bblfsh/sdk.v1/manifest"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
@@ -22,11 +21,11 @@ type FixturesCommand struct {
 	Args struct {
 		SourceFiles []string `positional-arg-name:"sourcefile(s)" required:"true" description:"File(s) with the source code"`
 	} `positional-args:"yes"`
-	// XXX language autodetect with empty default?
 	Language  string `long:"language" required:"true" description:"Language to parse"`
 	Endpoint  string `long:"endpoint" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
 	ExtNative string `long:"extnative" default:"native" description:"File extension for native files"`
 	ExtUast   string `long:"extuast" default:"uast" description:"File extension for uast files"`
+	Quiet     bool   `long:"quiet" description:"Don't print any output"`
 
 	manifestCommand
 	cli protocol.ProtocolServiceClient
@@ -51,6 +50,12 @@ func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 	c.cli = protocol.NewProtocolServiceClient(conn)
 
 	for _, f := range c.Args.SourceFiles {
+		if _, err := os.Stat(f); os.IsNotExist(err) {
+			// path/to/whatever does not exist
+			fmt.Println("Error: File", f, "doesn't exists")
+			os.Exit(1)
+		}
+
 		err := c.generateFixtures(f)
 		if err != nil {
 			fmt.Println("While generating fixtures for ", f)
@@ -60,7 +65,9 @@ func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 }
 
 func (c *FixturesCommand) generateFixtures(f string) error {
-	fmt.Println("Processing", f, "...")
+	if !c.Quiet {
+		fmt.Println("Processing", f, "...")
+	}
 
 	source, err := getSourceFile(f)
 	if err != nil {
@@ -72,7 +79,7 @@ func (c *FixturesCommand) generateFixtures(f string) error {
 		return err
 	}
 
-	err = writeResult(f, native, c.ExtNative)
+	err = c.writeResult(f, native, c.ExtNative)
 	if err != nil {
 		return err
 	}
@@ -82,7 +89,7 @@ func (c *FixturesCommand) generateFixtures(f string) error {
 		return err
 	}
 
-	err = writeResult(f, uast, c.ExtUast)
+	err = c.writeResult(f, uast, c.ExtUast)
 	if err != nil {
 		return err
 	}
@@ -101,7 +108,7 @@ func (c *FixturesCommand) getNative(source string) (string, error) {
 		return "", err
 	}
 
-	strres, err := NativeParseResponseToString(res)
+	strres, err := common.NativeParseResponseToString(res)
 	if err != nil {
 		return "", err
 	}
@@ -123,55 +130,11 @@ func (c *FixturesCommand) getUast(source string) (string, error) {
 	return res.String(), nil
 }
 
-func getSourceFile(f string) (string, error) {
-	content, err := ioutil.ReadFile(f)
-	if err != nil {
-		return "", err
+func (c *FixturesCommand) writeResult(origname, content, extension string) error {
+	outname := common.RemoveExtension(origname) + "." + extension
+	if !c.Quiet {
+		fmt.Println("\tWriting", outname, "...")
 	}
-	return string(content), nil
-}
-
-// XXX factorize with the version in sdk/driver/integration/suite_test.go
-func NativeParseResponseToString(res *protocol.NativeParseResponse) (string, error) {
-	var s struct {
-		Status string      `json:"status"`
-		Errors []string    `json:"errors"`
-		AST    interface{} `json:"ast"`
-	}
-
-	s.Status = strings.ToLower(res.Status.String())
-	s.Errors = res.Errors
-	if len(s.Errors) == 0 {
-		s.Errors = make([]string, 0)
-	}
-
-	err := json.Unmarshal([]byte(res.AST), &s.AST)
-	if err != nil {
-		return "", err
-	}
-
-	buf := bytes.NewBuffer(nil)
-	e := json.NewEncoder(buf)
-	e.SetIndent("", "    ")
-	e.SetEscapeHTML(false)
-
-	err = e.Encode(s)
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-// XXX factorize
-func removeExtension(filename string) string {
-	parts := strings.Split(filename, ".")
-	return strings.Join(parts[:len(parts)-1], ".")
-}
-
-func writeResult(origname, content, extension string) error {
-	outname := removeExtension(origname) + "." + extension
-	fmt.Println("\tWriting", outname, "...")
 
 	err := ioutil.WriteFile(outname, []byte(content), 0644)
 	if err != nil {
@@ -180,3 +143,12 @@ func writeResult(origname, content, extension string) error {
 
 	return nil
 }
+
+func getSourceFile(f string) (string, error) {
+	content, err := ioutil.ReadFile(f)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
