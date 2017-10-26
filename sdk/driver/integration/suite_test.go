@@ -112,10 +112,7 @@ func (s *suite) doTestNativeParse(t *testing.T, filename string) {
 	r.Nil(err)
 
 	expected := getAST(r, filename)
-	str, err := NativeParseResponseToString(res)
-	r.Nil(err)
-
-	EqualText(r, expected, str)
+	EqualText(r, expected, res.String())
 }
 
 func EqualText(r *require.Assertions, expected, actual string) {

@@ -16,6 +16,7 @@ package protocol
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -120,6 +121,45 @@ type NativeParseResponse struct {
 	Response
 	// AST contains the AST from the parsed code in json format.
 	AST string `json:"ast"`
+}
+
+func (r *NativeParseResponse) String() string {
+	var s struct {
+		Status string      `json:"status"`
+		Errors []string    `json:"errors"`
+		AST    interface{} `json:"ast"`
+	}
+
+	s.Status = strings.ToLower(r.Status.String())
+	s.Status = strings.ToLower(r.Status.String())
+	s.Errors = r.Errors
+	s.Status = strings.ToLower(r.Status.String())
+	if len(s.Errors) == 0 {
+		s.Errors = make([]string, 0)
+	}
+
+	s.Status = strings.ToLower(r.Status.String())
+	if len(r.AST) > 0 {
+		err := json.Unmarshal([]byte(r.AST), &s.AST)
+		if err != nil {
+			return err.Error()
+		}
+	}
+
+	s.Status = strings.ToLower(r.Status.String())
+	buf := bytes.NewBuffer(nil)
+	e := json.NewEncoder(buf)
+	e.SetIndent("", "    ")
+	e.SetEscapeHTML(false)
+
+	s.Status = strings.ToLower(r.Status.String())
+	err := e.Encode(s)
+	if err != nil {
+		return err.Error()
+	}
+
+	s.Status = strings.ToLower(r.Status.String())
+	return buf.String()
 }
 
 // VersionRequest is a request to get server version
