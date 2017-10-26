@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"time"
 	"os"
+	"time"
 
 	common "gopkg.in/bblfsh/sdk.v1"
 	"gopkg.in/bblfsh/sdk.v1/manifest"
@@ -15,17 +15,18 @@ import (
 )
 
 const FixturesCommandDescription = "" +
-	"Generate integration test native and UAST fixtures from source files"
+	"Generate integration tests' '.native' and '.uast' fixtures from source files"
 
 type FixturesCommand struct {
 	Args struct {
 		SourceFiles []string `positional-arg-name:"sourcefile(s)" required:"true" description:"File(s) with the source code"`
 	} `positional-args:"yes"`
-	Language  string `long:"language" required:"true" description:"Language to parse"`
-	Endpoint  string `long:"endpoint" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
-	ExtNative string `long:"extnative" default:"native" description:"File extension for native files"`
-	ExtUast   string `long:"extuast" default:"uast" description:"File extension for uast files"`
-	Quiet     bool   `long:"quiet" description:"Don't print any output"`
+	Language      string `long:"language" short:"l" required:"true" description:"Language to parse"`
+	Endpoint      string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
+	ExtNative     string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
+	ExtUast       string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
+	Quiet         bool   `long:"quiet" short:"q" description:"Don't print any output"`
+	KeepSourceExt bool   `long:"keepext" short:"r" description:"Don't remove the source file extension"`
 
 	manifestCommand
 	cli protocol.ProtocolServiceClient
@@ -130,8 +131,15 @@ func (c *FixturesCommand) getUast(source string) (string, error) {
 	return res.String(), nil
 }
 
-func (c *FixturesCommand) writeResult(origname, content, extension string) error {
-	outname := common.RemoveExtension(origname) + "." + extension
+func (c *FixturesCommand) writeResult(origName, content, extension string) error {
+	var baseName string
+	if !c.KeepSourceExt {
+		baseName = common.RemoveExtension(origName)
+	} else {
+		baseName = origName
+	}
+
+	outname := baseName + "." + extension
 	if !c.Quiet {
 		fmt.Println("\tWriting", outname, "...")
 	}
@@ -151,4 +159,3 @@ func getSourceFile(f string) (string, error) {
 	}
 	return string(content), nil
 }
-
