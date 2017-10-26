@@ -112,12 +112,11 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 
 	if res.Status != protocol.Ok {
 		if !c.Quiet {
-			fmt.Println("Native request returned errors:")
+			fmt.Println("Warning: native request for ", filename, "returned errors:")
 			for _, e := range res.Errors {
 				fmt.Println(e)
 			}
 		}
-		os.Exit(1)
 	}
 
 	strres, err := common.NativeParseResponseToString(res)
@@ -142,12 +141,11 @@ func (c *FixturesCommand) getUast(source string, filename string) (string, error
 
 	if res.Status != protocol.Ok {
 		if !c.Quiet {
-			fmt.Println("Parse request returned errors:")
+			fmt.Println("Warning: parse request for ", filename, "returned errors:")
 			for _, e := range res.Errors {
 				fmt.Println(e)
 			}
 		}
-		os.Exit(1)
 	}
 
 	return res.String(), nil

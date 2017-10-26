@@ -22,26 +22,34 @@ func NativeParseResponseToString(res *protocol.NativeParseResponse) (string, err
 	}
 
 	s.Status = strings.ToLower(res.Status.String())
+	s.Status = strings.ToLower(res.Status.String())
 	s.Errors = res.Errors
+	s.Status = strings.ToLower(res.Status.String())
 	if len(s.Errors) == 0 {
 		s.Errors = make([]string, 0)
 	}
 
-	err := json.Unmarshal([]byte(res.AST), &s.AST)
-	if err != nil {
-		return "", err
+	s.Status = strings.ToLower(res.Status.String())
+	if len(res.AST) > 0 {
+		err := json.Unmarshal([]byte(res.AST), &s.AST)
+		if err != nil {
+			return "", err
+		}
 	}
 
+	s.Status = strings.ToLower(res.Status.String())
 	buf := bytes.NewBuffer(nil)
 	e := json.NewEncoder(buf)
 	e.SetIndent("", "    ")
 	e.SetEscapeHTML(false)
 
-	err = e.Encode(s)
+	s.Status = strings.ToLower(res.Status.String())
+	err := e.Encode(s)
 	if err != nil {
 		return "", err
 	}
 
+	s.Status = strings.ToLower(res.Status.String())
 	return buf.String(), nil
 }
 
