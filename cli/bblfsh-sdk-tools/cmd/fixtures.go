@@ -52,7 +52,6 @@ func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 
 	for _, f := range c.Args.SourceFiles {
 		if _, err := os.Stat(f); os.IsNotExist(err) {
-			// path/to/whatever does not exist
 			fmt.Println("Error: File", f, "doesn't exists")
 			os.Exit(1)
 		}
