@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	common "gopkg.in/bblfsh/sdk.v1"
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver/integration"
 	"gopkg.in/bblfsh/sdk.v1/manifest"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
@@ -118,7 +118,7 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 		}
 	}
 
-	strres, err := common.NativeParseResponseToString(res)
+	strres, err := integration.NativeParseResponseToString(res)
 	if err != nil {
 		return "", err
 	}
@@ -174,7 +174,7 @@ func getSourceFile(f string) (string, error) {
 
 func removeSourceSuffix(f string) string {
 	if strings.HasSuffix(f, ".source") {
-		return common.RemoveExtension(f)
+		return integration.RemoveExtension(f)
 	}
 
 	return f

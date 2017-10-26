@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	common "gopkg.in/bblfsh/sdk.v1"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
 	"github.com/pmezard/go-difflib/difflib"
@@ -113,7 +112,7 @@ func (s *suite) doTestNativeParse(t *testing.T, filename string) {
 	r.Nil(err)
 
 	expected := getAST(r, filename)
-	resstr, err := common.NativeParseResponseToString(res)
+	resstr, err := NativeParseResponseToString(res)
 	r.Nil(err)
 
 	EqualText(r, expected, resstr)
