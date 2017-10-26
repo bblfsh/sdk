@@ -1,9 +1,7 @@
 package integration
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -114,35 +112,7 @@ func (s *suite) doTestNativeParse(t *testing.T, filename string) {
 	r.Nil(err)
 
 	expected := getAST(r, filename)
-
-	EqualText(r, expected, NativeParseResponseToString(r, res))
-}
-
-func NativeParseResponseToString(r *require.Assertions, res *protocol.NativeParseResponse) string {
-	var s struct {
-		Status string      `json:"status"`
-		Errors []string    `json:"errors"`
-		AST    interface{} `json:"ast"`
-	}
-
-	s.Status = strings.ToLower(res.Status.String())
-	s.Errors = res.Errors
-	if len(s.Errors) == 0 {
-		s.Errors = make([]string, 0)
-	}
-
-	err := json.Unmarshal([]byte(res.AST), &s.AST)
-	r.Nil(err)
-
-	buf := bytes.NewBuffer(nil)
-	e := json.NewEncoder(buf)
-	e.SetIndent("", "    ")
-	e.SetEscapeHTML(false)
-
-	err = e.Encode(s)
-	r.Nil(err)
-
-	return buf.String()
+	EqualText(r, expected, res.String())
 }
 
 func EqualText(r *require.Assertions, expected, actual string) {
