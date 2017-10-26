@@ -21,7 +21,7 @@ type FixturesCommand struct {
 	Args struct {
 		SourceFiles []string `positional-arg-name:"sourcefile(s)" required:"true" description:"File(s) with the source code"`
 	} `positional-args:"yes"`
-	Language      string `long:"language" short:"l" required:"true" description:"Language to parse"`
+	Language      string `long:"language" short:"l" default:"" description:"Language to parse"`
 	Endpoint      string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
 	ExtNative     string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
 	ExtUast       string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
@@ -65,32 +65,32 @@ func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 	}
 }
 
-func (c *FixturesCommand) generateFixtures(f string) error {
+func (c *FixturesCommand) generateFixtures(filename string) error {
 	if !c.Quiet {
-		fmt.Println("Processing", f, "...")
+		fmt.Println("Processing", filename, "...")
 	}
 
-	source, err := getSourceFile(f)
+	source, err := getSourceFile(filename)
 	if err != nil {
 		return err
 	}
 
-	native, err := c.getNative(source)
+	native, err := c.getNative(source, filename)
 	if err != nil {
 		return err
 	}
 
-	err = c.writeResult(f, native, c.ExtNative)
+	err = c.writeResult(filename, native, c.ExtNative)
 	if err != nil {
 		return err
 	}
 
-	uast, err := c.getUast(source)
+	uast, err := c.getUast(source, filename)
 	if err != nil {
 		return err
 	}
 
-	err = c.writeResult(f, uast, c.ExtUast)
+	err = c.writeResult(filename, uast, c.ExtUast)
 	if err != nil {
 		return err
 	}
@@ -98,15 +98,26 @@ func (c *FixturesCommand) generateFixtures(f string) error {
 	return nil
 }
 
-func (c *FixturesCommand) getNative(source string) (string, error) {
+func (c *FixturesCommand) getNative(source string, file string) (string, error) {
 	req := &protocol.NativeParseRequest{
 		Language: c.Language,
 		Content:  source,
+		Filename: file,
 	}
 
 	res, err := c.cli.NativeParse(context.Background(), req)
 	if err != nil {
 		return "", err
+	}
+
+	if res.Status != protocol.Ok {
+		if !c.Quiet {
+			fmt.Println("Native request returned errors:")
+			for _, e := range res.Errors {
+				fmt.Println(e)
+			}
+		}
+		os.Exit(1)
 	}
 
 	strres, err := common.NativeParseResponseToString(res)
@@ -117,15 +128,26 @@ func (c *FixturesCommand) getNative(source string) (string, error) {
 	return strres, nil
 }
 
-func (c *FixturesCommand) getUast(source string) (string, error) {
+func (c *FixturesCommand) getUast(source string, file string) (string, error) {
 	req := &protocol.ParseRequest{
 		Language: c.Language,
 		Content:  source,
+		Filename: file,
 	}
 
 	res, err := c.cli.Parse(context.Background(), req)
 	if err != nil {
 		return "", err
+	}
+
+	if res.Status != protocol.Ok {
+		if !c.Quiet {
+			fmt.Println("Parse request returned errors:")
+			for _, e := range res.Errors {
+				fmt.Println(e)
+			}
+		}
+		os.Exit(1)
 	}
 
 	return res.String(), nil
