@@ -272,6 +272,47 @@ func TestSyntheticTokens(t *testing.T) {
 	require.True(n.Token == "TestToken")
 }
 
+func TestComposedPositionKeys(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{
+    "type": "sample",
+		"start": "66",
+		"loc": map[string]interface{}{
+			"start": map[string]interface{}{
+				"line": "4",
+				"column": "31",
+			},
+			"end": map[string]interface{}{
+				"line": "4",
+				"column": "43",
+			},
+		},
+		"end": "78",
+	}
+
+	c := &ObjectToNode{
+		InternalTypeKey:    "type",
+		TopLevelIsRootNode: true,
+		OffsetKey:          "start",
+		EndOffsetKey:       "end",
+		LineKey:            "loc.start.line",
+		EndLineKey:         "loc.end.line",
+		ColumnKey:          "loc.start.column",
+		EndColumnKey:       "loc.end.column",
+	}
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+
+	require.True(n.StartPosition.Offset == 66)
+	require.True(n.StartPosition.Line == 4)
+	require.True(n.StartPosition.Col == 31)
+	require.True(n.EndPosition.Offset == 78)
+	require.True(n.EndPosition.Line == 4)
+	require.True(n.EndPosition.Col == 43)
+}
+
 func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
