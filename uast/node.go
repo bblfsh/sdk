@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
+	"github.com/mcuadros/go-lookup"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
@@ -242,6 +244,9 @@ func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
 		o := m[k]
 		switch ov := o.(type) {
 		case map[string]interface{}:
+			if c.maybeAddComposedPositionProperties(n, o) {
+				continue
+			}
 			child, err := c.mapToNode(k, ov)
 			if err != nil {
 				return nil, err
@@ -349,6 +354,24 @@ func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, err
 	}
 
 	return ns, nil
+}
+
+func (c *ObjectToNode) maybeAddComposedPositionProperties(n *Node, o interface{}) bool {
+	keys := []string{c.OffsetKey, c.LineKey, c.ColumnKey, c.EndOffsetKey, c.EndLineKey, c.EndColumnKey}
+	added := false
+	for _, k := range keys {
+		if !strings.Contains(k, ".") {
+			continue
+		}
+		xs := strings.SplitAfterN(k, ".", 2)
+		v, err := lookup.LookupString(o, xs[1])
+		if err != nil {
+			continue
+		}
+		c.addProperty(n, k, v.Interface())
+		added = true
+	}
+	return added
 }
 
 func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
