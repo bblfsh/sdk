@@ -6,6 +6,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func tokens(n *Node) []string {
+	var tokens []string
+	iter := NewOrderPathIter(NewPath(n))
+	for {
+		p := iter.Next()
+		if p.IsEmpty() {
+			break
+		}
+
+		n := p.Node()
+		if n.Token != "" {
+			tokens = append(tokens, n.Token)
+		}
+	}
+	return tokens
+}
+
 func TestPrefixTokens(t *testing.T) {
 	require := require.New(t)
 
@@ -17,7 +34,7 @@ func TestPrefixTokens(t *testing.T) {
 				{InternalType: "left", Token: "tok_pre_left"},
 				{InternalType: "right", Token: "tok_pre_right"},
 			}}}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id3", "Prefix+", "tok_pre_left", "tok_pre_right"}
 	require.Equal(expected, result)
 }
@@ -43,7 +60,7 @@ func TestPrefixTokensSubtree(t *testing.T) {
 				{InternalType: "right", Token: "tok_pre_right"},
 			},
 			}}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id3", "Prefix+", "tok_pre_left", "subleft_1a", "subleft_1a_2a",
 		"subleft_1a_2b", "subleft_1b", "subleft_b_2a", "subleft_b_2b",
 		"tok_pre_right"}
@@ -61,7 +78,7 @@ func TestPrefixTokensPlain(t *testing.T) {
 			{InternalType: "left", Token: "tok_pre_left"},
 			{InternalType: "right", Token: "tok_pre_right"},
 		}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id3", "Prefix+", "tok_pre_left", "tok_pre_right"}
 	require.Equal(expected, result)
 }
@@ -75,7 +92,7 @@ func TestInfixTokens(t *testing.T) {
 				{InternalType: "left", Token: "tok_in_left"},
 				{InternalType: "right", Token: "tok_in_right"},
 			}}}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id1", "tok_in_left", "Infix+", "tok_in_right"}
 	require.Equal(expected, result)
 }
@@ -101,7 +118,7 @@ func TestInfixTokensSubtree(t *testing.T) {
 				{InternalType: "right", Token: "right"},
 			},
 			}}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id3", "subleft_1a_2a", "subleft_1a", "subleft_1a_2b", "left",
 		"subleft_1b_2a", "subleft_1b", "subleft_1b_2b", "op_infix", "right"}
 
@@ -117,7 +134,7 @@ func TestInfixTokensPlain(t *testing.T) {
 			{InternalType: "op_infix", Roles: []Role{Infix}, Token: "Infix+"},
 			{InternalType: "right", Token: "tok_in_right"},
 		}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id1", "tok_in_left", "Infix+", "tok_in_right"}
 	require.Equal(expected, result)
 }
@@ -131,7 +148,7 @@ func TestPostfixTokens(t *testing.T) {
 				{InternalType: "left", Token: "tok_post_left"},
 				{InternalType: "right", Token: "tok_post_right"},
 			}}}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id2", "tok_post_left", "tok_post_right", "Postfix+"}
 	require.Equal(expected, result)
 }
@@ -157,7 +174,7 @@ func TestPostfixTokensSubtree(t *testing.T) {
 				{InternalType: "right", Token: "right"},
 			},
 			}}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id2", "subleft_1a_2a", "subleft_1a_2b", "subleft_1a", "subleft_1b_2a",
 		"subleft_1b_2b", "subleft_1b", "left", "right", "op_postfix"}
 	require.Equal(expected, result)
@@ -172,7 +189,7 @@ func TestPostfixTokensPlain(t *testing.T) {
 			{InternalType: "right", Token: "tok_post_right"},
 			{InternalType: "op_postfix", Roles: []Role{Postfix}, Token: "Postfix+"},
 		}}
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id2", "tok_post_left", "tok_post_right", "Postfix+"}
 	require.Equal(expected, result)
 }
@@ -211,33 +228,9 @@ func TestOrderTokens(t *testing.T) {
 				}},
 			}}}}
 
-	result := Tokens(n)
+	result := tokens(n)
 	expected := []string{"id1", "tok_in_left", "Infix+", "subright1", "subright2", "tok_in_right",
 		"id2", "tok_post_left", "tok_post_right", "subright_pre1", "subright_pre2", "Postfix+",
 		"id3", "Prefix+", "tok_pre_left", "subright_in1", "tok_pre_right", "subright_in2"}
 	require.Equal(expected, result)
-}
-
-func TestCyclomaticComplexity(t *testing.T) {
-	require := require.New(t)
-	n := &Node{InternalType: "module",
-		Children: []*Node{
-			{InternalType: "root"}, // 1 (initial)
-			// Prefix is the default so it doesnt need any role
-			{InternalType: "if1", Roles: []Role{Statement, If}, Children: []*Node{  // 2 (If)
-				{InternalType: "if1else1", Roles: []Role{Statement, Then}, Children: []*Node{ // 0
-					{InternalType: "if1else1foreach", Roles: []Role{Statement, For, Iterator}, Children: []*Node{ // 3 (For)
-						{InternalType: "foreach_child1"}, // 0
-						{InternalType: "foreach_child2_continue", Roles: []Role{Statement, Continue}}, // 4 (Continue)
-					}},
-					{InternalType: "if1else1if", Roles: []Role{Statement, If}, Children: []*Node{ // 5 (If)
-						{InternalType: "elseif_child1"}, // 0
-						{InternalType: "opAnd", Roles: []Role{Operator, Binary, Boolean, And}}, // 6 (And)
-						{InternalType: "elseif_child2"}, // 0
-					}},
-				}},
-				{InternalType: "break", Roles: []Role{Break}},
-			},
-			}}}
-	require.Equal(CyclomaticComplexity(n), 6)
 }

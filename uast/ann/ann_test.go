@@ -192,6 +192,19 @@ func TestAddRoles(t *testing.T) {
 	require.Equal(expected, input)
 }
 
+func TestAddDuplicatedRoles(t *testing.T) {
+	require := require.New(t)
+
+	a := AddRoles(uast.Statement, uast.Expression, uast.Statement, uast.Expression,
+	              uast.Call, uast.Call)
+	input := uast.NewNode()
+	expected := uast.NewNode()
+	expected.Roles = []uast.Role{uast.Statement, uast.Expression, uast.Call}
+	err := a.Do(input)
+	require.NoError(err)
+	require.Equal(expected, input)
+}
+
 func TestRuleOnApply(t *testing.T) {
 	require := require.New(t)
 

@@ -366,10 +366,21 @@ func AddRoles(roles ...uast.Role) Action {
 			if len(n.Roles) > 0 && n.Roles[0] == uast.Unannotated {
 				n.Roles = n.Roles[:0]
 			}
-			n.Roles = append(n.Roles, roles...)
+			appendUniqueRoles(n, roles...)
 			return nil
 		},
 		desc: strings.Join(descs, ", "),
+	}
+}
+
+func appendUniqueRoles(n *uast.Node, roles ...uast.Role) {
+	addedRoles := make(map[string]bool)
+
+	for _, role := range roles {
+		if _, ok := addedRoles[role.String()]; !ok {
+			n.Roles = append(n.Roles, role)
+			addedRoles[role.String()] = true
+		}
 	}
 }
 
