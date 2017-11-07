@@ -203,6 +203,8 @@ func TestAddDuplicatedRoles(t *testing.T) {
 	err := a.Do(input)
 	require.NoError(err)
 	require.Equal(expected, input)
+	err = a.Do(input)
+	require.Equal(expected, input)
 }
 
 func TestRuleOnApply(t *testing.T) {
