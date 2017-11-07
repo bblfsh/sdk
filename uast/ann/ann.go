@@ -376,6 +376,12 @@ func AddRoles(roles ...uast.Role) Action {
 func appendUniqueRoles(n *uast.Node, roles ...uast.Role) {
 	addedRoles := make(map[string]bool)
 
+	for _, role := range n.Roles {
+		if _, ok := addedRoles[role.String()]; !ok {
+			addedRoles[role.String()] = true
+		}
+	}
+
 	for _, role := range roles {
 		if _, ok := addedRoles[role.String()]; !ok {
 			n.Roles = append(n.Roles, role)
@@ -480,3 +486,4 @@ func matchSuffixPredicates(path uast.Path, preds []Predicate) bool {
 
 	return true
 }
+
