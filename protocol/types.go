@@ -95,11 +95,15 @@ type ParseResponse struct {
 	Response
 	// UAST contains the UAST from the parsed code.
 	UAST *uast.Node `json:"uast"`
+	// Language. The language that was parsed. Usedful if you used language
+	// autodetection for the request.
+	Language string `json:"language"`
 }
 
 func (r *ParseResponse) String() string {
 	buf := bytes.NewBuffer(nil)
 	fmt.Fprintln(buf, "Status: ", strings.ToLower(r.Status.String()))
+	fmt.Fprintln(buf, "Language: ", strings.ToLower(r.Language))
 	fmt.Fprintln(buf, "Errors: ")
 	for _, err := range r.Errors {
 		fmt.Fprintln(buf, " . ", err)
@@ -121,16 +125,21 @@ type NativeParseResponse struct {
 	Response
 	// AST contains the AST from the parsed code in json format.
 	AST string `json:"ast"`
+	// Language. The language that was parsed. Usedful if you used language
+	// autodetection for the request.
+	Language string `json:"language"`
 }
 
 func (r *NativeParseResponse) String() string {
 	var s struct {
 		Status string      `json:"status"`
+		Language string    `json:"language"`
 		Errors []string    `json:"errors"`
 		AST    interface{} `json:"ast"`
 	}
 
 	s.Status = strings.ToLower(r.Status.String())
+	s.Language = strings.ToLower(r.Language)
 	s.Errors = r.Errors
 	if len(s.Errors) == 0 {
 		s.Errors = make([]string, 0)
