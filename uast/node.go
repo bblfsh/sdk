@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrEmptyAST             = errors.NewKind("input AST was empty")
+	ErrEmptyAST             = errors.NewKind("empty AST given")
 	ErrTwoTokensSameNode    = errors.NewKind("token was already set (%s != %s)")
 	ErrTwoTypesSameNode     = errors.NewKind("internal type was already set (%s != %s)")
 	ErrUnexpectedObject     = errors.NewKind("expected object of type %s, got: %#v")
@@ -86,6 +86,9 @@ const (
 // That is, an interface{} containing maps, slices, strings and integers. It
 // then converts from that structure to *Node.
 type ObjectToNode struct {
+	// IsNode is used to identify witch map[string]interface{} are nodes, if
+	// nil, any map[string]interface{} is considered a node.
+	IsNode func(map[string]interface{}) bool
 	// InternalTypeKey is the name of the key that the native AST uses
 	// to differentiate the type of the AST nodes. This internal key will then be
 	// checkable in the AnnotationRules with the `HasInternalType` predicate. This
@@ -167,9 +170,25 @@ type ObjectToNode struct {
 	// the root will be the value of the only key present in its input
 	// argument.
 	TopLevelIsRootNode bool
+	// OnToNode is called, if defined, just before the method ToNode is called,
+	// allowing any modification or alteration of the AST before being
+	// processed.
+	OnToNode func(interface{}) (interface{}, error)
+	//Modifier function is called, if defined, to modify a
+	// map[string]interface{} (which normally would be converted to a Node)
+	// before it's processed.
+	Modifier func(map[string]interface{}) error
 }
 
 func (c *ObjectToNode) ToNode(v interface{}) (*Node, error) {
+	if c.OnToNode != nil {
+		var err error
+		v, err = c.OnToNode(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	src, ok := v.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnsupported.New("non-object root node")
@@ -180,12 +199,23 @@ func (c *ObjectToNode) ToNode(v interface{}) (*Node, error) {
 		return nil, err
 	}
 
-	return c.toNode(root)
+	nodes, err := c.toNodes(root)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nodes) == 0 {
+		return nil, ErrEmptyAST.New()
+	}
+
+	if len(nodes) != 1 {
+		return nil, ErrUnsupported.New("multiple root nodes found")
+	}
+
+	return nodes[0], err
 }
 
-func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (
-	interface{}, error) {
-
+func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (interface{}, error) {
 	if len(m) == 0 {
 		return nil, ErrEmptyAST.New()
 	}
@@ -205,19 +235,17 @@ func findRoot(m map[string]interface{}, topLevelIsRootNode bool) (
 	panic("unreachable")
 }
 
-func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
+func (c *ObjectToNode) toNodes(obj interface{}) ([]*Node, error) {
 	m, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, ErrUnexpectedObject.New("map[string]interface{}", obj)
 	}
 
-	n := NewNode()
-
-	// We need to have the internalkey before iterating others
-	internalKey, err := c.getInternalKeyFromObject(obj)
-	if err != nil {
+	if err := c.applyModifier(m); err != nil {
 		return nil, err
 	}
+
+	internalKey := c.getInternalKeyFromObject(m)
 
 	var promotedListKeys map[string]bool
 	if !c.PromoteAllPropertyLists && c.PromotedPropertyLists != nil {
@@ -228,6 +256,7 @@ func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
 		promotedStrKeys = c.PromotedPropertyStrings[internalKey]
 	}
 
+	n := NewNode()
 	if err := c.setInternalKey(n, internalKey); err != nil {
 		return nil, err
 	}
@@ -238,31 +267,28 @@ func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
 	for listkey := range m {
 		keys = append(keys, listkey)
 	}
-	sort.Strings(keys)
 
+	sort.Strings(keys)
 	for _, k := range keys {
 		o := m[k]
 		switch ov := o.(type) {
 		case map[string]interface{}:
-			if c.maybeAddComposedPositionProperties(n, o) {
-				continue
-			}
-			child, err := c.mapToNode(k, ov)
+			c.maybeAddComposedPositionProperties(n, ov)
+			children, err := c.mapToNodes(k, ov)
 			if err != nil {
 				return nil, err
 			}
 
-			n.Children = append(n.Children, child)
+			n.Children = append(n.Children, children...)
 		case []interface{}:
 			if c.PromoteAllPropertyLists || (promotedListKeys != nil && promotedListKeys[k]) {
 				// This property->List  must be promoted to its own node
-				child, err := c.sliceToNodeWithChildren(k, ov, internalKey)
+				children, err := c.sliceToNodeWithChildren(k, ov, internalKey)
 				if err != nil {
 					return nil, err
 				}
-				if child != nil {
-					n.Children = append(n.Children, child)
-				}
+
+				n.Children = append(n.Children, children...)
 				continue
 			}
 
@@ -293,31 +319,43 @@ func (c *ObjectToNode) toNode(obj interface{}) (*Node, error) {
 
 	sort.Stable(byOffset(n.Children))
 
-	return n, nil
-}
+	if c.IsNode != nil && !c.IsNode(m) {
+		return n.Children, nil
+	}
 
-func (c *ObjectToNode) mapToNode(k string, obj map[string]interface{}) (*Node, error) {
-	n, err := c.toNode(obj)
+	return []*Node{n}, nil
+}
+func (c *ObjectToNode) applyModifier(m map[string]interface{}) error {
+	if c.Modifier == nil {
+		return nil
+	}
+
+	return c.Modifier(m)
+}
+func (c *ObjectToNode) mapToNodes(k string, obj map[string]interface{}) ([]*Node, error) {
+	nodes, err := c.toNodes(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	n.Properties[InternalRoleKey] = k
+	for _, n := range nodes {
+		n.Properties[InternalRoleKey] = k
+	}
 
-	return n, nil
+	return nodes, nil
 }
 
-func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (*Node, error) {
+func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) ([]*Node, error) {
 	kn := NewNode()
 
 	var ns []*Node
 	for _, v := range s {
-		n, err := c.toNode(v)
+		n, err := c.toNodes(v)
 		if err != nil {
 			return nil, err
 		}
 
-		ns = append(ns, n)
+		ns = append(ns, n...)
 	}
 
 	if len(ns) == 0 {
@@ -328,7 +366,7 @@ func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parent
 	kn.Properties["promotedPropertyList"] = "true"
 	kn.Children = append(kn.Children, ns...)
 
-	return kn, nil
+	return []*Node{kn}, nil
 }
 
 func (c *ObjectToNode) stringToNode(k, v, parentKey string) *Node {
@@ -344,21 +382,23 @@ func (c *ObjectToNode) stringToNode(k, v, parentKey string) *Node {
 func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, error) {
 	var ns []*Node
 	for _, v := range s {
-		n, err := c.toNode(v)
+		nodes, err := c.toNodes(v)
 		if err != nil {
 			return nil, err
 		}
 
-		n.Properties[InternalRoleKey] = k
-		ns = append(ns, n)
+		for _, n := range nodes {
+			n.Properties[InternalRoleKey] = k
+		}
+
+		ns = append(ns, nodes...)
 	}
 
 	return ns, nil
 }
 
-func (c *ObjectToNode) maybeAddComposedPositionProperties(n *Node, o interface{}) bool {
+func (c *ObjectToNode) maybeAddComposedPositionProperties(n *Node, o map[string]interface{}) {
 	keys := []string{c.OffsetKey, c.LineKey, c.ColumnKey, c.EndOffsetKey, c.EndLineKey, c.EndColumnKey}
-	added := false
 	for _, k := range keys {
 		if !strings.Contains(k, ".") {
 			continue
@@ -368,10 +408,9 @@ func (c *ObjectToNode) maybeAddComposedPositionProperties(n *Node, o interface{}
 		if err != nil {
 			continue
 		}
+
 		c.addProperty(n, k, v.Interface())
-		added = true
 	}
-	return added
 }
 
 func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
@@ -499,17 +538,13 @@ func (c *ObjectToNode) setInternalKey(n *Node, k string) error {
 	return nil
 }
 
-func (c *ObjectToNode) getInternalKeyFromObject(obj interface{}) (string, error) {
-	m, ok := obj.(map[string]interface{})
-	if !ok {
-		return "", ErrUnexpectedObject.New("map[string]interface{}", obj)
+func (c *ObjectToNode) getInternalKeyFromObject(m map[string]interface{}) string {
+	if val, ok := m[c.InternalTypeKey].(string); ok {
+		return val
 	}
 
-	if val, ok := m[c.InternalTypeKey].(string); ok {
-		return val, nil
-	}
 	// should this be an error?
-	return "", nil
+	return ""
 }
 
 // toUint32 converts a JSON value to a uint32.

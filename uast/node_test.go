@@ -237,7 +237,7 @@ func TestSpecificTokens(t *testing.T) {
 	c := &ObjectToNode{
 		InternalTypeKey: "internalClass",
 		LineKey:         "line",
-		SpecificTokenKeys: map[string]string {
+		SpecificTokenKeys: map[string]string{
 			"CompilationUnit": "specificToken",
 		},
 	}
@@ -276,15 +276,15 @@ func TestComposedPositionKeys(t *testing.T) {
 	require := require.New(t)
 
 	ast := map[string]interface{}{
-    "type": "sample",
+		"type":  "sample",
 		"start": "66",
 		"loc": map[string]interface{}{
 			"start": map[string]interface{}{
-				"line": "4",
+				"line":   "4",
 				"column": "31",
 			},
 			"end": map[string]interface{}{
-				"line": "4",
+				"line":   "4",
 				"column": "43",
 			},
 		},
@@ -311,6 +311,129 @@ func TestComposedPositionKeys(t *testing.T) {
 	require.True(n.EndPosition.Offset == 78)
 	require.True(n.EndPosition.Line == 4)
 	require.True(n.EndPosition.Col == 43)
+}
+
+func TestIsNode(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{
+		"type": "file",
+		"keep": 1,
+		"children": []interface{}{
+			map[string]interface{}{"type": "foo", "keep": 1},
+			map[string]interface{}{"type": "bar"},
+		},
+	}
+
+	c := &ObjectToNode{
+		InternalTypeKey:    "type",
+		TopLevelIsRootNode: true,
+		IsNode: func(m map[string]interface{}) bool {
+			_, ok := m["keep"]
+			return ok
+		},
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Equal(n.InternalType, "file")
+	require.Len(n.Children, 1)
+	require.Equal(n.Children[0].InternalType, "foo")
+}
+
+func TestIsNodeMultipleRoot(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{
+		"type": "file",
+		"children": []interface{}{
+			map[string]interface{}{"type": "foo", "keep": 1},
+			map[string]interface{}{"type": "bar", "keep": 1},
+		},
+	}
+
+	c := &ObjectToNode{
+		InternalTypeKey:    "type",
+		TopLevelIsRootNode: true,
+		IsNode: func(m map[string]interface{}) bool {
+			_, ok := m["keep"]
+			return ok
+		},
+	}
+
+	n, err := c.ToNode(ast)
+	require.NotNil(err)
+	require.Nil(n)
+	require.True(ErrUnsupported.Is(err))
+}
+
+func TestIsNodeSkip(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{
+		"type": "file",
+		"children": []interface{}{
+			map[string]interface{}{"type": "foo", "keep": 1},
+			map[string]interface{}{"type": "bar"},
+		},
+	}
+
+	c := &ObjectToNode{
+		InternalTypeKey:    "type",
+		TopLevelIsRootNode: true,
+		IsNode: func(m map[string]interface{}) bool {
+			_, ok := m["keep"]
+			return ok
+		},
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Equal(n.InternalType, "foo")
+	require.Len(n.Children, 0)
+}
+
+func TestModifier(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{
+		"type": "file",
+		"foo":  "qux",
+	}
+
+	c := &ObjectToNode{
+		InternalTypeKey:    "type",
+		TopLevelIsRootNode: true,
+		Modifier: func(m map[string]interface{}) error {
+			m["foo"] = "bar"
+			return nil
+		},
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Equal(n.Properties["foo"], "bar")
+}
+
+func TestOnToNode(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{}
+
+	c := &ObjectToNode{
+		InternalTypeKey: "internalClass",
+		OnToNode: func(v interface{}) (interface{}, error) {
+			return getFixture("java_example_1.json")
+		},
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Len(n.Children, 18)
 }
 
 func findChildWithInternalType(n *Node, internalType string) *Node {
