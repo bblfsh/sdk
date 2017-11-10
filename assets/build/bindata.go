@@ -70,9 +70,7 @@ host-platform := $(shell echo $$HOST_PLATFORM)
 
 ifdef bblfsh-sdk-tools # run only with Golang
     ifdef in-container
-    ifneq ($(host-platform),Linux)
         bblfsh-sdk-tools :=  go run /go/src/gopkg.in/bblfsh/sdk.v1/cli/bblfsh-sdk-tools/main.go
-    endif
     endif
 
     $(shell $(bblfsh-sdk-tools) envvars > $(manifest))
@@ -96,7 +94,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 1241, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 1196, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
