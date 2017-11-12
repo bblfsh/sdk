@@ -151,3 +151,9 @@ managed file "README.md" has changed, discarding changes
 For further details of how to construct a language driver,
 take a look at [Implementing the driver](https://doc.bblf.sh/driver/sdk.html#implementing-the-driver)
 section in documentation.
+
+
+## License
+
+GPLv3, see [LICENSE](LICENSE)
+
