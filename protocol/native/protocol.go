@@ -19,4 +19,6 @@ type ParseResponse struct {
 	AST interface{} `json:"ast"`
 	// Elapsed is the amount of time consume processing the request.
 	Elapsed time.Duration `json:"elapsed"`
+	// Language is the parsed language
+	Language string `json:"language"`
 }

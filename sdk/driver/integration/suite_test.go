@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -56,29 +55,35 @@ func (s *suite) SetUpTest(t *testing.T) {
 }
 
 func (s *suite) TestParse(t *testing.T) {
-	files, err := filepath.Glob(fmt.Sprintf("%s/*.source", s.Fixtures))
+	files, err := filepath.Glob(fmt.Sprintf("%s/*", s.Fixtures))
 	if err != nil {
 		panic(err)
 	}
 
 	for _, f := range files {
-		filename := removeExtension(f)
-		t.Run(filepath.Base(filename), func(t *testing.T) {
-			s.doTestParse(t, filename)
+		if !isSource(f) {
+			continue
+		}
+
+		t.Run(filepath.Base(f), func(t *testing.T) {
+			s.doTestParse(t, f)
 		})
 	}
 }
 
 func (s *suite) TestNativeParse(t *testing.T) {
-	files, err := filepath.Glob(fmt.Sprintf("%s/*.source", s.Fixtures))
+	files, err := filepath.Glob(fmt.Sprintf("%s/*", s.Fixtures))
 	if err != nil {
 		panic(err)
 	}
 
 	for _, f := range files {
-		filename := removeExtension(f)
-		t.Run(filepath.Base(filename), func(t *testing.T) {
-			s.doTestNativeParse(t, filename)
+		if !isSource(f) {
+			continue
+		}
+
+		t.Run(filepath.Base(f), func(t *testing.T) {
+			s.doTestNativeParse(t, f)
 		})
 	}
 }
@@ -156,10 +161,6 @@ func getFileContent(r *require.Assertions, filename, extension string) string {
 
 	return string(content)
 }
-func removeExtension(filename string) string {
-	parts := strings.Split(filename, ".")
-	return strings.Join(parts[:len(parts)-1], ".")
-}
 
 func TestParse(t *testing.T) {
 	Suite.SetUpTest(t)
@@ -169,4 +170,9 @@ func TestParse(t *testing.T) {
 func TestNativeParse(t *testing.T) {
 	Suite.SetUpTest(t)
 	Suite.TestNativeParse(t)
+}
+
+func isSource(f string) bool {
+	ext := filepath.Ext(f)
+	return ext != "native" && ext != "uast"
 }

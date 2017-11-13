@@ -30,6 +30,7 @@ message NativeParseResponse {
 	repeated string errors = 2;
 	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 	string ast = 4 [(gogoproto.customname) = "AST"];
+	string language = 5;
 }
 
 // ParseRequest is a request to parse a file and get its UAST.
@@ -52,6 +53,7 @@ message ParseResponse {
 	repeated string errors = 2;
 	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 	gopkg.in.bblfsh.sdk.v1.uast.Node uast = 4 [(gogoproto.customname) = "UAST"];
+	string language = 5;
 }
 
 // VersionRequest is a request to get server version
