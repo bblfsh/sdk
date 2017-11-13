@@ -131,14 +131,11 @@ func (r *NativeParseResponse) String() string {
 	}
 
 	s.Status = strings.ToLower(r.Status.String())
-	s.Status = strings.ToLower(r.Status.String())
 	s.Errors = r.Errors
-	s.Status = strings.ToLower(r.Status.String())
 	if len(s.Errors) == 0 {
 		s.Errors = make([]string, 0)
 	}
 
-	s.Status = strings.ToLower(r.Status.String())
 	if len(r.AST) > 0 {
 		err := json.Unmarshal([]byte(r.AST), &s.AST)
 		if err != nil {
@@ -146,19 +143,16 @@ func (r *NativeParseResponse) String() string {
 		}
 	}
 
-	s.Status = strings.ToLower(r.Status.String())
 	buf := bytes.NewBuffer(nil)
 	e := json.NewEncoder(buf)
 	e.SetIndent("", "    ")
 	e.SetEscapeHTML(false)
 
-	s.Status = strings.ToLower(r.Status.String())
 	err := e.Encode(s)
 	if err != nil {
 		return err.Error()
 	}
 
-	s.Status = strings.ToLower(r.Status.String())
 	return buf.String()
 }
 
