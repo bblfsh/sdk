@@ -143,7 +143,7 @@ func EqualText(r *require.Assertions, expected, actual string) {
 }
 
 func getSourceCode(r *require.Assertions, filename string) string {
-	return getFileContent(r, filename, "source")
+	return getFileContent(r, filename, "")
 }
 
 func getUAST(r *require.Assertions, filename string) string {
@@ -155,7 +155,9 @@ func getAST(r *require.Assertions, filename string) string {
 }
 
 func getFileContent(r *require.Assertions, filename, extension string) string {
-	filename = fmt.Sprintf("%s.%s", filename, extension)
+	if len(extension) > 0 {
+		filename = fmt.Sprintf("%s.%s", filename, extension)
+	}
 	content, err := ioutil.ReadFile(filename)
 	r.Nil(err)
 
@@ -174,5 +176,6 @@ func TestNativeParse(t *testing.T) {
 
 func isSource(f string) bool {
 	ext := filepath.Ext(f)
-	return ext != "native" && ext != "uast"
+	return ext != ".native" && ext != ".uast"
 }
+

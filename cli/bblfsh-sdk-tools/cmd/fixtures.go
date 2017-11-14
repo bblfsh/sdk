@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver/integration"
 	"gopkg.in/bblfsh/sdk.v1/manifest"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 
@@ -22,11 +20,11 @@ type FixturesCommand struct {
 	Args struct {
 		SourceFiles []string `positional-arg-name:"sourcefile(s)" required:"true" description:"File(s) with the source code"`
 	} `positional-args:"yes"`
-	Language      string `long:"language" short:"l" default:"" description:"Language to parse"`
-	Endpoint      string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
-	ExtNative     string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
-	ExtUast       string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
-	Quiet         bool   `long:"quiet" short:"q" description:"Don't print any output"`
+	Language  string `long:"language" short:"l" default:"" description:"Language to parse"`
+	Endpoint  string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
+	ExtNative string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
+	ExtUast   string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
+	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
 	manifestCommand
 	cli protocol.ProtocolServiceClient
@@ -101,7 +99,7 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 	req := &protocol.NativeParseRequest{
 		Language: c.Language,
 		Content:  source,
-		Filename: removeSourceSuffix(filename),
+		Filename: filename,
 	}
 
 	res, err := c.cli.NativeParse(context.Background(), req)
@@ -125,7 +123,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (string, error
 	req := &protocol.ParseRequest{
 		Language: c.Language,
 		Content:  source,
-		Filename: removeSourceSuffix(filename),
+		Filename: filename,
 	}
 
 	res, err := c.cli.Parse(context.Background(), req)
@@ -146,7 +144,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (string, error
 }
 
 func (c *FixturesCommand) writeResult(origName, content, extension string) error {
-	outname := removeSourceSuffix(origName) + "." + extension
+	outname := origName + "." + extension
 	if !c.Quiet {
 		fmt.Println("\tWriting", outname, "...")
 	}
@@ -165,12 +163,4 @@ func getSourceFile(f string) (string, error) {
 		return "", err
 	}
 	return string(content), nil
-}
-
-func removeSourceSuffix(f string) string {
-	if strings.HasSuffix(f, ".source") {
-		return integration.RemoveExtension(f)
-	}
-
-	return f
 }
