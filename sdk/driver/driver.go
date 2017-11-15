@@ -49,6 +49,11 @@ func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 
 	var ast interface{}
 	r.Response, ast = d.doParse(req.Language, req.Content, req.Encoding)
+
+	if r.Language == "" {
+		r.Language = d.m.Language
+	}
+
 	if r.Status == protocol.Fatal {
 		return r
 	}
@@ -83,6 +88,11 @@ func (d *Driver) NativeParse(req *protocol.NativeParseRequest) *protocol.NativeP
 
 	var ast interface{}
 	r.Response, ast = d.doParse(req.Language, req.Content, req.Encoding)
+
+	if r.Language == "" {
+		r.Language = d.m.Language
+	}
+
 	if r.Status == protocol.Fatal {
 		return r
 	}
@@ -99,7 +109,7 @@ func (d *Driver) NativeParse(req *protocol.NativeParseRequest) *protocol.NativeP
 func (d *Driver) doParse(language, content string, encoding protocol.Encoding) (
 	r protocol.Response, ast interface{},
 ) {
-	if !d.isValidateLanguage(language, &r) {
+	if !d.isValidLanguage(language, &r) {
 		return r, nil
 	}
 
@@ -115,7 +125,7 @@ func (d *Driver) doParse(language, content string, encoding protocol.Encoding) (
 	return
 }
 
-func (d *Driver) isValidateLanguage(language string, r *protocol.Response) bool {
+func (d *Driver) isValidLanguage(language string, r *protocol.Response) bool {
 	if language == d.m.Language {
 		return true
 	}
