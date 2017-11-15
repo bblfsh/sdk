@@ -32,6 +32,7 @@ func TestDriverParserParse(t *testing.T) {
 	require.NotNil(r)
 	require.Equal(len(r.Errors), 0)
 	require.Equal(r.Status, protocol.Ok)
+	require.Equal(r.Language, "fixture")
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
 	require.Equal(r.UAST.String(), " "+
 		"{\n"+
@@ -115,6 +116,7 @@ func TestDriverParserNativeParse(t *testing.T) {
 	require.NotNil(r)
 	require.Equal(len(r.Errors), 0)
 	require.Equal(r.Status, protocol.Ok)
+	require.Equal(r.Language, "fixture")
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
 	require.Equal(r.AST, "{\"root\":{\"key\":\"val\"}}")
 
