@@ -17,7 +17,7 @@ func TestFillLineColFromOffset(t *testing.T) {
 		EndPosition:   &uast.Position{Offset: 4},
 		Children: []*uast.Node{{
 			StartPosition: &uast.Position{Offset: 7},
-			EndPosition:   &uast.Position{Offset: 11},
+			EndPosition:   &uast.Position{Offset: 12},
 		}},
 	}
 
@@ -26,7 +26,7 @@ func TestFillLineColFromOffset(t *testing.T) {
 		EndPosition:   &uast.Position{Offset: 4, Line: 1, Col: 5},
 		Children: []*uast.Node{{
 			StartPosition: &uast.Position{Offset: 7, Line: 3, Col: 1},
-			EndPosition:   &uast.Position{Offset: 11, Line: 3, Col: 5},
+			EndPosition:   &uast.Position{Offset: 12, Line: 3, Col: 6},
 		}},
 	}
 
