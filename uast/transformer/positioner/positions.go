@@ -103,7 +103,7 @@ func (idx *positionIndex) addLineOffset(offset int) {
 func (idx *positionIndex) LineCol(offset int) (int, int, error) {
 	var (
 		minOffset = 0
-		maxOffset = idx.size - 1
+		maxOffset = idx.size
 	)
 
 	if offset < minOffset || offset > maxOffset {
