@@ -383,6 +383,9 @@ func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, err
 	var ns []*Node
 	for _, v := range s {
 		nodes, err := c.toNodes(v)
+		if ErrUnexpectedObject.Is(err) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
