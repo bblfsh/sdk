@@ -294,6 +294,10 @@ func (c *ObjectToNode) toNodes(obj interface{}) ([]*Node, error) {
 
 			// This property -> List elements will be added as the current node Children
 			children, err := c.sliceToNodeSlice(k, ov)
+			// List of non-nodes
+			if ErrUnexpectedObject.Is(err) {
+				err = c.addProperty(n, k, ov)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -383,9 +387,6 @@ func (c *ObjectToNode) sliceToNodeSlice(k string, s []interface{}) ([]*Node, err
 	var ns []*Node
 	for _, v := range s {
 		nodes, err := c.toNodes(v)
-		if ErrUnexpectedObject.Is(err) {
-			continue
-		}
 		if err != nil {
 			return nil, err
 		}

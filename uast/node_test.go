@@ -440,7 +440,8 @@ func TestToNodeWithArray(t *testing.T) {
 	require := require.New(t)
 
 	ast := map[string]interface{}{}
-	err := json.Unmarshal([]byte(`{"flags": ["a", "b"], "kind": "VariableDeclarationList"}`), &ast)
+	astJSON := `{"flags": ["a", "b"], "kind": "VariableDeclarationList"}`
+	err := json.Unmarshal([]byte(astJSON), &ast)
 	require.NoError(err)
 
 	c := &ObjectToNode{
@@ -451,6 +452,9 @@ func TestToNodeWithArray(t *testing.T) {
 	n, err := c.ToNode(ast)
 	require.NoError(err)
 	require.NotNil(n)
+	require.Equal(n.InternalType, "VariableDeclarationList")
+	require.Len(n.Properties, 1)
+	require.Equal(n.Properties["flags"], "[a b]")
 }
 
 func findChildWithInternalType(n *Node, internalType string) *Node {
