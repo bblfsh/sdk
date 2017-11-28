@@ -436,6 +436,27 @@ func TestOnToNode(t *testing.T) {
 	require.Len(n.Children, 18)
 }
 
+func TestToNodeWithArray(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{}
+	astJSON := `{"flags": ["a", "b"], "kind": "VariableDeclarationList"}`
+	err := json.Unmarshal([]byte(astJSON), &ast)
+	require.NoError(err)
+
+	c := &ObjectToNode{
+		TopLevelIsRootNode: true,
+		InternalTypeKey:    "kind",
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Equal(n.InternalType, "VariableDeclarationList")
+	require.Len(n.Properties, 1)
+	require.Equal(n.Properties["flags"], "[a b]")
+}
+
 func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
