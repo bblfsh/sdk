@@ -436,11 +436,11 @@ func TestOnToNode(t *testing.T) {
 	require.Len(n.Children, 18)
 }
 
-func TestToNodeWithArray(t *testing.T) {
+func TestToNodePropsArray(t *testing.T) {
 	require := require.New(t)
 
 	ast := map[string]interface{}{}
-	astJSON := `{"flags": ["a", "b"], "kind": "VariableDeclarationList"}`
+	astJSON := `{"array": ["a", "b"], "kind": "VariableDeclarationList"}`
 	err := json.Unmarshal([]byte(astJSON), &ast)
 	require.NoError(err)
 
@@ -452,9 +452,34 @@ func TestToNodeWithArray(t *testing.T) {
 	n, err := c.ToNode(ast)
 	require.NoError(err)
 	require.NotNil(n)
-	require.Equal(n.InternalType, "VariableDeclarationList")
+	require.Equal("VariableDeclarationList", n.InternalType)
 	require.Len(n.Properties, 1)
-	require.Equal(n.Properties["flags"], "[a b]")
+	require.Equal(`["a","b"]`, n.Properties["array"])
+}
+
+func TestToNodePropsMap(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{}
+	astJSON := `{"kind": "SomeType"}`
+	err := json.Unmarshal([]byte(astJSON), &ast)
+	require.NoError(err)
+
+	c := &ObjectToNode{
+		TopLevelIsRootNode: true,
+		InternalTypeKey:    "kind",
+		Modifier: func(n map[string]interface{}) error {
+			n["map"] = map[string]bool{"value": true}
+			return nil
+		},
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Equal("SomeType", n.InternalType)
+	require.Len(n.Properties, 1)
+	require.Equal(`{"value":true}`, n.Properties["map"])
 }
 
 func findChildWithInternalType(n *Node, internalType string) *Node {

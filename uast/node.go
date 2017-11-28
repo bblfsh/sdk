@@ -2,7 +2,9 @@ package uast
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -506,7 +508,11 @@ func (c *ObjectToNode) addProperty(n *Node, k string, o interface{}) error {
 
 		n.EndPosition.Col = i
 	default:
-		n.Properties[k] = fmt.Sprint(o)
+		v, err := toPropValue(o)
+		if err != nil {
+			return err
+		}
+		n.Properties[k] = v
 	}
 
 	return nil
@@ -609,4 +615,18 @@ func startPosition(n *Node) *Position {
 	}
 
 	return min
+}
+
+func toPropValue(o interface{}) (string, error) {
+	t := reflect.TypeOf(o)
+	switch t.Kind() {
+	case reflect.Map, reflect.Slice, reflect.Array:
+		b, err := json.Marshal(o)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	default:
+		return fmt.Sprint(o), nil
+	}
 }
