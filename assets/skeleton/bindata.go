@@ -1023,7 +1023,7 @@ import (
 
 // Transformers is the of list `+"`"+`transformer.Transfomer`+"`"+` to apply to a UAST, to
 // learn more about the Transformers and the available ones take a look to:
-// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/transformers
+// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/transformer
 var Transformers = []transformer.Tranformer{
 	annotatter.NewAnnotatter(AnnotationRules),
 }
@@ -1044,7 +1044,7 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 687, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 686, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
