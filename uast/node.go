@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -310,7 +309,7 @@ func (c *ObjectToNode) toNodes(obj interface{}) ([]*Node, error) {
 
 			n.Children = append(n.Children, children...)
 		case nil:
-			log.Printf("ignoring %s key with nil value", k)
+			// ignoring key with nil values
 		default:
 			newKey := k
 			if s, ok := o.(string); ok {
