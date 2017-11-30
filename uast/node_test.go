@@ -482,6 +482,25 @@ func TestToNodePropsMap(t *testing.T) {
 	require.Equal(`{"value":true}`, n.Properties["map"])
 }
 
+func TestToNodePropsNil(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{}
+	astJSON := `{"somenull": null}`
+	err := json.Unmarshal([]byte(astJSON), &ast)
+	require.NoError(err)
+
+	c := &ObjectToNode{
+		TopLevelIsRootNode: true,
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Len(n.Properties, 1)
+	require.Equal(`null`, n.Properties["somenull"])
+}
+
 func findChildWithInternalType(n *Node, internalType string) *Node {
 	for _, child := range n.Children {
 		if child.InternalType == internalType {
