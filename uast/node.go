@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -275,6 +276,9 @@ func (c *ObjectToNode) toNodes(obj interface{}) ([]*Node, error) {
 		o := m[k]
 		switch ov := o.(type) {
 		case map[string]interface{}:
+			if ov == nil {
+				continue
+			}
 			c.maybeAddComposedPositionProperties(n, ov)
 			children, err := c.mapToNodes(k, ov)
 			if err != nil {
@@ -305,6 +309,8 @@ func (c *ObjectToNode) toNodes(obj interface{}) ([]*Node, error) {
 			}
 
 			n.Children = append(n.Children, children...)
+		case nil:
+			log.Printf("ignoring %s key with nil value", k)
 		default:
 			newKey := k
 			if s, ok := o.(string); ok {
