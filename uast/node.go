@@ -618,6 +618,10 @@ func startPosition(n *Node) *Position {
 }
 
 func toPropValue(o interface{}) (string, error) {
+	if o == nil {
+		return "null", nil
+	}
+
 	t := reflect.TypeOf(o)
 	switch t.Kind() {
 	case reflect.Map, reflect.Slice, reflect.Array:
