@@ -112,20 +112,28 @@ RUN set -ex \
 		bash \
 		gcc \
 		musl-dev \
-		openssl \
-		go \
-	\
-	&& export GOROOT_BOOTSTRAP="$(go env GOROOT)" \
-	\
-	&& wget -q "$GOLANG_SRC_URL" -O golang.tar.gz \
-	&& tar -C /usr/local -xzf golang.tar.gz \
-	&& rm golang.tar.gz \
-	&& cd /usr/local/go/src \
-	&& patch -p2 -i /no-pic.patch \
-	&& ./make.bash \
-	\
-	&& rm -rf /*.patch \
-	&& apk del .build-deps
+		openssl
+
+ENV RUNTIME_GO_VERSION ${RUNTIME_GO_VERSION}
+RUN export CURRENT_GO_VERSION=$(go version | sed 's/go version go\(.*\) .*/\1/') && \
+    if [ "$CURRENT_GO_VERSION" == "$RUNTIME_GO_VERSION" ]; then \
+    	echo "skipping installation"; \
+    else \
+    	echo "installing $RUNTIME_GO_VERSION"; \
+	 	apk add --no-cache go \
+		\
+		&& export GOROOT_BOOTSTRAP="$(go env GOROOT)" \
+		\
+		&& wget -q "$GOLANG_SRC_URL" -O golang.tar.gz \
+		&& tar -C /usr/local -xzf golang.tar.gz \
+		&& rm golang.tar.gz \
+		&& cd /usr/local/go/src \
+		&& patch -p2 -i /no-pic.patch \
+		&& ./make.bash \
+		\
+		&& rm -rf /*.patch \
+		&& apk del .build-deps;\ 
+	fi
 
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
@@ -142,7 +150,7 @@ func etcBuildDockerfileBuildAlpineTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/build/Dockerfile.build.alpine.tpl", size: 858, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/build/Dockerfile.build.alpine.tpl", size: 1187, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
