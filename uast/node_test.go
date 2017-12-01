@@ -313,6 +313,32 @@ func TestComposedPositionKeys(t *testing.T) {
 	require.True(n.EndPosition.Col == 43)
 }
 
+func TestNilPropertiesAreIgnored(t *testing.T) {
+	require := require.New(t)
+
+	ast := map[string]interface{}{
+		"type": "file",
+		"group": map[string]interface{}{
+			"not_nil":   42,
+			"nil":       nil,
+			"nil_slice": []interface{}(nil),
+			"nil_map":   map[string]interface{}(nil),
+		},
+	}
+
+	c := &ObjectToNode{
+		TopLevelIsRootNode: true,
+		InternalTypeKey:    "type",
+	}
+
+	n, err := c.ToNode(ast)
+	require.NoError(err)
+	require.NotNil(n)
+	require.Len(n.Children, 1)
+	child := n.Children[0]
+	require.Equal(child.Properties["not_nil"], "42")
+}
+
 func TestIsNode(t *testing.T) {
 	require := require.New(t)
 
@@ -480,25 +506,6 @@ func TestToNodePropsMap(t *testing.T) {
 	require.Equal("SomeType", n.InternalType)
 	require.Len(n.Properties, 1)
 	require.Equal(`{"value":true}`, n.Properties["map"])
-}
-
-func TestToNodePropsNil(t *testing.T) {
-	require := require.New(t)
-
-	ast := map[string]interface{}{}
-	astJSON := `{"somenull": null}`
-	err := json.Unmarshal([]byte(astJSON), &ast)
-	require.NoError(err)
-
-	c := &ObjectToNode{
-		TopLevelIsRootNode: true,
-	}
-
-	n, err := c.ToNode(ast)
-	require.NoError(err)
-	require.NotNil(n)
-	require.Len(n.Properties, 1)
-	require.Equal(`null`, n.Properties["somenull"])
 }
 
 func findChildWithInternalType(n *Node, internalType string) *Node {
