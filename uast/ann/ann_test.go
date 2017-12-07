@@ -196,7 +196,7 @@ func TestAddDuplicatedRoles(t *testing.T) {
 	require := require.New(t)
 
 	a := AddRoles(uast.Statement, uast.Expression, uast.Statement, uast.Expression,
-	              uast.Call, uast.Call)
+		uast.Call, uast.Call)
 	input := uast.NewNode()
 	expected := uast.NewNode()
 	expected.Roles = []uast.Role{uast.Statement, uast.Expression, uast.Call}
@@ -507,4 +507,28 @@ func TestRuleOnRulesActionError(t *testing.T) {
 
 	offendingNode := extraInfoError.Node()
 	require.Equal(offendingNode.InternalType, "foo")
+}
+
+func TestBetterErrorMessageForInorderTraversalOfNonBinaryNode(t *testing.T) {
+	require := require.New(t)
+
+	rule := On(Any).DescendantsOrSelf(
+		On(HasInternalType("foo")).
+			Roles(uast.Infix).
+			Children(On(Any).Roles(uast.Call)),
+	)
+
+	input := &uast.Node{
+		InternalType: "foo",
+		Children: []*uast.Node{{
+			InternalType: "child",
+		}, {
+			InternalType: "child",
+		}, {
+			InternalType: "child",
+		}},
+	}
+
+	err := rule.Apply(input)
+	require.EqualError(err, "unsupported iteration over node with 3 children")
 }
