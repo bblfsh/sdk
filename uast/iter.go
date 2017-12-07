@@ -1,5 +1,7 @@
 package uast
 
+import "fmt"
+
 // PathIter iterates node paths.
 type PathIter interface {
 	// Next returns the next node path or nil if the are no more nodes.
@@ -92,22 +94,27 @@ func noChildrenNodeCopy(n *Node) *Node {
 // the order Role with (if set) can be Infix, Postfix or Prefix. Defaults to Preorder
 // if the order Role is not set. This also updates i.last.
 func (i *orderPathIter) addToStackWithOrder(n *Node) {
-	hasChildren := len(n.Children) > 0
+	if len(n.Children) == 0 {
+		return
+	}
 
-	iterType := getNextIterType(n)
-	if iterType == inOrder && hasChildren {
+	switch getNextIterType(n) {
+	case inOrder:
 		// Right
+		if l := len(n.Children); l != 2 {
+			panic(fmt.Sprintf("unsupported iteration over node with %d children", l))
+		}
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[1]))
 		// Relator
 		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
 		// left
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[0]))
-	} else if iterType == postOrder && hasChildren {
+	case postOrder:
 		// Children
 		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
 		// Relator
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
-	} else if hasChildren {
+	default:
 		// no order role or (default) preOrder
 		// (children not added to the stack):
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))

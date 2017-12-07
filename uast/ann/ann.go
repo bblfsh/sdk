@@ -108,7 +108,14 @@ func (r *Rule) addRules(axis axis, rules []*Rule) *Rule {
 }
 
 // Apply applies the rule to the given node.
-func (r *Rule) Apply(n *uast.Node) error {
+func (r *Rule) Apply(n *uast.Node) (err error) {
+	// recover from panics and returns them as errors.
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = fmt.Errorf("%v", rec)
+		}
+	}()
+
 	iter := newMatchPathIter(n, r.axis, r.predicates)
 	for {
 		p := iter.Next()
@@ -486,4 +493,3 @@ func matchSuffixPredicates(path uast.Path, preds []Predicate) bool {
 
 	return true
 }
-
