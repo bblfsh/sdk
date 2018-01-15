@@ -881,7 +881,7 @@ func license() (*asset, error) {
 
 var _makefile = []byte(`-include .sdk/Makefile
 
-$(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk))
+$(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk with: "bblfsh-sdk prepare-build"))
 
 test-native-internal:
 	cd native; \
@@ -904,7 +904,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 328, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 361, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
