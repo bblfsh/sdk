@@ -2,7 +2,7 @@
 
 package uast
 
-import "fmt"
+import "strconv"
 
 const _Role_name = "InvalidIdentifierQualifiedOperatorBinaryUnaryLeftRightInfixPostfixBitwiseBooleanUnsignedLeftShiftRightShiftOrXorAndExpressionStatementEqualNotLessThanLessThanOrEqualGreaterThanGreaterThanOrEqualIdenticalContainsIncrementDecrementNegativePositiveDereferenceTakeAddressFileAddSubstractMultiplyDivideModuloPackageDeclarationImportPathnameAliasFunctionBodyNameReceiverArgumentValueArgsListBaseImplementsInstanceSubtypeSubpackageModuleFriendWorldIfConditionThenElseSwitchCaseDefaultForInitializationUpdateIteratorWhileDoWhileBreakContinueGotoBlockScopeReturnTryCatchFinallyThrowAssertCallCalleePositionalNoopLiteralByteByteStringCharacterListMapNullNumberRegexpSetStringTupleTypeEntryKeyPrimitiveAssignmentThisCommentDocumentationWhitespaceIncompleteUnannotatedVisibilityAnnotationAnonymousEnumerationArithmeticRelationalVariable"
 
@@ -10,7 +10,7 @@ var _Role_index = [...]uint16{0, 7, 17, 26, 34, 40, 45, 49, 54, 59, 66, 73, 80, 
 
 func (i Role) String() string {
 	if i < 0 || i >= Role(len(_Role_index)-1) {
-		return fmt.Sprintf("Role(%d)", i)
+		return "Role(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _Role_name[_Role_index[i]:_Role_index[i+1]]
 }

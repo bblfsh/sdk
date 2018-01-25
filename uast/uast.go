@@ -21,6 +21,7 @@ type Hash uint32
 //
 //proteus:generate
 //go:generate stringer -type=Role
+//go:generate jsonenums -type=Role
 type Role int16
 
 const (
@@ -515,7 +516,6 @@ func (p Path) Parent() Path {
 	copy(dst, p)
 	return dst
 }
-
 
 func Tokens(n *Node) []string {
 	var tokens []string
