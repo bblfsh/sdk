@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 )
+
 type asset struct {
 	bytes []byte
 	info  os.FileInfo
@@ -52,10 +53,10 @@ func (fi bindataFileInfo) Sys() interface{} {
 }
 
 var _makefile = []byte(`# This is the entrypoint of the bblfsh make SDK, the SDK should be stored at
-# `+"`"+`sdklocation`+"`"+`, generated executing `+"`"+`bblfsh-sdk prepare-build`+"`"+`. Many different
-# vars as `+"`"+`LANGUAGE`+"`"+` are required, this variables are extracting from the
-# `+"`"+`manifest.toml`+"`"+` at the root and the project translating it to a make include
-# at `+"`"+`manifest`+"`"+` using `+"`"+`bblfsh-sdk manifest`+"`"+` tool.
+# ` + "`" + `sdklocation` + "`" + `, generated executing ` + "`" + `bblfsh-sdk prepare-build` + "`" + `. Many different
+# vars as ` + "`" + `LANGUAGE` + "`" + ` are required, this variables are extracting from the
+# ` + "`" + `manifest.toml` + "`" + ` at the root and the project translating it to a make include
+# at ` + "`" + `manifest` + "`" + ` using ` + "`" + `bblfsh-sdk manifest` + "`" + ` tool.
 
 location = $(shell pwd)
 sdklocation = $(location)/.sdk
@@ -186,7 +187,7 @@ fi
 
 echo -e $darkcyan+ $ENVIRONMENT $@$normal
 
-LOG=`+"`"+`$@ 2>&1`+"`"+`
+LOG=` + "`" + `$@ 2>&1` + "`" + `
 RETVAL=$?
 if [ $RETVAL -gt 0 ] || [ $VERBOSE ] ; then
     echo "$LOG"
@@ -210,7 +211,7 @@ func etcRunSh() (*asset, error) {
 	return a, nil
 }
 
-var _makeBootstrapMk = []byte(`# variables being included from the `+"`"+`manifest.mk`+"`"+`
+var _makeBootstrapMk = []byte(`# variables being included from the ` + "`" + `manifest.mk` + "`" + `
 LANGUAGE ?=
 RUNTIME_OS ?=
 RUNTIME_NATIVE_VERSION ?=
@@ -218,7 +219,7 @@ RUNTIME_GO_VERSION ?=
 
 # get the git commit
 GIT_COMMIT=$(shell git rev-parse HEAD | cut -c1-7)
-GIT_DIRTY=$(shell test -n "`+"`"+`git status --porcelain`+"`"+`" && echo "-dirty" || true)
+GIT_DIRTY=$(shell test -n "` + "`" + `git status --porcelain` + "`" + `" && echo "-dirty" || true)
 
 # optional variables
 DRIVER_DEV_PREFIX := dev
@@ -310,7 +311,7 @@ make build            builds driver's docker image, compiling the normalizer
 make build-native     compiles the native component if needed, in interpreted
                       languages only prepares the scripts to execute the
                       component. To perform this is executes make calling the
-                      private rule: `+"`"+`build-native-internal`+"`"+` defined in the
+                      private rule: ` + "`" + `build-native-internal` + "`" + ` defined in the
                       Makefile in the root of the project inside of the build
                       container.
 
@@ -321,7 +322,7 @@ make test             execute all the unit tests of the components inside of the
 
 make test-native      execute the unit test for the native component. To perform
                       this is execute make calling the private rule:
-                      `+"`"+`test-native-internal`+"`"+` defined in the Makefile in the root
+                      ` + "`" + `test-native-internal` + "`" + ` defined in the Makefile in the root
                       of the project inside of the build container.
 
 make test-driver      execute the unit test for the normalizer component.
@@ -338,7 +339,7 @@ make clean            cleans all the build directories.
 
 INTERNAL RULES
 Two internal rules are required to run the test and the build main rules:
-`+"`"+`test-native-internal`+"`"+` and `+"`"+`build-native-internal`+"`"+`. This rules are defined in the
+` + "`" + `test-native-internal` + "`" + ` and ` + "`" + `build-native-internal` + "`" + `. This rules are defined in the
 Makefile in the root of the driver, they contain the language specific commands
 for the native runtime.
 
@@ -471,9 +472,9 @@ build-driver-internal: $(BUILD_PATH)
 	$(RUN) $(GO_CMD) build -o $(BUILD_PATH)/bin/driver .
 
 integration-test: build
-	CONTAINER_ID=`+"`"+`$(DOCKER_CMD) run -d \
+	CONTAINER_ID=` + "`" + `$(DOCKER_CMD) run -d \
 		-p $(GRPC_PORT_INTEGRATION):$(GRPC_PORT) \
-		$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))`+"`"+`; \
+		$(call unescape_docker_tag,$(DOCKER_IMAGE_VERSIONED))` + "`" + `; \
 	echo "CONTAINER_ID: $$CONTAINER_ID"; \
 	$(bblfsh-sdk-tools) test --endpoint localhost:$(GRPC_PORT_INTEGRATION) || true; \
 	docker kill $$CONTAINER_ID;
@@ -566,14 +567,14 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"Makefile": makefile,
+	"Makefile":                              makefile,
 	"etc/build/Dockerfile.build.alpine.tpl": etcBuildDockerfileBuildAlpineTpl,
 	"etc/build/Dockerfile.build.debian.tpl": etcBuildDockerfileBuildDebianTpl,
-	"etc/run.sh": etcRunSh,
-	"make/bootstrap.mk": makeBootstrapMk,
-	"make/functions.mk": makeFunctionsMk,
-	"make/help.mk": makeHelpMk,
-	"make/rules.mk": makeRulesMk,
+	"etc/run.sh":                            etcRunSh,
+	"make/bootstrap.mk":                     makeBootstrapMk,
+	"make/functions.mk":                     makeFunctionsMk,
+	"make/help.mk":                          makeHelpMk,
+	"make/rules.mk":                         makeRulesMk,
 }
 
 // AssetDir returns the file names below a certain
@@ -615,6 +616,7 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"Makefile": &bintree{makefile, map[string]*bintree{}},
 	"etc": &bintree{nil, map[string]*bintree{
@@ -627,8 +629,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"make": &bintree{nil, map[string]*bintree{
 		"bootstrap.mk": &bintree{makeBootstrapMk, map[string]*bintree{}},
 		"functions.mk": &bintree{makeFunctionsMk, map[string]*bintree{}},
-		"help.mk": &bintree{makeHelpMk, map[string]*bintree{}},
-		"rules.mk": &bintree{makeRulesMk, map[string]*bintree{}},
+		"help.mk":      &bintree{makeHelpMk, map[string]*bintree{}},
+		"rules.mk":     &bintree{makeRulesMk, map[string]*bintree{}},
 	}},
 }}
 
@@ -678,4 +680,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

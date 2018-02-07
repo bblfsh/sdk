@@ -7,13 +7,5 @@ import (
 )
 
 func main() {
-	d, err := driver.NewDriver(normalizer.ToNode, normalizer.Transformers)
-	if err != nil {
-		panic(err)
-	}
-
-	s := driver.NewServer(d)
-	if err := s.Start(); err != nil {
-		panic(err)
-	}
+	driver.Run(normalizer.ToNode, normalizer.Transformers)
 }

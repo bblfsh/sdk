@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 )
+
 type asset struct {
 	bytes []byte
 	info  os.FileInfo
@@ -113,14 +114,14 @@ var _dockerfileBuildTplTpl = []byte(`# Dockerfile.build represents the build env
 
 # The prefered base image is the lastest stable Alpine image, if alpine doesn't
 # meet the requirements you can switch the from to the latest stable slim
-# version of Debian (eg.: `+"`"+`debian:jessie-slim`+"`"+`).
+# version of Debian (eg.: ` + "`" + `debian:jessie-slim` + "`" + `).
 FROM {{.Manifest.Runtime.OS.AsImage}}
 
 # To avoid files written in the volume by root or foreign users, we create a
 # container local user with the same UID of the user executing the build.
 # The following commands are defined to use in busybox based distributions,
-# if you are using a standard distributions, replace the `+"`"+`adduser`+"`"+` command with:
-#   `+"`"+`useradd --uid ${BUILD_UID} --home /opt/driver ${BUILD_USER}`+"`"+`
+# if you are using a standard distributions, replace the ` + "`" + `adduser` + "`" + ` command with:
+#   ` + "`" + `useradd --uid ${BUILD_UID} --home /opt/driver ${BUILD_USER}` + "`" + `
 {{if eq .Manifest.Runtime.OS "alpine" -}}
 RUN mkdir -p /opt/driver/src && \
     adduser ${BUILD_USER} -u ${BUILD_UID} -D -h /opt/driver/src
@@ -138,7 +139,7 @@ RUN apt update && \
     apt install -y --no-install-recommends make git curl ca-certificates
 {{end}}
 
-# The volume with the full source code is mounted at `+"`"+`/opt/driver/src`+"`"+` so, we
+# The volume with the full source code is mounted at ` + "`" + `/opt/driver/src` + "`" + ` so, we
 # set the workdir to this path.
 WORKDIR /opt/driver/src`)
 
@@ -163,7 +164,7 @@ var _dockerfileTplTpl = []byte(`# Dockerfile represents the container being use 
 
 # The prefered base image is the lastest stable Alpine image, if alpine doesn't
 # meet the requirements you can switch the from to the latest stable slim
-# version of Debian (eg.: `+"`"+`debian:jessie-slim`+"`"+`). If the excution environment
+# version of Debian (eg.: ` + "`" + `debian:jessie-slim` + "`" + `). If the excution environment
 # is equals to the build environment the build image can be use as FROM:
 #   bblfsh/<language>-driver-build
 FROM {{.Manifest.Runtime.OS.AsImage}}
@@ -842,11 +843,11 @@ Also add information on how to contact you by electronic and paper mail.
 notice like this when it starts in an interactive mode:
 
     {project}  Copyright (C) {year}  {fullname}
-    This program comes with ABSOLUTELY NO WARRANTY; for details type `+"`"+`show w'.
+    This program comes with ABSOLUTELY NO WARRANTY; for details type ` + "`" + `show w'.
     This is free software, and you are welcome to redistribute it
-    under certain conditions; type `+"`"+`show c' for details.
+    under certain conditions; type ` + "`" + `show c' for details.
 
-The hypothetical commands `+"`"+`show w' and `+"`"+`show c' should show the appropriate
+The hypothetical commands ` + "`" + `show w' and ` + "`" + `show c' should show the appropriate
 parts of the General Public License.  Of course, your program's commands
 might be different; for a GUI interface, you would use an "about box".
 
@@ -924,16 +925,16 @@ Development Environment
 -----------------------
 
 Requirements:
-- `+"`"+`docker`+"`"+`
-- [`+"`"+`bblfsh-sdk`+"`"+`](https://github.com/bblfsh/sdk) _(go get -u gopkg.in/bblfsh/sdk.v1/...)_
+- ` + "`" + `docker` + "`" + `
+- [` + "`" + `bblfsh-sdk` + "`" + `](https://github.com/bblfsh/sdk) _(go get -u gopkg.in/bblfsh/sdk.v1/...)_
 - UAST converter dependencies _(go get -t -v ./...)_
 
-To initialize the build system execute: `+"`"+`bblfsh-sdk prepare-build`+"`"+`, at the root of the project. This will install the SDK at `+"`"+`.sdk`+"`"+` for this driver.
+To initialize the build system execute: ` + "`" + `bblfsh-sdk prepare-build` + "`" + `, at the root of the project. This will install the SDK at ` + "`" + `.sdk` + "`" + ` for this driver.
 
-To execute the tests just execute `+"`"+`make test`+"`"+`, this will execute the test over the native and the go components of the driver. Use `+"`"+`make test-native`+"`"+` to run the test only over the native component or `+"`"+`make test-driver`+"`"+` to run the test just over the go component.
+To execute the tests just execute ` + "`" + `make test` + "`" + `, this will execute the test over the native and the go components of the driver. Use ` + "`" + `make test-native` + "`" + ` to run the test only over the native component or ` + "`" + `make test-driver` + "`" + ` to run the test just over the go component.
 
-The build is done executing `+"`"+`make build`+"`"+`. To evaluate the result using a docker container, execute:
-`+"`"+`docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:7]>-dirty`+"`"+`
+The build is done executing ` + "`" + `make build` + "`" + `. To evaluate the result using a docker container, execute:
+` + "`" + `docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:7]>-dirty` + "`" + `
 
 
 License
@@ -985,15 +986,7 @@ import (
 )
 
 func main() {
-	d, err := driver.NewDriver(normalizer.ToNode, normalizer.Transformers)
-	if err != nil {
-		panic(err)
-	}
-
-	s := driver.NewServer(d)
-	if err := s.Start(); err != nil {
-		panic(err)
-	}
+	driver.Run(normalizer.ToNode, normalizer.Transformers)
 }
 `)
 
@@ -1007,7 +1000,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 332, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 205, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1021,14 +1014,14 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/uast/transformer/annotatter"
 )
 
-// Transformers is the of list `+"`"+`transformer.Transfomer`+"`"+` to apply to a UAST, to
+// Transformers is the of list ` + "`" + `transformer.Transfomer` + "`" + ` to apply to a UAST, to
 // learn more about the Transformers and the available ones take a look to:
 // https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/transformer
 var Transformers = []transformer.Tranformer{
 	annotatter.NewAnnotatter(AnnotationRules),
 }
 
-// AnnotationRules describes how a UAST should be annotated with `+"`"+`uast.Role`+"`"+`.
+// AnnotationRules describes how a UAST should be annotated with ` + "`" + `uast.Role` + "`" + `.
 //
 // https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/ann
 var AnnotationRules = On(Any).Roles(uast.File)
@@ -1053,8 +1046,8 @@ var _driverNormalizerTonodeGo = []byte(`package normalizer
 
 import "gopkg.in/bblfsh/sdk.v1/uast"
 
-// ToNode is an instance of `+"`"+`uast.ObjectToNode`+"`"+`, defining how to transform an
-// into a UAST (`+"`"+`uast.Node`+"`"+`).
+// ToNode is an instance of ` + "`" + `uast.ObjectToNode` + "`" + `, defining how to transform an
+// into a UAST (` + "`" + `uast.Node` + "`" + `).
 //
 // https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast#ObjectToNode
 var ToNode = &uast.ObjectToNode{}
@@ -1080,7 +1073,7 @@ last_stash=$(git rev-parse -q --verify refs/stash)
 git stash save -q --keep-index "automatic stash on pre-commit at $(git branch  --points-at HEAD)";
 new_stash=$(git rev-parse -q --verify refs/stash)
 
-bblfsh-sdk update --root `+"`"+`git rev-parse --show-toplevel`+"`"+` --dry-run
+bblfsh-sdk update --root ` + "`" + `git rev-parse --show-toplevel` + "`" + ` --dry-run
 status=$?
 
 if [ "$last_stash" != "$new_stash" ]; then
@@ -1112,8 +1105,8 @@ var _manifestTomlTpl = []byte(`# Manifest contains metadata about the driver. To
 language = "{{.Language}}"
 
 # status describes the current development status of the driver, the valid
-# values for status are: `+"`"+`planning`+"`"+`, `+"`"+`pre-alpha`+"`"+`, `+"`"+`alpha`+"`"+`, `+"`"+`beta`+"`"+`, `+"`"+`stable`+"`"+`,
-# `+"`"+`mature`+"`"+` or `+"`"+`inactive`+"`"+`.
+# values for status are: ` + "`" + `planning` + "`" + `, ` + "`" + `pre-alpha` + "`" + `, ` + "`" + `alpha` + "`" + `, ` + "`" + `beta` + "`" + `, ` + "`" + `stable` + "`" + `,
+# ` + "`" + `mature` + "`" + ` or ` + "`" + `inactive` + "`" + `.
 status = "planning"
 
 # documentation block is use to render the README.md file.
@@ -1124,7 +1117,7 @@ description  = """
 
 [runtime]
 # os defines in with distribution the runtime is executed (and the build
-# system). The valid values are `+"`"+`alpine`+"`"+` and `+"`"+`debian`+"`"+`. Alpine is preferred
+# system). The valid values are ` + "`" + `alpine` + "`" + ` and ` + "`" + `debian` + "`" + `. Alpine is preferred
 # since is a micro-distribution, but sometimes is hard or impossible to use
 # due to be based on musl and not it libc.
 os = "{{.OS}}"
@@ -1203,18 +1196,18 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	".gitignore": Gitignore,
-	".travis.yml": TravisYml,
-	"Dockerfile.build.tpl.tpl": dockerfileBuildTplTpl,
-	"Dockerfile.tpl.tpl": dockerfileTplTpl,
-	"LICENSE": license,
-	"Makefile": makefile,
-	"README.md.tpl": readmeMdTpl,
-	"driver/main.go.tpl": driverMainGoTpl,
+	".gitignore":                      Gitignore,
+	".travis.yml":                     TravisYml,
+	"Dockerfile.build.tpl.tpl":        dockerfileBuildTplTpl,
+	"Dockerfile.tpl.tpl":              dockerfileTplTpl,
+	"LICENSE":                         license,
+	"Makefile":                        makefile,
+	"README.md.tpl":                   readmeMdTpl,
+	"driver/main.go.tpl":              driverMainGoTpl,
 	"driver/normalizer/annotation.go": driverNormalizerAnnotationGo,
-	"driver/normalizer/tonode.go": driverNormalizerTonodeGo,
-	"git/hooks/pre-commit": gitHooksPreCommit,
-	"manifest.toml.tpl": manifestTomlTpl,
+	"driver/normalizer/tonode.go":     driverNormalizerTonodeGo,
+	"git/hooks/pre-commit":            gitHooksPreCommit,
+	"manifest.toml.tpl":               manifestTomlTpl,
 }
 
 // AssetDir returns the file names below a certain
@@ -1256,19 +1249,20 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
-	".gitignore": &bintree{Gitignore, map[string]*bintree{}},
-	".travis.yml": &bintree{TravisYml, map[string]*bintree{}},
+	".gitignore":               &bintree{Gitignore, map[string]*bintree{}},
+	".travis.yml":              &bintree{TravisYml, map[string]*bintree{}},
 	"Dockerfile.build.tpl.tpl": &bintree{dockerfileBuildTplTpl, map[string]*bintree{}},
-	"Dockerfile.tpl.tpl": &bintree{dockerfileTplTpl, map[string]*bintree{}},
-	"LICENSE": &bintree{license, map[string]*bintree{}},
-	"Makefile": &bintree{makefile, map[string]*bintree{}},
-	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
+	"Dockerfile.tpl.tpl":       &bintree{dockerfileTplTpl, map[string]*bintree{}},
+	"LICENSE":                  &bintree{license, map[string]*bintree{}},
+	"Makefile":                 &bintree{makefile, map[string]*bintree{}},
+	"README.md.tpl":            &bintree{readmeMdTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
 		"main.go.tpl": &bintree{driverMainGoTpl, map[string]*bintree{}},
 		"normalizer": &bintree{nil, map[string]*bintree{
 			"annotation.go": &bintree{driverNormalizerAnnotationGo, map[string]*bintree{}},
-			"tonode.go": &bintree{driverNormalizerTonodeGo, map[string]*bintree{}},
+			"tonode.go":     &bintree{driverNormalizerTonodeGo, map[string]*bintree{}},
 		}},
 	}},
 	"git": &bintree{nil, map[string]*bintree{
@@ -1325,4 +1319,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
