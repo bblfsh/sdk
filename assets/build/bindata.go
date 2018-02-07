@@ -107,7 +107,7 @@ ENV GOLANG_SRC_URL https://golang.org/dl/go${RUNTIME_GO_VERSION}.src.tar.gz
 # from https://github.com/docker-library/golang/blob/master/1.8/alpine/Dockerfile
 
 RUN apk add --update --no-cache ca-certificates openssl && update-ca-certificates
-RUN wget https://raw.githubusercontent.com/docker-library/golang/132cd70768e3bc269902e4c7b579203f66dc9f64/1.8/alpine/no-pic.patch
+RUN wget https://raw.githubusercontent.com/docker-library/golang/132cd70768e3bc269902e4c7b579203f66dc9f64/1.8/alpine/no-pic.patch -O /no-pic.patch
 
 RUN set -ex \
 	&& apk add --no-cache --virtual .build-deps \
@@ -144,7 +144,7 @@ func etcBuildDockerfileBuildAlpineTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/build/Dockerfile.build.alpine.tpl", size: 943, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/build/Dockerfile.build.alpine.tpl", size: 960, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
