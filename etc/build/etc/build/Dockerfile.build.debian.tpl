@@ -1,5 +1,9 @@
 FROM ${DOCKER_BUILD_NATIVE_IMAGE}
 
+# remove any pre-installed Go SDK in the base image and reset GOROOT
+RUN sh -c '[[ ! -z $(which go) ]] && rm -rf $(go env GOROOT) || true'
+ENV GOROOT=""
+
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go${RUNTIME_GO_VERSION}.linux-amd64.tar.gz
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
