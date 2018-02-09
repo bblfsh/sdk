@@ -145,7 +145,13 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 	}
 
 	maxCol := maxOffset - idx.offsetByLine[line] + 1
-	if col < minCol || col > maxCol {
+
+	// For empty files with 1-indexed drivers, set maxCol to 1
+	if (maxCol == 0 && col == 1) {
+		maxCol = 1
+	}
+
+	if col < minCol || (maxCol > 0 && col > maxCol) {
 		return 0, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
 	}
 

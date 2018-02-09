@@ -63,3 +63,24 @@ func TestFillOffsetFromLineCol(t *testing.T) {
 	require.NoError(err)
 	require.Equal(expected, input)
 }
+
+func TestEmptyFile(t *testing.T) {
+	require := require.New(t)
+
+	data := ""
+
+	input := &uast.Node{
+		StartPosition: &uast.Position{Line: 1, Col: 1},
+		EndPosition:   &uast.Position{Line: 1, Col: 1},
+	}
+
+	expected := &uast.Node{
+		StartPosition: &uast.Position{Offset: 0, Line: 1, Col: 1},
+		EndPosition:   &uast.Position{Offset: 0, Line: 1, Col: 1},
+	}
+
+	p := NewFillOffsetFromLineCol()
+	err := p.Do(data, 0, input)
+	require.NoError(err)
+	require.Equal(expected, input)
+}
