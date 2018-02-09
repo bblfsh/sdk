@@ -1,6 +1,6 @@
 -include .sdk/Makefile
 
-$(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk))
+$(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk with: "bblfsh-sdk prepare-build"))
 
 test-native-internal:
 	cd native; \
