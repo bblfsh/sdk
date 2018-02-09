@@ -12,6 +12,7 @@
 // etc/skeleton/driver/normalizer/tonode.go
 // etc/skeleton/git/hooks/pre-commit
 // etc/skeleton/manifest.toml.tpl
+// etc/skeleton/native/README.md.tpl
 // DO NOT EDIT!
 
 package skeleton
@@ -1144,6 +1145,28 @@ func manifestTomlTpl() (*asset, error) {
 	return a, nil
 }
 
+var _nativeReadmeMdTpl = []byte(`The native driver (the one producing the native AST) should be located here.
+
+See:
+
+https://doc.bblf.sh/driver/sdk.html
+`)
+
+func nativeReadmeMdTplBytes() ([]byte, error) {
+	return _nativeReadmeMdTpl, nil
+}
+
+func nativeReadmeMdTpl() (*asset, error) {
+	bytes, err := nativeReadmeMdTplBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "native/README.md.tpl", size: 120, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1208,6 +1231,7 @@ var _bindata = map[string]func() (*asset, error){
 	"driver/normalizer/tonode.go":     driverNormalizerTonodeGo,
 	"git/hooks/pre-commit":            gitHooksPreCommit,
 	"manifest.toml.tpl":               manifestTomlTpl,
+	"native/README.md.tpl":            nativeReadmeMdTpl,
 }
 
 // AssetDir returns the file names below a certain
@@ -1271,6 +1295,9 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		}},
 	}},
 	"manifest.toml.tpl": &bintree{manifestTomlTpl, map[string]*bintree{}},
+	"native": &bintree{nil, map[string]*bintree{
+		"README.md.tpl": &bintree{nativeReadmeMdTpl, map[string]*bintree{}},
+	}},
 }}
 
 // RestoreAsset restores an asset under the given directory
