@@ -86,7 +86,7 @@ services:
 before_script:
   - go get -v gopkg.in/bblfsh/sdk.v1/...
   - bblfsh-sdk prepare-build .
-  - go get -v -t ./...
+  - go get -v -t ./driver/...
 
 script:
   - make test integration-test
@@ -105,7 +105,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 229, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 236, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

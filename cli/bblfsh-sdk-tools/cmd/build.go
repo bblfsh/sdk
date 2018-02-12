@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/manifest"
@@ -28,6 +29,9 @@ func (c *BuildCommand) Execute(args []string) error {
 
 	if c.Output == "" {
 		return c.Manifest.Encode(os.Stdout)
+	}
+	if err := os.MkdirAll(filepath.Dir(c.Output), 0755); err != nil {
+		return err
 	}
 
 	f, err := os.Create(c.Output)

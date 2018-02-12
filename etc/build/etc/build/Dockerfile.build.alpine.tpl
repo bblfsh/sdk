@@ -1,11 +1,15 @@
 FROM ${DOCKER_BUILD_NATIVE_IMAGE}
 
+# remove any pre-installed Go SDK in the base image and reset GOROOT
+RUN sh -c '[[ ! -z $(which go) ]] && rm -rf $(go env GOROOT) || true'
+ENV GOROOT=""
+
 ENV GOLANG_SRC_URL https://golang.org/dl/go${RUNTIME_GO_VERSION}.src.tar.gz
 
-# from https://github.com/docker-library/golang/blob/master/1.8/alpine/Dockerfile
+# from https://github.com/docker-library/golang/blob/master/1.8/alpine3.6/Dockerfile
 
 RUN apk add --update --no-cache ca-certificates openssl && update-ca-certificates
-RUN wget https://raw.githubusercontent.com/docker-library/golang/132cd70768e3bc269902e4c7b579203f66dc9f64/1.8/alpine/no-pic.patch -O /no-pic.patch
+RUN wget https://raw.githubusercontent.com/docker-library/golang/e63ba9c5efb040b35b71e16722b71b2931f29eb8/${RUNTIME_GO_VERSION}/alpine3.6/no-pic.patch -O /no-pic.patch -O /no-pic.patch
 
 RUN set -ex \
 	&& apk add --no-cache --virtual .build-deps \
