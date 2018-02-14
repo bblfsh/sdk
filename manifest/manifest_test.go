@@ -8,8 +8,10 @@ import (
 )
 
 var fixture = `
+name = "Foo"
 language = "foo"
 status = ""
+features = ["ast", "uast", "roles"]
 
 [documentation]
   description = "foo"
@@ -22,7 +24,9 @@ status = ""
 
 func TestEncode(t *testing.T) {
 	m := &Manifest{}
+	m.Name = "Foo"
 	m.Language = "foo"
+	m.Features = []Feature{AST, UAST, Roles}
 	m.Documentation.Description = "foo"
 	m.Runtime.OS = Alpine
 	m.Runtime.GoVersion = "1.8"
