@@ -43,6 +43,18 @@ const (
 	CommentLoss InformationLoss = "formating-loss"
 )
 
+// Feature describes which level of information driver can produce.
+type Feature string
+
+const (
+	// AST is a basic feature required for the driver. Driver can parse files and return native language AST.
+	AST Feature = "ast"
+	// UAST feature indicates that driver properly converts AST to UAST without further annotating it.
+	UAST Feature = "uast"
+	// Roles feature indicates that driver annotates UAST with roles. All node types are annotated.
+	Roles Feature = "roles"
+)
+
 type OS string
 
 const (
@@ -62,6 +74,7 @@ func (os OS) AsImage() string {
 }
 
 type Manifest struct {
+	Name            string            `toml:"name"` // human-readable name
 	Language        string            `toml:"language"`
 	Version         string            `toml:"version,omitempty"`
 	Build           *time.Time        `toml:"build,omitempty"`
@@ -76,6 +89,7 @@ type Manifest struct {
 		NativeVersion Versions `toml:"native_version"`
 		GoVersion     string   `toml:"go_version"`
 	} `toml:"runtime"`
+	Features []Feature `toml:"features"`
 }
 
 type Versions []string
