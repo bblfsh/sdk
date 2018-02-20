@@ -23,6 +23,22 @@ const (
 	Inactive DevelopmentStatus = "inactive"
 )
 
+// Rank is an integer indicating driver stability. Higher is better.
+func (s DevelopmentStatus) Rank() int {
+	// TODO: make DevelopmentStatus an int enum and provide text marshal/unmarshal methods
+	return statusRanks[s]
+}
+
+var statusRanks = map[DevelopmentStatus]int{
+	Inactive: 0,
+	Planning: 1,
+	PreAlpha: 2,
+	Alpha:    3,
+	Beta:     4,
+	Stable:   5,
+	Mature:   6,
+}
+
 // InformationLoss in terms of which kind of code generation would they allow.
 type InformationLoss string
 
@@ -90,6 +106,16 @@ type Manifest struct {
 		GoVersion     string   `toml:"go_version"`
 	} `toml:"runtime"`
 	Features []Feature `toml:"features"`
+}
+
+// Supports checks if driver supports specified feature.
+func (m Manifest) Supports(f Feature) bool {
+	for _, f2 := range m.Features {
+		if f == f2 {
+			return true
+		}
+	}
+	return false
 }
 
 type Versions []string
