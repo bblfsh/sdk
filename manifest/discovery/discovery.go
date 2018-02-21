@@ -1,10 +1,11 @@
-// discovery package implements helpers for clients to discover language drivers supported by Babelfish.
+// Package discovery package implements helpers for clients to discover language drivers supported by Babelfish.
 package discovery
 
 import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"sort"
@@ -149,9 +150,28 @@ func (d *Driver) loadManifest(ctx context.Context) error {
 //		John Doe <john@domain.com> (@john_at_github)
 var reMaintainer = regexp.MustCompile(`^([^<(]+)\s<([^>]+)>(\s\(@([^\s]+)\))?`)
 
-// loadMaintainers reads MAINTAINERS file from repository and decodes it into object.
+// parseMaintainers parses the MAINTAINERS file.
 //
 // Each line in a file should follow the format defined by reMaintainer regexp.
+func parseMaintainers(r io.Reader) []Maintainer {
+	var out []Maintainer
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		sub := reMaintainer.FindStringSubmatch(line)
+		if len(sub) == 0 {
+			continue
+		}
+		m := Maintainer{Name: sub[1], Email: sub[2]}
+		if len(sub) >= 5 {
+			m.Github = sub[4]
+		}
+		out = append(out, m)
+	}
+	return out
+}
+
+// loadMaintainers reads MAINTAINERS file from repository and decodes it into object.
 func (d *Driver) loadMaintainers(ctx context.Context) error {
 	req := newReq(ctx, d.repositoryFileURL("MAINTAINERS"))
 
@@ -165,45 +185,25 @@ func (d *Driver) loadMaintainers(ctx context.Context) error {
 	} else if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("status: %v", resp.Status)
 	}
-
-	var out []Maintainer
-	sc := bufio.NewScanner(resp.Body)
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		sub := reMaintainer.FindStringSubmatch(line)
-		if len(sub) == 0 {
-			continue
-		}
-		m := Maintainer{Name: sub[1], Email: sub[2]}
-		if len(sub) >= 5 {
-			m.Github = sub[4]
-		}
-		out = append(out, m)
-	}
-	d.Maintainers = out
+	d.Maintainers = parseMaintainers(resp.Body)
 	return nil
 }
 
+// Options controls how drivers are being discovered and what information is fetched for them.
 type Options struct {
 	Organization  string // Github organization name
 	NamesOnly     bool   // driver manifest will only have Language field populated
 	NoMaintainers bool   // do not load maintainers list
 }
 
-// OfficialDrivers lists all available language drivers for Babelfish.
-func OfficialDrivers(ctx context.Context, opt *Options) ([]Driver, error) {
-	if opt == nil {
-		opt = &Options{}
-	}
-	if opt.Organization == "" {
-		opt.Organization = GithubOrg
-	}
+// getDriversForOrg lists all repositories for an organization and filters ones that contains topics of the driver.
+func getDriversForOrg(ctx context.Context, org string) ([]Driver, error) {
 	cli := github.NewClient(nil)
 
 	var out []Driver
 	// list all repositories in organization
 	for page := 1; ; page++ {
-		repos, _, err := cli.Repositories.ListByOrg(ctx, opt.Organization, &github.RepositoryListByOrgOptions{
+		repos, _, err := cli.Repositories.ListByOrg(ctx, org, &github.RepositoryListByOrgOptions{
 			ListOptions: github.ListOptions{
 				Page: page, PerPage: 100,
 			},
@@ -225,6 +225,21 @@ func OfficialDrivers(ctx context.Context, opt *Options) ([]Driver, error) {
 				})
 			}
 		}
+	}
+	return out, nil
+}
+
+// OfficialDrivers lists all available language drivers for Babelfish.
+func OfficialDrivers(ctx context.Context, opt *Options) ([]Driver, error) {
+	if opt == nil {
+		opt = &Options{}
+	}
+	if opt.Organization == "" {
+		opt.Organization = GithubOrg
+	}
+	out, err := getDriversForOrg(ctx, opt.Organization)
+	if err != nil {
+		return out, err
 	}
 	if opt.NamesOnly {
 		sort.Sort(byStatusAndName(out))
