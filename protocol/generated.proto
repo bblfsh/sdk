@@ -54,6 +54,7 @@ message ParseResponse {
 	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 	gopkg.in.bblfsh.sdk.v1.uast.Node uast = 4 [(gogoproto.customname) = "UAST"];
 	string language = 5;
+	string filename = 6;
 }
 
 // VersionRequest is a request to get server version
@@ -73,19 +74,6 @@ message VersionResponse {
 	google.protobuf.Timestamp build = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 }
 
-// Encoding is the encoding used for the content string. Currently only
-// UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
-// and Base64 as a fallback.
-enum Encoding {
-	option (gogoproto.enumdecl) = false;
-	option (gogoproto.goproto_enum_prefix) = false;
-	option (gogoproto.goproto_enum_stringer) = false;
-	// UTF8 encoding
-	UTF8 = 0 [(gogoproto.enumvalue_customname) = "UTF8"];
-	// Base64 encoding
-	BASE64 = 1 [(gogoproto.enumvalue_customname) = "Base64"];
-}
-
 // Status is the status of a response.
 enum Status {
 	option (gogoproto.enumdecl) = false;
@@ -97,6 +85,19 @@ enum Status {
 	ERROR = 1 [(gogoproto.enumvalue_customname) = "Error"];
 	// Fatal status code. It is replied when the driver hasn't could get the AST.
 	FATAL = 2 [(gogoproto.enumvalue_customname) = "Fatal"];
+}
+
+// Encoding is the encoding used for the content string. Currently only
+// UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
+// and Base64 as a fallback.
+enum Encoding {
+	option (gogoproto.enumdecl) = false;
+	option (gogoproto.goproto_enum_prefix) = false;
+	option (gogoproto.goproto_enum_stringer) = false;
+	// UTF8 encoding
+	UTF8 = 0 [(gogoproto.enumvalue_customname) = "UTF8"];
+	// Base64 encoding
+	BASE64 = 1 [(gogoproto.enumvalue_customname) = "Base64"];
 }
 
 service ProtocolService {
