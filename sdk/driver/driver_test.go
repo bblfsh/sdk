@@ -26,6 +26,7 @@ func TestDriverParserParse(t *testing.T) {
 
 	r := d.Parse(&protocol.ParseRequest{
 		Language: "fixture",
+		Filename: "foo.f",
 		Content:  "foo",
 	})
 
@@ -33,6 +34,7 @@ func TestDriverParserParse(t *testing.T) {
 	require.Equal(len(r.Errors), 0)
 	require.Equal(r.Status, protocol.Ok)
 	require.Equal(r.Language, "fixture")
+	require.Equal(r.Filename, "foo.f")
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
 	require.Equal(r.UAST.String(), " "+
 		"{\n"+

@@ -98,12 +98,19 @@ type ParseResponse struct {
 	// Language. The language that was parsed. Usedful if you used language
 	// autodetection for the request.
 	Language string `json:"language"`
+	// Filename is the name of the file containing the source code. Used for
+	// language detection. Only filename is required, path might be used but
+	// ignored. This is optional.
+	Filename string `json:"filename"`
 }
 
 func (r *ParseResponse) String() string {
 	buf := bytes.NewBuffer(nil)
 	fmt.Fprintln(buf, "Status: ", strings.ToLower(r.Status.String()))
 	fmt.Fprintln(buf, "Language: ", strings.ToLower(r.Language))
+	if len(r.Filename) > 0 {
+		fmt.Fprintln(buf, "Filename:: ", strings.ToLower(r.Filename))
+	}
 	fmt.Fprintln(buf, "Errors: ")
 	for _, err := range r.Errors {
 		fmt.Fprintln(buf, " . ", err)

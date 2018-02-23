@@ -54,6 +54,10 @@ func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 		r.Language = d.m.Language
 	}
 
+	if r.Filename == "" {
+		r.Filename = req.Filename
+	}
+
 	if r.Status == protocol.Fatal {
 		return r
 	}
