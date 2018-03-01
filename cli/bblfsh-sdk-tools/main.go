@@ -18,6 +18,7 @@ func main() {
 	parser.AddCommand("build", cmd.BuildCommandDescription, "", &cmd.BuildCommand{})
 	parser.AddCommand("fixtures", cmd.FixturesCommandDescription, "", &cmd.FixturesCommand{})
 	parser.AddCommand("test", cmd.TestCommandDescription, "", &cmd.TestCommand{})
+	parser.AddCommand("ast2gv", cmd.Ast2GraphvizCommandDescription, "", &cmd.Ast2GraphvizCommand{})
 
 	if _, err := parser.Parse(); err != nil {
 		if _, ok := err.(*flags.Error); ok {
