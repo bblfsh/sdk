@@ -19,7 +19,7 @@ features = ["ast", "uast", "roles"]
 [runtime]
   os = "alpine"
   native_version = ["42"]
-  go_version = "1.8"
+  go_version = "1.9"
 `[1:]
 
 func TestEncode(t *testing.T) {
@@ -29,7 +29,7 @@ func TestEncode(t *testing.T) {
 	m.Features = []Feature{AST, UAST, Roles}
 	m.Documentation.Description = "foo"
 	m.Runtime.OS = Alpine
-	m.Runtime.GoVersion = "1.8"
+	m.Runtime.GoVersion = "1.9"
 	m.Runtime.NativeVersion = []string{"42"}
 
 	buf := bytes.NewBuffer(nil)

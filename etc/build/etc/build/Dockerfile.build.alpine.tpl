@@ -6,7 +6,7 @@ ENV GOROOT=""
 
 ENV GOLANG_SRC_URL https://golang.org/dl/go${RUNTIME_GO_VERSION}.src.tar.gz
 
-# from https://github.com/docker-library/golang/blob/master/1.8/alpine3.6/Dockerfile
+# from https://github.com/docker-library/golang/blob/master/1.9/alpine3.7/Dockerfile
 
 RUN apk add --update --no-cache ca-certificates openssl && update-ca-certificates
 RUN wget https://raw.githubusercontent.com/docker-library/golang/e63ba9c5efb040b35b71e16722b71b2931f29eb8/${RUNTIME_GO_VERSION}/alpine3.6/no-pic.patch -O /no-pic.patch -O /no-pic.patch

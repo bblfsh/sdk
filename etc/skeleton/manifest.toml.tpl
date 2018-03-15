@@ -23,7 +23,7 @@ description  = """
 os = "{{.OS}}"
 
 # go_version describes the version being use to build the driver Go code.
-go_version = "1.8"
+go_version = "1.9"
 
 # native_version describes the version or versions being use to build and
 # execute the native code, you should define at least one. (eg.: "1.8").
