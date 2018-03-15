@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 )
 
 type axis int
@@ -42,7 +43,7 @@ func (a axis) String() string {
 // predicate in a syntax similar to XPath.
 type Predicate interface {
 	fmt.Stringer
-	Eval(n *uast.Node) bool
+	Eval(n uast.Node) bool
 }
 
 // Rule is a conversion rule that can visit a tree, match nodes against
@@ -108,7 +109,7 @@ func (r *Rule) addRules(axis axis, rules []*Rule) *Rule {
 }
 
 // Apply applies the rule to the given node.
-func (r *Rule) Apply(n *uast.Node) (err error) {
+func (r *Rule) Apply(n uast.Node) (err error) {
 	// recover from panics and returns them as errors.
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -139,7 +140,7 @@ func (r *Rule) Apply(n *uast.Node) (err error) {
 }
 
 // Roles attaches an action to the rule that adds the given roles.
-func (r *Rule) Roles(roles ...uast.Role) *Rule {
+func (r *Rule) Roles(roles ...role.Role) *Rule {
 	return r.Do(AddRoles(roles...))
 }
 
@@ -157,7 +158,7 @@ type RuleError interface {
 
 type ruleError struct {
 	error
-	node *uast.Node
+	node uast.Node
 }
 
 // implements RuleError.
@@ -166,7 +167,7 @@ func (e *ruleError) Inner() error {
 }
 
 // implements RuleError.
-func (e *ruleError) Node() *uast.Node {
+func (e *ruleError) Node() uast.Node {
 	return e.node
 }
 
@@ -193,32 +194,37 @@ func (p *hasInternalType) String() string {
 	return fmt.Sprintf("@InternalType='%s'", string(*p))
 }
 
-func (p *hasInternalType) Eval(n *uast.Node) bool {
+func (p *hasInternalType) Eval(n uast.Node) bool {
+	o, _ := n.(uast.Object)
 	if n == nil {
 		return false
 	}
-	return n.InternalType == string(*p)
+	return o.Type() == string(*p)
 }
 
 // HasProperty matches a node if it has a property matching the given key and value.
-func HasProperty(k, v string) Predicate { return &hasProperty{k, v} }
+func HasProperty(k, v string) Predicate { return &hasProperty{k: k, v: uast.String(v)} }
 
-type hasProperty struct{ k, v string }
+type hasProperty struct {
+	k string
+	v uast.String
+}
 
 func (p *hasProperty) String() string {
 	return fmt.Sprintf("@%s][@%[1]s='%s'", p.k, p.v)
 }
 
-func (p *hasProperty) Eval(n *uast.Node) bool {
+func (p *hasProperty) Eval(n uast.Node) bool {
 	if n == nil {
 		return false
 	}
 
-	if n.Properties == nil {
+	obj, _ := n.(uast.Object)
+	if obj == nil {
 		return false
 	}
 
-	prop, ok := n.Properties[p.k]
+	prop, ok := obj[p.k]
 	return ok && prop == p.v
 }
 
@@ -239,12 +245,13 @@ func (p *hasChild) String() string {
 	return fmt.Sprintf("child::%s", p.Predicate)
 }
 
-func (p *hasChild) Eval(n *uast.Node) bool {
+func (p *hasChild) Eval(n uast.Node) bool {
 	if n == nil {
 		return false
 	}
 
-	for _, c := range n.Children {
+	obj, _ := n.(uast.Object)
+	for _, c := range obj.Children() {
 		if p.Predicate.Eval(c) {
 			return true
 		}
@@ -265,12 +272,12 @@ func (p *hasToken) String() string {
 	return fmt.Sprintf("@Token='%s'", string(*p))
 }
 
-func (p *hasToken) Eval(n *uast.Node) bool {
+func (p *hasToken) Eval(n uast.Node) bool {
 	if n == nil {
 		return false
 	}
-
-	return n.Token == string(*p)
+	obj, _ := n.(uast.Object)
+	return obj.Token() == string(*p)
 }
 
 // Any matches any path.
@@ -303,7 +310,7 @@ const andGlue = " and "
 
 func (p *and) String() string { return joinPredicates(p.data, andGlue) }
 
-func (p *and) Eval(n *uast.Node) bool {
+func (p *and) Eval(n uast.Node) bool {
 	for _, p := range p.data {
 		if !p.Eval(n) {
 			return false
@@ -333,7 +340,7 @@ const orGlue = " or "
 
 func (p *or) String() string { return joinPredicates(p.data, orGlue) }
 
-func (p *or) Eval(n *uast.Node) bool {
+func (p *or) Eval(n uast.Node) bool {
 	for _, p := range p.data {
 		if p.Eval(n) {
 			return true
@@ -349,41 +356,44 @@ func (p *or) Eval(n *uast.Node) bool {
 // string method returns a string describing the operation.
 type Action interface {
 	fmt.Stringer
-	Do(n *uast.Node) error
+	Do(n uast.Node) error
 }
 
 // action implements Action by returning desc when String is called.
 type action struct {
-	do   func(n *uast.Node) error
+	do   func(n uast.Node) error
 	desc string
 }
 
-func (a *action) Do(n *uast.Node) error { return a.do(n) }
+func (a *action) Do(n uast.Node) error { return a.do(n) }
 
 func (a *action) String() string { return a.desc }
 
 // AddRoles creates an action to add the given roles to a node.
-func AddRoles(roles ...uast.Role) Action {
+func AddRoles(roles ...role.Role) Action {
 	descs := make([]string, len(roles))
 	for i, role := range roles {
 		descs[i] = role.String()
 	}
 	return &action{
-		do: func(n *uast.Node) error {
-			if len(n.Roles) > 0 && n.Roles[0] == uast.Unannotated {
-				n.Roles = n.Roles[:0]
+		do: func(n uast.Node) error {
+			obj, _ := n.(uast.Object)
+			roles := obj.Roles()
+			if len(roles) > 0 && roles[0] == role.Unannotated {
+				roles = roles[:0]
 			}
-			appendUniqueRoles(n, roles...)
+			appendUniqueRoles(obj, roles...)
 			return nil
 		},
 		desc: strings.Join(descs, ", "),
 	}
 }
 
-func appendUniqueRoles(n *uast.Node, roles ...uast.Role) {
+func appendUniqueRoles(n uast.Object, roles ...role.Role) {
 	addedRoles := make(map[string]bool)
 
-	for _, role := range n.Roles {
+	cur := n.Roles()
+	for _, role := range cur {
 		if _, ok := addedRoles[role.String()]; !ok {
 			addedRoles[role.String()] = true
 		}
@@ -391,17 +401,18 @@ func appendUniqueRoles(n *uast.Node, roles ...uast.Role) {
 
 	for _, role := range roles {
 		if _, ok := addedRoles[role.String()]; !ok {
-			n.Roles = append(n.Roles, role)
+			cur = append(cur, role)
 			addedRoles[role.String()] = true
 		}
 	}
+	n[uast.KeyRoles] = uast.RoleList(cur...)
 }
 
 // ReturnError creates an action that always returns a RuleError
 // wrapping the given error with the offending node information.
 func ReturnError(err error) Action {
 	return &action{
-		do: func(n *uast.Node) error {
+		do: func(n uast.Node) error {
 			return &ruleError{
 				error: err,
 				node:  n,
@@ -417,7 +428,7 @@ type matchPathIter struct {
 	iter       uast.PathStepIter
 }
 
-func newMatchPathIter(n *uast.Node, axis axis, predicates []Predicate) uast.PathIter {
+func newMatchPathIter(n uast.Node, axis axis, predicates []Predicate) uast.PathIter {
 	return &matchPathIter{
 		axis:       axis,
 		predicates: predicates,

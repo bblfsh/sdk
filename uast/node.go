@@ -145,13 +145,13 @@ func (m Object) Roles() []role.Role {
 }
 
 // StartPosition returns start position of the node in source file.
-func (m Object) StartPosition() Position {
+func (m Object) StartPosition() *Position {
 	o, _ := m[KeyStart].(Object)
 	return AsPosition(o)
 }
 
 // EndPosition returns start position of the node in source file.
-func (m Object) EndPosition() Position {
+func (m Object) EndPosition() *Position {
 	o, _ := m[KeyEnd].(Object)
 	return AsPosition(o)
 }

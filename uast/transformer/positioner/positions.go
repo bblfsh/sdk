@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
@@ -21,10 +20,10 @@ func NewFillLineColFromOffset() *Positioner {
 }
 
 type Positioner struct {
-	method func(*positionIndex, *uast.Position) error
+	method func(*positionIndex, uast.Object) error
 }
 
-func (t *Positioner) Do(data string, e protocol.Encoding, n *uast.Node) error {
+func (t *Positioner) Do(data string, n uast.Node) error {
 	idx := newPositionIndex([]byte(data))
 	iter := uast.NewOrderPathIter(uast.NewPath(n))
 	for {
@@ -33,12 +32,15 @@ func (t *Positioner) Do(data string, e protocol.Encoding, n *uast.Node) error {
 			break
 		}
 
-		n := p.Node()
-		if err := t.method(idx, n.StartPosition); err != nil {
+		n, ok := p.Node().(uast.Object)
+		if !ok {
+			continue
+		}
+		if err := t.method(idx, n); err != nil {
 			return err
 		}
 
-		if err := t.method(idx, n.EndPosition); err != nil {
+		if err := t.method(idx, n); err != nil {
 			return err
 		}
 	}
@@ -46,7 +48,8 @@ func (t *Positioner) Do(data string, e protocol.Encoding, n *uast.Node) error {
 	return nil
 }
 
-func fillOffsetFromLineCol(idx *positionIndex, pos *uast.Position) error {
+func fillOffsetFromLineCol(idx *positionIndex, o uast.Object) error {
+	pos := uast.AsPosition(o)
 	if pos == nil {
 		return nil
 	}
@@ -57,10 +60,15 @@ func fillOffsetFromLineCol(idx *positionIndex, pos *uast.Position) error {
 	}
 
 	pos.Offset = uint32(offset)
+
+	for k, v := range pos.ToObject() {
+		o[k] = v
+	}
 	return nil
 }
 
-func fillLineColFromOffset(idx *positionIndex, pos *uast.Position) error {
+func fillLineColFromOffset(idx *positionIndex, o uast.Object) error {
+	pos := uast.AsPosition(o)
 	if pos == nil {
 		return nil
 	}
@@ -72,6 +80,10 @@ func fillLineColFromOffset(idx *positionIndex, pos *uast.Position) error {
 
 	pos.Line = uint32(line)
 	pos.Col = uint32(col)
+
+	for k, v := range pos.ToObject() {
+		o[k] = v
+	}
 	return nil
 }
 
@@ -147,7 +159,7 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 	maxCol := maxOffset - idx.offsetByLine[line] + 1
 
 	// For empty files with 1-indexed drivers, set maxCol to 1
-	if (maxCol == 0 && col == 1) {
+	if maxCol == 0 && col == 1 {
 		maxCol = 1
 	}
 

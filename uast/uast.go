@@ -13,6 +13,8 @@
 // and operations to manipulate them.
 package uast
 
+import "gopkg.in/bblfsh/sdk.v1/uast/role"
+
 // Hash is a hash value.
 type Hash uint32
 
@@ -29,15 +31,18 @@ type Position struct {
 }
 
 // AsPosition transforms a generic AST node to a Position object.
-func AsPosition(m Object) Position {
-	off, _ := m["off"].(Int)
-	line, _ := m["line"].(Int)
-	col, _ := m["col"].(Int)
-	return Position{
-		Offset: uint32(off),
-		Line:   uint32(line),
-		Col:    uint32(col),
+func AsPosition(m Object) *Position {
+	off, ok1 := m["off"].(Int)
+	line, ok2 := m["line"].(Int)
+	col, ok3 := m["col"].(Int)
+	if ok1 || ok2 || ok3 {
+		return &Position{
+			Offset: uint32(off),
+			Line:   uint32(line),
+			Col:    uint32(col),
+		}
 	}
+	return nil
 }
 
 // ToObject converts Position to a generic AST node.
@@ -48,6 +53,15 @@ func (p Position) ToObject() Object {
 		"line": Int(p.Line),
 		"col":  Int(p.Col),
 	}
+}
+
+// RoleList converts a set of roles into a list node.
+func RoleList(roles ...role.Role) List {
+	arr := make(List, 0, len(roles))
+	for _, r := range roles {
+		arr = append(arr, Int(r))
+	}
+	return arr
 }
 
 // IncludeFlag represents a set of fields to be included in a Hash or String.

@@ -83,7 +83,7 @@ func TestInfixTokens(t *testing.T) {
 	n := Object{KeyType: String("module"),
 		"a": List{
 			tObj("id", "id1"),
-			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: List{Int(role.Infix)}, "b": List{
+			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: RoleList(role.Infix), "b": List{
 				tObj("left", "tok_in_left"),
 				tObj("right", "tok_in_right"),
 			}}}}
@@ -99,13 +99,13 @@ func TestInfixTokensSubtree(t *testing.T) {
 		"a": List{
 			tObj("id3", "id3"),
 			// Prefix is the default so it doesnt need any role
-			Object{KeyType: String("op_infix"), KeyToken: String("op_infix"), KeyRoles: List{Int(role.Infix)}, "b": List{
-				Object{KeyType: String("left"), KeyToken: String("left"), KeyRoles: List{Int(role.Infix)}, "c": List{
-					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), KeyRoles: List{Int(role.Infix)}, "d": List{
+			Object{KeyType: String("op_infix"), KeyToken: String("op_infix"), KeyRoles: RoleList(role.Infix), "b": List{
+				Object{KeyType: String("left"), KeyToken: String("left"), KeyRoles: RoleList(role.Infix), "c": List{
+					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), KeyRoles: RoleList(role.Infix), "d": List{
 						tObj("subleft_1a_2a", "subleft_1a_2a"),
 						tObj("subleft_1a_2b", "subleft_1a_2b"),
 					}},
-					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), KeyRoles: List{Int(role.Infix)}, "e": List{
+					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), KeyRoles: RoleList(role.Infix), "e": List{
 						tObj("subleft_1b_2a", "subleft_1b_2a"),
 						tObj("subleft_1b_2b", "subleft_1b_2b"),
 					}},
@@ -126,7 +126,7 @@ func TestInfixTokensPlain(t *testing.T) {
 		"a": List{
 			tObj("id", "id1"),
 			tObj("left", "tok_in_left"),
-			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: List{Int(role.Infix)}},
+			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: RoleList(role.Infix)},
 			tObj("right", "tok_in_right"),
 		}}
 	result := Tokens(n)
@@ -139,7 +139,7 @@ func TestPostfixTokens(t *testing.T) {
 	n := Object{KeyType: String("module"),
 		"a": List{
 			tObj("id", "id2"),
-			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: List{Int(role.Postfix)}, "b": List{
+			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: RoleList(role.Postfix), "b": List{
 				tObj("left", "tok_post_left"),
 				tObj("right", "tok_post_right"),
 			}}}}
@@ -155,13 +155,13 @@ func TestPostfixTokensSubtree(t *testing.T) {
 		"a": List{
 			tObj("id", "id2"),
 			// Prefix is the default so it doesnt need any role
-			Object{KeyType: String("op_postfix"), KeyToken: String("op_postfix"), KeyRoles: List{Int(role.Postfix)}, "b": List{
-				Object{KeyType: String("left"), KeyToken: String("left"), KeyRoles: List{Int(role.Postfix)}, "c": List{
-					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), KeyRoles: List{Int(role.Postfix)}, "d": List{
+			Object{KeyType: String("op_postfix"), KeyToken: String("op_postfix"), KeyRoles: RoleList(role.Postfix), "b": List{
+				Object{KeyType: String("left"), KeyToken: String("left"), KeyRoles: RoleList(role.Postfix), "c": List{
+					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), KeyRoles: RoleList(role.Postfix), "d": List{
 						tObj("subleft_1a_2a", "subleft_1a_2a"),
 						tObj("subleft_1a_2b", "subleft_1a_2b"),
 					}},
-					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), KeyRoles: List{Int(role.Postfix)}, "e": List{
+					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), KeyRoles: RoleList(role.Postfix), "e": List{
 						tObj("subleft_1b_2a", "subleft_1b_2a"),
 						tObj("subleft_1b_2b", "subleft_1b_2b"),
 					}},
@@ -182,7 +182,7 @@ func TestPostfixTokensPlain(t *testing.T) {
 			tObj("id", "id2"),
 			tObj("left", "tok_post_left"),
 			tObj("right", "tok_post_right"),
-			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: List{Int(role.Postfix)}},
+			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: RoleList(role.Postfix)},
 		}}
 	result := Tokens(n)
 	expected := []string{"id2", "tok_post_left", "tok_post_right", "Postfix+"}
@@ -196,15 +196,15 @@ func TestOrderTokens(t *testing.T) {
 	n := Object{KeyType: String("module"),
 		"a": List{
 			tObj("id", "id1"),
-			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: List{Int(role.Infix)}, "b": List{
+			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: RoleList(role.Infix), "b": List{
 				tObj("left", "tok_in_left"),
-				Object{KeyType: String("right"), KeyToken: String("tok_in_right"), KeyRoles: List{Int(role.Postfix)}, "c": List{
+				Object{KeyType: String("right"), KeyToken: String("tok_in_right"), KeyRoles: RoleList(role.Postfix), "c": List{
 					tObj("subright1", "subright1"),
 					tObj("subright2", "subright2"),
 				}},
 			}},
 			tObj("id", "id2"),
-			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: List{Int(role.Postfix)}, "d": List{
+			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: RoleList(role.Postfix), "d": List{
 				tObj("left", "tok_post_left"),
 				// Prefix
 				Object{KeyType: String("right"), KeyToken: String("tok_post_right"), "e": List{
@@ -217,7 +217,7 @@ func TestOrderTokens(t *testing.T) {
 			// Prefix is the default so it doesnt need any role
 			Object{KeyType: String("op_prefix"), KeyToken: String("Prefix+"), "f": List{
 				tObj("left", "tok_pre_left"),
-				Object{KeyType: String("right"), KeyToken: String("tok_pre_right"), KeyRoles: List{Int(role.Infix)}, "g": List{
+				Object{KeyType: String("right"), KeyToken: String("tok_pre_right"), KeyRoles: RoleList(role.Infix), "g": List{
 					tObj("subright_in1", "subright_in1"),
 					tObj("subright_in2", "subright_in2"),
 				}},
