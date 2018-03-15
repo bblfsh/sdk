@@ -84,6 +84,41 @@ func (m Object) CloneObject() Object {
 	return out
 }
 
+// CloneProperties returns an object containing all field that are values.
+func (m Object) CloneProperties() Object {
+	out := make(Object)
+	for k, v := range m {
+		if v, ok := v.(Value); ok {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// Children returns a list of all internal nodes of type Object and List.
+func (m Object) Children() []Node {
+	out := make([]Node, 0, len(m))
+	// order should be predictable
+	for _, k := range m.Keys() {
+		v := m[k]
+		if _, ok := v.(Value); !ok {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// Properties returns a map containing all field of object that are values.
+func (m Object) Properties() map[string]Value {
+	out := make(map[string]Value)
+	for k, v := range m {
+		if v, ok := v.(Value); ok {
+			out[k] = v
+		}
+	}
+	return out
+}
+
 // Type is a helper for getting node type (see KeyType).
 func (m Object) Type() string {
 	s, _ := m[KeyType].(String)
