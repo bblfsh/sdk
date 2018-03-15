@@ -1,15 +1,28 @@
 package transformer
 
 import (
-	"fmt"
-
 	//"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/src-d/go-errors.v1"
 )
 
 //type Tranformer interface {
 //	Do(code string, e protocol.Encoding, n *uast.Node) error
 //}
+
+var (
+	ErrVariableRedeclared = errors.NewKind("variable %q redeclared (%v vs %v)")
+	ErrVariableNotDefined = errors.NewKind("variable %q is not defined")
+	ErrExpectedObject     = errors.NewKind("expected object, got %T")
+	ErrExpectedValue      = errors.NewKind("expected value, got %T")
+	ErrUnhandledValue     = errors.NewKind("unhandled value: %v")
+	ErrUnexpectedNode     = errors.NewKind("expected node to be nil, got: %v")
+	ErrAmbiguousValue     = errors.NewKind("map has ambiguous value %v")
+
+	errAnd  = errors.NewKind("op %d (%T)")
+	errKey  = errors.NewKind("key %q")
+	errElem = errors.NewKind("elem %d (%T)")
+)
 
 func Map(src, dst Op) Mapping {
 	return Mapping{src: src, dst: dst}
@@ -83,7 +96,7 @@ func (st *State) SetVar(name string, val uast.Node) error {
 		// already declared, and value is alredy in the map
 		return nil
 	}
-	return fmt.Errorf("variable %q is redeclared (%v vs %v)", name, cur, val)
+	return ErrVariableRedeclared.New(name, cur, val)
 }
 
 type Sel interface {

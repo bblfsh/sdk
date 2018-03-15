@@ -1,9 +1,6 @@
 package transformer
 
 import (
-	"errors"
-	"fmt"
-
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
@@ -11,7 +8,7 @@ func noNode(n uast.Node) error {
 	if n == nil {
 		return nil
 	}
-	return errors.New("expected node to be nil")
+	return ErrUnexpectedNode.New(n)
 }
 
 // Is checks if the current node is a primitive and is equal to a given value.
@@ -60,7 +57,7 @@ func (op opVar) Construct(st *State, n uast.Node) (uast.Node, error) {
 	}
 	val, ok := st.GetVar(op.name)
 	if !ok {
-		return nil, fmt.Errorf("variable %q is not defined", op.name)
+		return nil, ErrVariableNotDefined.New(op.name)
 	}
 	// TODO: should we clone it?
 	return val, nil
@@ -104,7 +101,7 @@ type opAnd []Op
 func (op opAnd) Check(st *State, n uast.Node) (bool, error) {
 	for i, sub := range op {
 		if ok, err := sub.Check(st, n); err != nil {
-			return false, fmt.Errorf("op %d (%T): %v", i, sub, err)
+			return false, errAnd.Wrap(err, i, sub)
 		} else if !ok {
 			return false, nil
 		}
@@ -117,7 +114,7 @@ func (op opAnd) Construct(st *State, n uast.Node) (uast.Node, error) {
 		var err error
 		n, err = sub.Construct(st, n)
 		if err != nil {
-			return nil, fmt.Errorf("op %d (%T): %v", i, sub, err)
+			return nil, errAnd.Wrap(err, i, sub)
 		}
 	}
 	return n, nil
@@ -165,7 +162,7 @@ type opOut struct {
 func (op opOut) Check(st *State, n uast.Node) (bool, error) {
 	obj, ok := n.(uast.Object)
 	if !ok {
-		return false, fmt.Errorf("expected object, got %T", n)
+		return false, ErrExpectedObject.New(n)
 	}
 	n, ok = obj[op.key]
 	if !ok {
@@ -173,7 +170,7 @@ func (op opOut) Check(st *State, n uast.Node) (bool, error) {
 	}
 	ok, err := op.op.Check(st, n)
 	if err != nil {
-		err = fmt.Errorf("key %q: %v", op.key, err)
+		err = errKey.Wrap(err, op.key)
 	}
 	return ok, err
 }
@@ -181,11 +178,11 @@ func (op opOut) Check(st *State, n uast.Node) (bool, error) {
 func (op opOut) Construct(st *State, n uast.Node) (uast.Node, error) {
 	obj, ok := n.(uast.Object)
 	if !ok {
-		return nil, fmt.Errorf("expected object, got %T", n)
+		return nil, ErrExpectedObject.New(n)
 	}
 	v, err := op.op.Construct(st, nil)
 	if err != nil {
-		return nil, fmt.Errorf("key %q: %v", op.key, err)
+		return nil, errKey.Wrap(err, op.key)
 	}
 	obj[op.key] = v
 	return obj, nil
@@ -238,7 +235,7 @@ func (op opArr) Check(st *State, n uast.Node) (bool, error) {
 	}
 	for i, sub := range op {
 		if ok, err := sub.Check(st, arr[i]); err != nil {
-			return false, fmt.Errorf("elem %d (%T): %v", i, sub, err)
+			return false, errElem.Wrap(err, i, sub)
 		} else if !ok {
 			return false, nil
 		}
@@ -254,7 +251,7 @@ func (op opArr) Construct(st *State, n uast.Node) (uast.Node, error) {
 	for i, sub := range op {
 		nn, err := sub.Construct(st, n)
 		if err != nil {
-			return nil, fmt.Errorf("elem %d (%T): %v", i, sub, err)
+			return nil, errElem.Wrap(err, i, sub)
 		}
 		arr = append(arr, nn)
 	}
@@ -276,7 +273,7 @@ func Lookup(op Op, m map[uast.Value]uast.Value) Op {
 	rev := make(map[uast.Value]uast.Value, len(m))
 	for k, v := range m {
 		if _, ok := rev[v]; ok {
-			panic(fmt.Errorf("map has ambigous value %v", v))
+			panic(ErrAmbiguousValue.New("map has ambigous value %v", v))
 		}
 		rev[v] = k
 	}
@@ -291,11 +288,11 @@ type opLookup struct {
 func (op opLookup) Check(st *State, n uast.Node) (bool, error) {
 	v, ok := n.(uast.Value)
 	if !ok {
-		return false, fmt.Errorf("expected value, got: %T", n)
+		return false, ErrExpectedValue.New(n)
 	}
 	vn, ok := op.fwd[v]
 	if !ok {
-		return false, fmt.Errorf("unhandled value: %v", v)
+		return false, ErrUnhandledValue.New(v)
 	}
 	return op.op.Check(st, vn)
 }
@@ -310,11 +307,11 @@ func (op opLookup) Construct(st *State, n uast.Node) (uast.Node, error) {
 	}
 	v, ok := nn.(uast.Value)
 	if !ok {
-		return nil, fmt.Errorf("expected value, got: %T", n)
+		return nil, ErrExpectedValue.New(n)
 	}
 	vn, ok := op.rev[v]
 	if !ok {
-		return nil, fmt.Errorf("unhandled value: %v", v)
+		return nil, ErrUnhandledValue.New(v)
 	}
 	return vn, nil
 }
