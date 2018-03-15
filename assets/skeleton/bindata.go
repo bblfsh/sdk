@@ -78,7 +78,7 @@ func Gitignore() (*asset, error) {
 var _TravisYml = []byte(`language: go
 
 go:
-  - 1.8
+  - 1.9
 
 services:
   - docker
@@ -1124,11 +1124,12 @@ description  = """
 os = "{{.OS}}"
 
 # go_version describes the version being use to build the driver Go code.
-go_version = "1.8"
+go_version = "1.9"
 
 # native_version describes the version or versions being use to build and
 # execute the native code, you should define at least one. (eg.: "1.8").
-native_version = []`)
+native_version = []
+`)
 
 func manifestTomlTplBytes() ([]byte, error) {
 	return _manifestTomlTpl, nil
@@ -1140,7 +1141,7 @@ func manifestTomlTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "manifest.toml.tpl", size: 1131, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "manifest.toml.tpl", size: 1132, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
