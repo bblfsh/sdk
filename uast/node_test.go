@@ -1,10 +1,6 @@
 package uast
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,6 +10,72 @@ var (
 	fixtureDir = "fixtures"
 )
 
+func TestClone(t *testing.T) {
+	o1 := Object{"v": Int(1)}
+	o2 := Object{"k": o1, "v2": Int(2)}
+	arr := make(List, 0, 3)
+	arr = append(arr, o1, o2)
+
+	arr2 := arr.Clone()
+
+	o1["new"] = Int(0)
+	o2["new"] = Int(0)
+	arr[0] = Int(3)
+
+	require.Equal(t, List{
+		Object{"v": Int(1)},
+		Object{"k": Object{"v": Int(1)}, "v2": Int(2)},
+	}, arr2)
+
+	require.Equal(t, List{
+		Int(3),
+		Object{
+			"k": Object{
+				"v":   Int(1),
+				"new": Int(0),
+			},
+			"v2":  Int(2),
+			"new": Int(0),
+		},
+	}, arr)
+}
+
+func TestApply(t *testing.T) {
+	o1 := Object{"v": Int(1)}
+	o2 := Object{"k": o1, "v": Int(2)}
+	arr := List{o1, o2}
+
+	out, ok := Apply(arr, func(n Node) (Node, bool) {
+		switch n := n.(type) {
+		case Object:
+			n = n.CloneObject()
+			v, _ := n["v"].(Int)
+			n["v2"] = v
+			return n, true
+		case List:
+			n[0] = Int(3)
+			return n, true
+		case Int:
+			n++
+			return n, true
+		}
+		return n, false
+	})
+	require.True(t, ok)
+	require.Equal(t, List{
+		Int(3),
+		Object{
+			"k": Object{
+				"v":  Int(2),
+				"v2": Int(2),
+			},
+			"v":  Int(3),
+			"v2": Int(3),
+		},
+	}, out)
+}
+
+/*
 func TestToNodeErrUnsupported(t *testing.T) {
 	require := require.New(t)
 	p := &ObjectToNode{}
@@ -537,3 +599,4 @@ func getFixture(name string) (map[string]interface{}, error) {
 
 	return data, nil
 }
+*/

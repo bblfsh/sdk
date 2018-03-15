@@ -1,14 +1,8 @@
 package uast
 
 import (
-	"encoding/json"
-	"fmt"
-	"reflect"
 	"sort"
-	"strconv"
-	"strings"
 
-	"github.com/mcuadros/go-lookup"
 	"gopkg.in/bblfsh/sdk.v1/uast/role"
 	"gopkg.in/src-d/go-errors.v1"
 )
@@ -32,27 +26,77 @@ const (
 	KeyEnd   = "@end"   // EndPosition
 )
 
+// Node is a generic interface for structures used in AST.
+//
+// Can be one of:
+//	* Object
+//	* List
+//	* Value
 type Node interface {
-	isNode() // to limit possible values
+	// Clone creates a deep copy of the node.
+	Clone() Node
+	isNode() // to limit possible type
+}
+
+// Value is a generic interface for values of AST node fields.
+//
+// Can be one of:
+//	* String
+//	* Int
+//	* Bool
+type Value interface {
+	Node
+	isValue() // to limit possible type
 }
 
 // Properties are written directly to object map: obj[k] = String(m[k]).
 // Children are not flatten to single array, but written as fields: obj[k] = Object(m[k]) or obj[k] = List(m[k]).
 
+// Object is a representation of generic AST node with fields.
 type Object map[string]Node
 
 func (Object) isNode() {}
 
+// Keys returns a sorted list of node keys.
+func (m Object) Keys() []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func (m Object) Clone() Node {
+	out := make(Object, len(m))
+	for k, v := range m {
+		out[k] = v.Clone()
+	}
+	return out
+}
+
+// CloneObject clones this AST node only, without deep copy of field values.
+func (m Object) CloneObject() Object {
+	out := make(Object, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+// Type is a helper for getting node type (see KeyType).
 func (m Object) Type() string {
 	s, _ := m[KeyType].(String)
 	return string(s)
 }
 
+// Token is a helper for getting node token (see KeyToken).
 func (m Object) Token() string {
 	s, _ := m[KeyToken].(String)
 	return string(s)
 }
 
+// Roles is a helper for getting node UAST roles (see KeyRoles).
 func (m Object) Roles() []role.Role {
 	arr, _ := m[KeyRoles].(List)
 	out := make([]role.Role, 0, len(arr))
@@ -65,32 +109,111 @@ func (m Object) Roles() []role.Role {
 	return out
 }
 
+// StartPosition returns start position of the node in source file.
 func (m Object) StartPosition() Position {
 	o, _ := m[KeyStart].(Object)
 	return AsPosition(o)
 }
 
+// EndPosition returns start position of the node in source file.
 func (m Object) EndPosition() Position {
 	o, _ := m[KeyEnd].(Object)
 	return AsPosition(o)
 }
 
+// List is an ordered list of AST nodes.
 type List []Node
 
 func (List) isNode() {}
 
+func (m List) Clone() Node {
+	out := make(List, 0, len(m))
+	for _, v := range m {
+		out = append(out, v.Clone())
+	}
+	return out
+}
+
+func (m List) CloneList() List {
+	out := make(List, 0, len(m))
+	for _, v := range m {
+		out = append(out, v)
+	}
+	return out
+}
+
+// String is a string value used in AST fields.
 type String string
 
-func (String) isNode() {}
+func (String) isNode()  {}
+func (String) isValue() {}
+func (v String) Clone() Node {
+	return v
+}
 
+// Int is a integer value used in AST fields.
 type Int int64
 
-func (Int) isNode() {}
+func (Int) isNode()  {}
+func (Int) isValue() {}
+func (v Int) Clone() Node {
+	return v
+}
 
+// Bool is a boolean value used in AST fields.
 type Bool bool
 
-func (Bool) isNode() {}
+func (Bool) isNode()  {}
+func (Bool) isValue() {}
+func (v Bool) Clone() Node {
+	return v
+}
 
+// Apply takes a root node and applies callback to each node of the tree recursively.
+// Apply returns an old or a new node and a flag that indicates if node was changed or not.
+// If callback returns true and a new node, Apply will make a copy of parent node and
+// will replace an old value with a new one. It will make a copy of all parent
+// nodes recursively in this case.
+func Apply(root Node, apply func(n Node) (Node, bool)) (Node, bool) {
+	if root == nil {
+		return nil, false
+	}
+	var changed bool
+	switch n := root.(type) {
+	case Object:
+		var nn Object
+		for k, v := range n {
+			if nv, ok := Apply(v, apply); ok {
+				if nn == nil {
+					nn = n.CloneObject()
+				}
+				nn[k] = nv
+			}
+		}
+		if nn != nil {
+			changed = true
+			root = nn
+		}
+	case List:
+		var nn List
+		for i, v := range n {
+			if nv, ok := Apply(v, apply); ok {
+				if nn == nil {
+					nn = n.CloneList()
+				}
+				nn[i] = nv
+			}
+		}
+		if nn != nil {
+			changed = true
+			root = nn
+		}
+	}
+	nn, changed2 := apply(root)
+	return nn, changed || changed2
+}
+
+/*
 const (
 	// InternalRoleKey is a key string uses in properties to use the internal
 	// role of a node in the AST, if any.
@@ -652,3 +775,4 @@ func toPropValue(o interface{}) (string, error) {
 		return fmt.Sprint(o), nil
 	}
 }
+*/

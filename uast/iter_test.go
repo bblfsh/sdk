@@ -9,14 +9,14 @@ import (
 func TestOrderPathIter(t *testing.T) {
 	require := require.New(t)
 
-	n := &Node{InternalType: "a",
-		Children: []*Node{
-			{InternalType: "aa"},
-			{InternalType: "ab",
-				Children: []*Node{{InternalType: "aba"}},
-			},
-			{InternalType: "ac"},
+	n := Object{
+		KeyType: String("a"),
+		"a":     Object{KeyType: String("aa")},
+		"b": Object{
+			KeyType: String("ab"),
+			"a":     Object{KeyType: String("aba")},
 		},
+		"c": Object{KeyType: String("ac")},
 	}
 
 	iter := NewOrderPathIter(NewPath(n))
@@ -27,7 +27,7 @@ func TestOrderPathIter(t *testing.T) {
 			break
 		}
 
-		result = append(result, p.Node().InternalType)
+		result = append(result, p.Node().(Object).Type())
 	}
 
 	require.Equal([]string{"a", "aa", "ab", "aba", "ac"}, result)

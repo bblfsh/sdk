@@ -1,6 +1,11 @@
 package uast
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
+)
 
 // PathIter iterates node paths.
 type PathIter interface {
@@ -21,7 +26,7 @@ func newSliceIter(elements ...Path) PathIter {
 	return &sliceIter{elements: elements}
 }
 
-func newNodeSliceIter(prefix Path, nodes ...*Node) PathIter {
+func newNodeSliceIter(prefix Path, nodes ...Node) PathIter {
 	paths := make([]Path, 0, len(nodes))
 	for _, n := range nodes {
 		paths = append(paths, prefix.Child(n))
@@ -65,13 +70,14 @@ const (
 	postOrder
 )
 
-func getNextIterType(n *Node) int {
+func getNextIterType(n Node) int {
 	var order int
-	for _, r := range n.Roles {
+	o, _ := n.(Object)
+	for _, r := range o.Roles() {
 		switch r {
-		case Infix:
+		case role.Infix:
 			order = inOrder
-		case Postfix:
+		case role.Postfix:
 			order = postOrder
 		default:
 			order = preOrder
@@ -84,40 +90,58 @@ func getNextIterType(n *Node) int {
 // Make a copy of the Node removing the children. Used to
 // add nodes with the InOrder or PostOrder roles to the stack
 // when their children have been already added
-func noChildrenNodeCopy(n *Node) *Node {
-	noChildrenNode := *n
-	noChildrenNode.Children = nil
-	return &noChildrenNode
+func noChildrenNodeCopy(n Object) Object {
+	m := make(Object)
+	for k, v := range n {
+		// only clone attributes and special fields
+		if _, ok := v.(Value); ok || strings.HasPrefix(k, "@") {
+			m[k] = v
+		}
+	}
+	return m
 }
 
 // Adds to the orderPathIter stack with the right order depending on
 // the order Role with (if set) can be Infix, Postfix or Prefix. Defaults to Preorder
 // if the order Role is not set. This also updates i.last.
-func (i *orderPathIter) addToStackWithOrder(n *Node) {
-	if len(n.Children) == 0 {
+func (i *orderPathIter) addToStackWithOrder(n Node) {
+	var children []Node
+	switch n := n.(type) {
+	case Object:
+		children = make([]Node, 0, len(n))
+		for _, k := range n.Keys() {
+			children = append(children, n[k])
+		}
+	case List:
+		children = n
+	default:
 		return
 	}
 
 	switch getNextIterType(n) {
 	case inOrder:
 		// Right
-		if l := len(n.Children); l != 2 {
+		if l := len(children); l != 2 {
 			panic(fmt.Sprintf("unsupported iteration over node with %d children", l))
 		}
-		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[1]))
-		// Relator
-		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
+		i.stack = append(i.stack, newNodeSliceIter(i.last, children[1]))
+		if obj, ok := n.(Object); ok {
+			// Relator
+			i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(obj)))
+		}
 		// left
-		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[0]))
+		i.stack = append(i.stack, newNodeSliceIter(i.last, children[0]))
 	case postOrder:
-		// Children
-		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
+		if obj, ok := n.(Object); ok {
+			// Children
+			i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(obj)))
+		}
 		// Relator
-		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
+		i.stack = append(i.stack, newNodeSliceIter(i.last, children...))
 	default:
 		// no order role or (default) preOrder
 		// (children not added to the stack):
-		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
+		i.stack = append(i.stack, newNodeSliceIter(i.last, children...))
 	}
 }
 
@@ -141,12 +165,16 @@ func (i *orderPathIter) Next() Path {
 
 		i.last = p
 		n := p.Node()
+		if _, ok := n.(Value); ok {
+			continue
+		}
 
 		// Check if the item has the role inOrder or postOrder and have children; in that
 		// case skip it since the children and the (childless) copy of the node have already
 		// been added in addToStackWithOrder in the correct order
 		iterType := getNextIterType(n)
-		if (iterType == inOrder || iterType == postOrder) && n.Children != nil {
+		obj, _ := n.(Object)
+		if (iterType == inOrder || iterType == postOrder) && len(obj) == 0 {
 			continue
 		}
 

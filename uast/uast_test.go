@@ -1,5 +1,6 @@
 package uast
 
+/*
 import (
 	"testing"
 
@@ -217,3 +218,4 @@ func TestOrderTokens(t *testing.T) {
 		"id3", "Prefix+", "tok_pre_left", "subright_in1", "tok_pre_right", "subright_in2"}
 	require.Equal(expected, result)
 }
+*/

@@ -28,6 +28,7 @@ type Position struct {
 	Col uint32
 }
 
+// AsPosition transforms a generic AST node to a Position object.
 func AsPosition(m Object) Position {
 	off, _ := m["off"].(Int)
 	line, _ := m["line"].(Int)
@@ -39,6 +40,7 @@ func AsPosition(m Object) Position {
 	}
 }
 
+// ToObject converts Position to a generic AST node.
 func (p Position) ToObject() Object {
 	// TODO: add struct fields and generate this via reflection
 	return Object{
@@ -82,10 +84,10 @@ func (f IncludeFlag) Is(of IncludeFlag) bool {
 // Path represents a Node with its path in a tree. It is a slice with every
 // token in the path, where the last one is the node itself. The empty path is
 // is the zero value (e.g. parent of the root node).
-type Path []*Node
+type Path []Node
 
 // NewPath creates a new Path from a slice of nodes.
-func NewPath(nodes ...*Node) Path {
+func NewPath(nodes ...Node) Path {
 	return Path(nodes)
 }
 
@@ -95,7 +97,7 @@ func (p Path) IsEmpty() bool {
 }
 
 // Node returns the node. If the path is empty, the result is nil.
-func (p Path) Node() *Node {
+func (p Path) Node() Node {
 	if p.IsEmpty() {
 		return nil
 	}
@@ -104,7 +106,7 @@ func (p Path) Node() *Node {
 }
 
 // Child creates a Path for a given child.
-func (p Path) Child(n *Node) Path {
+func (p Path) Child(n Node) Path {
 	dst := make(Path, len(p)+1)
 	copy(dst, p)
 	dst[len(p)] = n
@@ -122,7 +124,7 @@ func (p Path) Parent() Path {
 	return dst
 }
 
-func Tokens(n *Node) []string {
+func Tokens(n Node) []string {
 	var tokens []string
 	iter := NewOrderPathIter(NewPath(n))
 	for {
@@ -131,9 +133,9 @@ func Tokens(n *Node) []string {
 			break
 		}
 
-		n := p.Node()
-		if n.Token != "" {
-			tokens = append(tokens, n.Token)
+		n, _ := p.Node().(Object)
+		if n != nil && n.Token() != "" {
+			tokens = append(tokens, n.Token())
 		}
 	}
 	return tokens
