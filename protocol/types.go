@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 )
 
 // DefaultService is the default service used to process requests.
@@ -94,7 +95,7 @@ type ParseRequest struct {
 type ParseResponse struct {
 	Response
 	// UAST contains the UAST from the parsed code.
-	UAST *uast.Node `json:"uast"`
+	UAST *Node `json:"uast"`
 	// Language. The language that was parsed. Usedful if you used language
 	// autodetection for the request.
 	Language string `json:"language"`
@@ -139,10 +140,10 @@ type NativeParseResponse struct {
 
 func (r *NativeParseResponse) String() string {
 	var s struct {
-		Status string      `json:"status"`
-		Language string    `json:"language"`
-		Errors []string    `json:"errors"`
-		AST    interface{} `json:"ast"`
+		Status   string      `json:"status"`
+		Language string      `json:"language"`
+		Errors   []string    `json:"errors"`
+		AST      interface{} `json:"ast"`
 	}
 
 	s.Status = strings.ToLower(r.Status.String())
@@ -186,4 +187,51 @@ type VersionResponse struct {
 	Version string `json:"version"`
 	// Build contains the timestamp at the time of the build.
 	Build time.Time `json:"build"`
+}
+
+// FIXME: do not forget to regenerate protos for this package
+
+// Node is a node in a UAST.
+//
+//proteus:generate
+type Node struct {
+	// InternalType is the internal type of the node in the AST, in the source
+	// language.
+	InternalType string `json:",omitempty"`
+	// Properties are arbitrary, language-dependent, metadata of the
+	// original AST.
+	Properties map[string]string `json:",omitempty"`
+	// Children are the children nodes of this node.
+	Children []*Node `json:",omitempty"`
+	// Token is the token content if this node represents a token from the
+	// original source file. If it is empty, there is no token attached.
+	Token string `json:",omitempty"`
+	// StartPosition is the position where this node starts in the original
+	// source code file.
+	StartPosition *uast.Position `json:",omitempty"`
+	// EndPosition is the position where this node ends in the original
+	// source code file.
+	EndPosition *uast.Position `json:",omitempty"`
+	// Roles is a list of Role that this node has. It is a language-independent
+	// annotation.
+	Roles []role.Role `json:",omitempty"`
+}
+
+// NewNode creates a new empty *Node.
+func NewNode() *Node {
+	return &Node{
+		Properties: make(map[string]string, 0),
+		Roles:      []role.Role{role.Unannotated},
+	}
+}
+
+// String converts the *Node to a string using pretty printing.
+func (n *Node) String() string {
+	buf := bytes.NewBuffer(nil)
+	err := Pretty(n, buf, uast.IncludeAll)
+	if err != nil {
+		return "error"
+	}
+
+	return buf.String()
 }

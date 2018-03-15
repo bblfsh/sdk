@@ -1,14 +1,17 @@
-package uast
+package protocol
 
 import (
 	"fmt"
 	"io"
 	"sort"
 	"strings"
+
+	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 )
 
 // Pretty writes a pretty string representation of the *Node to a writer.
-func Pretty(n *Node, w io.Writer, includes IncludeFlag) error {
+func Pretty(n *Node, w io.Writer, includes uast.IncludeFlag) error {
 	if n == nil {
 		return nil
 	}
@@ -16,9 +19,9 @@ func Pretty(n *Node, w io.Writer, includes IncludeFlag) error {
 	return printNode(w, 0, n, includes)
 }
 
-func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
+func printNode(w io.Writer, indent int, n *Node, includes uast.IncludeFlag) error {
 	nodeType := n.InternalType
-	if !includes.Is(IncludeInternalType) {
+	if !includes.Is(uast.IncludeInternalType) {
 		nodeType = "*"
 	}
 
@@ -29,7 +32,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 	istr := strings.Repeat(".  ", indent+1)
 	istrPrev := strings.Repeat(".  ", indent)
 
-	if includes.Is(IncludeAnnotations) && len(n.Roles) > 0 {
+	if includes.Is(uast.IncludeAnnotations) && len(n.Roles) > 0 {
 		_, err := fmt.Fprintf(w, "%sRoles: %s\n",
 			istr,
 			rolesToString(n.Roles...),
@@ -39,14 +42,14 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludeTokens) && n.Token != "" {
+	if includes.Is(uast.IncludeTokens) && n.Token != "" {
 		if _, err := fmt.Fprintf(w, "%sTOKEN \"%s\"\n",
 			istr, n.Token); err != nil {
 			return err
 		}
 	}
 
-	if includes.Is(IncludePositions) && n.StartPosition != nil {
+	if includes.Is(uast.IncludePositions) && n.StartPosition != nil {
 		if _, err := fmt.Fprintf(w, "%sStartPosition: {\n", istr); err != nil {
 			return err
 		}
@@ -60,7 +63,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludePositions) && n.EndPosition != nil {
+	if includes.Is(uast.IncludePositions) && n.EndPosition != nil {
 		if _, err := fmt.Fprintf(w, "%sEndPosition: {\n", istr); err != nil {
 			return err
 		}
@@ -74,7 +77,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludeProperties) && len(n.Properties) > 0 {
+	if includes.Is(uast.IncludeProperties) && len(n.Properties) > 0 {
 		if _, err := fmt.Fprintf(w, "%sProperties: {\n", istr); err != nil {
 			return err
 		}
@@ -88,7 +91,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 		}
 	}
 
-	if includes.Is(IncludeChildren) && len(n.Children) > 0 {
+	if includes.Is(uast.IncludeChildren) && len(n.Children) > 0 {
 		if _, err := fmt.Fprintf(w, "%sChildren: {\n", istr); err != nil {
 			return err
 		}
@@ -109,7 +112,7 @@ func printNode(w io.Writer, indent int, n *Node, includes IncludeFlag) error {
 	return nil
 }
 
-func printChildren(w io.Writer, indent int, children []*Node, includes IncludeFlag) error {
+func printChildren(w io.Writer, indent int, children []*Node, includes uast.IncludeFlag) error {
 	istr := strings.Repeat(".  ", indent)
 
 	for idx, child := range children {
@@ -154,7 +157,7 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
-func printPosition(w io.Writer, indent int, pos *Position) error {
+func printPosition(w io.Writer, indent int, pos *uast.Position) error {
 	if pos == nil {
 		return nil
 	}
@@ -173,7 +176,7 @@ func printPosition(w io.Writer, indent int, pos *Position) error {
 	return err
 }
 
-func rolesToString(roles ...Role) string {
+func rolesToString(roles ...role.Role) string {
 	var strs []string
 	for _, r := range roles {
 		strs = append(strs, r.String())

@@ -1,7 +1,6 @@
 package uast
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mcuadros/go-lookup"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
@@ -22,61 +22,74 @@ var (
 	ErrUnsupported          = errors.NewKind("unsupported: %s")
 )
 
-// Node is a node in a UAST.
-//
-//proteus:generate
-type Node struct {
-	// InternalType is the internal type of the node in the AST, in the source
-	// language.
-	InternalType string `json:",omitempty"`
-	// Properties are arbitrary, language-dependent, metadata of the
-	// original AST.
-	Properties map[string]string `json:",omitempty"`
-	// Children are the children nodes of this node.
-	Children []*Node `json:",omitempty"`
-	// Token is the token content if this node represents a token from the
-	// original source file. If it is empty, there is no token attached.
-	Token string `json:",omitempty"`
-	// StartPosition is the position where this node starts in the original
-	// source code file.
-	StartPosition *Position `json:",omitempty"`
-	// EndPosition is the position where this node ends in the original
-	// source code file.
-	EndPosition *Position `json:",omitempty"`
-	// Roles is a list of Role that this node has. It is a language-independent
-	// annotation.
-	Roles []Role `json:",omitempty"`
+// Special field keys for Object
+const (
+	KeyType  = "@type"  // InternalType
+	KeyToken = "@token" // Token
+	KeyRoles = "@role"  // Roles, represented as List(Int(role1), Int(role2))
+	// TODO: a single @pos field with "start" and "end" fields?
+	KeyStart = "@start" // StartPosition
+	KeyEnd   = "@end"   // EndPosition
+)
+
+type Node interface {
+	isNode() // to limit possible values
 }
 
-// NewNode creates a new empty *Node.
-func NewNode() *Node {
-	return &Node{
-		Properties: make(map[string]string, 0),
-		Roles:      []Role{Unannotated},
+// Properties are written directly to object map: obj[k] = String(m[k]).
+// Children are not flatten to single array, but written as fields: obj[k] = Object(m[k]) or obj[k] = List(m[k]).
+
+type Object map[string]Node
+
+func (Object) isNode() {}
+
+func (m Object) Type() string {
+	s, _ := m[KeyType].(String)
+	return string(s)
+}
+
+func (m Object) Token() string {
+	s, _ := m[KeyToken].(String)
+	return string(s)
+}
+
+func (m Object) Roles() []role.Role {
+	arr, _ := m[KeyRoles].(List)
+	out := make([]role.Role, 0, len(arr))
+	for _, v := range arr {
+		if r, ok := v.(Int); ok {
+			// TODO: use String, and define string lookup on Role
+			out = append(out, role.Role(r))
+		}
 	}
+	return out
 }
 
-// Hash returns the hash of the node.
-func (n *Node) Hash() Hash {
-	return n.HashWith(IncludeChildren)
+func (m Object) StartPosition() Position {
+	o, _ := m[KeyStart].(Object)
+	return AsPosition(o)
 }
 
-// HashWith returns the hash of the node, computed with the given set of fields.
-func (n *Node) HashWith(includes IncludeFlag) Hash {
-	//TODO
-	return 0
+func (m Object) EndPosition() Position {
+	o, _ := m[KeyEnd].(Object)
+	return AsPosition(o)
 }
 
-// String converts the *Node to a string using pretty printing.
-func (n *Node) String() string {
-	buf := bytes.NewBuffer(nil)
-	err := Pretty(n, buf, IncludeAll)
-	if err != nil {
-		return "error"
-	}
+type List []Node
 
-	return buf.String()
-}
+func (List) isNode() {}
+
+type String string
+
+func (String) isNode() {}
+
+type Int int64
+
+func (Int) isNode() {}
+
+type Bool bool
+
+func (Bool) isNode() {}
 
 const (
 	// InternalRoleKey is a key string uses in properties to use the internal
@@ -343,7 +356,7 @@ func (c *ObjectToNode) applyModifier(m map[string]interface{}) error {
 
 	return c.Modifier(m)
 }
-func (c *ObjectToNode) mapToNodes(k string, obj map[string]interface{}) ([]*Node, error) {
+func (c *ObjectToNode) mapToNodes(k string, obj map[string]interface{}) (Node, error) {
 	nodes, err := c.toNodes(obj)
 	if err != nil {
 		return nil, err
@@ -356,7 +369,7 @@ func (c *ObjectToNode) mapToNodes(k string, obj map[string]interface{}) ([]*Node
 	return nodes, nil
 }
 
-func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) ([]*Node, error) {
+func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parentKey string) (Node, error) {
 	kn := NewNode()
 
 	var ns []*Node
@@ -380,8 +393,8 @@ func (c *ObjectToNode) sliceToNodeWithChildren(k string, s []interface{}, parent
 	return []*Node{kn}, nil
 }
 
-func (c *ObjectToNode) stringToNode(k, v, parentKey string) *Node {
-	kn := NewNode()
+func (c *ObjectToNode) stringToNode(k, v, parentKey string) Node {
+	kn := make(Object)
 
 	c.setInternalKey(kn, parentKey+"."+k)
 	kn.Properties["promotedPropertyString"] = "true"
