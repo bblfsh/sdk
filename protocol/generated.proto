@@ -33,6 +33,19 @@ message NativeParseResponse {
 	string language = 5;
 }
 
+// Node is a node in a UAST.
+message Node {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.goproto_stringer) = false;
+	option (gogoproto.typedecl) = false;
+	string internal_type = 1;
+	map<string, string> properties = 2;
+	repeated gopkg.in.bblfsh.sdk.v1.protocol.Node children = 3;
+	string token = 4;
+	gopkg.in.bblfsh.sdk.v1.uast.Position start_position = 5;
+	gopkg.in.bblfsh.sdk.v1.uast.Position end_position = 6;
+}
+
 // ParseRequest is a request to parse a file and get its UAST.
 message ParseRequest {
 	option (gogoproto.goproto_getters) = false;
@@ -52,7 +65,7 @@ message ParseResponse {
 	gopkg.in.bblfsh.sdk.v1.protocol.Status status = 1;
 	repeated string errors = 2;
 	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-	gopkg.in.bblfsh.sdk.v1.uast.Node uast = 4 [(gogoproto.customname) = "UAST"];
+	gopkg.in.bblfsh.sdk.v1.protocol.Node uast = 4 [(gogoproto.customname) = "UAST"];
 	string language = 5;
 	string filename = 6;
 }
@@ -74,19 +87,6 @@ message VersionResponse {
 	google.protobuf.Timestamp build = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 }
 
-// Status is the status of a response.
-enum Status {
-	option (gogoproto.enumdecl) = false;
-	option (gogoproto.goproto_enum_prefix) = false;
-	option (gogoproto.goproto_enum_stringer) = false;
-	// Ok status code.
-	OK = 0 [(gogoproto.enumvalue_customname) = "Ok"];
-	// Error status code. It is replied when the driver has got the AST with errors.
-	ERROR = 1 [(gogoproto.enumvalue_customname) = "Error"];
-	// Fatal status code. It is replied when the driver hasn't could get the AST.
-	FATAL = 2 [(gogoproto.enumvalue_customname) = "Fatal"];
-}
-
 // Encoding is the encoding used for the content string. Currently only
 // UTF-8 or Base64 encodings are supported. You should use UTF-8 if you can
 // and Base64 as a fallback.
@@ -98,6 +98,19 @@ enum Encoding {
 	UTF8 = 0 [(gogoproto.enumvalue_customname) = "UTF8"];
 	// Base64 encoding
 	BASE64 = 1 [(gogoproto.enumvalue_customname) = "Base64"];
+}
+
+// Status is the status of a response.
+enum Status {
+	option (gogoproto.enumdecl) = false;
+	option (gogoproto.goproto_enum_prefix) = false;
+	option (gogoproto.goproto_enum_stringer) = false;
+	// Ok status code.
+	OK = 0 [(gogoproto.enumvalue_customname) = "Ok"];
+	// Error status code. It is replied when the driver has got the AST with errors.
+	ERROR = 1 [(gogoproto.enumvalue_customname) = "Error"];
+	// Fatal status code. It is replied when the driver hasn't could get the AST.
+	FATAL = 2 [(gogoproto.enumvalue_customname) = "Fatal"];
 }
 
 service ProtocolService {

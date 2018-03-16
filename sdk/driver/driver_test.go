@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/uast"
 
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +16,7 @@ func TestDriverParserParse(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := NewDriver(Transforms{})
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -52,7 +51,7 @@ func TestDriverParserParse(t *testing.T) {
 func TestDriverParserParse_MissingLanguage(t *testing.T) {
 	require := require.New(t)
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := NewDriver(Transforms{})
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -76,7 +75,7 @@ func TestDriverParserParse_Malfunctioning(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "echo"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := NewDriver(Transforms{})
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -103,7 +102,7 @@ func TestDriverParserNativeParse(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := NewDriver(Transforms{})
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -130,7 +129,7 @@ func TestDriverParserVersion(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := NewDriver(Transforms{})
 	require.NoError(err)
 	require.NotNil(d)
 

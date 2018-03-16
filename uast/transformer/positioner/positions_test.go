@@ -31,9 +31,9 @@ func TestFillLineColFromOffset(t *testing.T) {
 	}
 
 	p := NewFillLineColFromOffset()
-	err := p.Do(data, input)
+	out, err := p.OnCode(data).Do(input)
 	require.NoError(err)
-	require.Equal(expected, input)
+	require.Equal(expected, out)
 }
 
 func TestFillOffsetFromLineCol(t *testing.T) {
@@ -59,9 +59,9 @@ func TestFillOffsetFromLineCol(t *testing.T) {
 	}
 
 	p := NewFillOffsetFromLineCol()
-	err := p.Do(data, input)
+	out, err := p.OnCode(data).Do(input)
 	require.NoError(err)
-	require.Equal(expected, input)
+	require.Equal(expected, out)
 }
 
 func TestEmptyFile(t *testing.T) {
@@ -80,7 +80,7 @@ func TestEmptyFile(t *testing.T) {
 	}
 
 	p := NewFillOffsetFromLineCol()
-	err := p.Do(data, input)
+	out, err := p.OnCode(data).Do(input)
 	require.NoError(err)
-	require.Equal(expected, input)
+	require.Equal(expected, out)
 }

@@ -190,8 +190,6 @@ type VersionResponse struct {
 	Build time.Time `json:"build"`
 }
 
-// FIXME: do not forget to regenerate protos for this package
-
 // Node is a node in a UAST.
 //
 //proteus:generate
