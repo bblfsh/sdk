@@ -8,17 +8,17 @@ import (
 )
 
 func arrObjInt(key string, v int) func() u.Node {
-	return func() u.Node {
-		return u.List{
-			u.Object{key: u.Int(v)},
-		}
-	}
+	return arrObjVal(key, u.Int(v))
 }
 
 func arrObjStr(key string, v string) func() u.Node {
+	return arrObjVal(key, u.String(v))
+}
+
+func arrObjVal(key string, v u.Value) func() u.Node {
 	return func() u.Node {
 		return u.List{
-			u.Object{key: u.String(v)},
+			u.Object{key: v},
 		}
 	}
 }
@@ -51,11 +51,25 @@ var opCases = []struct {
 		exp:  arrObjInt("v2", 2),
 	},
 	{
+		name: "has nil",
+		inp:  arrObjVal("v", nil),
+		src:  Obj(Has("v", nil)),
+		dst:  Obj(Has("v2", u.Int(2))),
+		exp:  arrObjInt("v2", 2),
+	},
+	{
 		name: "obj save",
 		inp:  arrObjInt("v", 1),
 		src:  Obj(Save("v", "x")),
 		dst:  Obj(Save("v2", "x")),
 		exp:  arrObjInt("v2", 1),
+	},
+	{
+		name: "save nil",
+		inp:  arrObjVal("v", nil),
+		src:  Obj(Save("v", "x")),
+		dst:  Obj(Save("v2", "x")),
+		exp:  arrObjVal("v2", nil),
 	},
 	{
 		name: "arr save",

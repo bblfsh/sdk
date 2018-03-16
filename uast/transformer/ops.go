@@ -24,7 +24,7 @@ type opIs struct {
 func (op opIs) Check(st *State, n uast.Node) (bool, error) {
 	v2, ok := n.(uast.Value)
 	if !ok {
-		return false, nil
+		return op.v == nil && n == nil, nil
 	}
 	return op.v == v2, nil
 }
