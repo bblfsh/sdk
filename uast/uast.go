@@ -59,6 +59,7 @@ func (p Position) ToObject() Object {
 func RoleList(roles ...role.Role) List {
 	arr := make(List, 0, len(roles))
 	for _, r := range roles {
+		// TODO: use String, and define string lookup on Role
 		arr = append(arr, Int(r))
 	}
 	return arr

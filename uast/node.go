@@ -20,7 +20,7 @@ var (
 const (
 	KeyType  = "@type"  // InternalType
 	KeyToken = "@token" // Token
-	KeyRoles = "@role"  // Roles, represented as List(Int(role1), Int(role2))
+	KeyRoles = "@role"  // Roles, for representations see RoleList
 	// TODO: a single @pos field with "start" and "end" fields?
 	KeyStart = "@start" // StartPosition
 	KeyEnd   = "@end"   // EndPosition
@@ -58,9 +58,6 @@ type Value interface {
 	Node
 	isValue() // to limit possible type
 }
-
-// Properties are written directly to object map: obj[k] = String(m[k]).
-// Children are not flatten to single array, but written as fields: obj[k] = Object(m[k]) or obj[k] = List(m[k]).
 
 // Object is a representation of generic AST node with fields.
 type Object map[string]Node
