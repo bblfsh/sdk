@@ -153,7 +153,7 @@ type RuleError interface {
 	// Inner returns the wrapped error.
 	Inner() error
 	// Node returns the offending node.
-	Node() *uast.Node
+	Node() uast.Node
 }
 
 type ruleError struct {
@@ -232,9 +232,9 @@ func (p *hasProperty) Eval(n uast.Node) bool {
 //
 //	HasProperty(uast.InternalRoleKey, r)
 //
-func HasInternalRole(r string) Predicate {
-	return HasProperty(uast.InternalRoleKey, r)
-}
+//func HasInternalRole(r string)  {
+//	return HasProperty(uast.InternalRoleKey, r)
+//}
 
 // HasChild matches a node that contains a child matching the given predicate.
 func HasChild(pred Predicate) Predicate { return &hasChild{pred} }
@@ -287,7 +287,7 @@ type any struct{}
 
 func (p *any) String() string { return "*" }
 
-func (p *any) Eval(n *uast.Node) bool { return true }
+func (p *any) Eval(n uast.Node) bool { return true }
 
 // Not negates a node predicate.
 func Not(p Predicate) Predicate {
@@ -298,7 +298,7 @@ type not struct{ Predicate }
 
 func (p *not) String() string { return fmt.Sprintf("not(%s)", p.Predicate) }
 
-func (p *not) Eval(n *uast.Node) bool { return !p.Predicate.Eval(n) }
+func (p *not) Eval(n uast.Node) bool { return !p.Predicate.Eval(n) }
 
 // And returns a predicate that returns true if all the given predicates returns
 // true.

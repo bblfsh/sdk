@@ -6,30 +6,32 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/uast"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
 func TestHasInternalType(t *testing.T) {
 	require := require.New(t)
 
-	node := func(s string) *uast.Node {
+	node := func(s string) uast.Node {
 		n := uast.NewNode()
-		n.InternalType = s
+		n.SetType(s)
 		return n
 	}
 
 	pred := HasInternalType("foo")
 	require.True(pred.Eval(node("foo")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.False(pred.Eval(node("")))
 	require.False(pred.Eval(node("bar")))
 }
 
+/*
 func TestHasInternalRole(t *testing.T) {
 	require := require.New(t)
 
-	node := func(s string) *uast.Node {
+	node := func(s string) uast.Node {
 		n := uast.NewNode()
 		n.Properties[uast.InternalRoleKey] = s
 		return n
@@ -38,24 +40,24 @@ func TestHasInternalRole(t *testing.T) {
 	pred := HasInternalRole("foo")
 	require.True(pred.Eval(node("foo")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.False(pred.Eval(node("")))
 	require.False(pred.Eval(node("bar")))
 }
-
+*/
 func TestHasProperty(t *testing.T) {
 	require := require.New(t)
 
-	node := func(k, v string) *uast.Node {
+	node := func(k, v string) uast.Node {
 		n := uast.NewNode()
-		n.Properties[k] = v
+		n.SetProperty(k, v)
 		return n
 	}
 
 	pred := HasProperty("myprop", "foo")
 	require.True(pred.Eval(node("myprop", "foo")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.False(pred.Eval(node("myprop", "bar")))
 	require.False(pred.Eval(node("otherprop", "foo")))
 	require.False(pred.Eval(node("otherprop", "bar")))
@@ -64,21 +66,21 @@ func TestHasProperty(t *testing.T) {
 func TestHasToken(t *testing.T) {
 	require := require.New(t)
 
-	node := func(s string) *uast.Node {
+	node := func(s string) uast.Node {
 		n := uast.NewNode()
-		n.Token = s
+		n.SetToken(s)
 		return n
 	}
 
 	pred := HasToken("foo")
 	require.True(pred.Eval(node("foo")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.False(pred.Eval(node("")))
 	require.False(pred.Eval(node("bar")))
 
 	pred = HasToken("")
-	require.True(pred.Eval(&uast.Node{}))
+	require.True(pred.Eval(uast.EmptyNode()))
 	require.True(pred.Eval(node("")))
 	require.False(pred.Eval(nil))
 	require.False(pred.Eval(node("bar")))
@@ -89,25 +91,25 @@ func TestAny(t *testing.T) {
 
 	pred := Any
 	require.True(pred.Eval(nil))
-	require.True(pred.Eval(&uast.Node{}))
+	require.True(pred.Eval(uast.EmptyNode()))
 	require.True(pred.Eval(uast.NewNode()))
-	require.True(pred.Eval(&uast.Node{InternalType: "foo"}))
-	require.True(pred.Eval(&uast.Node{Token: "foo"}))
+	require.True(pred.Eval(uast.EmptyNode().SetType("foo")))
+	require.True(pred.Eval(uast.EmptyNode().SetToken("foo")))
 }
 
 func TestNot(t *testing.T) {
 	require := require.New(t)
 
-	node := func(s string) *uast.Node {
+	node := func(s string) uast.Node {
 		n := uast.NewNode()
-		n.InternalType = s
+		n.SetType(s)
 		return n
 	}
 
 	pred := Not(HasInternalType("foo"))
 	require.False(pred.Eval(node("foo")))
 	require.True(pred.Eval(nil))
-	require.True(pred.Eval(&uast.Node{}))
+	require.True(pred.Eval(uast.EmptyNode()))
 	require.True(pred.Eval(node("")))
 	require.True(pred.Eval(node("bar")))
 }
@@ -115,16 +117,16 @@ func TestNot(t *testing.T) {
 func TestOr(t *testing.T) {
 	require := require.New(t)
 
-	node := func(s string) *uast.Node {
+	node := func(s string) uast.Node {
 		n := uast.NewNode()
-		n.InternalType = s
+		n.SetType(s)
 		return n
 	}
 
 	pred := Or(HasInternalType("foo"), HasInternalType("bar"))
 	require.True(pred.Eval(node("foo")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.False(pred.Eval(node("")))
 	require.True(pred.Eval(node("bar")))
 	require.False(pred.Eval(node("baz")))
@@ -133,17 +135,17 @@ func TestOr(t *testing.T) {
 func TestAnd(t *testing.T) {
 	require := require.New(t)
 
-	node := func(typ, tok string) *uast.Node {
+	node := func(typ, tok string) uast.Node {
 		n := uast.NewNode()
-		n.InternalType = typ
-		n.Token = tok
+		n.SetType(typ)
+		n.SetToken(tok)
 		return n
 	}
 
 	pred := And(HasInternalType("foo"), HasToken("bar"))
 	require.False(pred.Eval(node("foo", "")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.False(pred.Eval(node("", "")))
 	require.False(pred.Eval(node("bar", "")))
 	require.False(pred.Eval(node("foo", "foo")))
@@ -156,13 +158,13 @@ func TestHasChild(t *testing.T) {
 
 	pred := HasChild(HasInternalType("foo"))
 
-	path := func(s ...string) *uast.Node {
-		var n *uast.Node
+	path := func(s ...string) uast.Node {
+		var n uast.Node
 		for i := len(s) - 1; i >= 0; i-- {
 			tn := uast.NewNode()
-			tn.InternalType = s[i]
+			tn.SetType(s[i])
 			if n != nil {
-				tn.Children = append(tn.Children, n)
+				tn["child"] = n
 			}
 
 			n = tn
@@ -175,7 +177,7 @@ func TestHasChild(t *testing.T) {
 	require.False(pred.Eval(path("foo", "bar")))
 	require.False(pred.Eval(path("", "")))
 	require.False(pred.Eval(nil))
-	require.False(pred.Eval(&uast.Node{}))
+	require.False(pred.Eval(uast.EmptyNode()))
 	require.True(pred.Eval(path("bar", "foo")))
 	require.False(pred.Eval(path("bar", "baz", "foo")))
 }
@@ -183,10 +185,10 @@ func TestHasChild(t *testing.T) {
 func TestAddRoles(t *testing.T) {
 	require := require.New(t)
 
-	a := AddRoles(uast.Statement, uast.Expression)
+	a := AddRoles(role.Statement, role.Expression)
 	input := uast.NewNode()
 	expected := uast.NewNode()
-	expected.Roles = []uast.Role{uast.Statement, uast.Expression}
+	expected.SetRoles(role.Statement, role.Expression)
 	err := a.Do(input)
 	require.NoError(err)
 	require.Equal(expected, input)
@@ -195,11 +197,11 @@ func TestAddRoles(t *testing.T) {
 func TestAddDuplicatedRoles(t *testing.T) {
 	require := require.New(t)
 
-	a := AddRoles(uast.Statement, uast.Expression, uast.Statement, uast.Expression,
-		uast.Call, uast.Call)
+	a := AddRoles(role.Statement, role.Expression, role.Statement, role.Expression,
+		role.Call, role.Call)
 	input := uast.NewNode()
 	expected := uast.NewNode()
-	expected.Roles = []uast.Role{uast.Statement, uast.Expression, uast.Call}
+	expected.SetRoles(role.Statement, role.Expression, role.Call)
 	err := a.Do(input)
 	require.NoError(err)
 	require.Equal(expected, input)
@@ -210,23 +212,23 @@ func TestAddDuplicatedRoles(t *testing.T) {
 func TestRuleOnApply(t *testing.T) {
 	require := require.New(t)
 
-	role := uast.Block
-	rule := On(Any).Roles(role)
+	r := role.Block
+	rule := On(Any).Roles(r)
 
-	input := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
+	input := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
-	expected := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{role},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
+	expected := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(r),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
 	err := rule.Apply(input)
@@ -237,37 +239,37 @@ func TestRuleOnApply(t *testing.T) {
 func TestRuleOnSelfApply(t *testing.T) {
 	require := require.New(t)
 
-	role := uast.Block
-	rule := On(Any).Self(On(HasInternalType("root")).Roles(role))
+	r := role.Block
+	rule := On(Any).Self(On(HasInternalType("root")).Roles(r))
 
-	input := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "bar",
-				Roles:        []uast.Role{uast.Unannotated},
-				Children: []*uast.Node{{
-					InternalType: "baz",
-					Roles:        []uast.Role{uast.Unannotated},
+	input := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("bar"),
+				uast.KeyRoles: uast.RoleList(role.Unannotated),
+				"children": uast.List{uast.Object{
+					uast.KeyType:  uast.String("baz"),
+					uast.KeyRoles: uast.RoleList(role.Unannotated),
 				}},
 			}},
 		}},
 	}
-	expected := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{role},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "bar",
-				Roles:        []uast.Role{uast.Unannotated},
-				Children: []*uast.Node{{
-					InternalType: "baz",
-					Roles:        []uast.Role{uast.Unannotated},
+	expected := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(r),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("bar"),
+				uast.KeyRoles: uast.RoleList(role.Unannotated),
+				"children": uast.List{uast.Object{
+					uast.KeyType:  uast.String("baz"),
+					uast.KeyRoles: uast.RoleList(role.Unannotated),
 				}},
 			}},
 		}},
@@ -280,70 +282,70 @@ func TestRuleOnSelfApply(t *testing.T) {
 func TestRuleOnChildrenApply(t *testing.T) {
 	require := require.New(t)
 
-	role := uast.Block
-	rule := On(Any).Children(On(HasInternalType("foo")).Roles(role))
+	r := role.Block
+	rule := On(Any).Children(On(HasInternalType("foo")).Roles(r))
 
-	input := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
+	input := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
-	expected := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{role},
+	expected := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(r),
 		}},
 	}
 	err := rule.Apply(input)
 	require.NoError(err)
 	require.Equal(expected, input)
 
-	input = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
+	input = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
-	expected = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
+	expected = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
 	err = rule.Apply(input)
 	require.NoError(err)
 	require.Equal(expected, input)
 
-	input = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "foo",
-				Roles:        []uast.Role{uast.Unannotated},
+	input = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("foo"),
+				uast.KeyRoles: uast.RoleList(role.Unannotated),
 			}},
 		}},
 	}
-	expected = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "foo",
-				Roles:        []uast.Role{uast.Unannotated},
+	expected = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("foo"),
+				uast.KeyRoles: uast.RoleList(role.Unannotated),
 			}},
 		}},
 	}
@@ -355,70 +357,70 @@ func TestRuleOnChildrenApply(t *testing.T) {
 func TestRuleOnDescendantsApply(t *testing.T) {
 	require := require.New(t)
 
-	role := uast.Block
-	rule := On(Any).Descendants(On(HasInternalType("foo")).Roles(role))
+	r := role.Block
+	rule := On(Any).Descendants(On(HasInternalType("foo")).Roles(r))
 
-	input := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
+	input := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
-	expected := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{role},
+	expected := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(r),
 		}},
 	}
 	err := rule.Apply(input)
 	require.NoError(err)
 	require.Equal(expected, input)
 
-	input = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
+	input = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
-	expected = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
+	expected = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
 	err = rule.Apply(input)
 	require.NoError(err)
 	require.Equal(expected, input)
 
-	input = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "foo",
-				Roles:        []uast.Role{uast.Unannotated},
+	input = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("foo"),
+				uast.KeyRoles: uast.RoleList(role.Unannotated),
 			}},
 		}},
 	}
-	expected = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "foo",
-				Roles:        []uast.Role{role},
+	expected = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("foo"),
+				uast.KeyRoles: uast.RoleList(r),
 			}},
 		}},
 	}
@@ -430,50 +432,50 @@ func TestRuleOnDescendantsApply(t *testing.T) {
 func TestRuleOnDescendantsOrSelfApply(t *testing.T) {
 	require := require.New(t)
 
-	role := uast.Block
-	rule := On(Any).DescendantsOrSelf(On(HasInternalType("foo")).Roles(role))
+	r := role.Block
+	rule := On(Any).DescendantsOrSelf(On(HasInternalType("foo")).Roles(r))
 
-	input := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
+	input := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
-	expected := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{role},
+	expected := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(r),
 		}},
 	}
 	err := rule.Apply(input)
 	require.NoError(err)
 	require.Equal(expected, input)
 
-	input = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "foo",
-				Roles:        []uast.Role{uast.Unannotated},
+	input = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("foo"),
+				uast.KeyRoles: uast.RoleList(role.Unannotated),
 			}},
 		}},
 	}
-	expected = &uast.Node{
-		InternalType: "foo",
-		Roles:        []uast.Role{role},
-		Children: []*uast.Node{{
-			InternalType: "bar",
-			Roles:        []uast.Role{uast.Unannotated},
-			Children: []*uast.Node{{
-				InternalType: "foo",
-				Roles:        []uast.Role{role},
+	expected = uast.Object{
+		uast.KeyType:  uast.String("foo"),
+		uast.KeyRoles: uast.RoleList(r),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("bar"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
+			"children": uast.List{uast.Object{
+				uast.KeyType:  uast.String("foo"),
+				uast.KeyRoles: uast.RoleList(r),
 			}},
 		}},
 	}
@@ -489,12 +491,12 @@ func TestRuleOnRulesActionError(t *testing.T) {
 	rule := On(HasInternalType("root")).
 		Children(On(HasInternalType("foo")).Error(ErrTestMe.New("foo node found")))
 
-	input := &uast.Node{
-		InternalType: "root",
-		Roles:        []uast.Role{uast.Unannotated},
-		Children: []*uast.Node{{
-			InternalType: "foo",
-			Roles:        []uast.Role{uast.Unannotated},
+	input := uast.Object{
+		uast.KeyType:  uast.String("root"),
+		uast.KeyRoles: uast.RoleList(role.Unannotated),
+		"children": uast.List{uast.Object{
+			uast.KeyType:  uast.String("foo"),
+			uast.KeyRoles: uast.RoleList(role.Unannotated),
 		}},
 	}
 	err := rule.Apply(input)
@@ -505,8 +507,8 @@ func TestRuleOnRulesActionError(t *testing.T) {
 	require.EqualError(extraInfoError, "test me: foo node found")
 	require.True(ErrTestMe.Is(extraInfoError.Inner()))
 
-	offendingNode := extraInfoError.Node()
-	require.Equal(offendingNode.InternalType, "foo")
+	offendingNode, _ := extraInfoError.Node().(uast.Object)
+	require.Equal(offendingNode.Type(), "foo")
 }
 
 func TestBetterErrorMessageForInorderTraversalOfNonBinaryNode(t *testing.T) {
@@ -514,19 +516,17 @@ func TestBetterErrorMessageForInorderTraversalOfNonBinaryNode(t *testing.T) {
 
 	rule := On(Any).DescendantsOrSelf(
 		On(HasInternalType("foo")).
-			Roles(uast.Infix).
-			Children(On(Any).Roles(uast.Call)),
+			Roles(role.Infix).
+			Children(On(Any).Roles(role.Call)),
 	)
 
-	input := &uast.Node{
-		InternalType: "foo",
-		Children: []*uast.Node{{
-			InternalType: "child",
-		}, {
-			InternalType: "child",
-		}, {
-			InternalType: "child",
-		}},
+	input := uast.Object{
+		uast.KeyType: uast.String("foo"),
+		"children": uast.List{
+			uast.Object{uast.KeyType: uast.String("child")},
+			uast.Object{uast.KeyType: uast.String("child")},
+			uast.Object{uast.KeyType: uast.String("child")},
+		},
 	}
 
 	err := rule.Apply(input)
