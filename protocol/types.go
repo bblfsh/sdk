@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -234,4 +235,114 @@ func (n *Node) String() string {
 	}
 
 	return buf.String()
+}
+
+const (
+	// InternalRoleKey is a key string uses in properties to use the internal
+	// role of a node in the AST, if any.
+	InternalRoleKey = "internalRole"
+)
+
+// ToNode converts a generic AST node to Node object used in the protocol.
+func ToNode(n uast.Node) (*Node, error) {
+	nd, err := asNode(n, "")
+	if err != nil {
+		return nil, err
+	}
+	switch len(nd) {
+	case 0:
+		return nil, nil
+	case 1:
+		return nd[0], nil
+	default:
+		return &Node{Children: nd}, nil
+	}
+}
+
+func asNode(n uast.Node, field string) ([]*Node, error) {
+	switch n := n.(type) {
+	case uast.List:
+		var arr []*Node
+		for _, s := range n {
+			nd, err := asNode(s, field)
+			if err != nil {
+				return arr, err
+			}
+			arr = append(arr, nd...)
+		}
+		return arr, nil
+	case uast.Object:
+		nd := &Node{
+			InternalType:  n.Type(),
+			Token:         n.Token(),
+			Roles:         n.Roles(),
+			StartPosition: n.StartPosition(),
+			EndPosition:   n.EndPosition(),
+			Properties:    make(map[string]string),
+		}
+		if field != "" {
+			nd.Properties[InternalRoleKey] = field
+		}
+		for k, v := range n {
+			switch k {
+			case uast.KeyType, uast.KeyToken, uast.KeyRoles,
+				uast.KeyStart, uast.KeyEnd:
+				// already processed
+				continue
+			}
+			if v, ok := v.(uast.Value); ok {
+				nd.Properties[k] = fmt.Sprint(v.Native())
+			} else {
+				sn, err := asNode(v, k)
+				if err != nil {
+					return nil, err
+				}
+				nd.Children = append(nd.Children, sn...)
+			}
+		}
+		sort.Sort(byOffset(nd.Children))
+		return []*Node{nd}, nil
+	default:
+		return nil, fmt.Errorf("argument should be a node or a list, got: %T", n)
+	}
+}
+
+type byOffset []*Node
+
+func (s byOffset) Len() int      { return len(s) }
+func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s byOffset) Less(i, j int) bool {
+	a := s[i]
+	b := s[j]
+	apos := startPosition(a)
+	bpos := startPosition(b)
+	if apos == nil {
+		return false
+	}
+
+	if bpos == nil {
+		return false
+	}
+
+	return apos.Offset < bpos.Offset
+}
+
+func startPosition(n *Node) *uast.Position {
+	if n.StartPosition != nil {
+		return n.StartPosition
+	}
+
+	var min *uast.Position
+	for _, c := range n.Children {
+		other := startPosition(c)
+		if other == nil {
+			continue
+		}
+
+		if min == nil || other.Offset < min.Offset {
+			min = other
+		}
+	}
+
+	return min
 }

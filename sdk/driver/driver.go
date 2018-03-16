@@ -133,14 +133,11 @@ func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 		addErr(err)
 		return r
 	}
-
-	// FIXME: convert to legacy protocol.Node
-	r.UAST, err = d.o.ToNode(ast)
+	r.UAST, err = protocol.ToNode(nd)
 	if err != nil {
 		addErr(err)
 		return r
 	}
-
 	return r
 }
 

@@ -46,7 +46,7 @@ func EmptyNode() Object {
 type Node interface {
 	// Clone creates a deep copy of the node.
 	Clone() Node
-	isNode() // to limit possible type
+	isNode() // to limit possible types
 }
 
 // Value is a generic interface for values of AST node fields.
@@ -57,7 +57,8 @@ type Node interface {
 //	* Bool
 type Value interface {
 	Node
-	isValue() // to limit possible type
+	Native() interface{}
+	isValue() // to limit possible types
 }
 
 // Object is a representation of generic AST node with fields.
@@ -212,6 +213,9 @@ type String string
 
 func (String) isNode()  {}
 func (String) isValue() {}
+func (v String) Native() interface{} {
+	return string(v)
+}
 func (v String) Clone() Node {
 	return v
 }
@@ -221,6 +225,9 @@ type Int int64
 
 func (Int) isNode()  {}
 func (Int) isValue() {}
+func (v Int) Native() interface{} {
+	return int64(v)
+}
 func (v Int) Clone() Node {
 	return v
 }
@@ -230,6 +237,9 @@ type Bool bool
 
 func (Bool) isNode()  {}
 func (Bool) isValue() {}
+func (v Bool) Native() interface{} {
+	return bool(v)
+}
 func (v Bool) Clone() Node {
 	return v
 }
@@ -320,11 +330,6 @@ func Apply(root Node, apply func(n Node) (Node, bool)) (Node, bool) {
 }
 
 /*
-const (
-	// InternalRoleKey is a key string uses in properties to use the internal
-	// role of a node in the AST, if any.
-	InternalRoleKey = "internalRole"
-)
 
 // ObjectToNode transform trees that are represented as nested JSON objects.
 // That is, an interface{} containing maps, slices, strings and integers. It
@@ -822,46 +827,6 @@ func toUint32(v interface{}) (uint32, error) {
 	default:
 		return 0, fmt.Errorf("toUint32 error: %#v", v)
 	}
-}
-
-type byOffset []*Node
-
-func (s byOffset) Len() int      { return len(s) }
-func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s byOffset) Less(i, j int) bool {
-	a := s[i]
-	b := s[j]
-	apos := startPosition(a)
-	bpos := startPosition(b)
-	if apos == nil {
-		return false
-	}
-
-	if bpos == nil {
-		return false
-	}
-
-	return apos.Offset < bpos.Offset
-}
-
-func startPosition(n *Node) *Position {
-	if n.StartPosition != nil {
-		return n.StartPosition
-	}
-
-	var min *Position
-	for _, c := range n.Children {
-		other := startPosition(c)
-		if other == nil {
-			continue
-		}
-
-		if min == nil || other.Offset < min.Offset {
-			min = other
-		}
-	}
-
-	return min
 }
 
 func toPropValue(o interface{}) (string, error) {
