@@ -40,6 +40,30 @@ func TestClone(t *testing.T) {
 	}, arr)
 }
 
+func TestWalkPreOrder(t *testing.T) {
+	require := require.New(t)
+
+	n := Object{
+		KeyType: String("a"),
+		"a":     Object{KeyType: String("aa")},
+		"b": Object{
+			KeyType: String("ab"),
+			"a":     Object{KeyType: String("aba")},
+		},
+		"c": Object{KeyType: String("ac")},
+	}
+
+	var result []string
+	WalkPreOrder(n, func(n Node) bool {
+		if obj, ok := n.(Object); ok {
+			result = append(result, obj.Type())
+		}
+		return true
+	})
+
+	require.Equal([]string{"a", "aa", "ab", "aba", "ac"}, result)
+}
+
 func TestApply(t *testing.T) {
 	o1 := Object{"v": Int(1)}
 	o2 := Object{"k": o1, "v": Int(2)}

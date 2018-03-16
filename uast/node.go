@@ -285,6 +285,23 @@ func ToNode(o interface{}) (Node, error) {
 	}
 }
 
+// WalkPreOrder visits all nodes of the tree in pre-order.
+func WalkPreOrder(root Node, walk func(Node) bool) {
+	if !walk(root) {
+		return
+	}
+	switch n := root.(type) {
+	case Object:
+		for _, k := range n.Keys() {
+			WalkPreOrder(n[k], walk)
+		}
+	case List:
+		for _, s := range n {
+			WalkPreOrder(s, walk)
+		}
+	}
+}
+
 // Apply takes a root node and applies callback to each node of the tree recursively.
 // Apply returns an old or a new node and a flag that indicates if node was changed or not.
 // If callback returns true and a new node, Apply will make a copy of parent node and

@@ -88,7 +88,7 @@ func TestInfixTokens(t *testing.T) {
 				tObj("right", "tok_in_right"),
 			}}}}
 	result := Tokens(n)
-	expected := []string{"id1", "tok_in_left", "Infix+", "tok_in_right"}
+	expected := []string{"id1", "Infix+", "tok_in_left", "tok_in_right"}
 	require.Equal(expected, result)
 }
 
@@ -114,8 +114,8 @@ func TestInfixTokensSubtree(t *testing.T) {
 			},
 			}}}
 	result := Tokens(n)
-	expected := []string{"id3", "subleft_1a_2a", "subleft_1a", "subleft_1a_2b", "left",
-		"subleft_1b_2a", "subleft_1b", "subleft_1b_2b", "op_infix", "right"}
+	expected := []string{"id3", "op_infix", "left", "subleft_1a", "subleft_1a_2a", "subleft_1a_2b",
+		"subleft_1b", "subleft_1b_2a", "subleft_1b_2b", "right"}
 
 	require.Equal(expected, result)
 }
@@ -144,7 +144,7 @@ func TestPostfixTokens(t *testing.T) {
 				tObj("right", "tok_post_right"),
 			}}}}
 	result := Tokens(n)
-	expected := []string{"id2", "tok_post_left", "tok_post_right", "Postfix+"}
+	expected := []string{"id2", "Postfix+", "tok_post_left", "tok_post_right"}
 	require.Equal(expected, result)
 }
 
@@ -170,8 +170,8 @@ func TestPostfixTokensSubtree(t *testing.T) {
 			},
 			}}}
 	result := Tokens(n)
-	expected := []string{"id2", "subleft_1a_2a", "subleft_1a_2b", "subleft_1a", "subleft_1b_2a",
-		"subleft_1b_2b", "subleft_1b", "left", "right", "op_postfix"}
+	expected := []string{"id2", "op_postfix", "left", "subleft_1a", "subleft_1a_2a", "subleft_1a_2b", "subleft_1b",
+		"subleft_1b_2a", "subleft_1b_2b", "right"}
 	require.Equal(expected, result)
 }
 
@@ -224,8 +224,8 @@ func TestOrderTokens(t *testing.T) {
 			}}}}
 
 	result := Tokens(n)
-	expected := []string{"id1", "tok_in_left", "Infix+", "subright1", "subright2", "tok_in_right",
-		"id2", "tok_post_left", "tok_post_right", "subright_pre1", "subright_pre2", "Postfix+",
-		"id3", "Prefix+", "tok_pre_left", "subright_in1", "tok_pre_right", "subright_in2"}
+	expected := []string{"id1", "Infix+", "tok_in_left", "tok_in_right", "subright1", "subright2",
+		"id2", "Postfix+", "tok_post_left", "tok_post_right", "subright_pre1", "subright_pre2",
+		"id3", "Prefix+", "tok_pre_left", "tok_pre_right", "subright_in1", "subright_in2"}
 	require.Equal(expected, result)
 }

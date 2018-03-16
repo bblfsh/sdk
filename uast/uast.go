@@ -13,7 +13,9 @@
 // and operations to manipulate them.
 package uast
 
-import "gopkg.in/bblfsh/sdk.v1/uast/role"
+import (
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
+)
 
 // Hash is a hash value.
 type Hash uint32
@@ -141,17 +143,13 @@ func (p Path) Parent() Path {
 
 func Tokens(n Node) []string {
 	var tokens []string
-	iter := NewOrderPathIter(NewPath(n))
-	for {
-		p := iter.Next()
-		if p.IsEmpty() {
-			break
+	WalkPreOrder(n, func(n Node) bool {
+		if obj, ok := n.(Object); ok {
+			if tok := obj.Token(); tok != "" {
+				tokens = append(tokens, tok)
+			}
 		}
-
-		n, _ := p.Node().(Object)
-		if n != nil && n.Token() != "" {
-			tokens = append(tokens, n.Token())
-		}
-	}
+		return true
+	})
 	return tokens
 }
