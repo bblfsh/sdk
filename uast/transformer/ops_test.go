@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	u "gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/src-d/go-errors.v1"
 )
 
 func arrObjInt(key string, v int) func() u.Node {
@@ -23,11 +24,19 @@ func arrObjVal(key string, v u.Value) func() u.Node {
 	}
 }
 
+func arrObjVal2(key1, key2 string, v1, v2 u.Value) func() u.Node {
+	return func() u.Node {
+		return u.List{
+			u.Object{key1: v1, key2: v2},
+		}
+	}
+}
+
 var opCases = []struct {
 	name     string
 	inp, exp func() u.Node
 	src, dst Op
-	err      error
+	err      *errors.Kind
 	noRev    bool // should only be set in exceptional cases
 }{
 	{
@@ -89,6 +98,38 @@ var opCases = []struct {
 		dst: Obj(Save("v2", "x")),
 		exp: arrObjStr("v2", "A"),
 	},
+	{
+		name: "no var",
+		inp:  arrObjInt("v", 1),
+		src:  Obj(Has("v", u.Int(1))),
+		dst:  Obj(Save("v2", "x")),
+		err:  ErrVariableNotDefined,
+	},
+	{
+		name: "var redeclared",
+		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
+		src: Obj(
+			Save("v1", "x"),
+			Save("v2", "x"),
+		),
+		dst: Obj(
+			Save("v3", "x"),
+			Save("v4", "x"),
+		),
+		err: ErrVariableRedeclared,
+	},
+	{
+		name: "var val twice",
+		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(1)),
+		src: Obj(
+			Save("v1", "x"),
+			Save("v2", "x"),
+		),
+		dst: Obj(
+			Save("v3", "x"),
+		),
+		exp: arrObjVal("v3", u.Int(1)),
+	},
 }
 
 func TestOps(t *testing.T) {
@@ -101,7 +142,7 @@ func TestOps(t *testing.T) {
 			inp := c.inp()
 			out, err := m.Do(inp)
 			if c.err != nil {
-				require.Equal(t, c.err, err)
+				require.True(t, c.err.Is(err), "expected %v, got %v", c.err, err)
 				return
 			}
 			require.NoError(t, err)
