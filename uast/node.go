@@ -1,6 +1,7 @@
 package uast
 
 import (
+	"fmt"
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v1/uast/role"
@@ -231,6 +232,47 @@ func (Bool) isNode()  {}
 func (Bool) isValue() {}
 func (v Bool) Clone() Node {
 	return v
+}
+
+// ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
+func ToNode(o interface{}) (Node, error) {
+	switch o := o.(type) {
+	case map[string]interface{}:
+		n := make(Object, len(o))
+		for k, v := range o {
+			nv, err := ToNode(v)
+			if err != nil {
+				return nil, err
+			}
+			n[k] = nv
+		}
+		return n, nil
+	case []interface{}:
+		n := make(List, 0, len(o))
+		for _, v := range o {
+			nv, err := ToNode(v)
+			if err != nil {
+				return nil, err
+			}
+			n = append(n, nv)
+		}
+		return n, nil
+	case string:
+		return String(o), nil
+	case int:
+		return Int(o), nil
+	case int64:
+		return Int(o), nil
+	case float64:
+		if float64(int64(o)) != o {
+			return nil, fmt.Errorf("unsupported value: %v", o)
+		}
+		return Int(o), nil
+	case bool:
+		return Bool(o), nil
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", o)
+	}
 }
 
 // Apply takes a root node and applies callback to each node of the tree recursively.

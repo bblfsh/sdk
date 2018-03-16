@@ -1,14 +1,40 @@
 package transformer
 
 import (
-	//"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
-//type Tranformer interface {
-//	Do(code string, e protocol.Encoding, n *uast.Node) error
-//}
+type Transformer interface {
+	Do(n uast.Node) (uast.Node, error)
+}
+
+var _ Transformer = (TransformFunc)(nil)
+
+type TransformFunc func(n uast.Node) (uast.Node, bool, error)
+
+func (f TransformFunc) Do(n uast.Node) (uast.Node, error) {
+	var last error
+	nn, ok := uast.Apply(n, func(n uast.Node) (uast.Node, bool) {
+		nn, ok, err := f(n)
+		if err != nil {
+			last = err
+			return n, false
+		} else if !ok {
+			return n, false
+
+		}
+		return nn, ok
+	})
+	if ok {
+		return nn, last
+	}
+	return n, last
+}
+
+type CodeTransformer interface {
+	OnCode(code string) Transformer
+}
 
 var (
 	ErrVariableRedeclared = errors.NewKind("variable %q redeclared (%v vs %v)")
@@ -28,7 +54,8 @@ func Map(src, dst Op) Mapping {
 	return Mapping{src: src, dst: dst}
 }
 
-// TODO: rename to Transformer?
+var _ Transformer = Mapping{}
+
 type Mapping struct {
 	src, dst Op
 }

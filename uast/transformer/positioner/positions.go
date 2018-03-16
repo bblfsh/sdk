@@ -5,47 +5,44 @@ import (
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
 )
+
+var _ transformer.CodeTransformer = Positioner{}
 
 // FillOffsetFromLineCol gets the original source code and its parsed form
 // as *Node and fills every Offset field using its Line and Column.
-func NewFillOffsetFromLineCol() *Positioner {
-	return &Positioner{method: fillOffsetFromLineCol}
+func NewFillOffsetFromLineCol() Positioner {
+	return Positioner{method: fillOffsetFromLineCol}
 }
 
 // FillLineColFromOffset gets the original source code and its parsed form
 // as *Node and fills every Line and Column field using its Offset.
-func NewFillLineColFromOffset() *Positioner {
-	return &Positioner{method: fillLineColFromOffset}
+func NewFillLineColFromOffset() Positioner {
+	return Positioner{method: fillLineColFromOffset}
 }
 
 type Positioner struct {
 	method func(*positionIndex, uast.Object) error
 }
 
-func (t *Positioner) Do(data string, n uast.Node) error {
-	idx := newPositionIndex([]byte(data))
-	iter := uast.NewOrderPathIter(uast.NewPath(n))
-	for {
-		p := iter.Next()
-		if p == nil {
-			break
-		}
-
-		n, ok := p.Node().(uast.Object)
+func (t Positioner) OnCode(code string) transformer.Transformer {
+	idx := newPositionIndex([]byte(code))
+	return transformer.TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
+		obj, ok := n.(uast.Object)
 		if !ok {
-			continue
+			return n, false, nil
 		}
-		if err := t.method(idx, n); err != nil {
-			return err
+		obj = obj.CloneObject()
+		if err := t.method(idx, obj); err != nil {
+			return n, false, err
 		}
 
-		if err := t.method(idx, n); err != nil {
-			return err
+		if err := t.method(idx, obj); err != nil {
+			return n, false, err
 		}
-	}
-
-	return nil
+		return obj, true, nil
+	})
 }
 
 func fillOffsetFromLineCol(idx *positionIndex, o uast.Object) error {
