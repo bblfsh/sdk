@@ -24,6 +24,7 @@ type FixturesCommand struct {
 	Endpoint  string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
 	ExtNative string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
 	ExtUast   string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
+	ExtProto  string `long:"extproto" short:"p" description:"File extenstion for proto message fiels"`
 	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
 	manifestCommand
@@ -87,9 +88,20 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 		return err
 	}
 
-	err = c.writeResult(filename, uast, c.ExtUast)
+	err = c.writeResult(filename, uast.String(), c.ExtUast)
 	if err != nil {
 		return err
+	}
+
+	if c.ExtProto != "" {
+		protoUast, err := uast.UAST.Marshal()
+		if err != nil {
+			return err
+		}
+		err = c.writeResult(filename, string(protoUast), c.ExtProto)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -119,7 +131,7 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 	return res.String(), nil
 }
 
-func (c *FixturesCommand) getUast(source string, filename string) (string, error) {
+func (c *FixturesCommand) getUast(source string, filename string) (*protocol.ParseResponse, error) {
 	req := &protocol.ParseRequest{
 		Language: c.Language,
 		Content:  source,
@@ -128,7 +140,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (string, error
 
 	res, err := c.cli.Parse(context.Background(), req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if res.Status != protocol.Ok {
@@ -140,7 +152,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (string, error
 		}
 	}
 
-	return res.String(), nil
+	return res, nil
 }
 
 func (c *FixturesCommand) writeResult(origName, content, extension string) error {
