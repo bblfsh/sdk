@@ -348,6 +348,8 @@ func Apply(root Node, apply func(n Node) (Node, bool)) (Node, bool) {
 
 /*
 
+// TODO: see transformer/legacy.go
+
 // ObjectToNode transform trees that are represented as nested JSON objects.
 // That is, an interface{} containing maps, slices, strings and integers. It
 // then converts from that structure to *Node.

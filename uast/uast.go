@@ -20,6 +20,13 @@ import (
 // Hash is a hash value.
 type Hash uint32
 
+const (
+	TypePosition = "ast:Position"
+	KeyPosOff    = "off"
+	KeyPosLine   = "line"
+	KeyPosCol    = "col"
+)
+
 // Position represents a position in a source code file.
 type Position struct {
 	// Offset is the position as an absolute byte offset. It is a 0-based
@@ -34,26 +41,27 @@ type Position struct {
 
 // AsPosition transforms a generic AST node to a Position object.
 func AsPosition(m Object) *Position {
-	off, ok1 := m["off"].(Int)
-	line, ok2 := m["line"].(Int)
-	col, ok3 := m["col"].(Int)
-	if ok1 || ok2 || ok3 {
-		return &Position{
-			Offset: uint32(off),
-			Line:   uint32(line),
-			Col:    uint32(col),
-		}
+	if m.Type() != TypePosition {
+		return nil
 	}
-	return nil
+	off, _ := m[KeyPosOff].(Int)
+	line, _ := m[KeyPosLine].(Int)
+	col, _ := m[KeyPosCol].(Int)
+	return &Position{
+		Offset: uint32(off),
+		Line:   uint32(line),
+		Col:    uint32(col),
+	}
 }
 
 // ToObject converts Position to a generic AST node.
 func (p Position) ToObject() Object {
 	// TODO: add struct fields and generate this via reflection
 	return Object{
-		"off":  Int(p.Offset),
-		"line": Int(p.Line),
-		"col":  Int(p.Col),
+		KeyType:    String(TypePosition),
+		KeyPosOff:  Int(p.Offset),
+		KeyPosLine: Int(p.Line),
+		KeyPosCol:  Int(p.Col),
 	}
 }
 
@@ -65,37 +73,6 @@ func RoleList(roles ...role.Role) List {
 		arr = append(arr, Int(r))
 	}
 	return arr
-}
-
-// IncludeFlag represents a set of fields to be included in a Hash or String.
-type IncludeFlag int64
-
-const (
-	// IncludeChildren includes all children of the node.
-	IncludeChildren IncludeFlag = 1
-	// IncludeAnnotations includes UAST annotations.
-	IncludeAnnotations = 2
-	// IncludePositions includes token positions.
-	IncludePositions = 4
-	// IncludeTokens includes token contents.
-	IncludeTokens = 8
-	// IncludeInternalType includes internal type.
-	IncludeInternalType = 16
-	// IncludeProperties includes properties.
-	IncludeProperties = 32
-	// IncludeOriginalAST includes all properties that are present
-	// in the original AST.
-	IncludeOriginalAST = IncludeChildren |
-		IncludePositions |
-		IncludeTokens |
-		IncludeInternalType |
-		IncludeProperties
-	// IncludeAll includes all fields.
-	IncludeAll = IncludeOriginalAST | IncludeAnnotations
-)
-
-func (f IncludeFlag) Is(of IncludeFlag) bool {
-	return f&of != 0
 }
 
 // Path represents a Node with its path in a tree. It is a slice with every

@@ -227,7 +227,7 @@ func NewNode() *Node {
 // String converts the *Node to a string using pretty printing.
 func (n *Node) String() string {
 	buf := bytes.NewBuffer(nil)
-	err := Pretty(n, buf, uast.IncludeAll)
+	err := Pretty(n, buf, IncludeAll)
 	if err != nil {
 		return "error"
 	}

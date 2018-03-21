@@ -1,8 +1,12 @@
 package transformer
 
 import (
+	"sort"
+
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
+
+const allowUnusedFields = false
 
 func noNode(n uast.Node) error {
 	if n == nil {
@@ -120,100 +124,133 @@ func (op opAnd) Construct(st *State, n uast.Node) (uast.Node, error) {
 	return n, nil
 }
 
+func Obj(ops map[string]Op) Op {
+	return Object(ops)
+}
+
+var _ Op = Object{}
+
 // Obj verifies that current node is an object and checks it with provided ops.
 // Reversal changes node type to object and applies a provided operations to it.
 // This operation will populate a list of unprocessed keys for current object,
 // so the transformation code can verify that transform was complete.
-func Obj(ops ...Op) Op {
-	return opObj{op: And(ops...)}
-}
-
-type opObj struct {
-	op Op
-}
-
-func (op opObj) Check(st *State, n uast.Node) (bool, error) {
-	if _, ok := n.(uast.Object); !ok {
-		return false, nil
-	}
-	return op.op.Check(st, n)
-}
-
-func (op opObj) Construct(st *State, n uast.Node) (uast.Node, error) {
-	if err := noNode(n); err != nil {
-		return nil, err
-	}
-	n = make(uast.Object)
-	return op.op.Construct(st, n)
-}
-
+// FIXME: update docs here
 // Out checks specific object field with an op.
 // Reversal creates a field in an object using provided op. It will also
 // remove the key from the list of unprocessed keys for this specific node.
-func Out(key string, op Op) Op {
-	return opOut{key: key, op: op}
+type Object map[string]Op
+
+func (o Object) Check(st *State, n uast.Node) (bool, error) {
+	return opObject{fields: o}.Check(st, n)
 }
 
-type opOut struct {
-	key string
-	op  Op
+func (o Object) Construct(st *State, n uast.Node) (uast.Node, error) {
+	return opObject{fields: o}.Construct(st, n)
 }
 
-func (op opOut) Check(st *State, n uast.Node) (bool, error) {
-	obj, ok := n.(uast.Object)
-	if !ok {
-		return false, ErrExpectedObject.New(n)
+func Part(vr string, o Object) Op {
+	return opObject{fields: o, other: vr}
+}
+
+type opObject struct {
+	fields map[string]Op
+	other  string // preserve other fields
+}
+
+func (o opObject) Keys() []string {
+	keys := make([]string, 0, len(o.fields))
+	for k := range o.fields {
+		keys = append(keys, k)
 	}
-	n, ok = obj[op.key]
+	sort.Strings(keys)
+	return keys
+}
+
+func (o opObject) Check(st *State, n uast.Node) (bool, error) {
+	cur, ok := n.(uast.Object)
 	if !ok {
 		return false, nil
 	}
-	ok, err := op.op.Check(st, n)
-	if err != nil {
-		err = errKey.Wrap(err, op.key)
+	for _, key := range o.Keys() {
+		n, ok = cur[key]
+		if !ok {
+			return false, nil
+		}
+		sub := o.fields[key]
+		ok, err := sub.Check(st, n)
+		if err != nil {
+			return false, errKey.Wrap(err, key)
+		} else if !ok {
+			return false, nil
+		}
 	}
-	return ok, err
+	if o.other == "" {
+		if !allowUnusedFields {
+			for k := range cur {
+				if _, ok := o.fields[k]; !ok {
+					return false, ErrUnusedField.New(k)
+				}
+			}
+		}
+		return true, nil
+	}
+	// TODO: consider throwing an error if a transform is defined as partial, but in fact it's not
+	left := make(uast.Object)
+	for k, v := range cur {
+		if _, ok := o.fields[k]; !ok {
+			left[k] = v
+		}
+	}
+	err := st.SetVar(o.other, left)
+	return err == nil, err
 }
 
-func (op opOut) Construct(st *State, n uast.Node) (uast.Node, error) {
-	obj, ok := n.(uast.Object)
+func (o opObject) Construct(st *State, old uast.Node) (uast.Node, error) {
+	if err := noNode(old); err != nil {
+		return nil, err
+	}
+	obj := make(uast.Object, len(o.fields))
+	for _, key := range o.Keys() {
+		sub := o.fields[key]
+		v, err := sub.Construct(st, nil)
+		if err != nil {
+			return obj, errKey.Wrap(err, key)
+		}
+		obj[key] = v
+	}
+	if o.other == "" {
+		return obj, nil
+	}
+	v, ok := st.GetVar(o.other)
 	if !ok {
-		return nil, ErrExpectedObject.New(n)
+		return obj, ErrVariableNotDefined.New(o.other)
 	}
-	v, err := op.op.Construct(st, nil)
-	if err != nil {
-		return nil, errKey.Wrap(err, op.key)
+	left, ok := v.(uast.Object)
+	if !ok {
+		return obj, ErrExpectedObject.New(v)
 	}
-	obj[op.key] = v
+	for k, v := range left {
+		obj[k] = v
+	}
 	return obj, nil
 }
 
-// Key is a shorthand for object field with multiple operations on it.
-func Key(key string, ops ...Op) Op {
-	return Out(key, And(ops...))
+// String asserts that value equals a specific string value.
+func String(val string) Op {
+	return Is(uast.String(val))
 }
 
-// Has asserts that field has a specific value.
-func Has(key string, val uast.Value) Op {
-	return Out(key, Is(val))
-}
-
-// HasType is a shorthand for checking type field.
-func HasType(typ string) Op {
-	return Has(uast.KeyType, uast.String(typ))
+// Int asserts that value equals a specific integer value.
+func Int(val int) Op {
+	return Is(uast.Int(val))
 }
 
 // TypedObj is a shorthand for an object with a specific type
 // and multiples operations on it.
-func TypedObj(typ string, ops ...Op) Op {
-	return Obj(append([]Op{
-		HasType(typ),
-	}, ops...)...)
-}
-
-// Save stores field into a variable.
-func Save(key string, vr string) Op {
-	return Out(key, Var(vr))
+func TypedObj(typ string, ops map[string]Op) Op {
+	obj := Object(ops)
+	obj[uast.KeyType] = String(typ)
+	return obj
 }
 
 // Arr checks if the current object is a list with a number of elements
