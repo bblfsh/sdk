@@ -45,9 +45,11 @@ var (
 	ErrExpectedValue      = errors.NewKind("expected value, got %T")
 	ErrUnhandledValue     = errors.NewKind("unhandled value: %v")
 	ErrUnexpectedNode     = errors.NewKind("expected node to be nil, got: %v")
+	ErrUnexpectedType     = errors.NewKind("expected node to be nil, got: %v")
 	ErrAmbiguousValue     = errors.NewKind("map has ambiguous value %v")
 	ErrFewSteps           = errors.NewKind("mapping should contains multiple steps")
 	ErrUnusedField        = errors.NewKind("field was not used: %v")
+	ErrDuplicateField     = errors.NewKind("duplicate field: %v")
 
 	errAnd  = errors.NewKind("op %d (%T)")
 	errKey  = errors.NewKind("key %q")

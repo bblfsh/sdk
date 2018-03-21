@@ -55,64 +55,64 @@ var opCases = []struct {
 	{
 		name: "obj has",
 		inp:  arrObjInt("v", 1),
-		src:  Object{"v": Int(1)},
-		dst:  Object{"v2": Int(2)},
+		src:  Obj{"v": Int(1)},
+		dst:  Obj{"v2": Int(2)},
 		exp:  arrObjInt("v2", 2),
 	},
 	{
 		name: "has nil",
 		inp:  arrObjVal("v", nil),
-		src:  Object{"v": Is(nil)},
-		dst:  Object{"v2": Int(2)},
+		src:  Obj{"v": Is(nil)},
+		dst:  Obj{"v2": Int(2)},
 		exp:  arrObjInt("v2", 2),
 	},
 	{
 		name: "obj save",
 		inp:  arrObjInt("v", 1),
-		src:  Object{"v": Var("x")},
-		dst:  Object{"v2": Var("x")},
+		src:  Obj{"v": Var("x")},
+		dst:  Obj{"v2": Var("x")},
 		exp:  arrObjInt("v2", 1),
 	},
 	{
 		name: "save nil",
 		inp:  arrObjVal("v", nil),
-		src:  Object{"v": Var("x")},
-		dst:  Object{"v2": Var("x")},
+		src:  Obj{"v": Var("x")},
+		dst:  Obj{"v2": Var("x")},
 		exp:  arrObjVal("v2", nil),
 	},
 	{
 		name: "arr save",
 		inp:  arrObjInt("v", 1),
-		src:  One(Object{"v": Var("x")}),
-		dst:  One(Object{"v2": Var("x")}),
+		src:  One(Obj{"v": Var("x")}),
+		dst:  One(Obj{"v2": Var("x")}),
 		exp:  arrObjInt("v2", 1),
 	},
 	{
 		name: "lookup save",
 		inp:  arrObjInt("v", 1),
-		src: Object{
+		src: Obj{
 			"v": LookupVar("x", map[u.Value]u.Value{
 				u.Int(1): u.String("A"),
 			}),
 		},
-		dst: Object{"v2": Var("x")},
+		dst: Obj{"v2": Var("x")},
 		exp: arrObjStr("v2", "A"),
 	},
 	{
 		name: "no var",
 		inp:  arrObjInt("v", 1),
-		src:  Object{"v": Int(1)},
-		dst:  Object{"v2": Var("x")},
+		src:  Obj{"v": Int(1)},
+		dst:  Obj{"v2": Var("x")},
 		err:  ErrVariableNotDefined,
 	},
 	{
 		name: "var redeclared",
 		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
-		src: Object{
+		src: Obj{
 			"v1": Var("x"),
 			"v2": Var("x"),
 		},
-		dst: Object{
+		dst: Obj{
 			"v3": Var("x"),
 			"v4": Var("x"),
 		},
@@ -121,11 +121,11 @@ var opCases = []struct {
 	{
 		name: "var val twice",
 		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(1)),
-		src: Object{
+		src: Obj{
 			"v1": Var("x"),
 			"v2": Var("x"),
 		},
-		dst: Object{
+		dst: Obj{
 			"v3": Var("x"),
 		},
 		exp: arrObjVal("v3", u.Int(1)),
@@ -133,10 +133,10 @@ var opCases = []struct {
 	{
 		name: "partial transform",
 		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
-		src: Part("other", Object{
+		src: Part("other", Obj{
 			"v1": Var("x"),
 		}),
-		dst: Part("other", Object{
+		dst: Part("other", Obj{
 			"v3": Var("x"),
 		}),
 		exp: arrObjVal2("v3", "v2", u.Int(1), u.Int(2)),
@@ -144,13 +144,73 @@ var opCases = []struct {
 	{
 		name: "unused field",
 		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
-		src: Object{
+		src: Obj{
 			"v1": Var("x"),
 		},
-		dst: Object{
+		dst: Obj{
 			"v3": Var("x"),
 		},
 		err: ErrUnusedField,
+	},
+	{
+		name: "op lookup 1",
+		inp:  arrObjVal("v1", u.Int(1)),
+		src: One(Obj{
+			"v1": Var("x"),
+		}),
+		dst: One(Obj{
+			"v1": Var("x"),
+			"v2": LookupOpVar("x", map[u.Value]Op{
+				u.Int(1): String("a"),
+				u.Int(2): String("b"),
+			}),
+		}),
+		exp: arrObjVal2("v1", "v2", u.Int(1), u.String("a")),
+	},
+	{
+		name: "op lookup 2",
+		inp:  arrObjVal("v1", u.Int(2)),
+		src: One(Obj{
+			"v1": Var("x"),
+		}),
+		dst: One(Obj{
+			"v1": Var("x"),
+			"v2": LookupOpVar("x", map[u.Value]Op{
+				u.Int(1): String("a"),
+				u.Int(2): String("b"),
+			}),
+		}),
+		exp: arrObjVal2("v1", "v2", u.Int(2), u.String("b")),
+	},
+	{
+		name: "op lookup unhandled",
+		inp:  arrObjVal("v1", u.Int(3)),
+		src: One(Obj{
+			"v1": Var("x"),
+		}),
+		dst: One(Obj{
+			"v1": Var("x"),
+			"v2": LookupOpVar("x", map[u.Value]Op{
+				u.Int(1): String("a"),
+				u.Int(2): String("b"),
+			}),
+		}),
+		err: ErrUnhandledValue,
+	},
+	{
+		name: "op lookup order",
+		inp:  arrObjVal2("v1", "v2", u.String("b"), u.Int(2)),
+		src: One(Fields{
+			{Name: "v2", Op: Var("x")},
+			{Name: "v1", Op: LookupOpVar("x", map[u.Value]Op{
+				u.Int(1): String("a"),
+				u.Int(2): String("b"),
+			})},
+		}),
+		dst: One(Obj{
+			"v1": Var("x"),
+		}),
+		exp: arrObjVal("v1", u.Int(2)),
 	},
 }
 

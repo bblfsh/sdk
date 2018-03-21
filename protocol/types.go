@@ -259,6 +259,8 @@ func ToNode(n uast.Node) (*Node, error) {
 
 func asNode(n uast.Node, field string) ([]*Node, error) {
 	switch n := n.(type) {
+	case nil:
+		return asNode(uast.NewNode(), "")
 	case uast.List:
 		var arr []*Node
 		for _, s := range n {

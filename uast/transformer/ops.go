@@ -124,11 +124,7 @@ func (op opAnd) Construct(st *State, n uast.Node) (uast.Node, error) {
 	return n, nil
 }
 
-func Obj(ops map[string]Op) Op {
-	return Object(ops)
-}
-
-var _ Op = Object{}
+var _ ObjectOp = Obj{}
 
 // Obj verifies that current node is an object and checks it with provided ops.
 // Reversal changes node type to object and applies a provided operations to it.
@@ -138,48 +134,145 @@ var _ Op = Object{}
 // Out checks specific object field with an op.
 // Reversal creates a field in an object using provided op. It will also
 // remove the key from the list of unprocessed keys for this specific node.
-type Object map[string]Op
+type Obj map[string]Op
 
-func (o Object) Check(st *State, n uast.Node) (bool, error) {
-	return opObject{fields: o}.Check(st, n)
+func (o Obj) Object() Object {
+	obj := Object{set: make(map[string]struct{})}
+	for k, op := range o {
+		obj.set[k] = struct{}{}
+		obj.fields = append(obj.fields, Field{Name: k, Op: op})
+	}
+	sort.Slice(obj.fields, func(i, j int) bool {
+		return obj.fields[i].Name < obj.fields[j].Name
+	})
+	return obj
+}
+func (o Obj) Check(st *State, n uast.Node) (bool, error) {
+	return o.Object().Check(st, n)
 }
 
-func (o Object) Construct(st *State, n uast.Node) (uast.Node, error) {
-	return opObject{fields: o}.Construct(st, n)
+func (o Obj) Construct(st *State, n uast.Node) (uast.Node, error) {
+	return o.Object().Construct(st, n)
 }
 
-func Part(vr string, o Object) Op {
-	return opObject{fields: o, other: vr}
+type ObjectOp interface {
+	Op
+	Object() Object
 }
 
-type opObject struct {
-	fields map[string]Op
+func Part(vr string, o ObjectOp) ObjectOp {
+	obj := o.Object()
+	obj.other = vr
+	return obj
+}
+
+func Pre(fields Fields, o ObjectOp) ObjectOp {
+	obj := o.Object()
+	if err := obj.setFields(fields...); err != nil {
+		panic(err)
+	}
+	arr := make([]Field, len(fields)+len(obj.fields))
+
+	i := copy(arr, fields)
+	copy(arr[i:], obj.fields)
+
+	obj.fields = arr
+	return obj
+}
+
+func Post(o ObjectOp, fields Fields) ObjectOp {
+	obj := o.Object()
+	if err := obj.setFields(fields...); err != nil {
+		panic(err)
+	}
+	arr := make([]Field, len(fields)+len(obj.fields))
+
+	i := copy(arr, obj.fields)
+	copy(arr[i:], fields)
+
+	obj.fields = arr
+	return obj
+}
+
+var _ ObjectOp = Fields{}
+
+type Fields []Field
+
+func (o Fields) Object() Object {
+	obj := Object{fields: o, set: make(map[string]struct{})}
+	err := obj.setFields(obj.fields...)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+func (o Fields) Check(st *State, n uast.Node) (bool, error) {
+	return o.Object().Check(st, n)
+}
+
+func (o Fields) Construct(st *State, n uast.Node) (uast.Node, error) {
+	return o.Object().Construct(st, n)
+}
+
+type Field struct {
+	Name string
+	Op   Op
+}
+
+type Object struct {
+	fields []Field
+	set    map[string]struct{}
 	other  string // preserve other fields
 }
 
-func (o opObject) Keys() []string {
-	keys := make([]string, 0, len(o.fields))
-	for k := range o.fields {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
+func (o Object) Object() Object {
+	return o
 }
-
-func (o opObject) Check(st *State, n uast.Node) (bool, error) {
+func (o Object) GetField(k string) (Op, bool) {
+	if _, ok := o.set[k]; !ok {
+		return nil, false
+	}
+	for _, f := range o.fields {
+		if f.Name == k {
+			return f.Op, true
+		}
+	}
+	return nil, false
+}
+func (o Object) SetField(k string, v Op) {
+	if _, ok := o.set[k]; ok {
+		for i, f := range o.fields {
+			if f.Name == k {
+				o.fields[i].Op = v
+				return
+			}
+		}
+	}
+	o.set[k] = struct{}{}
+	o.fields = append(o.fields, Field{Name: k, Op: v})
+}
+func (o *Object) setFields(fields ...Field) error {
+	for _, f := range fields {
+		if _, ok := o.set[f.Name]; ok {
+			return ErrDuplicateField.New(f.Name)
+		}
+		o.set[f.Name] = struct{}{}
+	}
+	return nil
+}
+func (o Object) Check(st *State, n uast.Node) (bool, error) {
 	cur, ok := n.(uast.Object)
 	if !ok {
 		return false, nil
 	}
-	for _, key := range o.Keys() {
-		n, ok = cur[key]
+	for _, f := range o.fields {
+		n, ok = cur[f.Name]
 		if !ok {
 			return false, nil
 		}
-		sub := o.fields[key]
-		ok, err := sub.Check(st, n)
+		ok, err := f.Op.Check(st, n)
 		if err != nil {
-			return false, errKey.Wrap(err, key)
+			return false, errKey.Wrap(err, f.Name)
 		} else if !ok {
 			return false, nil
 		}
@@ -187,7 +280,7 @@ func (o opObject) Check(st *State, n uast.Node) (bool, error) {
 	if o.other == "" {
 		if !allowUnusedFields {
 			for k := range cur {
-				if _, ok := o.fields[k]; !ok {
+				if _, ok := o.set[k]; !ok {
 					return false, ErrUnusedField.New(k)
 				}
 			}
@@ -197,7 +290,7 @@ func (o opObject) Check(st *State, n uast.Node) (bool, error) {
 	// TODO: consider throwing an error if a transform is defined as partial, but in fact it's not
 	left := make(uast.Object)
 	for k, v := range cur {
-		if _, ok := o.fields[k]; !ok {
+		if _, ok := o.set[k]; !ok {
 			left[k] = v
 		}
 	}
@@ -205,18 +298,17 @@ func (o opObject) Check(st *State, n uast.Node) (bool, error) {
 	return err == nil, err
 }
 
-func (o opObject) Construct(st *State, old uast.Node) (uast.Node, error) {
+func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
 	if err := noNode(old); err != nil {
 		return nil, err
 	}
 	obj := make(uast.Object, len(o.fields))
-	for _, key := range o.Keys() {
-		sub := o.fields[key]
-		v, err := sub.Construct(st, nil)
+	for _, f := range o.fields {
+		v, err := f.Op.Construct(st, nil)
 		if err != nil {
-			return obj, errKey.Wrap(err, key)
+			return obj, errKey.Wrap(err, f.Name)
 		}
-		obj[key] = v
+		obj[f.Name] = v
 	}
 	if o.other == "" {
 		return obj, nil
@@ -248,7 +340,7 @@ func Int(val int) Op {
 // TypedObj is a shorthand for an object with a specific type
 // and multiples operations on it.
 func TypedObj(typ string, ops map[string]Op) Op {
-	obj := Object(ops)
+	obj := Obj(ops)
 	obj[uast.KeyType] = String(typ)
 	return obj
 }
@@ -356,4 +448,45 @@ func (op opLookup) Construct(st *State, n uast.Node) (uast.Node, error) {
 // LookupVar is a shorthand to lookup value stored in variable.
 func LookupVar(vr string, m map[uast.Value]uast.Value) Op {
 	return Lookup(Var(vr), m)
+}
+
+func LookupOpVar(vr string, cases map[uast.Value]Op) Op {
+	return opLookupOp{vr: vr, cases: cases}
+}
+
+type opLookupOp struct {
+	vr    string
+	cases map[uast.Value]Op
+}
+
+func (op opLookupOp) eval(st *State, n uast.Node) (Op, error) {
+	vn, ok := st.GetVar(op.vr)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.vr)
+	}
+	v, ok := vn.(uast.Value)
+	if !ok {
+		return nil, ErrExpectedValue.New(vn)
+	}
+	sub, ok := op.cases[v]
+	if !ok {
+		return nil, ErrUnhandledValue.New(v)
+	}
+	return sub, nil
+}
+
+func (op opLookupOp) Check(st *State, n uast.Node) (bool, error) {
+	sub, err := op.eval(st, n)
+	if err != nil {
+		return false, err
+	}
+	return sub.Check(st, n)
+}
+
+func (op opLookupOp) Construct(st *State, n uast.Node) (uast.Node, error) {
+	sub, err := op.eval(st, n)
+	if err != nil {
+		return nil, err
+	}
+	return sub.Construct(st, n)
 }

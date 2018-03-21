@@ -25,9 +25,9 @@ func (n ObjectToNode) Do(root uast.Node) (uast.Node, error) {
 	return n.transformer().Do(root)
 }
 func (n ObjectToNode) transformer() Transformer {
-	ast := make(Object)
+	ast := make(Obj)
 	// ->
-	norm := make(Object)
+	norm := make(Obj)
 
 	if n.InternalTypeKey != "" {
 		const vr = "itype"

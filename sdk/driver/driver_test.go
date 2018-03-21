@@ -30,19 +30,19 @@ func TestDriverParserParse(t *testing.T) {
 	})
 
 	require.NotNil(r)
-	require.Equal(len(r.Errors), 0)
-	require.Equal(r.Status, protocol.Ok)
-	require.Equal(r.Language, "fixture")
-	require.Equal(r.Filename, "foo.f")
-	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
-	require.Equal(r.UAST.String(), " "+
+	require.Empty(r.Errors, "%v", r.Errors)
+	require.Equal(protocol.Ok, r.Status)
+	require.Equal("fixture", r.Language)
+	require.Equal("foo.f", r.Filename)
+	require.True(r.Elapsed.Nanoseconds() > 0)
+	require.Equal(" "+
 		"{\n"+
 		".  Roles: Unannotated\n"+
 		".  Properties: {\n"+
 		".  .  key: val\n"+
 		".  }\n"+
 		"}\n",
-	)
+		r.UAST.String())
 
 	err = d.Stop()
 	require.NoError(err)
