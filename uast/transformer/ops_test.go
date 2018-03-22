@@ -212,6 +212,34 @@ var opCases = []struct {
 		}),
 		exp: arrObjVal("v1", u.Int(2)),
 	},
+	{
+		name: "append",
+		inp: func() u.Node {
+			return u.Object{
+				"t": u.Int(1),
+			}
+		},
+		src: Obj{
+			"t": Var("typ"),
+		},
+		dst: Pre(Fields{
+			{Name: "t", Op: Var("typ")},
+		}, Obj{
+			"v2": Append(LookupOpVar("typ", map[u.Value]Op{
+				u.Int(1): Arr(String("a")),
+				u.Int(2): Arr(String("b")),
+			}), Arr(String("c"), String("d"))),
+		}),
+		exp: func() u.Node {
+			return u.Object{
+				"t": u.Int(1),
+				"v2": u.List{
+					u.String("a"),
+					u.String("c"), u.String("d"),
+				},
+			}
+		},
+	},
 }
 
 func TestOps(t *testing.T) {

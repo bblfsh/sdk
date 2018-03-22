@@ -11,12 +11,16 @@ func SavePosOffset(vr string) Op {
 	})
 }
 
-func Roles(roles ...role.Role) Op {
+func Roles(roles ...role.Role) ArrayOp {
 	arr := make([]Op, 0, len(roles))
 	for _, r := range roles {
 		arr = append(arr, Is(uast.Int(r)))
 	}
 	return Arr(arr...)
+}
+
+func AppendRoles(old Op, roles ...role.Role) Op {
+	return Append(old, Roles(roles...))
 }
 
 func ASTMap(name string, native, norm Op) Mapping {

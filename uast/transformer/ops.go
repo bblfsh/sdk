@@ -345,16 +345,24 @@ func TypedObj(typ string, ops map[string]Op) Op {
 	return obj
 }
 
+type ArrayOp interface {
+	Op
+	arr() opArr
+}
+
 // Arr checks if the current object is a list with a number of elements
 // matching a number of ops, and applies ops to corresponding elements.
 // Reversal creates a list of the size that matches the number of ops
 // and creates each element with the corresponding op.
-func Arr(ops ...Op) Op {
+func Arr(ops ...Op) ArrayOp {
 	return opArr(ops)
 }
 
 type opArr []Op
 
+func (op opArr) arr() opArr {
+	return op
+}
 func (op opArr) Check(st *State, n uast.Node) (bool, error) {
 	arr, ok := n.(uast.List)
 	if !ok {
@@ -489,4 +497,77 @@ func (op opLookupOp) Construct(st *State, n uast.Node) (uast.Node, error) {
 		return nil, err
 	}
 	return sub.Construct(st, n)
+}
+
+func Append(to Op, items ...ArrayOp) Op {
+	if len(items) == 0 {
+		return to
+	}
+	arrs := make([]opArr, 0, len(items))
+	for _, arr := range items {
+		arrs = append(arrs, arr.arr())
+	}
+	return opAppend{op: to, arrs: arrs}
+}
+
+type opAppend struct {
+	op   Op
+	arrs []opArr
+}
+
+func (op opAppend) Check(st *State, n uast.Node) (bool, error) {
+	arr, ok := n.(uast.List)
+	if !ok {
+		return false, nil
+	}
+	tail := 0
+	for _, sub := range op.arrs {
+		tail += len(sub)
+	}
+	if tail > len(arr) {
+		return false, nil
+	}
+	tail = len(arr) - tail // recalculate as index
+	// split into array part that will go to sub op,
+	// and the part we will use for sub-array checks
+	sub, arrs := arr[:tail], arr[tail:]
+	if ok, err := op.op.Check(st, sub); err != nil {
+		return false, err
+	} else if !ok {
+		return false, nil
+	}
+	for i, sub := range op.arrs {
+		cur := arrs[:len(sub)]
+		arrs = arrs[len(sub):]
+		if ok, err := sub.Check(st, cur); err != nil {
+			return false, errElem.Wrap(err, i, sub)
+		} else if !ok {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (op opAppend) Construct(st *State, n uast.Node) (uast.Node, error) {
+	n, err := op.op.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	arr, ok := n.(uast.List)
+	if !ok {
+		return nil, ErrExpectedList.New(n)
+	}
+	arr = append(uast.List{}, arr...)
+	for i, sub := range op.arrs {
+		nn, err := sub.Construct(st, nil)
+		if err != nil {
+			return nil, errElem.Wrap(err, i, sub)
+		}
+		arr2, ok := nn.(uast.List)
+		if !ok {
+			return nil, errElem.Wrap(ErrExpectedList.New(n), i, sub)
+		}
+		arr = append(arr, arr2...)
+	}
+	return arr, nil
 }

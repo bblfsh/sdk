@@ -22,6 +22,7 @@ type Hash uint32
 
 const (
 	TypePosition = "ast:Position"
+	TypeOperator = "ast:Operator"
 	KeyPosOff    = "off"
 	KeyPosLine   = "line"
 	KeyPosCol    = "col"

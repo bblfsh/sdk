@@ -42,6 +42,7 @@ var (
 	ErrVariableRedeclared = errors.NewKind("variable %q redeclared (%v vs %v)")
 	ErrVariableNotDefined = errors.NewKind("variable %q is not defined")
 	ErrExpectedObject     = errors.NewKind("expected object, got %T")
+	ErrExpectedList       = errors.NewKind("expected list, got %T")
 	ErrExpectedValue      = errors.NewKind("expected value, got %T")
 	ErrUnhandledValue     = errors.NewKind("unhandled value: %v")
 	ErrUnexpectedNode     = errors.NewKind("expected node to be nil, got: %v")
