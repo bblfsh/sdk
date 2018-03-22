@@ -585,3 +585,61 @@ func (op opAppend) Construct(st *State, n uast.Node) (uast.Node, error) {
 	}
 	return arr, nil
 }
+
+type ValueFunc func(uast.Value) (uast.Value, error)
+
+func ValueConv(on Op, conv, rev ValueFunc) Op {
+	return opValueConv{op: on, conv: conv, rev: rev}
+}
+
+type StringFunc func(string) (string, error)
+
+func StringConv(on Op, conv, rev StringFunc) Op {
+	apply := func(fnc StringFunc) ValueFunc {
+		return func(v uast.Value) (uast.Value, error) {
+			sv, ok := v.(uast.String)
+			if !ok {
+				return nil, ErrUnexpectedType.New(v)
+			}
+			s, err := fnc(string(sv))
+			if err != nil {
+				return nil, err
+			}
+			return uast.String(s), nil
+		}
+	}
+	return ValueConv(on, apply(conv), apply(rev))
+}
+
+type opValueConv struct {
+	op        Op
+	conv, rev ValueFunc
+}
+
+func (op opValueConv) Check(st *State, n uast.Node) (bool, error) {
+	v, ok := n.(uast.Value)
+	if !ok {
+		return false, ErrExpectedValue.New(n)
+	}
+	nv, err := op.conv(v)
+	if err != nil {
+		return false, err
+	}
+	return op.op.Check(st, nv)
+}
+
+func (op opValueConv) Construct(st *State, n uast.Node) (uast.Node, error) {
+	n, err := op.op.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	v, ok := n.(uast.Value)
+	if !ok {
+		return nil, ErrExpectedValue.New(n)
+	}
+	nv, err := op.rev(v)
+	if err != nil {
+		return nil, err
+	}
+	return nv, nil
+}
