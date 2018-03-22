@@ -126,14 +126,8 @@ func (op opAnd) Construct(st *State, n uast.Node) (uast.Node, error) {
 
 var _ ObjectOp = Obj{}
 
-// Obj verifies that current node is an object and checks it with provided ops.
-// Reversal changes node type to object and applies a provided operations to it.
-// This operation will populate a list of unprocessed keys for current object,
-// so the transformation code can verify that transform was complete.
-// FIXME: update docs here
-// Out checks specific object field with an op.
-// Reversal creates a field in an object using provided op. It will also
-// remove the key from the list of unprocessed keys for this specific node.
+// Obj is a helper for defining a transformation on an object fields. See Object.
+// Operations will be sorted by the field name before execution.
 type Obj map[string]Op
 
 func (o Obj) Object() Object {
@@ -155,17 +149,21 @@ func (o Obj) Construct(st *State, n uast.Node) (uast.Node, error) {
 	return o.Object().Construct(st, n)
 }
 
+// ObjectOp is an operation that is executed on an object. See Object.
 type ObjectOp interface {
 	Op
 	Object() Object
 }
 
+// Part defines a partial transformation of an object.
+// All unused fields will be stored into variable with a specified name.
 func Part(vr string, o ObjectOp) ObjectOp {
 	obj := o.Object()
 	obj.other = vr
 	return obj
 }
 
+// Pre will execute provided field operation before executing the rest of operations for an object.
 func Pre(fields Fields, o ObjectOp) ObjectOp {
 	obj := o.Object()
 	if err := obj.setFields(fields...); err != nil {
@@ -180,6 +178,7 @@ func Pre(fields Fields, o ObjectOp) ObjectOp {
 	return obj
 }
 
+// Post will execute provided field operation after executing the rest of operations for an object.
 func Post(o ObjectOp, fields Fields) ObjectOp {
 	obj := o.Object()
 	if err := obj.setFields(fields...); err != nil {
@@ -196,6 +195,7 @@ func Post(o ObjectOp, fields Fields) ObjectOp {
 
 var _ ObjectOp = Fields{}
 
+// Fields is a helper for multiple operations on object fields with a specific execution order. See Object.
 type Fields []Field
 
 func (o Fields) Object() Object {
@@ -214,11 +214,18 @@ func (o Fields) Construct(st *State, n uast.Node) (uast.Node, error) {
 	return o.Object().Construct(st, n)
 }
 
+// Field is an operation on a specific field of an object.
 type Field struct {
-	Name string
-	Op   Op
+	Name string // name of the field
+	Op   Op     // operation used to check/construct the field value
 }
 
+// Object verifies that current node is an object and checks its fields with a
+// defined operations. If field does not exist, object will be skipped.
+// Reversal changes node type to object and creates all fields with a specified
+// operations.
+// Implementation will track a list of unprocessed object keys and will return an
+// error in case the field was not used. To preserve all unprocessed keys use Part.
 type Object struct {
 	fields []Field
 	set    map[string]struct{}
@@ -345,6 +352,7 @@ func TypedObj(typ string, ops map[string]Op) Op {
 	return obj
 }
 
+// ArrayOp is a subset of operations that operates on an arrays with a pre-defined size. See Arr.
 type ArrayOp interface {
 	Op
 	arr() opArr
@@ -458,6 +466,10 @@ func LookupVar(vr string, m map[uast.Value]uast.Value) Op {
 	return Lookup(Var(vr), m)
 }
 
+// LookupOpVar is a conditional branch that takes a value of a variable and
+// checks the map to find an appropriate operation to apply to current node.
+// Note that the variable must be defined prior to this transformation, thus
+// You might need to use Pre to define a variable used in this condition.
 func LookupOpVar(vr string, cases map[uast.Value]Op) Op {
 	return opLookupOp{vr: vr, cases: cases}
 }
@@ -499,6 +511,8 @@ func (op opLookupOp) Construct(st *State, n uast.Node) (uast.Node, error) {
 	return sub.Construct(st, n)
 }
 
+// Append asserts that a node is a List and checks that it contains a defined set of nodes at the end.
+// Reversal uses sub-operation to create a List and appends provided element lists at the end of it.
 func Append(to Op, items ...ArrayOp) Op {
 	if len(items) == 0 {
 		return to
