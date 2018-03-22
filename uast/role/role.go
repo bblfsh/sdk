@@ -1,6 +1,8 @@
 package role
 
-import "strings"
+import (
+	"strings"
+)
 
 //go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/uast/role
 
@@ -13,16 +15,22 @@ type Role int16
 
 // FromString converts a string representation of the Role to its numeric value.
 func FromString(s string) Role {
-	i := strings.Index(_Role_name, s)
-	if i < 0 {
-		return Invalid
-	}
-	for ind, pos := range _Role_index {
-		if i == int(pos) {
-			return Role(ind)
+	names := _Role_name
+	off := 0
+	for {
+		i := strings.Index(names, s)
+		if i < 0 {
+			return Invalid
 		}
+		for ind, pos := range _Role_index {
+			if off+i == int(pos) {
+				return Role(ind)
+			}
+		}
+		dn := i + len(s)
+		off += dn
+		names = names[dn:]
 	}
-	return Invalid
 }
 
 const (
