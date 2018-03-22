@@ -44,7 +44,7 @@ var (
 	ErrExpectedObject     = errors.NewKind("expected object, got %T")
 	ErrExpectedList       = errors.NewKind("expected list, got %T")
 	ErrExpectedValue      = errors.NewKind("expected value, got %T")
-	ErrUnhandledValue     = errors.NewKind("unhandled value: %v")
+	ErrUnhandledValueIn   = errors.NewKind("unhandled value: %v in %v")
 	ErrUnexpectedNode     = errors.NewKind("expected node to be nil, got: %v")
 	ErrUnexpectedType     = errors.NewKind("expected node to be nil, got: %v")
 	ErrAmbiguousValue     = errors.NewKind("map has ambiguous value %v")

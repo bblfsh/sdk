@@ -437,7 +437,7 @@ func (op opLookup) Check(st *State, n uast.Node) (bool, error) {
 	}
 	vn, ok := op.fwd[v]
 	if !ok {
-		return false, ErrUnhandledValue.New(v)
+		return false, ErrUnhandledValueIn.New(v, op.fwd)
 	}
 	return op.op.Check(st, vn)
 }
@@ -456,7 +456,7 @@ func (op opLookup) Construct(st *State, n uast.Node) (uast.Node, error) {
 	}
 	vn, ok := op.rev[v]
 	if !ok {
-		return nil, ErrUnhandledValue.New(v)
+		return nil, ErrUnhandledValueIn.New(v, op.rev)
 	}
 	return vn, nil
 }
@@ -490,7 +490,7 @@ func (op opLookupOp) eval(st *State, n uast.Node) (Op, error) {
 	}
 	sub, ok := op.cases[v]
 	if !ok {
-		return nil, ErrUnhandledValue.New(v)
+		return nil, ErrUnhandledValueIn.New(v, op.cases)
 	}
 	return sub, nil
 }

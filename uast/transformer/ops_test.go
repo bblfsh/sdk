@@ -195,7 +195,7 @@ var opCases = []struct {
 				u.Int(2): String("b"),
 			}),
 		}),
-		err: ErrUnhandledValue,
+		err: ErrUnhandledValueIn,
 	},
 	{
 		name: "op lookup order",

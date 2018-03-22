@@ -161,9 +161,8 @@ func (m Object) Roles() []role.Role {
 	arr, _ := m[KeyRoles].(List)
 	out := make([]role.Role, 0, len(arr))
 	for _, v := range arr {
-		if r, ok := v.(Int); ok {
-			// TODO: use String, and define string lookup on Role
-			out = append(out, role.Role(r))
+		if r, ok := v.(String); ok {
+			out = append(out, role.FromString(string(r)))
 		}
 	}
 	return out

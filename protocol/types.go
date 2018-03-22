@@ -290,8 +290,8 @@ func asNode(n uast.Node, field string) ([]*Node, error) {
 				// already processed
 				continue
 			}
-			if v, ok := v.(uast.Value); ok {
-				nd.Properties[k] = fmt.Sprint(v.Native())
+			if nv, ok := v.(uast.Value); ok {
+				nd.Properties[k] = fmt.Sprint(nv.Native())
 			} else {
 				sn, err := asNode(v, k)
 				if err != nil {

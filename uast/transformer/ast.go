@@ -16,7 +16,7 @@ func SavePosOffset(vr string) Op {
 func Roles(roles ...role.Role) ArrayOp {
 	arr := make([]Op, 0, len(roles))
 	for _, r := range roles {
-		arr = append(arr, Is(uast.Int(r)))
+		arr = append(arr, Is(uast.String(r.String())))
 	}
 	return Arr(arr...)
 }
