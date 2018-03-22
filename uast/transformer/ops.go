@@ -246,7 +246,7 @@ func (o Object) GetField(k string) (Op, bool) {
 	}
 	return nil, false
 }
-func (o Object) SetField(k string, v Op) {
+func (o *Object) SetField(k string, v Op) {
 	if _, ok := o.set[k]; ok {
 		for i, f := range o.fields {
 			if f.Name == k {

@@ -19,10 +19,24 @@ type ObjectToNode struct {
 	// EndOffsetKey is the key used in the native AST to indicate the absolute offset,
 	// from the file start position, where the code mapped to the AST node ends.
 	EndOffsetKey string
+	// TopLevelIsRootNode tells ToNode where to find the root node of
+	// the AST.  If true, the root will be its input argument. If false,
+	// the root will be the value of the only key present in its input
+	// argument.
+	TopLevelIsRootNode bool
 }
 
 func (n ObjectToNode) Do(root uast.Node) (uast.Node, error) {
-	return n.transformer().Do(root)
+	root, err := n.transformer().Do(root)
+	if err != nil {
+		return nil, err
+	}
+	if obj, ok := root.(uast.Object); ok && !n.TopLevelIsRootNode {
+		for _, v := range obj {
+			root = v
+		}
+	}
+	return root, nil
 }
 func (n ObjectToNode) transformer() Transformer {
 	ast := make(Obj)
