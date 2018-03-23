@@ -319,7 +319,8 @@ func Apply(root Node, apply func(n Node) (Node, bool)) (Node, bool) {
 	switch n := root.(type) {
 	case Object:
 		var nn Object
-		for k, v := range n {
+		for _, k := range n.Keys() {
+			v := n[k]
 			if nv, ok := Apply(v, apply); ok {
 				if nn == nil {
 					nn = n.CloneObject()

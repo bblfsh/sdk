@@ -333,6 +333,29 @@ var opCases = []struct {
 			}
 		},
 	},
+	{
+		name: "roles field nil",
+		inp: func() u.Node {
+			return u.Object{
+				u.KeyType:  u.String("node"),
+				u.KeyRoles: nil,
+			}
+		},
+		src: Fields{
+			{Name: u.KeyType, Op: String("node")},
+			RolesField("roles"),
+		},
+		dst: Fields{
+			{Name: u.KeyType, Op: String("node")},
+			RolesField("roles", 1),
+		},
+		exp: func() u.Node {
+			return u.Object{
+				u.KeyType:  u.String("node"),
+				u.KeyRoles: u.RoleList(1),
+			}
+		},
+	},
 }
 
 func TestOps(t *testing.T) {

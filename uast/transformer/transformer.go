@@ -53,9 +53,14 @@ var (
 	ErrUnusedField        = errors.NewKind("field was not used: %v")
 	ErrDuplicateField     = errors.NewKind("duplicate field: %v")
 
-	errAnd  = errors.NewKind("op %d (%T)")
-	errKey  = errors.NewKind("key %q")
-	errElem = errors.NewKind("elem %d (%T)")
+	errAnd     = errors.NewKind("op %d (%T)")
+	errKey     = errors.NewKind("key %q")
+	errElem    = errors.NewKind("elem %d (%T)")
+	errAppend  = errors.NewKind("append")
+	errMapping = errors.NewKind("mapping %q")
+
+	errCheck     = errors.NewKind("check")
+	errConstruct = errors.NewKind("construct")
 )
 
 func Map(name string, src, dst Op) Mapping {
@@ -92,14 +97,14 @@ func applyMap(src, dst Op, n uast.Node) (uast.Node, error) {
 	nn, ok := uast.Apply(n, func(n uast.Node) (uast.Node, bool) {
 		st := NewState()
 		if ok, err := src.Check(st, n); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, errCheck.Wrap(err))
 			return n, false
 		} else if !ok {
 			return n, false
 		}
 		nn, err := dst.Construct(st, nil)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, errConstruct.Wrap(err))
 			return n, false
 		}
 		return nn, true
@@ -124,7 +129,7 @@ func (m Mapping) Do(n uast.Node) (uast.Node, error) {
 		src, dst := steps[0], steps[1]
 		n, err = applyMap(src.Op, dst.Op, n)
 		if err != nil {
-			return n, err
+			return n, errMapping.Wrap(err, m.Name)
 		}
 		steps = steps[1:]
 	}
@@ -184,6 +189,14 @@ func (st *State) ApplyFrom(st2 *State) {
 func (st *State) GetVar(name string) (uast.Node, bool) {
 	n, ok := st.vars[name]
 	return n, ok
+}
+
+func (st *State) MustGetVar(name string) (uast.Node, error) {
+	n, ok := st.GetVar(name)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(name)
+	}
+	return n, nil
 }
 
 func (st *State) SetVar(name string, val uast.Node) error {

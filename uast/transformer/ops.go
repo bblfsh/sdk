@@ -1,18 +1,29 @@
 package transformer
 
 import (
+	"fmt"
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
-const allowUnusedFields = false
+const (
+	allowUnusedFields  = false
+	errorOnFilterCheck = false
+)
 
 func noNode(n uast.Node) error {
 	if n == nil {
 		return nil
 	}
 	return ErrUnexpectedNode.New(n)
+}
+
+func filtered(format string, args ...interface{}) (bool, error) {
+	if !errorOnFilterCheck {
+		return false, nil
+	}
+	return false, fmt.Errorf(format, args...)
 }
 
 // Is checks if the current node is a primitive and is equal to a given value.
@@ -59,9 +70,9 @@ func (op opVar) Construct(st *State, n uast.Node) (uast.Node, error) {
 	if err := noNode(n); err != nil {
 		return nil, err
 	}
-	val, ok := st.GetVar(op.name)
-	if !ok {
-		return nil, ErrVariableNotDefined.New(op.name)
+	val, err := st.MustGetVar(op.name)
+	if err != nil {
+		return nil, err
 	}
 	// TODO: should we clone it?
 	return val, nil
@@ -259,6 +270,9 @@ func (o *Object) SetFieldObj(f2 Field) {
 			}
 		}
 	}
+	if o.set == nil {
+		o.set = make(map[string]struct{})
+	}
 	o.set[f2.Name] = struct{}{}
 	o.fields = append(o.fields, f2)
 }
@@ -274,7 +288,7 @@ func (o *Object) setFields(fields ...Field) error {
 func (o Object) Check(st *State, n uast.Node) (bool, error) {
 	cur, ok := n.(uast.Object)
 	if !ok {
-		return false, nil
+		return filtered("%+v is not an object\n%+v", n, o)
 	}
 	for _, f := range o.fields {
 		n, ok := cur[f.Name]
@@ -287,7 +301,7 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 			if f.Optional != "" {
 				continue
 			}
-			return false, nil
+			return filtered("field %+v is missing in %+v\n%+v", f, n, o)
 		}
 		ok, err := f.Op.Check(st, n)
 		if err != nil {
@@ -324,9 +338,9 @@ func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
 	obj := make(uast.Object, len(o.fields))
 	for _, f := range o.fields {
 		if f.Optional != "" {
-			on, ok := st.GetVar(f.Optional)
-			if !ok {
-				return obj, errKey.Wrap(ErrVariableNotDefined.New(f.Optional), f.Name)
+			on, err := st.MustGetVar(f.Optional)
+			if err != nil {
+				return obj, errKey.Wrap(err, f.Name)
 			}
 			exists, ok := on.(uast.Bool)
 			if !ok {
@@ -345,9 +359,9 @@ func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
 	if o.other == "" {
 		return obj, nil
 	}
-	v, ok := st.GetVar(o.other)
-	if !ok {
-		return obj, ErrVariableNotDefined.New(o.other)
+	v, err := st.MustGetVar(o.other)
+	if err != nil {
+		return obj, err
 	}
 	left, ok := v.(uast.Object)
 	if !ok {
@@ -399,9 +413,9 @@ func (op opArr) arr() opArr {
 func (op opArr) Check(st *State, n uast.Node) (bool, error) {
 	arr, ok := n.(uast.List)
 	if !ok {
-		return false, nil
+		return filtered("%+v is not a list, %+v", n, op)
 	} else if len(arr) != len(op) {
-		return false, nil
+		return filtered("%+v has wrong len for %+v", n, op)
 	}
 	for i, sub := range op {
 		if ok, err := sub.Check(st, arr[i]); err != nil {
@@ -505,9 +519,9 @@ type opLookupOp struct {
 }
 
 func (op opLookupOp) eval(st *State, n uast.Node) (Op, error) {
-	vn, ok := st.GetVar(op.vr)
-	if !ok {
-		return nil, ErrVariableNotDefined.New(op.vr)
+	vn, err := st.MustGetVar(op.vr)
+	if err != nil {
+		return nil, err
 	}
 	v, ok := vn.(uast.Value)
 	if !ok {
@@ -557,14 +571,14 @@ type opAppend struct {
 func (op opAppend) Check(st *State, n uast.Node) (bool, error) {
 	arr, ok := n.(uast.List)
 	if !ok {
-		return false, nil
+		return filtered("%+v is not a list, %+v", n, op)
 	}
 	tail := 0
 	for _, sub := range op.arrs {
 		tail += len(sub)
 	}
 	if tail > len(arr) {
-		return false, nil
+		return filtered("array %+v is too small for %+v", n, op)
 	}
 	tail = len(arr) - tail // recalculate as index
 	// split into array part that will go to sub op,
@@ -574,7 +588,7 @@ func (op opAppend) Check(st *State, n uast.Node) (bool, error) {
 		sub = nil
 	}
 	if ok, err := op.op.Check(st, sub); err != nil {
-		return false, err
+		return false, errAppend.Wrap(err)
 	} else if !ok {
 		return false, nil
 	}
@@ -707,9 +721,9 @@ func (op opIf) Check(st *State, n uast.Node) (bool, error) {
 }
 
 func (op opIf) Construct(st *State, n uast.Node) (uast.Node, error) {
-	vn, ok := st.GetVar(op.cond)
-	if !ok {
-		return nil, ErrVariableNotDefined.New(op.cond)
+	vn, err := st.MustGetVar(op.cond)
+	if err != nil {
+		return nil, err
 	}
 	cond, ok := vn.(uast.Bool)
 	if !ok {
@@ -735,7 +749,7 @@ type opEach struct {
 func (op opEach) Check(st *State, n uast.Node) (bool, error) {
 	arr, ok := n.(uast.List)
 	if !ok && n != nil {
-		return false, nil
+		return filtered("%+v is not a list, %+v", n, op)
 	}
 	var subs []*State
 	if arr != nil {
@@ -791,14 +805,14 @@ type opNotEmpty struct {
 func (op opNotEmpty) Check(st *State, n uast.Node) (bool, error) {
 	switch n := n.(type) {
 	case nil:
-		return false, nil
+		return filtered("empty value %T for %v", n, op)
 	case uast.List:
 		if len(n) == 0 {
-			return false, nil
+			return filtered("empty value %T for %v", n, op)
 		}
 	case uast.Object:
 		if len(n) == 0 {
-			return false, nil
+			return filtered("empty value %T for %v", n, op)
 		}
 	}
 	return op.op.Check(st, n)
@@ -845,9 +859,9 @@ func (op opOptional) Check(st *State, n uast.Node) (bool, error) {
 }
 
 func (op opOptional) Construct(st *State, n uast.Node) (uast.Node, error) {
-	vn, ok := st.GetVar(op.vr)
-	if !ok {
-		return nil, ErrVariableNotDefined.New(op.vr)
+	vn, err := st.MustGetVar(op.vr)
+	if err != nil {
+		return nil, err
 	}
 	exists, ok := vn.(uast.Bool)
 	if !ok {

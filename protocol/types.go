@@ -283,13 +283,15 @@ func asNode(n uast.Node, field string) ([]*Node, error) {
 		if field != "" {
 			nd.Properties[InternalRoleKey] = field
 		}
-		for k, v := range n {
+
+		for _, k := range n.Keys() {
 			switch k {
 			case uast.KeyType, uast.KeyToken, uast.KeyRoles,
 				uast.KeyStart, uast.KeyEnd:
 				// already processed
 				continue
 			}
+			v := n[k]
 			if nv, ok := v.(uast.Value); ok {
 				nd.Properties[k] = fmt.Sprint(nv.Native())
 			} else {
@@ -300,7 +302,7 @@ func asNode(n uast.Node, field string) ([]*Node, error) {
 				nd.Children = append(nd.Children, sn...)
 			}
 		}
-		sort.Sort(byOffset(nd.Children))
+		sort.Stable(byOffset(nd.Children))
 		return []*Node{nd}, nil
 	default:
 		return nil, fmt.Errorf("argument should be a node or a list, got: %T", n)
@@ -317,7 +319,7 @@ func (s byOffset) Less(i, j int) bool {
 	apos := startPosition(a)
 	bpos := startPosition(b)
 	if apos == nil {
-		return false
+		return bpos != nil
 	}
 
 	if bpos == nil {

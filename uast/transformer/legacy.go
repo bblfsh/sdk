@@ -34,32 +34,33 @@ func (n ObjectToNode) Do(root uast.Node) (uast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if obj, ok := root.(uast.Object); ok && !n.TopLevelIsRootNode {
+	if obj, ok := root.(uast.Object); ok && !n.TopLevelIsRootNode && len(obj) == 1 {
 		for _, v := range obj {
 			root = v
+			break
 		}
 	}
 	return root, nil
 }
 func (n ObjectToNode) transformer() Transformer {
-	ast := make(Obj)
+	var ast Object
 	// ->
-	norm := make(Obj)
+	var norm Object
 
 	if n.InternalTypeKey != "" {
 		const vr = "itype"
-		ast[n.InternalTypeKey] = Var(vr)
-		norm[uast.KeyType] = Var(vr)
+		ast.SetField(n.InternalTypeKey, Var(vr))
+		norm.SetField(uast.KeyType, Var(vr))
 	}
 	if n.OffsetKey != "" {
 		const vr = "pos_off_start"
-		ast[n.OffsetKey] = Var(vr)
-		norm[uast.KeyStart] = SavePosOffset(vr)
+		ast.SetField(n.OffsetKey, Var(vr))
+		norm.SetField(uast.KeyStart, SavePosOffset(vr))
 	}
 	if n.EndOffsetKey != "" {
 		const vr = "pos_off_end"
-		ast[n.EndOffsetKey] = Var(vr)
-		norm[uast.KeyEnd] = SavePosOffset(vr)
+		ast.SetField(n.EndOffsetKey, Var(vr))
+		norm.SetField(uast.KeyEnd, SavePosOffset(vr))
 	}
 	return ASTMap("ObjectToNode",
 		Part("other", ast),
