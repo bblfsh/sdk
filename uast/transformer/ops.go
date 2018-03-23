@@ -734,10 +734,13 @@ type opEach struct {
 
 func (op opEach) Check(st *State, n uast.Node) (bool, error) {
 	arr, ok := n.(uast.List)
-	if !ok {
+	if !ok && n != nil {
 		return false, nil
 	}
-	subs := make([]*State, 0, len(arr))
+	var subs []*State
+	if arr != nil {
+		subs = make([]*State, 0, len(arr))
+	}
 	for i, sub := range arr {
 		sst := NewState()
 		ok, err := op.op.Check(sst, sub)
@@ -761,6 +764,9 @@ func (op opEach) Construct(st *State, n uast.Node) (uast.Node, error) {
 	subs, ok := st.GetStateVar(op.vr)
 	if !ok {
 		return nil, ErrVariableNotDefined.New(op.vr)
+	}
+	if subs == nil {
+		return nil, nil
 	}
 	arr := make(uast.List, 0, len(subs))
 	for i, stt := range subs {
