@@ -248,16 +248,19 @@ func (o Object) GetField(k string) (Op, bool) {
 	return nil, false
 }
 func (o *Object) SetField(k string, v Op) {
-	if _, ok := o.set[k]; ok {
+	o.SetFieldObj(Field{Name: k, Op: v})
+}
+func (o *Object) SetFieldObj(f2 Field) {
+	if _, ok := o.set[f2.Name]; ok {
 		for i, f := range o.fields {
-			if f.Name == k {
-				o.fields[i].Op = v
+			if f.Name == f2.Name {
+				o.fields[i] = f2
 				return
 			}
 		}
 	}
-	o.set[k] = struct{}{}
-	o.fields = append(o.fields, Field{Name: k, Op: v})
+	o.set[f2.Name] = struct{}{}
+	o.fields = append(o.fields, f2)
 }
 func (o *Object) setFields(fields ...Field) error {
 	for _, f := range fields {
@@ -274,9 +277,9 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 		return false, nil
 	}
 	for _, f := range o.fields {
-		n, ok = cur[f.Name]
+		n, ok := cur[f.Name]
 		if f.Optional != "" {
-			if err := st.SetVar(f.Optional, uast.Bool(false)); err != nil {
+			if err := st.SetVar(f.Optional, uast.Bool(ok)); err != nil {
 				return false, errKey.Wrap(err, f.Name)
 			}
 		}
@@ -293,7 +296,7 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 			return false, nil
 		}
 	}
-	if o.other == "" {
+	if o.other == "" { // do not save unused fields
 		if !allowUnusedFields {
 			for k := range cur {
 				if _, ok := o.set[k]; !ok {
@@ -567,6 +570,9 @@ func (op opAppend) Check(st *State, n uast.Node) (bool, error) {
 	// split into array part that will go to sub op,
 	// and the part we will use for sub-array checks
 	sub, arrs := arr[:tail], arr[tail:]
+	if len(sub) == 0 {
+		sub = nil
+	}
 	if ok, err := op.op.Check(st, sub); err != nil {
 		return false, err
 	} else if !ok {
@@ -679,18 +685,25 @@ type opIf struct {
 }
 
 func (op opIf) Check(st *State, n uast.Node) (bool, error) {
-	vn, ok := st.GetVar(op.cond)
-	if !ok {
-		return false, ErrVariableNotDefined.New(op.cond)
+	st1 := st.Clone()
+	ok1, err1 := op.then.Check(st1, n)
+	if ok1 && err1 == nil {
+		st.ApplyFrom(st1)
+		st.SetVar(op.cond, uast.Bool(true))
+		return true, nil
 	}
-	cond, ok := vn.(uast.Bool)
-	if !ok {
-		return false, ErrUnexpectedType.New(vn)
+	st2 := st.Clone()
+	ok2, err2 := op.els.Check(st2, n)
+	if ok2 && err2 == nil {
+		st.ApplyFrom(st2)
+		st.SetVar(op.cond, uast.Bool(false))
+		return true, nil
 	}
-	if cond {
-		return op.then.Check(st, n)
+	err := err1
+	if err == nil {
+		err = err2
 	}
-	return op.els.Check(st, n)
+	return false, err
 }
 
 func (op opIf) Construct(st *State, n uast.Node) (uast.Node, error) {
@@ -706,4 +719,101 @@ func (op opIf) Construct(st *State, n uast.Node) (uast.Node, error) {
 		return op.then.Construct(st, n)
 	}
 	return op.els.Construct(st, n)
+}
+
+// Each checks that current node is an array and applies sub-operation to each element.
+// It uses a variable to store state of each element.
+func Each(vr string, op Op) Op {
+	return opEach{vr: vr, op: op}
+}
+
+type opEach struct {
+	vr string
+	op Op
+}
+
+func (op opEach) Check(st *State, n uast.Node) (bool, error) {
+	arr, ok := n.(uast.List)
+	if !ok {
+		return false, nil
+	}
+	subs := make([]*State, 0, len(arr))
+	for i, sub := range arr {
+		sst := NewState()
+		ok, err := op.op.Check(sst, sub)
+		if err != nil {
+			return false, errElem.Wrap(err, i, sub)
+		} else if !ok {
+			return false, nil
+		}
+		subs = append(subs, sst)
+	}
+	if err := st.SetStateVar(op.vr, subs); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (op opEach) Construct(st *State, n uast.Node) (uast.Node, error) {
+	if err := noNode(n); err != nil {
+		return nil, err
+	}
+	subs, ok := st.GetStateVar(op.vr)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.vr)
+	}
+	arr := make(uast.List, 0, len(subs))
+	for i, stt := range subs {
+		sub, err := op.op.Construct(stt, nil)
+		if err != nil {
+			return nil, errElem.Wrap(err, i, nil)
+		}
+		arr = append(arr, sub)
+	}
+	return arr, nil
+}
+
+// NotEmpty checks that node is not nil and contains one or more fields or elements.
+func NotEmpty(op Op) Op {
+	return opNotEmpty{op: op}
+}
+
+type opNotEmpty struct {
+	op Op
+}
+
+func (op opNotEmpty) Check(st *State, n uast.Node) (bool, error) {
+	switch n := n.(type) {
+	case nil:
+		return false, nil
+	case uast.List:
+		if len(n) == 0 {
+			return false, nil
+		}
+	case uast.Object:
+		if len(n) == 0 {
+			return false, nil
+		}
+	}
+	return op.op.Check(st, n)
+}
+
+func (op opNotEmpty) Construct(st *State, n uast.Node) (uast.Node, error) {
+	n, err := op.op.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	switch n := n.(type) {
+	case nil:
+		return nil, ErrUnexpectedValue.New(n)
+	case uast.List:
+		if len(n) == 0 {
+			return nil, ErrUnexpectedValue.New(n)
+		}
+	case uast.Object:
+		if len(n) == 0 {
+			return nil, ErrUnexpectedValue.New(n)
+		}
+	}
+	return n, nil
 }

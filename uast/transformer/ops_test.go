@@ -240,6 +240,86 @@ var opCases = []struct {
 			}
 		},
 	},
+	{
+		name: "each",
+		inp: func() u.Node {
+			return u.List{
+				u.Object{"t": u.String("a"), "v": u.Int(1)},
+				u.Object{"t": u.String("a"), "v": u.Int(2)},
+				u.Object{"t": u.String("a"), "v": u.Int(3)},
+			}
+		},
+		src: Each("objs", Part("part", Obj{
+			"v": Var("val"),
+		})),
+		dst: Each("objs", Part("part", Obj{
+			"v2": Var("val"),
+		})),
+		exp: func() u.Node {
+			return u.List{
+				u.Object{"t": u.String("a"), "v2": u.Int(1)},
+				u.Object{"t": u.String("a"), "v2": u.Int(2)},
+				u.Object{"t": u.String("a"), "v2": u.Int(3)},
+			}
+		},
+	},
+	{
+		name: "optional field",
+		inp: func() u.Node {
+			return u.Object{
+				"t": u.String("a"),
+			}
+		},
+		src: Fields{
+			{Name: "t", Op: String("a")},
+			{Name: "v", Op: Var("val"), Optional: "exists"},
+		},
+	},
+	{
+		name: "roles field",
+		inp: func() u.Node {
+			return u.Object{
+				u.KeyType: u.String("node"),
+			}
+		},
+		src: Fields{
+			{Name: u.KeyType, Op: String("node")},
+			RolesField("roles"),
+		},
+		dst: Fields{
+			{Name: u.KeyType, Op: String("node")},
+			RolesField("roles", 1),
+		},
+		exp: func() u.Node {
+			return u.Object{
+				u.KeyType:  u.String("node"),
+				u.KeyRoles: u.RoleList(1),
+			}
+		},
+	},
+	{
+		name: "roles field exists",
+		inp: func() u.Node {
+			return u.Object{
+				u.KeyType:  u.String("node"),
+				u.KeyRoles: u.RoleList(2),
+			}
+		},
+		src: Fields{
+			{Name: u.KeyType, Op: String("node")},
+			RolesField("roles"),
+		},
+		dst: Fields{
+			{Name: u.KeyType, Op: String("node")},
+			RolesField("roles", 1),
+		},
+		exp: func() u.Node {
+			return u.Object{
+				u.KeyType:  u.String("node"),
+				u.KeyRoles: u.RoleList(2, 1),
+			}
+		},
+	},
 }
 
 func TestOps(t *testing.T) {
@@ -248,6 +328,9 @@ func TestOps(t *testing.T) {
 			c.exp = c.inp
 		}
 		t.Run(c.name, func(t *testing.T) {
+			if c.dst == nil {
+				c.dst = c.src
+			}
 			m := Map("test", c.src, c.dst)
 			inp := c.inp()
 			out, err := m.Do(inp)
@@ -256,8 +339,8 @@ func TestOps(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, c.exp(), out)
-			require.Equal(t, c.inp(), inp, "operation should clone the value")
+			require.Equal(t, c.exp(), out, "forward transformation failed")
+			require.Equal(t, c.inp(), inp, "forward transformation should clone the value")
 			if c.noRev {
 				return
 			}
@@ -266,8 +349,8 @@ func TestOps(t *testing.T) {
 			inp = c.exp()
 			out, err = m.Do(inp)
 			require.NoError(t, err)
-			require.Equal(t, c.inp(), out)
-			require.Equal(t, c.exp(), inp, "operation should clone the value")
+			require.Equal(t, c.inp(), out, "reverse transformation failed")
+			require.Equal(t, c.exp(), inp, "reverse transformation should clone the value")
 		})
 	}
 }

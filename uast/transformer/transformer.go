@@ -46,7 +46,8 @@ var (
 	ErrExpectedValue      = errors.NewKind("expected value, got %T")
 	ErrUnhandledValueIn   = errors.NewKind("unhandled value: %v in %v")
 	ErrUnexpectedNode     = errors.NewKind("expected node to be nil, got: %v")
-	ErrUnexpectedType     = errors.NewKind("expected node to be nil, got: %v")
+	ErrUnexpectedValue    = errors.NewKind("unexpected value: %v")
+	ErrUnexpectedType     = errors.NewKind("unexpected type: %v")
 	ErrAmbiguousValue     = errors.NewKind("map has ambiguous value %v")
 	ErrFewSteps           = errors.NewKind("mapping should contains multiple steps")
 	ErrUnusedField        = errors.NewKind("field was not used: %v")
@@ -135,7 +136,8 @@ func (m Mapping) Do(n uast.Node) (uast.Node, error) {
 // for transformation steps to persist data.
 func NewState() *State {
 	return &State{
-		vars: make(map[string]uast.Node),
+		vars:   make(map[string]uast.Node),
+		states: make(map[string][]*State),
 	}
 }
 
@@ -145,8 +147,38 @@ type procObject struct {
 }
 
 type State struct {
-	vars map[string]uast.Node
-	objs []*procObject
+	vars   map[string]uast.Node
+	states map[string][]*State
+	objs   []*procObject
+}
+
+func (st *State) Clone() *State {
+	st2 := NewState()
+	for k, v := range st.vars {
+		st2.vars[k] = v
+	}
+	for k, v := range st.states {
+		st2.states[k] = v
+	}
+	// TODO: clone each procObj?
+	st2.objs = append([]*procObject{}, st.objs...)
+	return st2
+}
+
+func (st *State) ApplyFrom(st2 *State) {
+	for k, v := range st2.vars {
+		if _, ok := st.vars[k]; !ok {
+			st.vars[k] = v
+		}
+	}
+	for k, v := range st2.states {
+		if _, ok := st.states[k]; !ok {
+			st.states[k] = v
+		}
+	}
+	if len(st2.objs) > len(st.objs) {
+		st.objs = append(st.objs, st2.objs[len(st.objs):]...)
+	}
 }
 
 func (st *State) GetVar(name string) (uast.Node, bool) {
@@ -169,6 +201,20 @@ func (st *State) SetVar(name string, val uast.Node) error {
 		return nil
 	}
 	return ErrVariableRedeclared.New(name, cur, val)
+}
+
+func (st *State) GetStateVar(name string) ([]*State, bool) {
+	n, ok := st.states[name]
+	return n, ok
+}
+
+func (st *State) SetStateVar(name string, sub []*State) error {
+	cur, ok := st.states[name]
+	if ok {
+		return ErrVariableRedeclared.New(name, cur, sub)
+	}
+	st.states[name] = sub
+	return nil
 }
 
 func (st *State) StartObject(name string) (func(), error) {

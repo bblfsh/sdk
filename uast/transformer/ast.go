@@ -39,3 +39,22 @@ func ASTMap(name string, native, norm Op) Mapping {
 		},
 	}
 }
+
+// RolesField will create a roles field that appends provided roles to existing ones.
+// In case no roles are provided, it will save existing roles, if any.
+func RolesField(vr string, roles ...role.Role) Field {
+	if len(roles) == 0 {
+		return Field{
+			Name:     uast.KeyRoles,
+			Op:       Var(vr),
+			Optional: vr + "_exists",
+		}
+	}
+	return Field{
+		Name: uast.KeyRoles,
+		Op: If(vr+"_exists",
+			AppendRoles(NotEmpty(Var(vr)), roles...),
+			Roles(roles...),
+		),
+	}
+}
