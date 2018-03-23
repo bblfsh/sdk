@@ -216,8 +216,9 @@ func (o Fields) Construct(st *State, n uast.Node) (uast.Node, error) {
 
 // Field is an operation on a specific field of an object.
 type Field struct {
-	Name string // name of the field
-	Op   Op     // operation used to check/construct the field value
+	Name     string // name of the field
+	Optional string // variable name to save field existence flag
+	Op       Op     // operation used to check/construct the field value
 }
 
 // Object verifies that current node is an object and checks its fields with a
@@ -274,7 +275,15 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 	}
 	for _, f := range o.fields {
 		n, ok = cur[f.Name]
+		if f.Optional != "" {
+			if err := st.SetVar(f.Optional, uast.Bool(false)); err != nil {
+				return false, errKey.Wrap(err, f.Name)
+			}
+		}
 		if !ok {
+			if f.Optional != "" {
+				continue
+			}
 			return false, nil
 		}
 		ok, err := f.Op.Check(st, n)
@@ -311,6 +320,19 @@ func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
 	}
 	obj := make(uast.Object, len(o.fields))
 	for _, f := range o.fields {
+		if f.Optional != "" {
+			on, ok := st.GetVar(f.Optional)
+			if !ok {
+				return obj, errKey.Wrap(ErrVariableNotDefined.New(f.Optional), f.Name)
+			}
+			exists, ok := on.(uast.Bool)
+			if !ok {
+				return obj, errKey.Wrap(ErrUnexpectedType.New(on), f.Name)
+			}
+			if !exists {
+				continue
+			}
+		}
 		v, err := f.Op.Construct(st, nil)
 		if err != nil {
 			return obj, errKey.Wrap(err, f.Name)
@@ -588,12 +610,14 @@ func (op opAppend) Construct(st *State, n uast.Node) (uast.Node, error) {
 
 type ValueFunc func(uast.Value) (uast.Value, error)
 
+// ValueConv converts a value with a provided function and passes it to sub-operation.
 func ValueConv(on Op, conv, rev ValueFunc) Op {
 	return opValueConv{op: on, conv: conv, rev: rev}
 }
 
 type StringFunc func(string) (string, error)
 
+// StringConv is like ValueConv, but only processes string arguments.
 func StringConv(on Op, conv, rev StringFunc) Op {
 	apply := func(fnc StringFunc) ValueFunc {
 		return func(v uast.Value) (uast.Value, error) {
@@ -642,4 +666,44 @@ func (op opValueConv) Construct(st *State, n uast.Node) (uast.Node, error) {
 		return nil, err
 	}
 	return nv, nil
+}
+
+// If checks if a named variable value is true and executes one of sub-operations.
+func If(cond string, then, els Op) Op {
+	return opIf{cond: cond, then: then, els: els}
+}
+
+type opIf struct {
+	cond      string
+	then, els Op
+}
+
+func (op opIf) Check(st *State, n uast.Node) (bool, error) {
+	vn, ok := st.GetVar(op.cond)
+	if !ok {
+		return false, ErrVariableNotDefined.New(op.cond)
+	}
+	cond, ok := vn.(uast.Bool)
+	if !ok {
+		return false, ErrUnexpectedType.New(vn)
+	}
+	if cond {
+		return op.then.Check(st, n)
+	}
+	return op.els.Check(st, n)
+}
+
+func (op opIf) Construct(st *State, n uast.Node) (uast.Node, error) {
+	vn, ok := st.GetVar(op.cond)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.cond)
+	}
+	cond, ok := vn.(uast.Bool)
+	if !ok {
+		return nil, ErrUnexpectedType.New(vn)
+	}
+	if cond {
+		return op.then.Construct(st, n)
+	}
+	return op.els.Construct(st, n)
 }

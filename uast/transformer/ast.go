@@ -23,6 +23,9 @@ func Roles(roles ...role.Role) ArrayOp {
 
 // AppendRoles can be used to append more roles to an output of a specific operation.
 func AppendRoles(old Op, roles ...role.Role) Op {
+	if len(roles) == 0 {
+		return old
+	}
 	return Append(old, Roles(roles...))
 }
 
