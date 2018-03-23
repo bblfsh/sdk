@@ -276,6 +276,19 @@ var opCases = []struct {
 		},
 	},
 	{
+		name: "optional nil field",
+		inp: func() u.Node {
+			return u.Object{
+				"t": u.String("a"),
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Op: String("a")},
+			{Name: "v", Op: Opt("exists", Var("val"))},
+		},
+	},
+	{
 		name: "roles field",
 		inp: func() u.Node {
 			return u.Object{
@@ -327,30 +340,41 @@ func TestOps(t *testing.T) {
 		if c.exp == nil {
 			c.exp = c.inp
 		}
+		if c.dst == nil {
+			c.dst = c.src
+		}
 		t.Run(c.name, func(t *testing.T) {
-			if c.dst == nil {
-				c.dst = c.src
-			}
 			m := Map("test", c.src, c.dst)
-			inp := c.inp()
-			out, err := m.Do(inp)
-			if c.err != nil {
-				require.True(t, c.err.Is(err), "expected %v, got %v", c.err, err)
-				return
+
+			do := func(m Mapping, er *errors.Kind, inpf, expf func() u.Node) bool {
+				inp := inpf()
+				out, err := m.Do(inp)
+				if er != nil {
+					require.True(t, er.Is(err), "expected %v, got %v", er, err)
+					return false
+				}
+				require.NoError(t, err)
+				require.Equal(t, expf(), out, "transformation failed")
+				require.Equal(t, inpf(), inp, "transformation should clone the value")
+				return true
 			}
-			require.NoError(t, err)
-			require.Equal(t, c.exp(), out, "forward transformation failed")
-			require.Equal(t, c.inp(), inp, "forward transformation should clone the value")
+			// test full transformation first
+			if !do(m, c.err, c.inp, c.exp) {
+				return // expected error case
+			}
 			if c.noRev {
 				return
 			}
-			m = m.Reverse()
+			// test reverse transformation
+			do(m.Reverse(), nil, c.exp, c.inp)
 
-			inp = c.exp()
-			out, err = m.Do(inp)
-			require.NoError(t, err)
-			require.Equal(t, c.inp(), out, "reverse transformation failed")
-			require.Equal(t, c.exp(), inp, "reverse transformation should clone the value")
+			// test identity transform (forward)
+			m = Map("test", c.src, c.src)
+			do(m, nil, c.inp, c.inp)
+
+			// test identity transform (reverse)
+			m = Map("test", c.dst, c.dst)
+			do(m, nil, c.exp, c.exp)
 		})
 	}
 }

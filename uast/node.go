@@ -246,6 +246,8 @@ func (v Bool) Clone() Node {
 // ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
 func ToNode(o interface{}) (Node, error) {
 	switch o := o.(type) {
+	case nil:
+		return nil, nil
 	case map[string]interface{}:
 		n := make(Object, len(o))
 		for k, v := range o {

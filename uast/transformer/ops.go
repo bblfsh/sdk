@@ -817,3 +817,38 @@ func (op opNotEmpty) Construct(st *State, n uast.Node) (uast.Node, error) {
 	}
 	return n, nil
 }
+
+// Opt is an optional operation that uses a named variable to store the state.
+func Opt(exists string, op Op) Op {
+	return opOptional{vr: exists, op: op}
+}
+
+type opOptional struct {
+	vr string
+	op Op
+}
+
+func (op opOptional) Check(st *State, n uast.Node) (bool, error) {
+	if err := st.SetVar(op.vr, uast.Bool(n != nil)); err != nil {
+		return false, err
+	}
+	if n == nil {
+		return true, nil
+	}
+	return op.op.Check(st, n)
+}
+
+func (op opOptional) Construct(st *State, n uast.Node) (uast.Node, error) {
+	vn, ok := st.GetVar(op.vr)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.vr)
+	}
+	exists, ok := vn.(uast.Bool)
+	if !ok {
+		return nil, ErrUnexpectedType.New(vn)
+	}
+	if !exists {
+		return nil, nil
+	}
+	return op.op.Construct(st, n)
+}
