@@ -1,6 +1,9 @@
 package transformer
 
-import "gopkg.in/bblfsh/sdk.v1/uast"
+import (
+	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
+)
 
 var _ Transformer = ObjectToNode{}
 
@@ -62,4 +65,40 @@ func (n ObjectToNode) transformer() Transformer {
 		Part("other", ast),
 		Part("other", norm),
 	)
+}
+
+var _ Transformer = ObjectToNode{}
+
+type RolesDedup struct{}
+
+func (RolesDedup) Do(root uast.Node) (uast.Node, error) {
+	nroot, ok := uast.Apply(root, func(n uast.Node) (uast.Node, bool) {
+		obj, ok := n.(uast.Object)
+		if !ok {
+			return n, false
+		}
+		roles := obj.Roles()
+		if len(roles) == 0 {
+			return n, false
+		}
+		m := make(map[role.Role]struct{}, len(roles))
+		out := make([]role.Role, 0, len(roles))
+		for _, r := range roles {
+			if _, ok := m[r]; ok {
+				continue
+			}
+			m[r] = struct{}{}
+			out = append(out, r)
+		}
+		if len(out) == len(roles) {
+			return n, false
+		}
+		nobj := obj.CloneObject()
+		nobj.SetRoles(out...)
+		return nobj, true
+	})
+	if ok {
+		root = nroot
+	}
+	return root, nil
 }
