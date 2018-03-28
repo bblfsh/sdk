@@ -12,6 +12,20 @@ func SavePosOffset(vr string) Op {
 	})
 }
 
+// SavePosLine makes an operation that describes a uast.Position object with Line field set to a named variable.
+func SavePosLine(vr string) Op {
+	return TypedObj(uast.TypePosition, map[string]Op{
+		uast.KeyPosLine: Var(vr),
+	})
+}
+
+// SavePosCol makes an operation that describes a uast.Position object with Col field set to a named variable.
+func SavePosCol(vr string) Op {
+	return TypedObj(uast.TypePosition, map[string]Op{
+		uast.KeyPosCol: Var(vr),
+	})
+}
+
 // Roles makes an operation that will check/construct a list of roles.
 func Roles(roles ...role.Role) ArrayOp {
 	arr := make([]Op, 0, len(roles))
