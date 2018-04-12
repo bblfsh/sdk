@@ -49,6 +49,13 @@ func (t Transforms) Do(mode Mode, code string, nd uast.Node) (uast.Node, error) 
 	return nd, nil
 }
 
+// BaseDriver is a base implementation of a language driver that returns a native AST.
+type BaseDriver interface {
+	Start() error
+	Parse(req *InternalParseRequest) (*InternalParseResponse, error)
+	Close() error
+}
+
 // Driver implements a bblfsh driver, a driver is on charge of transforming a
 // source code into an AST and a UAST. To transform the AST into a UAST, a
 // `uast.ObjectToNode`` and a series of `tranformer.Transformer` are used.
@@ -57,21 +64,33 @@ func (t Transforms) Do(mode Mode, code string, nd uast.Node) (uast.Node, error) 
 // done, since the communication with the native driver is a single-channel
 // synchronous communication over stdin/stdout.
 type Driver struct {
-	NativeDriver
+	d BaseDriver
 
 	m *manifest.Manifest
 	t Transforms
 }
 
-// NewDriver returns a new Driver instance based on the given ObjectToNode and
-// list of transformers.
-func NewDriver(t Transforms) (*Driver, error) {
+// NewDriverFrom is like NewDriver but allows to provide a custom driver native driver implementation.
+func NewDriverFrom(d BaseDriver, t Transforms) (*Driver, error) {
 	m, err := manifest.Load(ManifestLocation)
 	if err != nil {
 		return nil, err
 	}
+	return &Driver{d: d, m: m, t: t}, nil
+}
 
-	return &Driver{m: m, t: t}, nil
+// NewDriver returns a new Driver instance based on the given ObjectToNode and
+// list of transformers.
+func NewDriver(t Transforms) (*Driver, error) {
+	return NewDriverFrom(DefaultDriver, t)
+}
+
+func (d *Driver) Start() error {
+	return d.d.Start()
+}
+
+func (d *Driver) Stop() error {
+	return d.d.Close()
 }
 
 // Parse process a protocol.ParseRequest, calling to the native driver. It a
@@ -166,10 +185,17 @@ func (d *Driver) doParse(language, content string, encoding protocol.Encoding) (
 		return r, nil
 	}
 
-	nr := d.NativeDriver.Parse(&InternalParseRequest{
+	nr, err := d.d.Parse(&InternalParseRequest{
 		Content:  content,
 		Encoding: Encoding(encoding),
 	})
+	if err != nil {
+		if nr != nil {
+			nr.Errors = append(nr.Errors, err.Error())
+		} else {
+			nr = errResp(err)
+		}
+	}
 
 	r.Status = protocol.Status(nr.Status)
 	r.Errors = nr.Errors

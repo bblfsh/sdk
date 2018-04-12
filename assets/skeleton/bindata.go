@@ -7,6 +7,7 @@
 // etc/skeleton/LICENSE
 // etc/skeleton/Makefile
 // etc/skeleton/README.md.tpl
+// etc/skeleton/driver/impl/impl.go
 // etc/skeleton/driver/main.go.tpl
 // etc/skeleton/driver/normalizer/annotation.go
 // etc/skeleton/git/hooks/pre-commit
@@ -977,9 +978,35 @@ func readmeMdTpl() (*asset, error) {
 	return a, nil
 }
 
+var _driverImplImplGo = []byte(`package impl
+
+import "gopkg.in/bblfsh/sdk.v1/sdk/driver"
+
+func init() {
+	// Can be overridden to link a native driver into a Go driver server.
+	driver.DefaultDriver = driver.NewExecDriver()
+}
+`)
+
+func driverImplImplGoBytes() ([]byte, error) {
+	return _driverImplImplGo, nil
+}
+
+func driverImplImplGo() (*asset, error) {
+	bytes, err := driverImplImplGoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "driver/impl/impl.go", size: 192, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _driverMainGoTpl = []byte(`package main
 
 import (
+	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/impl"
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 
 	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
@@ -1003,7 +1030,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 240, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 305, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1236,6 +1263,7 @@ var _bindata = map[string]func() (*asset, error){
 	"LICENSE":                         license,
 	"Makefile":                        makefile,
 	"README.md.tpl":                   readmeMdTpl,
+	"driver/impl/impl.go":             driverImplImplGo,
 	"driver/main.go.tpl":              driverMainGoTpl,
 	"driver/normalizer/annotation.go": driverNormalizerAnnotationGo,
 	"git/hooks/pre-commit":            gitHooksPreCommit,
@@ -1292,6 +1320,9 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"Makefile":                 &bintree{makefile, map[string]*bintree{}},
 	"README.md.tpl":            &bintree{readmeMdTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
+		"impl": &bintree{nil, map[string]*bintree{
+			"impl.go": &bintree{driverImplImplGo, map[string]*bintree{}},
+		}},
 		"main.go.tpl": &bintree{driverMainGoTpl, map[string]*bintree{}},
 		"normalizer": &bintree{nil, map[string]*bintree{
 			"annotation.go": &bintree{driverNormalizerAnnotationGo, map[string]*bintree{}},
