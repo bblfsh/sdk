@@ -3,8 +3,6 @@ package driver
 
 import (
 	"gopkg.in/bblfsh/sdk.v1/manifest"
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
 )
 
 var (
@@ -21,8 +19,8 @@ var (
 
 // Run is a common main function used as an entry point for drivers.
 // It panics in case of an error.
-func Run(o *uast.ObjectToNode, t []transformer.Tranformer) {
-	d, err := NewDriver(o, t)
+func Run(t Transforms) {
+	d, err := NewDriver(t)
 	if err != nil {
 		panic(err)
 	}

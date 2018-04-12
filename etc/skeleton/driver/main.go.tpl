@@ -7,5 +7,8 @@ import (
 )
 
 func main() {
-	driver.Run(normalizer.ToNode, normalizer.Transformers)
+	driver.Run(driver.Transforms{
+		Native: normalizer.Native,
+		Code:   normalizer.Code,
+	})
 }
