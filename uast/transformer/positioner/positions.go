@@ -4,72 +4,66 @@ import (
 	"fmt"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
 )
 
-// FillOffsetFromLineCol gets the original source code and its parsed form
+var _ transformer.CodeTransformer = Positioner{}
+
+const cloneObj = false
+
+// NewFillOffsetFromLineCol gets the original source code and its parsed form
 // as *Node and fills every Offset field using its Line and Column.
-func NewFillOffsetFromLineCol() *Positioner {
-	return &Positioner{method: fillOffsetFromLineCol}
+func NewFillOffsetFromLineCol() Positioner {
+	return Positioner{method: fillOffsetFromLineCol}
 }
 
-// FillLineColFromOffset gets the original source code and its parsed form
+// NewFillLineColFromOffset gets the original source code and its parsed form
 // as *Node and fills every Line and Column field using its Offset.
-func NewFillLineColFromOffset() *Positioner {
-	return &Positioner{method: fillLineColFromOffset}
+func NewFillLineColFromOffset() Positioner {
+	return Positioner{method: fillLineColFromOffset}
 }
 
+// Positioner is a transformation that only changes positional information.
 type Positioner struct {
 	method func(*positionIndex, *uast.Position) error
 }
 
-func (t *Positioner) Do(data string, e protocol.Encoding, n *uast.Node) error {
-	idx := newPositionIndex([]byte(data))
-	iter := uast.NewOrderPathIter(uast.NewPath(n))
-	for {
-		p := iter.Next()
-		if p == nil {
-			break
+// OnCode uses the source code to update positional information.
+func (t Positioner) OnCode(code string) transformer.Transformer {
+	idx := newPositionIndex([]byte(code))
+	return transformer.TransformObjFunc(func(o uast.Object) (uast.Object, bool, error) {
+		pos := uast.AsPosition(o)
+		if pos == nil {
+			return o, false, nil
 		}
-
-		n := p.Node()
-		if err := t.method(idx, n.StartPosition); err != nil {
-			return err
+		if err := t.method(idx, pos); err != nil {
+			return o, false, err
 		}
-
-		if err := t.method(idx, n.EndPosition); err != nil {
-			return err
+		if cloneObj {
+			o = o.CloneObject()
 		}
-	}
-
-	return nil
+		for k, v := range pos.ToObject() {
+			o[k] = v
+		}
+		return o, cloneObj, nil
+	})
 }
 
 func fillOffsetFromLineCol(idx *positionIndex, pos *uast.Position) error {
-	if pos == nil {
-		return nil
-	}
-
 	offset, err := idx.Offset(int(pos.Line), int(pos.Col))
 	if err != nil {
 		return err
 	}
-
 	pos.Offset = uint32(offset)
 	return nil
 }
 
 func fillLineColFromOffset(idx *positionIndex, pos *uast.Position) error {
-	if pos == nil {
-		return nil
-	}
-
 	line, col, err := idx.LineCol(int(pos.Offset))
 	if err != nil {
 		return err
 	}
-
 	pos.Line = uint32(line)
 	pos.Col = uint32(col)
 	return nil
@@ -147,7 +141,7 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 	maxCol := maxOffset - idx.offsetByLine[line] + 1
 
 	// For empty files with 1-indexed drivers, set maxCol to 1
-	if (maxCol == 0 && col == 1) {
+	if maxCol == 0 && col == 1 {
 		maxCol = 1
 	}
 
