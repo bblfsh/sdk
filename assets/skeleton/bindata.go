@@ -7,6 +7,7 @@
 // etc/skeleton/LICENSE
 // etc/skeleton/Makefile
 // etc/skeleton/README.md.tpl
+// etc/skeleton/driver/fixtures/fixtures_test.go.tpl
 // etc/skeleton/driver/impl/impl.go
 // etc/skeleton/driver/main.go.tpl
 // etc/skeleton/driver/normalizer/annotation.go
@@ -978,6 +979,57 @@ func readmeMdTpl() (*asset, error) {
 	return a, nil
 }
 
+var _driverFixturesFixtures_testGoTpl = []byte(`package fixtures
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver/fixtures"
+)
+
+const projectRoot = "../../"
+
+var Suite = &fixtures.Suite{
+	Lang: "lang-name",
+	Ext:  ".ext",
+	Path: filepath.Join(projectRoot, fixtures.Dir),
+	NewDriver: func() driver.BaseDriver {
+		return driver.NewExecDriverAt(filepath.Join(projectRoot, "build/bin/native"))
+	},
+	Transforms: driver.Transforms{
+		Native: normalizer.Native,
+		Code:   normalizer.Code,
+	},
+	//BenchName: "fixture-name", // TODO: specify a largest file
+}
+
+func TestXxxDriver(t *testing.T) {
+	Suite.RunTests(t)
+}
+
+func BenchmarkXxxDriver(b *testing.B) {
+	Suite.RunBenchmarks(b)
+}
+`)
+
+func driverFixturesFixtures_testGoTplBytes() ([]byte, error) {
+	return _driverFixturesFixtures_testGoTpl, nil
+}
+
+func driverFixturesFixtures_testGoTpl() (*asset, error) {
+	bytes, err := driverFixturesFixtures_testGoTplBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 757, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _driverImplImplGo = []byte(`package impl
 
 import "gopkg.in/bblfsh/sdk.v1/sdk/driver"
@@ -1256,19 +1308,20 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	".gitignore":                      Gitignore,
-	".travis.yml":                     TravisYml,
-	"Dockerfile.build.tpl.tpl":        dockerfileBuildTplTpl,
-	"Dockerfile.tpl.tpl":              dockerfileTplTpl,
-	"LICENSE":                         license,
-	"Makefile":                        makefile,
-	"README.md.tpl":                   readmeMdTpl,
-	"driver/impl/impl.go":             driverImplImplGo,
-	"driver/main.go.tpl":              driverMainGoTpl,
-	"driver/normalizer/annotation.go": driverNormalizerAnnotationGo,
-	"git/hooks/pre-commit":            gitHooksPreCommit,
-	"manifest.toml.tpl":               manifestTomlTpl,
-	"native/README.md.tpl":            nativeReadmeMdTpl,
+	".gitignore":                           Gitignore,
+	".travis.yml":                          TravisYml,
+	"Dockerfile.build.tpl.tpl":             dockerfileBuildTplTpl,
+	"Dockerfile.tpl.tpl":                   dockerfileTplTpl,
+	"LICENSE":                              license,
+	"Makefile":                             makefile,
+	"README.md.tpl":                        readmeMdTpl,
+	"driver/fixtures/fixtures_test.go.tpl": driverFixturesFixtures_testGoTpl,
+	"driver/impl/impl.go":                  driverImplImplGo,
+	"driver/main.go.tpl":                   driverMainGoTpl,
+	"driver/normalizer/annotation.go":      driverNormalizerAnnotationGo,
+	"git/hooks/pre-commit":                 gitHooksPreCommit,
+	"manifest.toml.tpl":                    manifestTomlTpl,
+	"native/README.md.tpl":                 nativeReadmeMdTpl,
 }
 
 // AssetDir returns the file names below a certain
@@ -1320,6 +1373,9 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"Makefile":                 &bintree{makefile, map[string]*bintree{}},
 	"README.md.tpl":            &bintree{readmeMdTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
+		"fixtures": &bintree{nil, map[string]*bintree{
+			"fixtures_test.go.tpl": &bintree{driverFixturesFixtures_testGoTpl, map[string]*bintree{}},
+		}},
 		"impl": &bintree{nil, map[string]*bintree{
 			"impl.go": &bintree{driverImplImplGo, map[string]*bintree{}},
 		}},
