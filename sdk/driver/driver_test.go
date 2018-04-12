@@ -12,11 +12,17 @@ func init() {
 	ManifestLocation = "internal/native/manifest.toml"
 }
 
+func newDriver(path string) (*Driver, error) {
+	if path == "" {
+		path = "internal/native/mock"
+	}
+	return NewDriverFrom(NewExecDriverAt(path), Transforms{})
+}
+
 func TestDriverParserParse(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(Transforms{})
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -54,7 +60,7 @@ func TestDriverParserParse(t *testing.T) {
 func TestDriverParserParse_MissingLanguage(t *testing.T) {
 	require := require.New(t)
 
-	d, err := NewDriver(Transforms{})
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -76,9 +82,8 @@ func TestDriverParserParse_MissingLanguage(t *testing.T) {
 }
 func TestDriverParserParse_Malfunctioning(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "echo"
 
-	d, err := NewDriver(Transforms{})
+	d, err := newDriver("echo")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -103,9 +108,8 @@ func TestDriverParserParse_Malfunctioning(t *testing.T) {
 
 func TestDriverParserNativeParse(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(Transforms{})
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -130,9 +134,8 @@ func TestDriverParserNativeParse(t *testing.T) {
 
 func TestDriverParserVersion(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(Transforms{})
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
