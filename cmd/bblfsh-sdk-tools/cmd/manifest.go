@@ -3,12 +3,12 @@ package cmd
 import (
 	"path/filepath"
 
-	"gopkg.in/bblfsh/sdk.v1/cli"
+	"gopkg.in/bblfsh/sdk.v1/cmd"
 	"gopkg.in/bblfsh/sdk.v1/manifest"
 )
 
 type manifestCommand struct {
-	cli.Command
+	cmd.Command
 	Manifest *manifest.Manifest
 }
 

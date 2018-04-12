@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v1/cli"
+	"gopkg.in/bblfsh/sdk.v1/cmd"
 )
 
 const InitCommandDescription = "initializes a driver for a given language and OS"
@@ -33,11 +33,11 @@ func (c *InitCommand) processManifest() error {
 		return fmt.Errorf("`language` and `os` arguments are mandatory")
 	}
 
-	cli.Notice.Printf("initializing driver %q, creating new manifest\n", c.Args.Language)
+	cmd.Notice.Printf("initializing driver %q, creating new manifest\n", c.Args.Language)
 
 	c.Root = filepath.Join(c.Root, strings.ToLower(c.Args.Language)+"-driver")
 
-	cli.Notice.Printf("initializing new repo %q\n", c.Root)
+	cmd.Notice.Printf("initializing new repo %q\n", c.Root)
 	cmd := exec.Command("git", "init", c.Root)
 	if err := cmd.Run(); err != nil {
 		return err
