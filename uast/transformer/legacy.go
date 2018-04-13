@@ -77,25 +77,27 @@ func (n ObjectToNode) Mapping() Mapping {
 		ast.SetField(n.EndOffsetKey, Var(vr))
 		norm.SetField(uast.KeyEnd, SavePosOffset(vr))
 	}
-	if n.LineKey != "" {
-		const vr = "pos_line_start"
-		ast.SetField(n.LineKey, Var(vr))
-		norm.SetField(uast.KeyStart, SavePosLine(vr))
+	if n.LineKey != "" && n.ColumnKey != "" {
+		const (
+			vrl = "pos_line_start"
+			vrc = "pos_col_start"
+		)
+		ast.SetField(n.LineKey, Var(vrl))
+		ast.SetField(n.ColumnKey, Var(vrc))
+		norm.SetField(uast.KeyStart, SavePosLineCol(vrl, vrc))
+	} else if (n.LineKey != "" && n.ColumnKey == "") || (n.LineKey == "" && n.ColumnKey != "") {
+		panic("both LineKey and ColumnKey should either be set or not")
 	}
-	if n.EndLineKey != "" {
-		const vr = "pos_line_end"
-		ast.SetField(n.EndLineKey, Var(vr))
-		norm.SetField(uast.KeyEnd, SavePosLine(vr))
-	}
-	if n.ColumnKey != "" {
-		const vr = "pos_col_start"
-		ast.SetField(n.ColumnKey, Var(vr))
-		norm.SetField(uast.KeyStart, SavePosCol(vr))
-	}
-	if n.EndColumnKey != "" {
-		const vr = "pos_col_end"
-		ast.SetField(n.EndColumnKey, Var(vr))
-		norm.SetField(uast.KeyEnd, SavePosCol(vr))
+	if n.EndLineKey != "" && n.EndColumnKey != "" {
+		const (
+			vrl = "pos_line_end"
+			vrc = "pos_col_end"
+		)
+		ast.SetField(n.EndLineKey, Var(vrl))
+		ast.SetField(n.EndColumnKey, Var(vrc))
+		norm.SetField(uast.KeyEnd, SavePosLineCol(vrl, vrc))
+	} else if (n.EndLineKey != "" && n.EndColumnKey == "") || (n.EndLineKey == "" && n.EndColumnKey != "") {
+		panic("both EndLineKey and EndColumnKey should either be set or not")
 	}
 	return ASTMap("ObjectToNode",
 		Part("other", ast),

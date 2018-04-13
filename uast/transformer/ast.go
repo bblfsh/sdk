@@ -15,17 +15,11 @@ func SavePosOffset(vr string) Op {
 	})
 }
 
-// SavePosLine makes an operation that describes a uast.Position object with Line field set to a named variable.
-func SavePosLine(vr string) Op {
+// SavePosLineCol makes an operation that describes a uast.Position object with Line and Col field set to named variables.
+func SavePosLineCol(varLine, varCol string) Op {
 	return TypedObj(uast.TypePosition, map[string]Op{
-		uast.KeyPosLine: Var(vr),
-	})
-}
-
-// SavePosCol makes an operation that describes a uast.Position object with Col field set to a named variable.
-func SavePosCol(vr string) Op {
-	return TypedObj(uast.TypePosition, map[string]Op{
-		uast.KeyPosCol: Var(vr),
+		uast.KeyPosLine: Var(varLine),
+		uast.KeyPosCol:  Var(varCol),
 	})
 }
 
