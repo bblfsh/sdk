@@ -38,6 +38,9 @@ type Suite struct {
 
 func (s *Suite) readFixturesFile(t testing.TB, name string) string {
 	data, err := ioutil.ReadFile(filepath.Join(s.Path, name))
+	if os.IsNotExist(err) {
+		return ""
+	}
 	require.NoError(t, err)
 	return string(data)
 }
@@ -109,6 +112,10 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 				AST:      string(js),
 				Language: s.Lang,
 			}).String()
+			if exp == "" {
+				s.writeFixturesFile(t, name+suffix+nativeExt, got)
+				t.Skip("no test file found - generating")
+			}
 			if !assert.ObjectsAreEqual(exp, got) {
 				ext := nativeExt + gotSuffix
 				if s.UpdateNative {
@@ -175,6 +182,10 @@ func (s *Suite) testFixturesUAST(t *testing.T) {
 				UAST:     un,
 				Language: s.Lang,
 			}).String()
+			if exp == "" {
+				s.writeFixturesFile(t, name+suffix+uastExt, got)
+				t.Skip("no test file found - generating")
+			}
 			if !assert.ObjectsAreEqual(exp, got) {
 				ext := uastExt + gotSuffix
 				if s.UpdateUAST {
