@@ -129,6 +129,7 @@ func ASTObjectRightCustom(typ string, norm ObjectOp, fnc RolesByType, rop ArrayO
 
 // ObjectRoles creates a shape that adds additional roles to an object.
 // Should only be used in other object fields, since it does not set any type constraints.
+// Specified variable name (vr) will be used as a prefix for variables to store old roles and unprocessed object keys.
 func ObjectRoles(vr string, roles ...role.Role) Op {
 	return ObjectRolesCustom(vr, nil, roles...)
 }
@@ -235,6 +236,17 @@ func comment(s string) (string, error) {
 // UncommentCLike removes // and /* */ symbols from a given string variable.
 func UncommentCLike(vr string) Op {
 	return StringConv(Var(vr), uncomment, comment)
+}
+
+// Uncomment removes specified tokens from the beginning and from the end of a given string variable.
+func Uncomment(vr string, tokens [2]string) Op {
+	return StringConv(Var(vr), func(s string) (string, error) {
+		s = strings.TrimPrefix(s, tokens[0])
+		s = strings.TrimSuffix(s, tokens[1])
+		return s, nil
+	}, func(s string) (string, error) {
+		return tokens[0] + s + tokens[1], nil
+	})
 }
 
 // MapAST is a helper for describing a single AST transformation for a given node type.
