@@ -394,3 +394,24 @@ func StringToRolesMap(m map[string][]role.Role) map[uast.Value]ArrayOp {
 	}
 	return out
 }
+
+// AnnotateIfNoRoles adds roles to specific type if there were no roles set for it yet.
+//
+// Since rules are applied depth-first, this operation will work properly only in a separate mapping step.
+// In other cases it will apply itself before parent node appends field roles.
+func AnnotateIfNoRoles(typ string, roles ...role.Role) Mapping {
+	return ASTMap(typ,
+		Check(
+			Not(Has{
+				uast.KeyRoles: AnyNode(nil),
+			}),
+			Part("_", Obj{
+				uast.KeyType: String(typ),
+			}),
+		),
+		Part("_", Obj{
+			uast.KeyType:  String(typ),
+			uast.KeyRoles: Roles(roles...),
+		}),
+	)
+}

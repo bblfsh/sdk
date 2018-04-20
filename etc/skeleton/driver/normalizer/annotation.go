@@ -1,7 +1,6 @@
 package normalizer
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/uast"
 	"gopkg.in/bblfsh/sdk.v1/uast/role"
 	. "gopkg.in/bblfsh/sdk.v1/uast/transformer"
 	"gopkg.in/bblfsh/sdk.v1/uast/transformer/positioner"
@@ -47,7 +46,5 @@ var Annotations = []Mapping{
 		InternalTypeKey: "...", // native AST type key name
 	}.Mapping(),
 
-	ASTMap("unannotated", Obj{}, Obj{
-		uast.KeyRoles: Roles(role.Unannotated),
-	}),
+	AnnotateType("internal-type", nil, role.Incomplete),
 }

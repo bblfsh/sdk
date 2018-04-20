@@ -100,20 +100,20 @@ func AnyVal(val uast.Value) Op {
 	return AnyNode(Is(val))
 }
 
-// And checks current node with all ops and fails if any of them fails.
+// Seq checks current node with all ops in a sequence and fails if any of them fails.
 // Reversal applies all modifications from ops to the current node.
 // Typed ops should be at the beginning of the list to make sure that `Construct`
 // creates a correct node type before applying specific changes to it.
-func And(ops ...Op) Op {
+func Seq(ops ...Op) Op {
 	if len(ops) == 1 {
 		return ops[0]
 	}
-	return opAnd(ops)
+	return opSeq(ops)
 }
 
-type opAnd []Op
+type opSeq []Op
 
-func (op opAnd) Check(st *State, n uast.Node) (bool, error) {
+func (op opSeq) Check(st *State, n uast.Node) (bool, error) {
 	for i, sub := range op {
 		if ok, err := sub.Check(st, n); err != nil {
 			return false, errAnd.Wrap(err, i, sub)
@@ -124,7 +124,7 @@ func (op opAnd) Check(st *State, n uast.Node) (bool, error) {
 	return true, nil
 }
 
-func (op opAnd) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opSeq) Construct(st *State, n uast.Node) (uast.Node, error) {
 	for i, sub := range op {
 		var err error
 		n, err = sub.Construct(st, n)
@@ -1057,6 +1057,24 @@ func (op opNot) Check(st *State, n uast.Node) (bool, error) {
 		return false, err
 	}
 	return !ok, nil
+}
+
+// And serves as a logical And operation for conditions.
+func And(sels ...Sel) Sel {
+	return opAnd(sels)
+}
+
+type opAnd []Sel
+
+func (op opAnd) Check(st *State, n uast.Node) (bool, error) {
+	for _, sub := range op {
+		if ok, err := sub.Check(st.Clone(), n); err != nil {
+			return false, err
+		} else if !ok {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // Any check matches if any of list elements matches sub-check.

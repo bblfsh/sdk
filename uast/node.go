@@ -185,12 +185,17 @@ func (m Object) SetToken(tok string) Object {
 }
 
 // Roles is a helper for getting node UAST roles (see KeyRoles).
-func (m Object) Roles() []role.Role {
+func (m Object) Roles() role.Roles {
 	arr, ok := m[KeyRoles].(Array)
-	if !ok {
-		return nil
+	if !ok || len(arr) == 0 {
+		switch m.Type() {
+		case "", TypePosition:
+			// TODO: find a better solution to blacklist roles for specific types
+			return nil
+		}
+		return role.Roles{role.Unannotated}
 	}
-	out := make([]role.Role, 0, len(arr))
+	out := make(role.Roles, 0, len(arr))
 	for _, v := range arr {
 		if r, ok := v.(String); ok {
 			out = append(out, role.FromString(string(r)))

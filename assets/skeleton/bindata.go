@@ -1090,7 +1090,6 @@ func driverMainGoTpl() (*asset, error) {
 var _driverNormalizerAnnotationGo = []byte(`package normalizer
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/uast"
 	"gopkg.in/bblfsh/sdk.v1/uast/role"
 	. "gopkg.in/bblfsh/sdk.v1/uast/transformer"
 	"gopkg.in/bblfsh/sdk.v1/uast/transformer/positioner"
@@ -1136,9 +1135,7 @@ var Annotations = []Mapping{
 		InternalTypeKey: "...", // native AST type key name
 	}.Mapping(),
 
-	ASTMap("unannotated", Obj{}, Obj{
-		uast.KeyRoles: Roles(role.Unannotated),
-	}),
+	AnnotateType("internal-type", nil, role.Incomplete),
 }
 `)
 
@@ -1152,7 +1149,7 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 1676, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 1617, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
