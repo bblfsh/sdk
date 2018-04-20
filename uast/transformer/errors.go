@@ -35,8 +35,6 @@ var (
 	ErrUnexpectedType = errors.NewKind("unexpected type: exp %T vs got %T")
 	// ErrAmbiguousValue is returned when Lookup map contains the same value mapped to different keys.
 	ErrAmbiguousValue = errors.NewKind("map has ambiguous value %v")
-	// ErrFewSteps is eturned when mapping is defined with less than 2 steps.
-	ErrFewSteps = errors.NewKind("mapping should contains multiple steps")
 	// ErrUnusedField is returned when a transformation is not defined as partial, but does not process a specific key
 	// found in object. This usually means that an AST has a field that is not covered by transformation code and it
 	// should be added to the mapping.

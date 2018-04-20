@@ -1061,6 +1061,9 @@ func (op opNot) Check(st *State, n uast.Node) (bool, error) {
 
 // Any check matches if any of list elements matches sub-check.
 func Any(s Sel) Sel {
+	if s == nil {
+		s = Is(nil)
+	}
 	return opAny{sel: s}
 }
 

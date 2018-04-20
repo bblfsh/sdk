@@ -396,6 +396,26 @@ var opCases = []struct {
 			}
 		},
 	},
+	{
+		name: "change type",
+		inp: func() u.Node {
+			return u.Object{
+				u.KeyType: u.String("node"),
+				"val":     u.String("a"),
+			}
+		},
+		src: Check(
+			Not(Has{"b": Any(nil)}),
+			Obj{
+				u.KeyType: String("node"),
+				"val":     Var("x"),
+			},
+		),
+		dst: Arr(Var("x")),
+		exp: func() u.Node {
+			return u.Array{u.String("a")}
+		},
+	},
 }
 
 func TestOps(t *testing.T) {
@@ -414,7 +434,7 @@ func TestOps(t *testing.T) {
 
 			do := func(m Mapping, er *errors.Kind, inpf, expf func() u.Node) bool {
 				inp := inpf()
-				out, err := m.Do(inp)
+				out, err := Mappings(m).Do(inp)
 				if er != nil {
 					require.True(t, er.Is(err), "expected %v, got %v", er, err)
 					return false

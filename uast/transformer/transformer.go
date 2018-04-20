@@ -1,7 +1,7 @@
 package transformer
 
 import (
-	"fmt"
+	"sort"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
@@ -104,38 +104,25 @@ func (f TransformObjFunc) Do(n uast.Node) (uast.Node, error) {
 // The first operation will be used to check constraints for each node and store state, while the second one will use
 // the state to construct a new tree.
 func Map(name string, src, dst Op) Mapping {
-	return Mapping{Name: name, Steps: []Step{
-		{Name: "src", Op: src},
-		{Name: "dst", Op: dst},
-	}}
+	return Mapping{name: name, src: src, dst: dst}
 }
 
 var _ Transformer = Mapping{}
 
-// Step is a single transformation step. See Mapping.
-type Step struct {
-	Name string
-	Op   Op
-}
-
 // Mapping is a set of transformation steps executed in order.
 type Mapping struct {
-	Name  string
-	Steps []Step
+	name     string
+	src, dst Op
 }
 
 // Reverse changes a transformation direction, allowing to construct the source tree.
 func (m Mapping) Reverse() Mapping {
-	n := len(m.Steps)
-	steps := make([]Step, n)
-	for i, s := range m.Steps {
-		steps[n-1-i] = s
-	}
-	m.Steps = steps
+	m.src, m.dst = m.dst, m.src
 	return m
 }
 
-func applyMap(src, dst Op, root uast.Node) (uast.Node, error) {
+func (m Mapping) apply(root uast.Node) (uast.Node, error) {
+	src, dst := m.src, m.dst
 	var errs []error
 	_, objOp := src.(ObjectOp)
 	_, arrOp := src.(ArrayOp)
@@ -175,137 +162,126 @@ func applyMap(src, dst Op, root uast.Node) (uast.Node, error) {
 
 // Do will traverse the whole tree and will apply transformation steps for each node.
 func (m Mapping) Do(n uast.Node) (uast.Node, error) {
-	if len(m.Steps) <= 1 {
-		return n, ErrFewSteps.New()
+	nn, err := m.apply(n)
+	if err != nil {
+		return n, errMapping.Wrap(err, m.name)
 	}
-	steps := m.Steps
-	var err error
-	for len(steps) >= 2 {
-		src, dst := steps[0], steps[1]
-		n, err = applyMap(src.Op, dst.Op, n)
-		if err != nil {
-			return n, errMapping.Wrap(err, m.Name)
-		}
-		steps = steps[1:]
-	}
-	return n, err
+	return nn, nil
 }
 
 // Mappings takes multiple mappings and optimizes the process of applying them as a single transformation.
 func Mappings(maps ...Mapping) Transformer {
 	if len(maps) == 0 {
 		return mappings{}
+	} else if len(maps) == 1 {
+		return maps[0]
 	}
-	names := make([]string, 0, len(maps))
-	steps := make([]multiStep, 0, len(maps[0].Steps))
-	typedAll := make([][]Op, len(steps))
-	for _, st := range maps[0].Steps {
-		ops := make([]Op, 0, len(maps))
-		steps = append(steps, multiStep{
-			name:     st.Name,
-			all:      ops,
-			typedObj: make(map[string][]Op),
-		})
+	mp := mappings{
+		all: maps,
 	}
-	for _, m := range maps {
-		names = append(names, m.Name)
-		if len(m.Steps) != len(steps) {
-			panic(fmt.Errorf("wrong number of steps for %q", m.Name))
-		}
-		for j, st := range m.Steps {
-			if steps[j].name != st.Name {
-				panic(fmt.Errorf("unexpected step %q.%q", m.Name, st.Name))
-			}
-			op := st.Op
-			// pre-compile object operations (sort fields for unordered ops, etc)
-			// TODO: recurse somehow
-			if oop, ok := op.(ObjectOp); ok {
-				if _, ok := op.(Object); !ok {
-					op = oop.Object()
-				}
-			}
-			// all operations
-			steps[j].all = append(steps[j].all, op)
-			// switch by operation type and make a separate list
-			// next time we will see a node with matching type, we will apply only specific ops
-			switch op := op.(type) {
-			case ObjectOp:
-				steps[j].objs = append(steps[j].objs, op)
-				if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
-					if is, ok := f.Op.(opIs); ok {
-						if typ, ok := is.v.(uast.String); ok {
-							m := steps[j].typedObj
-							s := string(typ)
-							m[s] = append(m[s], op)
-						}
-					}
-				}
-			case ArrayOp:
-				steps[j].arrs = append(steps[j].arrs, op)
-			default:
-				steps[j].others = append(steps[j].others, op)
-				// the type is unknown, thus we should try to apply it to objects and array as well
-				typedAll[j] = append(typedAll[j], op)
-				steps[j].objs = append(steps[j].objs, op)
-				steps[j].arrs = append(steps[j].arrs, op)
-			}
-		}
-	}
-	for j, arr := range typedAll {
-		if len(arr) == 0 {
-			continue
-		}
-		m := steps[j].typedObj
-		for typ, ops := range m {
-			m[typ] = append(ops, arr...)
-		}
-	}
-	return mappings{names: names, steps: steps}
-}
-
-type multiStep struct {
-	name     string
-	objs     []Op
-	typedObj map[string][]Op
-	typedAll []Op
-	arrs     []Op
-	others   []Op
-	all      []Op
+	mp.index()
+	return mp
 }
 
 type mappings struct {
-	names []string
-	steps []multiStep
+	all []Mapping
+
+	// indexed mappings
+
+	objs   []Mapping // mappings applied to objects
+	arrs   []Mapping // mappings applied to arrays
+	others []Mapping // mappings to other types
+
+	typedObj map[string][]Mapping // mappings for objects with specific type
+	typedAny []Mapping            // mappings for any typed object (operations that does not mention the type)
 }
 
-func (m mappings) apply(msrc, mdst multiStep, root uast.Node) (uast.Node, error) {
+func (m *mappings) index() {
+	precompile := func(op Op) Op {
+		// TODO: recurse somehow
+		if oop, ok := op.(ObjectOp); ok {
+			if _, ok := op.(Object); !ok {
+				return oop.Object()
+			}
+		}
+		return op
+	}
+	type ordered struct {
+		ind int
+		mp  Mapping
+	}
+	var typedAny []ordered
+	typed := make(map[string][]ordered)
+	for i, mp := range m.all {
+		// pre-compile object operations (sort fields for unordered ops, etc)
+		mp.src, mp.dst = precompile(mp.src), precompile(mp.dst)
+
+		oop := mp.src
+		if chk, ok := oop.(opCheck); ok {
+			oop = chk.op
+		}
+		// switch by operation type and make a separate list
+		// next time we will see a node with matching type, we will apply only specific ops
+		switch op := oop.(type) {
+		case ObjectOp:
+			m.objs = append(m.objs, mp)
+			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
+				if is, ok := f.Op.(opIs); ok {
+					if typ, ok := is.v.(uast.String); ok {
+						s := string(typ)
+						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
+					}
+				}
+			}
+		case ArrayOp:
+			m.arrs = append(m.arrs, mp)
+		default:
+			m.others = append(m.others, mp)
+			// the type is unknown, thus we should try to apply it to objects and array as well
+			typedAny = append(typedAny, ordered{ind: i, mp: mp})
+			m.objs = append(m.objs, mp)
+			m.arrs = append(m.arrs, mp)
+		}
+	}
+	m.typedObj = make(map[string][]Mapping, len(typed))
+	for typ, ord := range typed {
+		ord = append(ord, typedAny...)
+		sort.Slice(ord, func(i, j int) bool {
+			return ord[i].ind < ord[j].ind
+		})
+		maps := make([]Mapping, 0, len(ord))
+		for _, o := range ord {
+			maps = append(maps, o.mp)
+		}
+		m.typedObj[typ] = maps
+	}
+}
+
+func (m mappings) Do(root uast.Node) (uast.Node, error) {
 	var errs []error
 	st := NewState()
 	nn, ok := uast.Apply(root, func(old uast.Node) (uast.Node, bool) {
-		src, dst := msrc.all, mdst.all
+		maps := m.all
 		switch old := old.(type) {
 		case nil:
 			// apply all
 		case uast.Object:
-			src, dst = msrc.objs, mdst.objs
+			maps = m.objs
 			if typ, ok := old[uast.KeyType].(uast.String); ok {
-				if ops, ok := msrc.typedObj[string(typ)]; ok {
-					src = ops
-				}
-				if ops, ok := mdst.typedObj[string(typ)]; ok {
-					dst = ops
+				if mp, ok := m.typedObj[string(typ)]; ok {
+					maps = mp
 				}
 			}
 		case uast.Array:
-			src, dst = msrc.arrs, mdst.arrs
+			maps = m.arrs
 		default:
-			src, dst = msrc.others, mdst.others
+			maps = m.others
 		}
 
 		n := old
 		applied := false
-		for i, src := range src {
-			dst := dst[i]
+		for _, mp := range maps {
+			src, dst := mp.src, mp.dst
 			st.Reset()
 			if ok, err := src.Check(st, n); err != nil {
 				errs = append(errs, errCheck.Wrap(err))
@@ -332,22 +308,6 @@ func (m mappings) apply(msrc, mdst multiStep, root uast.Node) (uast.Node, error)
 		return nn, err
 	}
 	return root, err
-}
-func (m mappings) Do(n uast.Node) (uast.Node, error) {
-	if len(m.steps) <= 1 {
-		return n, ErrFewSteps.New()
-	}
-	steps := m.steps
-	var err error
-	for len(steps) >= 2 {
-		src, dst := steps[0], steps[1]
-		n, err = m.apply(src, dst, n)
-		if err != nil {
-			return n, errMapping.Wrap(err, dst.name)
-		}
-		steps = steps[1:]
-	}
-	return n, err
 }
 
 // NewState creates a new state for Ops to work on.

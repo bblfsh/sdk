@@ -42,13 +42,7 @@ func AppendRoles(old ArrayOp, roles ...role.Role) ArrayOp {
 
 // ASTMap is a helper for creating a two-way mapping between AST and its normalized form.
 func ASTMap(name string, native, norm Op) Mapping {
-	return Mapping{
-		Name: name,
-		Steps: []Step{
-			{Name: "native", Op: native},
-			{Name: "norm", Op: norm},
-		},
-	}
+	return Map(name, native, norm)
 }
 
 // RolesField will create a roles field that appends provided roles to existing ones.
