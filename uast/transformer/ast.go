@@ -264,26 +264,26 @@ func MapASTCustomType(typ string, ast, norm ObjectOp, fnc RolesByType, rop Array
 	)
 }
 
+// FieldAnnotator is an interface for role annotators that set roles for specific fields.
+//
+// Implementations:
+// * FieldRoles
+// * ObjRoles
+type FieldAnnotator interface {
+	FieldRoles() FieldRoles
+}
+
+var _ FieldAnnotator = ObjRoles{}
+
 // ObjRoles is a helper type that stores a mapping from field names to their roles.
 type ObjRoles map[string][]role.Role
 
-var _ ASTMapFunc = MapASTCustom
-
-// ASTMapFunc is a signature for functions that maps two AST shapes for a specific type and can append roles to it.
-type ASTMapFunc func(typ string, ast, norm ObjectOp, rop ArrayOp, roles ...role.Role) Mapping
-
-// AnnotateTypeCustom is like AnnotateType but allows to specify custom roles operation as well as a mapper function.
-func AnnotateTypeCustom(mapAST ASTMapFunc, typ string, fields ObjRoles, rop ArrayOp, roles ...role.Role) Mapping {
-	m := make(FieldRoles, len(fields))
-	for name, roles := range fields {
+func (o ObjRoles) FieldRoles() FieldRoles {
+	m := make(FieldRoles, len(o))
+	for name, roles := range o {
 		m[name] = FieldRole{Opt: true, Roles: roles}
 	}
-	return AnnotateTypeFieldsCustom(mapAST, typ, m, rop, roles...)
-}
-
-// AnnotateType is a helper to assign roles to specific fields. All fields are assumed to be optional and should be objects.
-func AnnotateType(typ string, fields ObjRoles, roles ...role.Role) Mapping {
-	return AnnotateTypeCustom(nil, typ, fields, nil, roles...)
+	return m
 }
 
 // FieldRole is a list of operations that can be applied to an object field.
@@ -354,17 +354,30 @@ func (f FieldRole) build(name string) (names [2]string, ops [2]Op, _ error) {
 	return names, ops, nil
 }
 
+var _ FieldAnnotator = FieldRoles{}
+
 // FieldRoles is a helper type that stores a mapping from field names to operations that needs to be applied to it.
 type FieldRoles map[string]FieldRole
 
-// AnnotateTypeFieldsCustom is like AnnotateTypeFields but allows to specify custom roles operation as well as a mapper function.
-func AnnotateTypeFieldsCustom(mapAST ASTMapFunc, typ string, fields FieldRoles, rop ArrayOp, roles ...role.Role) Mapping {
+func (f FieldRoles) FieldRoles() FieldRoles { return f }
+
+var _ ASTMapFunc = MapASTCustom
+
+// ASTMapFunc is a signature for functions that maps two AST shapes for a specific type and can append roles to it.
+type ASTMapFunc func(typ string, ast, norm ObjectOp, rop ArrayOp, roles ...role.Role) Mapping
+
+// AnnotateTypeCustom is like AnnotateType but allows to specify custom roles operation as well as a mapper function.
+func AnnotateTypeCustom(mapAST ASTMapFunc, typ string, fields FieldAnnotator, rop ArrayOp, roles ...role.Role) Mapping {
 	if mapAST == nil {
 		mapAST = MapASTCustom
 	}
-	left := make(Obj, len(fields))
-	right := make(Obj, len(fields))
-	for name, f := range fields {
+	var fld FieldRoles
+	if fields != nil {
+		fld = fields.FieldRoles()
+	}
+	left := make(Obj, len(fld))
+	right := make(Obj, len(fld))
+	for name, f := range fld {
 		names, ops, err := f.build(name)
 		if err != nil {
 			panic(fmt.Errorf("field %q: %v", name, err))
@@ -379,10 +392,9 @@ func AnnotateTypeFieldsCustom(mapAST ASTMapFunc, typ string, fields FieldRoles, 
 	return mapAST(typ, left, right, rop, roles...)
 }
 
-// AnnotateTypeFields is a more advanced version of AnnotateType and allows to apply more complex operations to fields.
-// See FieldRole for a list of supported operations.
-func AnnotateTypeFields(typ string, fields FieldRoles, roles ...role.Role) Mapping {
-	return AnnotateTypeFieldsCustom(nil, typ, fields, nil, roles...)
+// AnnotateType is a helper to assign roles to specific fields. All fields are assumed to be optional and should be objects.
+func AnnotateType(typ string, fields FieldAnnotator, roles ...role.Role) Mapping {
+	return AnnotateTypeCustom(nil, typ, fields, nil, roles...)
 }
 
 // StringToRolesMap is a helper to generate an array operation map that can be used for Lookup
