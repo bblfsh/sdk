@@ -264,26 +264,26 @@ func MapASTCustomType(typ string, ast, norm ObjectOp, fnc RolesByType, rop Array
 	)
 }
 
-// FieldAnnotator is an interface for role annotators that set roles for specific fields.
+// ObjAnnotator is an interface for transformation that annotates an object node.
 //
 // Implementations:
 // * FieldRoles
 // * ObjRoles
-type FieldAnnotator interface {
-	FieldRoles() FieldRoles
+type ObjAnnotator interface {
+	MappingParts(varPref string) (src, dst ObjectOp)
 }
 
-var _ FieldAnnotator = ObjRoles{}
+var _ ObjAnnotator = ObjRoles{}
 
 // ObjRoles is a helper type that stores a mapping from field names to their roles.
 type ObjRoles map[string][]role.Role
 
-func (o ObjRoles) FieldRoles() FieldRoles {
+func (o ObjRoles) MappingParts(pref string) (src, dst ObjectOp) {
 	m := make(FieldRoles, len(o))
 	for name, roles := range o {
 		m[name] = FieldRole{Opt: true, Roles: roles}
 	}
-	return m
+	return m.MappingParts(pref)
 }
 
 // FieldRole is a list of operations that can be applied to an object field.
@@ -293,20 +293,22 @@ type FieldRole struct {
 	Skip bool // omit this field in the resulting tree
 	Add  bool // create this field in the resulting tree
 
-	Opt   bool        // field can be nil
-	Arr   bool        // field is an array; apply roles or custom operation to each element
-	Op    Op          // use this operation for the field on both sides of transformation
-	Roles []role.Role // list of roles to append to the field; has no effect if Op is set
+	Opt   bool         // field can be nil
+	Arr   bool         // field is an array; apply roles or custom operation to each element
+	Sub   ObjAnnotator // an annotator that will be used for this field; overrides Op
+	Op    Op           // use this operation for the field on both sides of transformation
+	Roles []role.Role  // list of roles to append to the field; has no effect if Op is set
 }
 
 func (f FieldRole) validate() error {
 	if f.Arr && f.Opt {
 		return fmt.Errorf("field should either be a list or optional")
 	}
-	if len(f.Roles) == 0 && f.Op == nil && (f.Opt || f.Arr) {
+	opSet := len(f.Roles) != 0 || f.Op != nil || f.Sub != nil
+	if !opSet && (f.Opt || f.Arr) {
 		return fmt.Errorf("either roles or operation should be set to use Opt or Arr")
 	}
-	if f.Skip && (f.Opt || f.Arr || len(f.Roles) != 0) {
+	if f.Skip && (f.Opt || f.Arr || opSet) {
 		return fmt.Errorf("skip cannot be used with other operations")
 	}
 	if f.Skip && (f.Rename != "" && !f.Add) {
@@ -315,17 +317,35 @@ func (f FieldRole) validate() error {
 	return nil
 }
 
-func (f FieldRole) build(name string) (names [2]string, ops [2]Op, _ error) {
+func (f FieldRole) build(name, pref string) (names [2]string, ops [2]Op, _ error) {
 	if err := f.validate(); err != nil {
 		return names, ops, err
 	}
+	pref = pref + name + "_"
 	rname := name
 	if f.Rename != "" {
 		rname = f.Rename
 	}
-	vr := name + "_var"
+	vr := pref + "var"
 	var l, r Op
-	if f.Op != nil {
+	if f.Sub != nil {
+		lo, ro := f.Sub.MappingParts(pref)
+		if len(f.Roles) != 0 {
+			lf, rf := lo.Object(), ro.Object()
+			lf.SetFieldObj(RolesField(vr))
+			rf.SetFieldObj(RolesField(vr, f.Roles...))
+			lo, ro = lf, rf
+		}
+		pvr := vr + "m"
+		l, r = Part(pvr, lo), Part(pvr, ro)
+		if f.Arr {
+			lvr := vr + "list"
+			l, r = Each(lvr, l), Each(lvr, r)
+		} else if f.Opt {
+			lvr := vr + "set"
+			l, r = Opt(lvr, l), Opt(lvr, r)
+		}
+	} else if f.Op != nil {
 		l, r = f.Op, f.Op
 	} else if len(f.Roles) == 0 {
 		l, r = Var(vr), Var(vr)
@@ -354,12 +374,28 @@ func (f FieldRole) build(name string) (names [2]string, ops [2]Op, _ error) {
 	return names, ops, nil
 }
 
-var _ FieldAnnotator = FieldRoles{}
+var _ ObjAnnotator = FieldRoles{}
 
 // FieldRoles is a helper type that stores a mapping from field names to operations that needs to be applied to it.
 type FieldRoles map[string]FieldRole
 
-func (f FieldRoles) FieldRoles() FieldRoles { return f }
+func (f FieldRoles) MappingParts(pref string) (left, right ObjectOp) {
+	l := make(Obj, len(f))
+	r := make(Obj, len(f))
+	for name, fld := range f {
+		names, ops, err := fld.build(name, pref)
+		if err != nil {
+			panic(fmt.Errorf("field %q: %v", name, err))
+		}
+		if names[0] != "" {
+			l[names[0]] = ops[0]
+		}
+		if names[1] != "" {
+			r[names[1]] = ops[1]
+		}
+	}
+	return l, r
+}
 
 var _ ASTMapFunc = MapASTCustom
 
@@ -367,33 +403,21 @@ var _ ASTMapFunc = MapASTCustom
 type ASTMapFunc func(typ string, ast, norm ObjectOp, rop ArrayOp, roles ...role.Role) Mapping
 
 // AnnotateTypeCustom is like AnnotateType but allows to specify custom roles operation as well as a mapper function.
-func AnnotateTypeCustom(mapAST ASTMapFunc, typ string, fields FieldAnnotator, rop ArrayOp, roles ...role.Role) Mapping {
+func AnnotateTypeCustom(mapAST ASTMapFunc, typ string, fields ObjAnnotator, rop ArrayOp, roles ...role.Role) Mapping {
 	if mapAST == nil {
 		mapAST = MapASTCustom
 	}
-	var fld FieldRoles
+	var left, right ObjectOp
 	if fields != nil {
-		fld = fields.FieldRoles()
-	}
-	left := make(Obj, len(fld))
-	right := make(Obj, len(fld))
-	for name, f := range fld {
-		names, ops, err := f.build(name)
-		if err != nil {
-			panic(fmt.Errorf("field %q: %v", name, err))
-		}
-		if names[0] != "" {
-			left[names[0]] = ops[0]
-		}
-		if names[1] != "" {
-			right[names[1]] = ops[1]
-		}
+		left, right = fields.MappingParts("")
+	} else {
+		left, right = Obj{}, Obj{}
 	}
 	return mapAST(typ, left, right, rop, roles...)
 }
 
 // AnnotateType is a helper to assign roles to specific fields. All fields are assumed to be optional and should be objects.
-func AnnotateType(typ string, fields FieldAnnotator, roles ...role.Role) Mapping {
+func AnnotateType(typ string, fields ObjAnnotator, roles ...role.Role) Mapping {
 	return AnnotateTypeCustom(nil, typ, fields, nil, roles...)
 }
 
