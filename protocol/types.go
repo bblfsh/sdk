@@ -258,61 +258,73 @@ func ToNode(n uast.Node) (*Node, error) {
 	}
 }
 
+func arrayAsNode(n uast.Array, field string) ([]*Node, error) {
+	arr := make([]*Node, 0, len(n))
+	for _, s := range n {
+		nd, err := asNode(s, field)
+		if err != nil {
+			return arr, err
+		}
+		arr = append(arr, nd...)
+	}
+	return arr, nil
+}
+
+func objectAsNode(n uast.Object, field string) ([]*Node, error) {
+	nd := &Node{
+		InternalType:  n.Type(),
+		Token:         n.Token(),
+		Roles:         n.Roles(),
+		StartPosition: n.StartPosition(),
+		EndPosition:   n.EndPosition(),
+		Properties:    make(map[string]string),
+	}
+	if field != "" {
+		nd.Properties[InternalRoleKey] = field
+	}
+
+	for k, v := range n {
+		switch k {
+		case uast.KeyType, uast.KeyToken, uast.KeyRoles,
+			uast.KeyStart, uast.KeyEnd:
+			// already processed
+			continue
+		}
+		if nv, ok := v.(uast.Value); ok {
+			nd.Properties[k] = fmt.Sprint(nv.Native())
+		} else {
+			sn, err := asNode(v, k)
+			if err != nil {
+				return nil, err
+			}
+			nd.Children = append(nd.Children, sn...)
+		}
+	}
+	sort.Stable(byOffset(nd.Children))
+	return []*Node{nd}, nil
+}
+
+func valueAsNode(n uast.Value, field string) ([]*Node, error) {
+	nd := &Node{
+		Token:      fmt.Sprint(n),
+		Properties: make(map[string]string),
+	}
+	if field != "" {
+		nd.Properties[InternalRoleKey] = field
+	}
+	return []*Node{nd}, nil
+}
+
 func asNode(n uast.Node, field string) ([]*Node, error) {
 	switch n := n.(type) {
 	case nil:
 		return nil, nil
 	case uast.Array:
-		arr := make([]*Node, 0, len(n))
-		for _, s := range n {
-			nd, err := asNode(s, field)
-			if err != nil {
-				return arr, err
-			}
-			arr = append(arr, nd...)
-		}
-		return arr, nil
+		return arrayAsNode(n, field)
 	case uast.Object:
-		nd := &Node{
-			InternalType:  n.Type(),
-			Token:         n.Token(),
-			Roles:         n.Roles(),
-			StartPosition: n.StartPosition(),
-			EndPosition:   n.EndPosition(),
-			Properties:    make(map[string]string),
-		}
-		if field != "" {
-			nd.Properties[InternalRoleKey] = field
-		}
-
-		for k, v := range n {
-			switch k {
-			case uast.KeyType, uast.KeyToken, uast.KeyRoles,
-				uast.KeyStart, uast.KeyEnd:
-				// already processed
-				continue
-			}
-			if nv, ok := v.(uast.Value); ok {
-				nd.Properties[k] = fmt.Sprint(nv.Native())
-			} else {
-				sn, err := asNode(v, k)
-				if err != nil {
-					return nil, err
-				}
-				nd.Children = append(nd.Children, sn...)
-			}
-		}
-		sort.Stable(byOffset(nd.Children))
-		return []*Node{nd}, nil
+		return objectAsNode(n, field)
 	case uast.Value:
-		nd := &Node{
-			Token:      fmt.Sprint(n),
-			Properties: make(map[string]string),
-		}
-		if field != "" {
-			nd.Properties[InternalRoleKey] = field
-		}
-		return []*Node{nd}, nil
+		return valueAsNode(n, field)
 	default:
 		return nil, fmt.Errorf("argument should be a node or a list, got: %T", n)
 	}
