@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast"
 )
 
 const (

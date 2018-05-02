@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 func tObj(typ, tok string) Object {

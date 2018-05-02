@@ -1,6 +1,6 @@
 package role
 
-//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/uast/role
+//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v2/uast/role
 
 // Role is the main UAST annotation. It indicates that a node in an AST can
 // be interpreted as acting with certain language-independent role.

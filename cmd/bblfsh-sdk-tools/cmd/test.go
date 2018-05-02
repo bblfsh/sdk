@@ -6,11 +6,11 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver/integration/consts"
+	"gopkg.in/bblfsh/sdk.v2/sdk/driver/integration/consts"
 )
 
 const (
-	IntegrationPackage     = "gopkg.in/bblfsh/sdk.v1/sdk/driver/integration"
+	IntegrationPackage     = "gopkg.in/bblfsh/sdk.v2/sdk/driver/integration"
 	TestCommandDescription = "" +
 		"test runs all the integration tests for a given driver"
 )

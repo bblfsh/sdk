@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v2/protocol"
 )
 
 func TestEncoding(t *testing.T) {

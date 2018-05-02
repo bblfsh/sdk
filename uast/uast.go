@@ -14,7 +14,7 @@
 package uast
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 // Hash is a hash value.

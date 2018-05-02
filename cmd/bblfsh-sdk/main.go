@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/bblfsh/sdk.v1/cmd/bblfsh-sdk/cmd"
+	"gopkg.in/bblfsh/sdk.v2/cmd/bblfsh-sdk/cmd"
 
 	"github.com/jessevdk/go-flags"
 )

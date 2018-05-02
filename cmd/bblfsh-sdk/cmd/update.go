@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v1/assets/skeleton"
-	"gopkg.in/bblfsh/sdk.v1/cmd"
-	"gopkg.in/bblfsh/sdk.v1/manifest"
+	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
+	"gopkg.in/bblfsh/sdk.v2/cmd"
+	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
 
 const (

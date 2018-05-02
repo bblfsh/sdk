@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 // PathIter iterates node paths.

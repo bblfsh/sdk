@@ -85,7 +85,7 @@ services:
   - docker
 
 before_script:
-  - go get -v gopkg.in/bblfsh/sdk.v1/...
+  - go get -v gopkg.in/bblfsh/sdk.v2/...
   - bblfsh-sdk prepare-build .
   - go get -v -t ./driver/...
 
@@ -928,7 +928,7 @@ Development Environment
 
 Requirements:
 - ` + "`" + `docker` + "`" + `
-- [` + "`" + `bblfsh-sdk` + "`" + `](https://github.com/bblfsh/sdk) _(go get -u gopkg.in/bblfsh/sdk.v1/...)_
+- [` + "`" + `bblfsh-sdk` + "`" + `](https://github.com/bblfsh/sdk) _(go get -u gopkg.in/bblfsh/sdk.v2/...)_
 - UAST converter dependencies _(go get -t -v ./...)_
 
 To initialize the build system execute: ` + "`" + `bblfsh-sdk prepare-build` + "`" + `, at the root of the project. This will install the SDK at ` + "`" + `.sdk` + "`" + ` for this driver.
@@ -986,8 +986,8 @@ import (
 	"testing"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver/fixtures"
+	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v2/sdk/driver/fixtures"
 )
 
 const projectRoot = "../../"
@@ -1032,7 +1032,7 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 
 var _driverImplImplGo = []byte(`package impl
 
-import "gopkg.in/bblfsh/sdk.v1/sdk/driver"
+import "gopkg.in/bblfsh/sdk.v2/sdk/driver"
 
 func init() {
 	// Can be overridden to link a native driver into a Go driver server.
@@ -1061,7 +1061,7 @@ import (
 	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/impl"
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
 )
 
 func main() {
@@ -1090,19 +1090,19 @@ func driverMainGoTpl() (*asset, error) {
 var _driverNormalizerAnnotationGo = []byte(`package normalizer
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
-	. "gopkg.in/bblfsh/sdk.v1/uast/transformer"
-	"gopkg.in/bblfsh/sdk.v1/uast/transformer/positioner"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
+	. "gopkg.in/bblfsh/sdk.v2/uast/transformer"
+	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
 )
 
 // Native is the of list ` + "`" + `transformer.Transformer` + "`" + ` to apply to a native AST.
 // To learn more about the Transformers and the available ones take a look to:
-// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/transformer
+// https://godoc.org/gopkg.in/bblfsh/sdk.v2/uast/transformer
 var Native = Transformers([][]Transformer{
 	{
 		// ResponseMetadata is a transform that trims response metadata from AST.
 		//
-		// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast#ResponseMetadata
+		// https://godoc.org/gopkg.in/bblfsh/sdk.v2/uast#ResponseMetadata
 		ResponseMetadata{
 			TopLevelIsRootNode: false,
 		},
@@ -1120,7 +1120,7 @@ var Native = Transformers([][]Transformer{
 // and can access original source code file. It can be used to improve or
 // fix positional information.
 //
-// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast/transformer/positioner
+// https://godoc.org/gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner
 var Code = []CodeTransformer{
 	positioner.NewFillLineColFromOffset(),
 }
@@ -1130,7 +1130,7 @@ var Annotations = []Mapping{
 	// ObjectToNode defines how to normalize common fields of native AST
 	// (like node type, token, positional information).
 	//
-	// https://godoc.org/gopkg.in/bblfsh/sdk.v1/uast#ObjectToNode
+	// https://godoc.org/gopkg.in/bblfsh/sdk.v2/uast#ObjectToNode
 	ObjectToNode{
 		InternalTypeKey: "...", // native AST type key name
 	}.Mapping(),

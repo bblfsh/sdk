@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 // SavePosOffset makes an operation that describes a uast.Position object with Offset field set to a named variable.

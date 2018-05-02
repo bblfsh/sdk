@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v1/manifest"
+	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
 
 func TestParseMaintainers(t *testing.T) {

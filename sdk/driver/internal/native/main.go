@@ -4,9 +4,9 @@ import (
 	"io"
 	"os"
 
-	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
-	"gopkg.in/bblfsh/sdk.v1/sdk/jsonlines"
+	"gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v2/sdk/jsonlines"
 )
 
 func main() {

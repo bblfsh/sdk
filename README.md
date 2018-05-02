@@ -20,7 +20,7 @@ GOPATH](https://golang.org/doc/code.html#Workspaces) environment variables.
 Babelfish SDK gets installed using either Go:
 
 ```bash
-$ go get -t -v gopkg.in/bblfsh/sdk.v1/...
+$ go get -t -v gopkg.in/bblfsh/sdk.v2/...
 ```
 
 or make command:

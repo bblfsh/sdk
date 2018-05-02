@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	u "gopkg.in/bblfsh/sdk.v1/uast"
+	u "gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/src-d/go-errors.v1"
 )
 

@@ -3,7 +3,7 @@ package transformer
 import (
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast"
 )
 
 // Transformer is an interface for transformations that operates on AST trees.

@@ -3,7 +3,7 @@ package native
 import (
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v2/protocol"
 )
 
 // ParseRequest to use with the native parser. This is for internal use.
