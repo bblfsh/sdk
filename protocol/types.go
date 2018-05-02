@@ -9,7 +9,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/protocol -p gopkg.in/bblfsh/sdk.v1/uast -p gopkg.in/bblfsh/sdk.v1/uast/role
+// go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v2/protocol -p gopkg.in/bblfsh/sdk.v2/uast -p gopkg.in/bblfsh/sdk.v2/uast/role
 //go:generate protoc --proto_path=$GOPATH/src:. --gogo_out=plugins=grpc:. ./generated.proto
 //go:generate stringer -type=Status,Encoding -output stringer.go
 
@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 // DefaultService is the default service used to process requests.

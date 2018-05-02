@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 	"gopkg.in/src-d/go-errors.v1"
 )
 

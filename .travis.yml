@@ -4,7 +4,7 @@ go:
   - 1.9
   - tip
 
-go_import_path: gopkg.in/bblfsh/sdk.v1
+go_import_path: gopkg.in/bblfsh/sdk.v2
 
 matrix:
   fast_finish: true
@@ -19,7 +19,7 @@ before_install:
   - cd $GOPATH/src/gopkg.in/bblfsh/client-go.v1
   - make dependencies
 
-  - cd $GOPATH/src/gopkg.in/bblfsh/sdk.v1
+  - cd $GOPATH/src/gopkg.in/bblfsh/sdk.v2
   - make validate-commit
   - go get -t -v ./...
 

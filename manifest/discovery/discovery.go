@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"github.com/google/go-github/github"
-	"gopkg.in/bblfsh/sdk.v1/manifest"
+	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
 
 const (

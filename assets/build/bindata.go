@@ -71,7 +71,7 @@ host-platform := $(shell echo $$HOST_PLATFORM)
 
 ifdef bblfsh-sdk-tools # run only with Golang
     ifdef in-container
-        bblfsh-sdk-tools :=  go run /go/src/gopkg.in/bblfsh/sdk.v1/cmd/bblfsh-sdk-tools/main.go
+        bblfsh-sdk-tools :=  go run /go/src/gopkg.in/bblfsh/sdk.v2/cmd/bblfsh-sdk-tools/main.go
     endif
 
     $(shell $(bblfsh-sdk-tools) envvars > $(manifest))

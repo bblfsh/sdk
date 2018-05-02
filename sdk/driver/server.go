@@ -5,8 +5,8 @@ import (
 	"net"
 	"os"
 
-	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/sdk/server"
+	"gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/sdk/server"
 	"gopkg.in/src-d/go-errors.v1"
 )
 

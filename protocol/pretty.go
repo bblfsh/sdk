@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 // IncludeFlag represents a set of fields to be included in a Hash or String.

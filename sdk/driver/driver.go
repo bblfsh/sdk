@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v1/manifest"
-	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
+	"gopkg.in/bblfsh/sdk.v2/manifest"
+	"gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/transformer"
 )
 
 type Mode int

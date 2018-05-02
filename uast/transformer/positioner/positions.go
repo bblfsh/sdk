@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/transformer"
 )
 
 var _ transformer.CodeTransformer = Positioner{}

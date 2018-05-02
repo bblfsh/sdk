@@ -3,8 +3,8 @@ package gopkg.in.bblfsh.sdk.v1.protocol;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
-import "gopkg.in/bblfsh/sdk.v1/uast/generated.proto";
-import "gopkg.in/bblfsh/sdk.v1/uast/role/generated.proto";
+import "gopkg.in/bblfsh/sdk.v2/uast/generated.proto";
+import "gopkg.in/bblfsh/sdk.v2/uast/role/generated.proto";
 import "google/protobuf/timestamp.proto";
 
 option (gogoproto.protosizer_all) = true;

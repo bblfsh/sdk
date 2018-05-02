@@ -2,7 +2,7 @@
 package driver
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/manifest"
+	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
 
 var (

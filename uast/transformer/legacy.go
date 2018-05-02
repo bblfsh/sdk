@@ -1,8 +1,8 @@
 package transformer
 
 import (
-	"gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v1/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 const dedupCloneObj = false

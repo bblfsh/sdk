@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v1/manifest"
+	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
 
 const BuildCommandDescription = "" +
