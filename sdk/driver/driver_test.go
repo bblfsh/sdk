@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v1/uast"
 
 	"github.com/stretchr/testify/require"
 )
@@ -13,11 +12,17 @@ func init() {
 	ManifestLocation = "internal/native/manifest.toml"
 }
 
+func newDriver(path string) (*Driver, error) {
+	if path == "" {
+		path = "internal/native/mock"
+	}
+	return NewDriverFrom(NewExecDriverAt(path), Transforms{})
+}
+
 func TestDriverParserParse(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -31,19 +36,22 @@ func TestDriverParserParse(t *testing.T) {
 	})
 
 	require.NotNil(r)
-	require.Equal(len(r.Errors), 0)
-	require.Equal(r.Status, protocol.Ok)
-	require.Equal(r.Language, "fixture")
-	require.Equal(r.Filename, "foo.f")
-	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
-	require.Equal(r.UAST.String(), " "+
-		"{\n"+
-		".  Roles: Unannotated\n"+
-		".  Properties: {\n"+
-		".  .  key: val\n"+
-		".  }\n"+
-		"}\n",
-	)
+	require.Empty(r.Errors, "%v", r.Errors)
+	require.Equal(protocol.Ok, r.Status)
+	require.Equal("fixture", r.Language)
+	require.Equal("foo.f", r.Filename)
+	require.True(r.Elapsed.Nanoseconds() > 0)
+	require.Equal(` {
+.  Children: {
+.  .  0:  {
+.  .  .  Properties: {
+.  .  .  .  internalRole: root
+.  .  .  .  key: val
+.  .  .  }
+.  .  }
+.  }
+}
+`, r.UAST.String())
 
 	err = d.Stop()
 	require.NoError(err)
@@ -52,7 +60,7 @@ func TestDriverParserParse(t *testing.T) {
 func TestDriverParserParse_MissingLanguage(t *testing.T) {
 	require := require.New(t)
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -74,9 +82,8 @@ func TestDriverParserParse_MissingLanguage(t *testing.T) {
 }
 func TestDriverParserParse_Malfunctioning(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "echo"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := newDriver("echo")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -101,9 +108,8 @@ func TestDriverParserParse_Malfunctioning(t *testing.T) {
 
 func TestDriverParserNativeParse(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 
@@ -128,9 +134,8 @@ func TestDriverParserNativeParse(t *testing.T) {
 
 func TestDriverParserVersion(t *testing.T) {
 	require := require.New(t)
-	NativeBinary = "internal/native/mock"
 
-	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d, err := newDriver("")
 	require.NoError(err)
 	require.NotNil(d)
 

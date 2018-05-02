@@ -13,20 +13,21 @@ func TestNativeDriverNativeParse(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "internal/native/mock"
 
-	d := &NativeDriver{}
+	d := NewExecDriver()
 	err := d.Start()
 	require.NoError(err)
 
-	r := d.Parse(&InternalParseRequest{
+	r, err := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
+	require.NoError(err)
 
 	require.NotNil(r)
 	require.Equal(len(r.Errors), 0)
 	require.Equal(r.Status, Status(protocol.Ok))
 	require.NotNil(r.AST)
 
-	err = d.Stop()
+	err = d.Close()
 	require.NoError(err)
 }
 
@@ -34,7 +35,7 @@ func TestNativeDriverNativeParse_Lock(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "internal/native/mock"
 
-	d := &NativeDriver{}
+	d := NewExecDriver()
 	err := d.Start()
 	require.NoError(err)
 
@@ -45,9 +46,10 @@ func TestNativeDriverNativeParse_Lock(t *testing.T) {
 	var wg sync.WaitGroup
 	call := func() {
 		defer wg.Done()
-		r := d.Parse(&InternalParseRequest{
+		r, err := d.Parse(&InternalParseRequest{
 			Content: "foo",
 		})
+		require.NoError(err)
 
 		require.NotNil(r)
 		require.Equal(len(r.Errors), 0)
@@ -61,7 +63,7 @@ func TestNativeDriverNativeParse_Lock(t *testing.T) {
 	}
 
 	wg.Wait()
-	err = d.Stop()
+	err = d.Close()
 	require.NoError(err)
 }
 
@@ -69,20 +71,21 @@ func aaTestNativeDriverNativeParse_MissingLanguage(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "internal/native/mock"
 
-	d := &NativeDriver{}
+	d := NewExecDriver()
 	err := d.Start()
 	require.NoError(err)
 
-	r := d.Parse(&InternalParseRequest{
+	r, err := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
+	require.NoError(err)
 
 	require.NotNil(r)
 	require.Equal(r.Status, Status(protocol.Fatal))
 	require.Equal(len(r.Errors), 1)
 	require.Nil(r.AST)
 
-	err = d.Stop()
+	err = d.Close()
 	require.NoError(err)
 }
 
@@ -90,7 +93,7 @@ func TestNativeDriverStart_BadPath(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "non-existent"
 
-	d := &NativeDriver{}
+	d := NewExecDriver()
 	err := d.Start()
 	require.Error(err)
 }
@@ -99,14 +102,15 @@ func TestNativeDriverNativeParse_Malfunctioning(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "echo"
 
-	d := &NativeDriver{}
+	d := NewExecDriver()
 
 	err := d.Start()
 	require.Nil(err)
 
-	r := d.Parse(&InternalParseRequest{
+	r, err := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
+	require.NoError(err)
 
 	require.Equal(r.Status, Status(protocol.Fatal))
 	require.Equal(len(r.Errors), 1)
@@ -116,14 +120,15 @@ func TestNativeDriverNativeParse_Malformed(t *testing.T) {
 	require := require.New(t)
 	NativeBinary = "yes"
 
-	d := &NativeDriver{}
+	d := NewExecDriver()
 
 	err := d.Start()
 	require.NoError(err)
 
-	r := d.Parse(&InternalParseRequest{
+	r, err := d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
+	require.NoError(err)
 
 	require.Equal(r.Status, Status(protocol.Fatal))
 	require.Equal(len(r.Errors), 1)

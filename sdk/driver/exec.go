@@ -16,28 +16,108 @@ import (
 )
 
 var (
+	// NativeBinary default location of the native driver binary. Should not
+	// override this variable unless you know what are you doing.
+	NativeBinary = "/opt/driver/bin/native"
+)
 
-
+var (
 	ErrUnsupportedLanguage = errors.NewKind("unsupported language got %q, expected %q")
 	ErrNativeNotRunning    = errors.NewKind("native driver is not running")
 )
 
-// NativeDriver is a wrapper of the native command. The operations with the
+// NativeMain is a main function for running a native Go driver as an Exec-based module that uses internal json protocol.
+func NativeMain(d BaseDriver) {
+	if err := d.Start(); err != nil {
+		panic(err)
+	}
+	defer d.Close()
+	srv := &nativeServer{d: d}
+	c := struct {
+		io.Reader
+		io.Writer
+	}{
+		os.Stdin,
+		os.Stdout,
+	}
+	if err := srv.Serve(c); err != nil {
+		panic(err)
+	}
+}
+
+type nativeServer struct {
+	d BaseDriver
+}
+
+func errResp(err error) *InternalParseResponse {
+	return &InternalParseResponse{
+		Status: Status(protocol.Fatal),
+		Errors: []string{err.Error()},
+	}
+}
+
+func errRespf(format string, args ...interface{}) *InternalParseResponse {
+	return errResp(fmt.Errorf(format, args...))
+}
+
+func (s *nativeServer) Serve(c io.ReadWriter) error {
+	enc := jsonlines.NewEncoder(c)
+	dec := jsonlines.NewDecoder(c)
+	for {
+		var req InternalParseRequest
+		err := dec.Decode(&req)
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			if err = enc.Encode(errRespf("failed to decode request: %v", err)); err != nil {
+				return err
+			}
+			continue
+		}
+		resp, err := s.d.Parse(&req)
+		if err != nil {
+			if err := enc.Encode(errResp(err)); err != nil {
+				return err
+			}
+			continue
+		}
+		if err = enc.Encode(resp); err != nil {
+			return err
+		}
+	}
+}
+
+func NewExecDriver() BaseDriver {
+	return NewExecDriverAt("")
+}
+
+func NewExecDriverAt(bin string) BaseDriver {
+	if bin == "" {
+		bin = NativeBinary
+	}
+	return &ExecDriver{bin: bin}
+}
+
+// ExecDriver is a wrapper of the native command. The operations with the
 // driver are synchronous by design, this is controlled by a mutex. This means
 // that only one parse request can attend at the same time.
-type NativeDriver struct {
+type ExecDriver struct {
+	bin     string
+	running bool
+
+	mu     sync.Mutex
 	enc    jsonlines.Encoder
 	dec    jsonlines.Decoder
-	closer io.Closer
+	stdin  io.Closer
+	stdout io.Closer
 	cmd    *exec.Cmd
-	m      sync.Mutex
-
-	isRunning bool
 }
 
 // Start executes the given native driver and prepares it to parse code.
-func (d *NativeDriver) Start() error {
-	d.cmd = exec.Command(NativeBinary)
+func (d *ExecDriver) Start() error {
+	d.cmd = exec.Command(d.bin)
+	d.cmd.Stderr = os.Stderr
+
 	stdin, err := d.cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -45,36 +125,33 @@ func (d *NativeDriver) Start() error {
 
 	stdout, err := d.cmd.StdoutPipe()
 	if err != nil {
+		stdin.Close()
 		return err
 	}
 
+	d.stdin = stdin
+	d.stdout = stdout
 	d.enc = jsonlines.NewEncoder(stdin)
 	d.dec = jsonlines.NewDecoder(stdout)
-	d.closer = stdin
-
-	stderr, err := d.cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	go io.Copy(os.Stderr, stderr)
 
 	err = d.cmd.Start()
 	if err == nil {
-		d.isRunning = true
+		d.running = true
+		return nil
 	}
-
+	stdin.Close()
+	stdout.Close()
 	return err
 }
 
 // Parse sends a request to the native driver and returns its response.
-func (d *NativeDriver) Parse(req *InternalParseRequest) *InternalParseResponse {
-	if !d.isRunning {
-		panic(ErrNativeNotRunning.New())
+func (d *ExecDriver) Parse(req *InternalParseRequest) (*InternalParseResponse, error) {
+	if !d.running {
+		return nil, ErrNativeNotRunning.New()
 	}
 
-	d.m.Lock()
-	defer d.m.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	_ = d.enc.Encode(&InternalParseRequest{
 		Content:  req.Content,
@@ -87,16 +164,27 @@ func (d *NativeDriver) Parse(req *InternalParseRequest) *InternalParseResponse {
 		r.Errors = append(r.Errors, err.Error())
 	}
 
-	return r
+	return r, nil
 }
 
 // Stop stops the execution of the native driver.
-func (d *NativeDriver) Stop() error {
-	if err := d.closer.Close(); err != nil {
+func (d *ExecDriver) Close() error {
+	var last error
+	if err := d.stdin.Close(); err != nil {
+		last = err
+	}
+	err := d.cmd.Wait()
+	err2 := d.stdout.Close()
+	if err != nil {
 		return err
 	}
-
-	return d.cmd.Wait()
+	if er, ok := err2.(*os.PathError); ok && er.Err == os.ErrClosed {
+		err2 = nil
+	}
+	if err2 != nil {
+		last = err2
+	}
+	return last
 }
 
 // InternalParseRequest is the request used to communicate the driver with the

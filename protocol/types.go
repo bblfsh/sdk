@@ -9,7 +9,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-//go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/protocol -p gopkg.in/bblfsh/sdk.v1/uast
+// go:generate proteus  -f $GOPATH/src -p gopkg.in/bblfsh/sdk.v1/protocol -p gopkg.in/bblfsh/sdk.v1/uast -p gopkg.in/bblfsh/sdk.v1/uast/role
+//go:generate protoc --proto_path=$GOPATH/src:. --gogo_out=plugins=grpc:. ./generated.proto
 //go:generate stringer -type=Status,Encoding -output stringer.go
 
 package protocol
@@ -18,10 +19,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 )
 
 // DefaultService is the default service used to process requests.
@@ -94,7 +97,7 @@ type ParseRequest struct {
 type ParseResponse struct {
 	Response
 	// UAST contains the UAST from the parsed code.
-	UAST *uast.Node `json:"uast"`
+	UAST *Node `json:"uast"`
 	// Language. The language that was parsed. Usedful if you used language
 	// autodetection for the request.
 	Language string `json:"language"`
@@ -139,10 +142,10 @@ type NativeParseResponse struct {
 
 func (r *NativeParseResponse) String() string {
 	var s struct {
-		Status string      `json:"status"`
-		Language string    `json:"language"`
-		Errors []string    `json:"errors"`
-		AST    interface{} `json:"ast"`
+		Status   string      `json:"status"`
+		Language string      `json:"language"`
+		Errors   []string    `json:"errors"`
+		AST      interface{} `json:"ast"`
 	}
 
 	s.Status = strings.ToLower(r.Status.String())
@@ -186,4 +189,187 @@ type VersionResponse struct {
 	Version string `json:"version"`
 	// Build contains the timestamp at the time of the build.
 	Build time.Time `json:"build"`
+}
+
+// Node is a node in a UAST.
+//
+//proteus:generate
+type Node struct {
+	// InternalType is the internal type of the node in the AST, in the source
+	// language.
+	InternalType string `json:",omitempty"`
+	// Properties are arbitrary, language-dependent, metadata of the
+	// original AST.
+	Properties map[string]string `json:",omitempty"`
+	// Children are the children nodes of this node.
+	Children []*Node `json:",omitempty"`
+	// Token is the token content if this node represents a token from the
+	// original source file. If it is empty, there is no token attached.
+	Token string `json:",omitempty"`
+	// StartPosition is the position where this node starts in the original
+	// source code file.
+	StartPosition *uast.Position `json:",omitempty"`
+	// EndPosition is the position where this node ends in the original
+	// source code file.
+	EndPosition *uast.Position `json:",omitempty"`
+	// Roles is a list of Role that this node has. It is a language-independent
+	// annotation.
+	Roles []role.Role `json:",omitempty"`
+}
+
+// NewNode creates a new empty *Node.
+func NewNode() *Node {
+	return &Node{
+		Properties: make(map[string]string, 0),
+		Roles:      []role.Role{role.Unannotated},
+	}
+}
+
+// String converts the *Node to a string using pretty printing.
+func (n *Node) String() string {
+	buf := bytes.NewBuffer(nil)
+	err := Pretty(n, buf, IncludeAll)
+	if err != nil {
+		return "error"
+	}
+
+	return buf.String()
+}
+
+const (
+	// InternalRoleKey is a key string uses in properties to use the internal
+	// role of a node in the AST, if any.
+	InternalRoleKey = "internalRole"
+)
+
+// ToNode converts a generic AST node to Node object used in the protocol.
+func ToNode(n uast.Node) (*Node, error) {
+	nd, err := asNode(n, "")
+	if err != nil {
+		return nil, err
+	}
+	switch len(nd) {
+	case 0:
+		return nil, nil
+	case 1:
+		return nd[0], nil
+	default:
+		return &Node{Children: nd}, nil
+	}
+}
+
+func arrayAsNode(n uast.Array, field string) ([]*Node, error) {
+	arr := make([]*Node, 0, len(n))
+	for _, s := range n {
+		nd, err := asNode(s, field)
+		if err != nil {
+			return arr, err
+		}
+		arr = append(arr, nd...)
+	}
+	return arr, nil
+}
+
+func objectAsNode(n uast.Object, field string) ([]*Node, error) {
+	nd := &Node{
+		InternalType:  n.Type(),
+		Token:         n.Token(),
+		Roles:         n.Roles(),
+		StartPosition: n.StartPosition(),
+		EndPosition:   n.EndPosition(),
+		Properties:    make(map[string]string),
+	}
+	if field != "" {
+		nd.Properties[InternalRoleKey] = field
+	}
+
+	for k, v := range n {
+		switch k {
+		case uast.KeyType, uast.KeyToken, uast.KeyRoles,
+			uast.KeyStart, uast.KeyEnd:
+			// already processed
+			continue
+		}
+		if nv, ok := v.(uast.Value); ok {
+			nd.Properties[k] = fmt.Sprint(nv.Native())
+		} else {
+			sn, err := asNode(v, k)
+			if err != nil {
+				return nil, err
+			}
+			nd.Children = append(nd.Children, sn...)
+		}
+	}
+	sort.Stable(byOffset(nd.Children))
+	return []*Node{nd}, nil
+}
+
+func valueAsNode(n uast.Value, field string) ([]*Node, error) {
+	nd := &Node{
+		Token:      fmt.Sprint(n),
+		Properties: make(map[string]string),
+	}
+	if field != "" {
+		nd.Properties[InternalRoleKey] = field
+	}
+	return []*Node{nd}, nil
+}
+
+func asNode(n uast.Node, field string) ([]*Node, error) {
+	switch n := n.(type) {
+	case nil:
+		return nil, nil
+	case uast.Array:
+		return arrayAsNode(n, field)
+	case uast.Object:
+		return objectAsNode(n, field)
+	case uast.Value:
+		return valueAsNode(n, field)
+	default:
+		return nil, fmt.Errorf("argument should be a node or a list, got: %T", n)
+	}
+}
+
+type byOffset []*Node
+
+func (s byOffset) Len() int      { return len(s) }
+func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s byOffset) Less(i, j int) bool {
+	a := s[i]
+	b := s[j]
+	apos := startPosition(a)
+	bpos := startPosition(b)
+	if apos != nil && bpos != nil {
+		if apos.Offset != bpos.Offset {
+			return apos.Offset < bpos.Offset
+		}
+	} else if (apos == nil && bpos != nil) || (apos != nil && bpos == nil) {
+		return bpos != nil
+	}
+	field1, ok1 := a.Properties[InternalRoleKey]
+	field2, ok2 := b.Properties[InternalRoleKey]
+	if ok1 && ok2 {
+		return field1 < field2
+	}
+	return false
+}
+
+func startPosition(n *Node) *uast.Position {
+	if n.StartPosition != nil {
+		return n.StartPosition
+	}
+
+	var min *uast.Position
+	for _, c := range n.Children {
+		other := startPosition(c)
+		if other == nil {
+			continue
+		}
+
+		if min == nil || other.Offset < min.Offset {
+			min = other
+		}
+	}
+
+	return min
 }

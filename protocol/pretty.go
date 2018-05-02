@@ -1,11 +1,45 @@
-package uast
+package protocol
 
 import (
 	"fmt"
 	"io"
 	"sort"
 	"strings"
+
+	"gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v1/uast/role"
 )
+
+// IncludeFlag represents a set of fields to be included in a Hash or String.
+type IncludeFlag int64
+
+const (
+	// IncludeChildren includes all children of the node.
+	IncludeChildren IncludeFlag = 1
+	// IncludeAnnotations includes UAST annotations.
+	IncludeAnnotations = 2
+	// IncludePositions includes token positions.
+	IncludePositions = 4
+	// IncludeTokens includes token contents.
+	IncludeTokens = 8
+	// IncludeInternalType includes internal type.
+	IncludeInternalType = 16
+	// IncludeProperties includes properties.
+	IncludeProperties = 32
+	// IncludeOriginalAST includes all properties that are present
+	// in the original AST.
+	IncludeOriginalAST = IncludeChildren |
+		IncludePositions |
+		IncludeTokens |
+		IncludeInternalType |
+		IncludeProperties
+	// IncludeAll includes all fields.
+	IncludeAll = IncludeOriginalAST | IncludeAnnotations
+)
+
+func (f IncludeFlag) Is(of IncludeFlag) bool {
+	return f&of != 0
+}
 
 // Pretty writes a pretty string representation of the *Node to a writer.
 func Pretty(n *Node, w io.Writer, includes IncludeFlag) error {
@@ -154,7 +188,7 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
-func printPosition(w io.Writer, indent int, pos *Position) error {
+func printPosition(w io.Writer, indent int, pos *uast.Position) error {
 	if pos == nil {
 		return nil
 	}
@@ -173,11 +207,11 @@ func printPosition(w io.Writer, indent int, pos *Position) error {
 	return err
 }
 
-func rolesToString(roles ...Role) string {
+func rolesToString(roles ...role.Role) string {
 	var strs []string
 	for _, r := range roles {
 		strs = append(strs, r.String())
 	}
-
+	sort.Strings(strs)
 	return strings.Join(strs, ",")
 }

@@ -10,6 +10,52 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/uast/transformer"
 )
 
+type Mode int
+
+const (
+	ModeAST = Mode(iota)
+)
+
+// Transforms describes a set of AST transformations this driver requires.
+type Transforms struct {
+	// Native transforms normalizes native AST.
+	// It usually includes:
+	//	* changing type key to uast.KeyType
+	//	* changing token key to uast.KeyToken
+	//	* restructure positional information
+	Native []transformer.Transformer
+	// Code transforms are applied directly after Native and provide a way
+	// to extract more information from source files, fix positional info, etc.
+	Code []transformer.CodeTransformer
+}
+
+// Do applies AST transformation pipeline for specified nodes.
+func (t Transforms) Do(mode Mode, code string, nd uast.Node) (uast.Node, error) {
+	var err error
+	for _, t := range t.Native {
+		nd, err = t.Do(nd)
+		if err != nil {
+			return nd, err
+		}
+	}
+
+	for _, ct := range t.Code {
+		t := ct.OnCode(code)
+		nd, err = t.Do(nd)
+		if err != nil {
+			return nd, err
+		}
+	}
+	return nd, nil
+}
+
+// BaseDriver is a base implementation of a language driver that returns a native AST.
+type BaseDriver interface {
+	Start() error
+	Parse(req *InternalParseRequest) (*InternalParseResponse, error)
+	Close() error
+}
+
 // Driver implements a bblfsh driver, a driver is on charge of transforming a
 // source code into an AST and a UAST. To transform the AST into a UAST, a
 // `uast.ObjectToNode`` and a series of `tranformer.Transformer` are used.
@@ -18,22 +64,33 @@ import (
 // done, since the communication with the native driver is a single-channel
 // synchronous communication over stdin/stdout.
 type Driver struct {
-	NativeDriver
+	d BaseDriver
 
 	m *manifest.Manifest
-	o *uast.ObjectToNode
-	t []transformer.Tranformer
+	t Transforms
 }
 
-// NewDriver returns a new Driver instance based on the given ObjectToNode and
-// list of transformers.
-func NewDriver(o *uast.ObjectToNode, t []transformer.Tranformer) (*Driver, error) {
+// NewDriverFrom is like NewDriver but allows to provide a custom driver native driver implementation.
+func NewDriverFrom(d BaseDriver, t Transforms) (*Driver, error) {
 	m, err := manifest.Load(ManifestLocation)
 	if err != nil {
 		return nil, err
 	}
+	return &Driver{d: d, m: m, t: t}, nil
+}
 
-	return &Driver{m: m, o: o, t: t}, nil
+// NewDriver returns a new Driver instance based on the given ObjectToNode and
+// list of transformers.
+func NewDriver(t Transforms) (*Driver, error) {
+	return NewDriverFrom(DefaultDriver, t)
+}
+
+func (d *Driver) Start() error {
+	return d.d.Start()
+}
+
+func (d *Driver) Stop() error {
+	return d.d.Close()
 }
 
 // Parse process a protocol.ParseRequest, calling to the native driver. It a
@@ -62,22 +119,33 @@ func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 		return r
 	}
 
-	var err error
-	r.UAST, err = d.o.ToNode(ast)
-	if err != nil {
+	addErr := func(err error) {
 		r.Status = protocol.Fatal
 		r.Errors = append(r.Errors, err.Error())
+	}
+
+	nd, err := uast.ToNode(ast)
+	if err != nil {
+		addErr(err)
 		return r
 	}
 
-	for _, t := range d.t {
-		if err := t.Do(req.Content, req.Encoding, r.UAST); err != nil {
-			r.Status = protocol.Error
-			r.Errors = append(r.Errors, err.Error())
-			return r
-		}
+	code := req.Content
+	code, err = Encoding(req.Encoding).Decode(code)
+	if err != nil {
+		addErr(err)
+		return r
 	}
-
+	nd, err = d.t.Do(ModeAST, code, nd)
+	if err != nil {
+		addErr(err)
+		return r
+	}
+	r.UAST, err = protocol.ToNode(nd)
+	if err != nil {
+		addErr(err)
+		return r
+	}
 	return r
 }
 
@@ -117,10 +185,17 @@ func (d *Driver) doParse(language, content string, encoding protocol.Encoding) (
 		return r, nil
 	}
 
-	nr := d.NativeDriver.Parse(&InternalParseRequest{
+	nr, err := d.d.Parse(&InternalParseRequest{
 		Content:  content,
 		Encoding: Encoding(encoding),
 	})
+	if err != nil {
+		if nr != nil {
+			nr.Errors = append(nr.Errors, err.Error())
+		} else {
+			nr = errResp(err)
+		}
+	}
 
 	r.Status = protocol.Status(nr.Status)
 	r.Errors = nr.Errors

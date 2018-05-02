@@ -16,7 +16,7 @@ var (
 	network *string
 	address *string
 	verbose *string
-	log     struct {
+	logs    struct {
 		level  *string
 		format *string
 		fields *string
@@ -87,18 +87,18 @@ func (s *Server) initializeFlags() {
 	cmd := flag.NewFlagSet("server", flag.ExitOnError)
 	network = cmd.String("network", defaultNetwork, "network type: tcp, tcp4, tcp6, unix or unixpacket.")
 	address = cmd.String("address", defaultAddress, "address to listen.")
-	log.level = cmd.String("log-level", defaultVerbose, "log level: panic, fatal, error, warning, info, debug.")
-	log.format = cmd.String("log-format", defaultFormat, "format of the logs: text or json.")
-	log.fields = cmd.String("log-fields", "", "extra fields to add to every log line in json format.")
+	logs.level = cmd.String("log-level", defaultVerbose, "log level: panic, fatal, error, warning, info, debug.")
+	logs.format = cmd.String("log-format", defaultFormat, "format of the logs: text or json.")
+	logs.fields = cmd.String("log-fields", "", "extra fields to add to every log line in json format.")
 
 	cmd.Parse(os.Args[1:])
 }
 
 func (s *Server) initializeLogger() error {
 	f := server.LoggerFactory{
-		Level:  *log.level,
-		Format: *log.format,
-		Fields: *log.fields,
+		Level:  *logs.level,
+		Format: *logs.format,
+		Fields: *logs.fields,
 	}
 
 	var err error

@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"gopkg.in/bblfsh/sdk.v1/sdk/driver/integration"
+	"gopkg.in/bblfsh/sdk.v1/sdk/driver/integration/consts"
 )
 
 const (

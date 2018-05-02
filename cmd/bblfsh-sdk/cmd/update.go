@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"gopkg.in/bblfsh/sdk.v1/assets/skeleton"
-	"gopkg.in/bblfsh/sdk.v1/cli"
+	"gopkg.in/bblfsh/sdk.v1/cmd"
 	"gopkg.in/bblfsh/sdk.v1/manifest"
 )
 
@@ -34,7 +34,7 @@ type UpdateCommand struct {
 
 	changes int
 	context map[string]interface{}
-	cli.Command
+	cmd.Command
 }
 
 func (c *UpdateCommand) Execute(args []string) error {
@@ -151,7 +151,7 @@ func (c *UpdateCommand) doWriteFile(file string, content []byte, m os.FileMode) 
 	defer f.Close()
 
 	if c.Verbose {
-		cli.Debug.Printf("file %q has been written\n", file)
+		cmd.Debug.Printf("file %q has been written\n", file)
 	}
 
 	_, err = f.Write(content)
@@ -165,7 +165,7 @@ func (c *UpdateCommand) readManifest() (*manifest.Manifest, error) {
 func (c *UpdateCommand) notifyMissingFile(file string) {
 
 	if !c.DryRun {
-		cli.Notice.Printf("creating file %q\n", file)
+		cmd.Notice.Printf("creating file %q\n", file)
 		return
 	}
 
@@ -174,18 +174,18 @@ func (c *UpdateCommand) notifyMissingFile(file string) {
 	}
 
 	c.changes++
-	cli.Warning.Printf("missing file %q\n", file)
+	cmd.Warning.Printf("missing file %q\n", file)
 }
 
 func (c *UpdateCommand) notifyChangedFile(file string) {
 	if !c.DryRun {
-		cli.Warning.Printf("managed file %q has changed, discarding changes\n", file)
+		cmd.Warning.Printf("managed file %q has changed, discarding changes\n", file)
 		return
 
 	}
 
 	c.changes++
-	cli.Warning.Printf("managed file changed %q\n", file)
+	cmd.Warning.Printf("managed file changed %q\n", file)
 }
 
 func escapeShield(text interface{}) string {
