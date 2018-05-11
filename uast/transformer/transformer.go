@@ -225,13 +225,18 @@ func (m *mappings) index() {
 		switch op := oop.(type) {
 		case ObjectOp:
 			m.objs = append(m.objs, mp)
+			specific := false
 			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
 				if is, ok := f.Op.(opIs); ok {
 					if typ, ok := is.v.(uast.String); ok {
 						s := string(typ)
 						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
+						specific = true
 					}
 				}
+			}
+			if !specific {
+				typedAny = append(typedAny, ordered{ind: i, mp: mp})
 			}
 		case ArrayOp:
 			m.arrs = append(m.arrs, mp)
