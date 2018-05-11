@@ -102,7 +102,7 @@ type RolesByType func(typ string) role.Roles
 func ASTObjectRightCustom(typ string, norm ObjectOp, fnc RolesByType, rop ArrayOp, roles ...role.Role) ObjectOp {
 	b := norm.Object()
 	if _, ok := b.GetField(uast.KeyRoles); ok {
-		panic("unexpected roles filed")
+		panic("unexpected roles field")
 	}
 	if typ != "" {
 		b.SetField(uast.KeyType, String(typ)) // TODO: "<lang>:" namespace
