@@ -416,6 +416,17 @@ var opCases = []struct {
 			return u.Array{u.String("a")}
 		},
 	},
+	{
+		name: "quote",
+		inp:  arrObjVal("v", u.String(`"a\"b"`)),
+		src: Obj{
+			"v": Quote(Var("x")),
+		},
+		dst: Obj{
+			"v2": Var("x"),
+		},
+		exp: arrObjVal("v2", u.String(`a"b`)),
+	},
 }
 
 func TestOps(t *testing.T) {
