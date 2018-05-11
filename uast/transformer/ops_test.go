@@ -328,6 +328,22 @@ var opCases = []struct {
 		},
 	},
 	{
+		name: "obj roles",
+		inp: func() u.Node {
+			return u.Object{
+				u.KeyType: u.String("node"),
+			}
+		},
+		src: ObjectRolesCustom("o", Obj{u.KeyType: String("node")}),
+		dst: ObjectRolesCustom("o", Obj{u.KeyType: String("node")}, 1),
+		exp: func() u.Node {
+			return u.Object{
+				u.KeyType:  u.String("node"),
+				u.KeyRoles: u.RoleList(1),
+			}
+		},
+	},
+	{
 		name: "roles field exists",
 		inp: func() u.Node {
 			return u.Object{
