@@ -80,6 +80,9 @@ func (op opVar) Construct(st *State, n uast.Node) (uast.Node, error) {
 
 // AnyNode matches any node and throws it away. Reversal will create a node with create op.
 func AnyNode(create Mod) Op {
+	if create == nil {
+		create = Is(nil)
+	}
 	return opAnyNode{create: create}
 }
 

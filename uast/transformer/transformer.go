@@ -52,6 +52,7 @@ var _ Transformer = (TransformFunc)(nil)
 
 // TransformFunc is a function that will be applied to each AST node to transform the tree.
 // It returns a new AST and true if tree was changed, or an old node and false if no modifications were done.
+// The the tree will be traversed automatically and the callback will be called for each node.
 type TransformFunc func(n uast.Node) (uast.Node, bool, error)
 
 // Do runs a transformation function for each AST node.
@@ -322,9 +323,12 @@ func NewState() *State {
 	return &State{}
 }
 
+// Vars is a set of variables with their values.
+type Vars map[string]uast.Node
+
 // State stores all variables (placeholder values, flags and wny other state) between Check and Construct steps.
 type State struct {
-	vars   map[string]uast.Node
+	vars   Vars
 	states map[string][]*State
 }
 
@@ -339,7 +343,7 @@ func (st *State) Reset() {
 func (st *State) Clone() *State {
 	st2 := NewState()
 	if len(st.vars) != 0 {
-		st2.vars = make(map[string]uast.Node)
+		st2.vars = make(Vars)
 	}
 	for k, v := range st.vars {
 		st2.vars[k] = v
@@ -356,7 +360,7 @@ func (st *State) Clone() *State {
 // ApplyFrom merges a provided state into this state object.
 func (st *State) ApplyFrom(st2 *State) {
 	if len(st2.vars) != 0 && st.vars == nil {
-		st.vars = make(map[string]uast.Node)
+		st.vars = make(Vars)
 	}
 	for k, v := range st2.vars {
 		if _, ok := st.vars[k]; !ok {
@@ -388,6 +392,23 @@ func (st *State) MustGetVar(name string) (uast.Node, error) {
 	return n, nil
 }
 
+// VarsPtrs is a set of variable pointers.
+type VarsPtrs map[string]uast.NodePtr
+
+// MustGetVars is like MustGetVar but fetches multiple variables in one operation.
+func (st *State) MustGetVars(vars VarsPtrs) error {
+	for name, dst := range vars {
+		n, ok := st.GetVar(name)
+		if !ok {
+			return ErrVariableNotDefined.New(name)
+		}
+		if err := dst.SetNode(n); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SetVar sets a named variable. It will return ErrVariableRedeclared if a variable with the same name is already set.
 // It will ignore the operation if variable already exists and has the same value (uast.Value).
 func (st *State) SetVar(name string, val uast.Node) error {
@@ -395,19 +416,26 @@ func (st *State) SetVar(name string, val uast.Node) error {
 	if !ok {
 		// not declared
 		if st.vars == nil {
-			st.vars = make(map[string]uast.Node)
+			st.vars = make(Vars)
 		}
 		st.vars[name] = val
 		return nil
 	}
-	v1, ok1 := cur.(uast.Value)
-	v2, ok2 := val.(uast.Value)
-	// the only exception is two primitive values that are equal
-	if ok1 && ok2 && v1 == v2 {
-		// already declared, and value is alredy in the map
+	if uast.Equal(cur, val) {
+		// already declared, and the same value is already in the map
 		return nil
 	}
 	return ErrVariableRedeclared.New(name, cur, val)
+}
+
+// SetVars is like SetVar but sets multiple variables in one operation.
+func (st *State) SetVars(vars Vars) error {
+	for k, v := range vars {
+		if err := st.SetVar(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetStateVar returns a stored sub-state from a named variable.

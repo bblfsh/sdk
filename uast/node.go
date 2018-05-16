@@ -35,6 +35,16 @@ func EmptyNode() Object {
 	return Object{}
 }
 
+// Equal compares two subtrees.
+func Equal(n1, n2 Node) bool {
+	if n1 == nil && n2 == nil {
+		return true
+	} else if n1 != nil && n2 != nil {
+		return n1.Equal(n2)
+	}
+	return false
+}
+
 // Node is a generic interface for structures used in AST.
 //
 // Can be one of:
@@ -45,6 +55,7 @@ type Node interface {
 	// Clone creates a deep copy of the node.
 	Clone() Node
 	Native() interface{}
+	Equal(n2 Node) bool
 	isNode() // to limit possible types
 }
 
@@ -58,6 +69,12 @@ type Node interface {
 type Value interface {
 	Node
 	isValue() // to limit possible types
+}
+
+// NodePtr is an assignable node pointer.
+type NodePtr interface {
+	Value
+	SetNode(v Node) error
 }
 
 // Object is a representation of generic AST node with fields.
@@ -222,6 +239,33 @@ func (m Object) EndPosition() *Position {
 	return AsPosition(o)
 }
 
+func (m *Object) SetNode(n Node) error {
+	if m2, ok := n.(Object); ok || n == nil {
+		*m = m2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
+}
+
+func (m Object) Equal(n Node) bool {
+	if m2, ok := n.(Object); ok {
+		return m.EqualObject(m2)
+	}
+	return false
+}
+
+func (m Object) EqualObject(m2 Object) bool {
+	if len(m) != len(m2) {
+		return false
+	}
+	for k, v := range m {
+		if v2, ok := m2[k]; !ok || !Equal(v, v2) {
+			return false
+		}
+	}
+	return true
+}
+
 // Array is an ordered list of AST nodes.
 type Array []Node
 
@@ -261,6 +305,33 @@ func (m Array) CloneList() Array {
 	return out
 }
 
+func (m Array) Equal(n Node) bool {
+	if m2, ok := n.(Array); ok {
+		return m.EqualArray(m2)
+	}
+	return false
+}
+
+func (m Array) EqualArray(m2 Array) bool {
+	if len(m) != len(m2) {
+		return false
+	}
+	for i, v := range m {
+		if !Equal(v, m2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (m *Array) SetNode(n Node) error {
+	if m2, ok := n.(Array); ok || n == nil {
+		*m = m2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
+}
+
 // String is a string value used in AST fields.
 type String string
 
@@ -275,6 +346,19 @@ func (v String) Native() interface{} {
 // Clone returns a copy of the value.
 func (v String) Clone() Node {
 	return v
+}
+
+func (v String) Equal(n Node) bool {
+	v2, ok := n.(String)
+	return ok && v == v2
+}
+
+func (v *String) SetNode(n Node) error {
+	if v2, ok := n.(String); ok || n == nil {
+		*v = v2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
 }
 
 // Int is a integer value used in AST fields.
@@ -293,6 +377,19 @@ func (v Int) Clone() Node {
 	return v
 }
 
+func (v Int) Equal(n Node) bool {
+	v2, ok := n.(Int)
+	return ok && v == v2
+}
+
+func (v *Int) SetNode(n Node) error {
+	if v2, ok := n.(Int); ok || n == nil {
+		*v = v2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
+}
+
 // Float is a floating point value used in AST fields.
 type Float float64
 
@@ -309,6 +406,19 @@ func (v Float) Clone() Node {
 	return v
 }
 
+func (v Float) Equal(n Node) bool {
+	v2, ok := n.(Float)
+	return ok && v == v2
+}
+
+func (v *Float) SetNode(n Node) error {
+	if v2, ok := n.(Float); ok || n == nil {
+		*v = v2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
+}
+
 // Bool is a boolean value used in AST fields.
 type Bool bool
 
@@ -323,6 +433,19 @@ func (v Bool) Native() interface{} {
 // Clone returns a copy of the value.
 func (v Bool) Clone() Node {
 	return v
+}
+
+func (v Bool) Equal(n Node) bool {
+	v2, ok := n.(Bool)
+	return ok && v == v2
+}
+
+func (v *Bool) SetNode(n Node) error {
+	if v2, ok := n.(Bool); ok || n == nil {
+		*v = v2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
 }
 
 // ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
