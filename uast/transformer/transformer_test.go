@@ -5,33 +5,34 @@ import (
 
 	"github.com/stretchr/testify/require"
 	u "gopkg.in/bblfsh/sdk.v2/uast"
+	un "gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 var mappingCases = []struct {
 	name     string
 	skip     bool
-	inp, exp u.Node
+	inp, exp un.Node
 	m        Transformer
 }{
 	{
 		name: "trim meta",
-		inp: u.Object{
-			"the_root": u.Object{
-				"k": u.String("v"),
+		inp: un.Object{
+			"the_root": un.Object{
+				"k": un.String("v"),
 			},
 		},
 		m: ResponseMetadata{
 			TopLevelIsRootNode: false,
 		},
-		exp: u.Object{
-			"k": u.String("v"),
+		exp: un.Object{
+			"k": un.String("v"),
 		},
 	},
 	{
 		name: "leave meta",
-		inp: u.Object{
-			"the_root": u.Object{
-				"k": u.String("v"),
+		inp: un.Object{
+			"the_root": un.Object{
+				"k": un.String("v"),
 			},
 		},
 		m: ResponseMetadata{
@@ -40,34 +41,34 @@ var mappingCases = []struct {
 	},
 	{
 		name: "roles dedup",
-		inp: u.Array{
-			u.Object{
-				u.KeyType:  u.String("typed"),
+		inp: un.Array{
+			un.Object{
+				u.KeyType:  un.String("typed"),
 				u.KeyRoles: u.RoleList(1, 2, 1),
 			},
 		},
 		m: RolesDedup(),
-		exp: u.Array{
-			u.Object{
-				u.KeyType:  u.String("typed"),
+		exp: un.Array{
+			un.Object{
+				u.KeyType:  un.String("typed"),
 				u.KeyRoles: u.RoleList(1, 2),
 			},
 		},
 	},
 	{
 		name: "typed and generic",
-		inp: u.Array{
-			u.Object{
-				u.KeyType: u.String("typed"),
-				"pred":    u.String("val1"),
-				"k":       u.String("v"),
+		inp: un.Array{
+			un.Object{
+				u.KeyType: un.String("typed"),
+				"pred":    un.String("val1"),
+				"k":       un.String("v"),
 			},
-			u.Object{
-				"pred": u.String("val2"),
-				"k":    u.String("v"),
+			un.Object{
+				"pred": un.String("val2"),
+				"k":    un.String("v"),
 			},
-			u.Object{
-				"pred2": u.String("val3"),
+			un.Object{
+				"pred2": un.String("val3"),
 			},
 		},
 		m: Mappings(
@@ -85,46 +86,46 @@ var mappingCases = []struct {
 				"key": Var("x"),
 			}, 10),
 		),
-		exp: u.Array{
-			u.Object{
-				u.KeyType:  u.String("typed"),
+		exp: un.Array{
+			un.Object{
+				u.KeyType:  un.String("typed"),
 				u.KeyRoles: u.RoleList(10),
-				"p":        u.String("val1"),
-				"key":      u.String("v"),
+				"p":        un.String("val1"),
+				"key":      un.String("v"),
 			},
-			u.Object{
-				"p": u.String("val2"),
-				"k": u.String("v"),
+			un.Object{
+				"p": un.String("val2"),
+				"k": un.String("v"),
 			},
-			u.Object{
-				"pred2": u.String("val3"),
+			un.Object{
+				"pred2": un.String("val3"),
 			},
 		},
 	},
 	{
 		name: "annotate no roles",
-		inp: u.Array{
-			u.Object{
-				u.KeyType:  u.String("typed"),
+		inp: un.Array{
+			un.Object{
+				u.KeyType:  un.String("typed"),
 				u.KeyRoles: u.RoleList(1),
-				"pred":     u.String("val1"),
+				"pred":     un.String("val1"),
 			},
-			u.Object{
-				u.KeyType: u.String("typed"),
-				"pred":    u.String("val2"),
+			un.Object{
+				u.KeyType: un.String("typed"),
+				"pred":    un.String("val2"),
 			},
 		},
 		m: AnnotateIfNoRoles("typed", 10),
-		exp: u.Array{
-			u.Object{
-				u.KeyType:  u.String("typed"),
+		exp: un.Array{
+			un.Object{
+				u.KeyType:  un.String("typed"),
 				u.KeyRoles: u.RoleList(1),
-				"pred":     u.String("val1"),
+				"pred":     un.String("val1"),
 			},
-			u.Object{
-				u.KeyType:  u.String("typed"),
+			un.Object{
+				u.KeyType:  un.String("typed"),
 				u.KeyRoles: u.RoleList(10),
-				"pred":     u.String("val2"),
+				"pred":     un.String("val2"),
 			},
 		},
 	},

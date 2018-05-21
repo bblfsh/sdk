@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"strings"
 
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
@@ -78,7 +79,7 @@ func (p Positions) End() *Position {
 }
 
 // AsPosition transforms a generic AST node to a Position object.
-func AsPosition(m Object) *Position {
+func AsPosition(m nodes.Object) *Position {
 	if TypeOf(m) != TypePosition {
 		return nil
 	}
@@ -90,14 +91,14 @@ func AsPosition(m Object) *Position {
 }
 
 // PositionsOf returns an object with all positional information for a node.
-func PositionsOf(m Object) Positions {
-	o, _ := m[KeyPos].(Object)
+func PositionsOf(m nodes.Object) Positions {
+	o, _ := m[KeyPos].(nodes.Object)
 	if len(o) == 0 {
 		return nil
 	}
 	ps := make(Positions, len(o))
 	for k, v := range o {
-		po, _ := v.(Object)
+		po, _ := v.(nodes.Object)
 		if p := AsPosition(po); p != nil {
 			ps[k] = *p
 		}
@@ -106,26 +107,26 @@ func PositionsOf(m Object) Positions {
 }
 
 // ToObject converts Position to a generic AST node.
-func (p Position) ToObject() Object {
+func (p Position) ToObject() nodes.Object {
 	n, err := toNodeReflect(reflect.ValueOf(&p))
 	if err != nil {
 		panic(err)
 	}
-	return n.(Object)
+	return n.(nodes.Object)
 }
 
 // RoleList converts a set of roles into a list node.
-func RoleList(roles ...role.Role) Array {
-	arr := make(Array, 0, len(roles))
+func RoleList(roles ...role.Role) nodes.Array {
+	arr := make(nodes.Array, 0, len(roles))
 	for _, r := range roles {
-		arr = append(arr, String(r.String()))
+		arr = append(arr, nodes.String(r.String()))
 	}
 	return arr
 }
 
 // RolesOf is a helper for getting node UAST roles (see KeyRoles).
-func RolesOf(m Object) role.Roles {
-	arr, ok := m[KeyRoles].(Array)
+func RolesOf(m nodes.Object) role.Roles {
+	arr, ok := m[KeyRoles].(nodes.Array)
 	if !ok || len(arr) == 0 {
 		if tp := TypeOf(m); tp == "" || strings.HasPrefix(tp, NS+":") {
 			return nil
@@ -134,7 +135,7 @@ func RolesOf(m Object) role.Roles {
 	}
 	out := make(role.Roles, 0, len(arr))
 	for _, v := range arr {
-		if r, ok := v.(String); ok {
+		if r, ok := v.(nodes.String); ok {
 			out = append(out, role.FromString(string(r)))
 		}
 	}
@@ -142,13 +143,13 @@ func RolesOf(m Object) role.Roles {
 }
 
 // TokenOf is a helper for getting node token (see KeyToken).
-func TokenOf(m Object) string {
+func TokenOf(m nodes.Object) string {
 	t := m[KeyToken]
-	s, ok := t.(String)
+	s, ok := t.(nodes.String)
 	if ok {
 		return string(s)
 	}
-	v, _ := t.(Value)
+	v, _ := t.(nodes.Value)
 	if v != nil {
 		return fmt.Sprint(v)
 	}
@@ -156,10 +157,10 @@ func TokenOf(m Object) string {
 }
 
 // Tokens collects all tokens of the tree recursively (pre-order).
-func Tokens(n Node) []string {
+func Tokens(n nodes.Node) []string {
 	var tokens []string
-	WalkPreOrder(n, func(n Node) bool {
-		if obj, ok := n.(Object); ok {
+	nodes.WalkPreOrder(n, func(n nodes.Node) bool {
+		if obj, ok := n.(nodes.Object); ok {
 			if tok := TokenOf(obj); tok != "" {
 				tokens = append(tokens, tok)
 			}

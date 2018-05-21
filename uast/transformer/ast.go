@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
@@ -27,7 +28,7 @@ func SavePosLineCol(varLine, varCol string) Op {
 func Roles(roles ...role.Role) ArrayOp {
 	arr := make([]Op, 0, len(roles))
 	for _, r := range roles {
-		arr = append(arr, Is(uast.String(r.String())))
+		arr = append(arr, Is(nodes.String(r.String())))
 	}
 	return Arr(arr...)
 }
@@ -172,11 +173,11 @@ func eachObjectRolesByType(vr string, types map[string][]role.Role, roles ...rol
 			uast.KeyType: Var(tvar),
 		}
 		if len(types) != 0 {
-			cases := make(map[uast.Value]ArrayOp, len(types))
+			cases := make(map[nodes.Value]ArrayOp, len(types))
 			for typ, arr := range types {
-				var key uast.Value
+				var key nodes.Value
 				if typ != "" {
-					key = uast.String(typ)
+					key = nodes.String(typ)
 				}
 				cases[key] = Roles(arr...)
 			}
@@ -192,7 +193,7 @@ func OptObjectRoles(vr string, roles ...role.Role) Op {
 }
 
 // Operator is a helper to make an AST node describing an operator.
-func Operator(vr string, lookup map[uast.Value]ArrayOp, roles ...role.Role) ObjectOp {
+func Operator(vr string, lookup map[nodes.Value]ArrayOp, roles ...role.Role) ObjectOp {
 	roles = append([]role.Role{
 		role.Expression, role.Operator,
 	}, roles...)
@@ -423,10 +424,10 @@ func AnnotateType(typ string, fields ObjAnnotator, roles ...role.Role) Mapping {
 
 // StringToRolesMap is a helper to generate an array operation map that can be used for Lookup
 // from a map from string values to roles.
-func StringToRolesMap(m map[string][]role.Role) map[uast.Value]ArrayOp {
-	out := make(map[uast.Value]ArrayOp, len(m))
+func StringToRolesMap(m map[string][]role.Role) map[nodes.Value]ArrayOp {
+	out := make(map[nodes.Value]ArrayOp, len(m))
 	for tok, roles := range m {
-		out[uast.String(tok)] = Roles(roles...)
+		out[nodes.String(tok)] = Roles(roles...)
 	}
 	return out
 }

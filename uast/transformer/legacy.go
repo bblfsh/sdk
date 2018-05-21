@@ -2,6 +2,7 @@ package transformer
 
 import (
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
@@ -19,8 +20,8 @@ type ResponseMetadata struct {
 }
 
 // Do applies the transformation described by this object.
-func (n ResponseMetadata) Do(root uast.Node) (uast.Node, error) {
-	if obj, ok := root.(uast.Object); ok && !n.TopLevelIsRootNode && len(obj) == 1 {
+func (n ResponseMetadata) Do(root nodes.Node) (nodes.Node, error) {
+	if obj, ok := root.(nodes.Object); ok && !n.TopLevelIsRootNode && len(obj) == 1 {
 		for _, v := range obj {
 			root = v
 			break
@@ -107,8 +108,8 @@ func (n ObjectToNode) Mapping() Mapping {
 
 // RolesDedup is an irreversible transformation that removes duplicate roles from AST nodes.
 func RolesDedup() TransformFunc {
-	return TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
-		obj, ok := n.(uast.Object)
+	return TransformFunc(func(n nodes.Node) (nodes.Node, bool, error) {
+		obj, ok := n.(nodes.Object)
 		if !ok {
 			return n, false, nil
 		}

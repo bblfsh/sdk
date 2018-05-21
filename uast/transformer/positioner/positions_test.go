@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 func TestFillLineColFromOffset(t *testing.T) {
@@ -12,19 +13,19 @@ func TestFillLineColFromOffset(t *testing.T) {
 
 	data := "hello\n\nworld"
 
-	input := uast.Object{
+	input := nodes.Object{
 		uast.KeyStart: uast.Position{Offset: 0}.ToObject(),
 		uast.KeyEnd:   uast.Position{Offset: 4}.ToObject(),
-		"a": uast.Array{uast.Object{
+		"a": nodes.Array{nodes.Object{
 			uast.KeyStart: uast.Position{Offset: 7}.ToObject(),
 			uast.KeyEnd:   uast.Position{Offset: 12}.ToObject(),
 		}},
 	}
 
-	expected := uast.Object{
+	expected := nodes.Object{
 		uast.KeyStart: uast.Position{Offset: 0, Line: 1, Col: 1}.ToObject(),
 		uast.KeyEnd:   uast.Position{Offset: 4, Line: 1, Col: 5}.ToObject(),
-		"a": uast.Array{uast.Object{
+		"a": nodes.Array{nodes.Object{
 			uast.KeyStart: uast.Position{Offset: 7, Line: 3, Col: 1}.ToObject(),
 			uast.KeyEnd:   uast.Position{Offset: 12, Line: 3, Col: 6}.ToObject(),
 		}},
@@ -40,19 +41,19 @@ func TestFillOffsetFromLineCol(t *testing.T) {
 	require := require.New(t)
 
 	data := "hello\n\nworld"
-	input := uast.Object{
+	input := nodes.Object{
 		uast.KeyStart: uast.Position{Line: 1, Col: 1}.ToObject(),
 		uast.KeyEnd:   uast.Position{Line: 1, Col: 5}.ToObject(),
-		"a": uast.Array{uast.Object{
+		"a": nodes.Array{nodes.Object{
 			uast.KeyStart: uast.Position{Line: 3, Col: 1}.ToObject(),
 			uast.KeyEnd:   uast.Position{Line: 3, Col: 5}.ToObject(),
 		}},
 	}
 
-	expected := uast.Object{
+	expected := nodes.Object{
 		uast.KeyStart: uast.Position{Offset: 0, Line: 1, Col: 1}.ToObject(),
 		uast.KeyEnd:   uast.Position{Offset: 4, Line: 1, Col: 5}.ToObject(),
-		"a": uast.Array{uast.Object{
+		"a": nodes.Array{nodes.Object{
 			uast.KeyStart: uast.Position{Offset: 7, Line: 3, Col: 1}.ToObject(),
 			uast.KeyEnd:   uast.Position{Offset: 11, Line: 3, Col: 5}.ToObject(),
 		}},
@@ -69,12 +70,12 @@ func TestEmptyFile(t *testing.T) {
 
 	data := ""
 
-	input := uast.Object{
+	input := nodes.Object{
 		uast.KeyStart: uast.Position{Line: 1, Col: 1}.ToObject(),
 		uast.KeyEnd:   uast.Position{Line: 1, Col: 1}.ToObject(),
 	}
 
-	expected := uast.Object{
+	expected := nodes.Object{
 		uast.KeyStart: uast.Position{Offset: 0, Line: 1, Col: 1}.ToObject(),
 		uast.KeyEnd:   uast.Position{Offset: 0, Line: 1, Col: 1}.ToObject(),
 	}

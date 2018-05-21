@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 const (
@@ -12,7 +13,7 @@ const (
 	errorOnFilterCheck = false
 )
 
-func noNode(n uast.Node) error {
+func noNode(n nodes.Node) error {
 	if n == nil {
 		return nil
 	}
@@ -28,23 +29,23 @@ func filtered(format string, args ...interface{}) (bool, error) {
 
 // Is checks if the current node is a primitive and is equal to a given value.
 // Reversal changes the type of the node to primitive and assigns given value to the node.
-func Is(v uast.Value) Op {
+func Is(v nodes.Value) Op {
 	return opIs{v: v}
 }
 
 type opIs struct {
-	v uast.Value
+	v nodes.Value
 }
 
-func (op opIs) Check(st *State, n uast.Node) (bool, error) {
-	v2, ok := n.(uast.Value)
+func (op opIs) Check(st *State, n nodes.Node) (bool, error) {
+	v2, ok := n.(nodes.Value)
 	if !ok {
 		return op.v == nil && n == nil, nil
 	}
 	return op.v == v2, nil
 }
 
-func (op opIs) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opIs) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	nv := op.v
 	return nv, nil
 }
@@ -59,14 +60,14 @@ type opVar struct {
 	name string
 }
 
-func (op opVar) Check(st *State, n uast.Node) (bool, error) {
+func (op opVar) Check(st *State, n nodes.Node) (bool, error) {
 	if err := st.SetVar(op.name, n); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (op opVar) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opVar) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	if err := noNode(n); err != nil {
 		return nil, err
 	}
@@ -90,16 +91,16 @@ type opAnyNode struct {
 	create Mod
 }
 
-func (op opAnyNode) Check(st *State, n uast.Node) (bool, error) {
+func (op opAnyNode) Check(st *State, n nodes.Node) (bool, error) {
 	return true, nil // always succeeds
 }
 
-func (op opAnyNode) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opAnyNode) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return op.create.Construct(st, n)
 }
 
 // AnyVal accept any value and aways creates a node with a provided one.
-func AnyVal(val uast.Value) Op {
+func AnyVal(val nodes.Value) Op {
 	return AnyNode(Is(val))
 }
 
@@ -116,7 +117,7 @@ func Seq(ops ...Op) Op {
 
 type opSeq []Op
 
-func (op opSeq) Check(st *State, n uast.Node) (bool, error) {
+func (op opSeq) Check(st *State, n nodes.Node) (bool, error) {
 	for i, sub := range op {
 		if ok, err := sub.Check(st, n); err != nil {
 			return false, errAnd.Wrap(err, i, sub)
@@ -127,7 +128,7 @@ func (op opSeq) Check(st *State, n uast.Node) (bool, error) {
 	return true, nil
 }
 
-func (op opSeq) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opSeq) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	for i, sub := range op {
 		var err error
 		n, err = sub.Construct(st, n)
@@ -159,12 +160,12 @@ func (o Obj) Object() Object {
 }
 
 // Check will make an Object operation from this helper and call Check on it.
-func (o Obj) Check(st *State, n uast.Node) (bool, error) {
+func (o Obj) Check(st *State, n nodes.Node) (bool, error) {
 	return o.Object().Check(st, n)
 }
 
 // Construct will make an Object operation from this helper and call Construct on it.
-func (o Obj) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (o Obj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return o.Object().Construct(st, n)
 }
 
@@ -228,12 +229,12 @@ func (o Fields) Object() Object {
 }
 
 // Check will make an Object operation from this helper and call Check on it.
-func (o Fields) Check(st *State, n uast.Node) (bool, error) {
+func (o Fields) Check(st *State, n nodes.Node) (bool, error) {
 	return o.Object().Check(st, n)
 }
 
 // Construct will make an Object operation from this helper and call Construct on it.
-func (o Fields) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (o Fields) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return o.Object().Construct(st, n)
 }
 
@@ -330,8 +331,8 @@ func (o *Object) setFields(fields ...Field) error {
 // descriptions. If Pre was used, all unknown fields will be saved and restored to a new object on Construct.
 //
 // For information on optional fields see Field documentation.
-func (o Object) Check(st *State, n uast.Node) (bool, error) {
-	cur, ok := n.(uast.Object)
+func (o Object) Check(st *State, n nodes.Node) (bool, error) {
+	cur, ok := n.(nodes.Object)
 	if !ok {
 		if errorOnFilterCheck {
 			return filtered("%+v is not an object\n%+v", n, o)
@@ -341,7 +342,7 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 	for _, f := range o.fields {
 		n, ok := cur[f.Name]
 		if f.Optional != "" {
-			if err := st.SetVar(f.Optional, uast.Bool(ok)); err != nil {
+			if err := st.SetVar(f.Optional, nodes.Bool(ok)); err != nil {
 				return false, errKey.Wrap(err, f.Name)
 			}
 		}
@@ -372,7 +373,7 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 		return true, nil
 	}
 	// TODO: consider throwing an error if a transform is defined as partial, but in fact it's not
-	left := make(uast.Object)
+	left := make(nodes.Object)
 	for k, v := range cur {
 		if _, ok := o.set[k]; !ok {
 			left[k] = v
@@ -384,20 +385,20 @@ func (o Object) Check(st *State, n uast.Node) (bool, error) {
 
 // Construct will create a new object and will populate it's fields according to field descriptions.
 // If Part was used, it will also restore all unhandled fields.
-func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
+func (o Object) Construct(st *State, old nodes.Node) (nodes.Node, error) {
 	if err := noNode(old); err != nil {
 		return nil, err
 	}
-	obj := make(uast.Object, len(o.fields))
+	obj := make(nodes.Object, len(o.fields))
 	for _, f := range o.fields {
 		if f.Optional != "" {
 			on, err := st.MustGetVar(f.Optional)
 			if err != nil {
 				return obj, errKey.Wrap(err, f.Name)
 			}
-			exists, ok := on.(uast.Bool)
+			exists, ok := on.(nodes.Bool)
 			if !ok {
-				return obj, errKey.Wrap(ErrUnexpectedType.New(uast.Bool(false), on), f.Name)
+				return obj, errKey.Wrap(ErrUnexpectedType.New(nodes.Bool(false), on), f.Name)
 			}
 			if !exists {
 				continue
@@ -416,7 +417,7 @@ func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
 	if err != nil {
 		return obj, err
 	}
-	left, ok := v.(uast.Object)
+	left, ok := v.(nodes.Object)
 	if !ok {
 		return obj, ErrExpectedObject.New(v)
 	}
@@ -432,17 +433,17 @@ func (o Object) Construct(st *State, old uast.Node) (uast.Node, error) {
 
 // String asserts that value equals a specific string value.
 func String(val string) Op {
-	return Is(uast.String(val))
+	return Is(nodes.String(val))
 }
 
 // Int asserts that value equals a specific integer value.
 func Int(val int) Op {
-	return Is(uast.Int(val))
+	return Is(nodes.Int(val))
 }
 
 // Bool asserts that value equals a specific boolean value.
 func Bool(val bool) Op {
-	return Is(uast.Bool(val))
+	return Is(nodes.Bool(val))
 }
 
 // TypedObj is a shorthand for an object with a specific type
@@ -472,8 +473,8 @@ type opArr []Op
 func (op opArr) arr(_ *State) (opArr, error) {
 	return op, nil
 }
-func (op opArr) Check(st *State, n uast.Node) (bool, error) {
-	arr, ok := n.(uast.Array)
+func (op opArr) Check(st *State, n nodes.Node) (bool, error) {
+	arr, ok := n.(nodes.Array)
 	if !ok {
 		return filtered("%+v is not a list, %+v", n, op)
 	} else if len(arr) != len(op) {
@@ -489,11 +490,11 @@ func (op opArr) Check(st *State, n uast.Node) (bool, error) {
 	return true, nil
 }
 
-func (op opArr) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opArr) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	if err := noNode(n); err != nil {
 		return nil, err
 	}
-	arr := make(uast.Array, 0, len(op))
+	arr := make(nodes.Array, 0, len(op))
 	for i, sub := range op {
 		nn, err := sub.Construct(st, n)
 		if err != nil {
@@ -515,8 +516,8 @@ func One(op Op) Op {
 // op and will assign it to the current node.
 // Since reversal transformation needs to build a reverse map,
 // the mapping should not be ambiguous in reverse direction (no duplicate values).
-func Lookup(op Op, m map[uast.Value]uast.Value) Op {
-	rev := make(map[uast.Value]uast.Value, len(m))
+func Lookup(op Op, m map[nodes.Value]nodes.Value) Op {
+	rev := make(map[nodes.Value]nodes.Value, len(m))
 	for k, v := range m {
 		if _, ok := rev[v]; ok {
 			panic(ErrAmbiguousValue.New("map has ambigous value %v", v))
@@ -528,11 +529,11 @@ func Lookup(op Op, m map[uast.Value]uast.Value) Op {
 
 type opLookup struct {
 	op       Op
-	fwd, rev map[uast.Value]uast.Value
+	fwd, rev map[nodes.Value]nodes.Value
 }
 
-func (op opLookup) Check(st *State, n uast.Node) (bool, error) {
-	v, ok := n.(uast.Value)
+func (op opLookup) Check(st *State, n nodes.Node) (bool, error) {
+	v, ok := n.(nodes.Value)
 	if !ok {
 		return false, nil
 	}
@@ -543,7 +544,7 @@ func (op opLookup) Check(st *State, n uast.Node) (bool, error) {
 	return op.op.Check(st, vn)
 }
 
-func (op opLookup) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opLookup) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	if err := noNode(n); err != nil {
 		return nil, err
 	}
@@ -551,7 +552,7 @@ func (op opLookup) Construct(st *State, n uast.Node) (uast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, ok := nn.(uast.Value)
+	v, ok := nn.(nodes.Value)
 	if !ok {
 		return nil, ErrExpectedValue.New(n)
 	}
@@ -563,7 +564,7 @@ func (op opLookup) Construct(st *State, n uast.Node) (uast.Node, error) {
 }
 
 // LookupVar is a shorthand to lookup value stored in variable.
-func LookupVar(vr string, m map[uast.Value]uast.Value) Op {
+func LookupVar(vr string, m map[nodes.Value]nodes.Value) Op {
 	return Lookup(Var(vr), m)
 }
 
@@ -571,7 +572,7 @@ func LookupVar(vr string, m map[uast.Value]uast.Value) Op {
 // checks the map to find an appropriate operation to apply to current node.
 // Note that the variable must be defined prior to this transformation, thus
 // You might need to use Pre to define a variable used in this condition.
-func LookupOpVar(vr string, cases map[uast.Value]Op) Op {
+func LookupOpVar(vr string, cases map[nodes.Value]Op) Op {
 	def := cases[nil]
 	delete(cases, nil)
 	return opLookupOp{vr: vr, cases: cases, def: def}
@@ -580,7 +581,7 @@ func LookupOpVar(vr string, cases map[uast.Value]Op) Op {
 type opLookupOp struct {
 	vr    string
 	def   Op
-	cases map[uast.Value]Op
+	cases map[nodes.Value]Op
 }
 
 func (op opLookupOp) eval(st *State) (Op, error) {
@@ -588,7 +589,7 @@ func (op opLookupOp) eval(st *State) (Op, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, ok := vn.(uast.Value)
+	v, ok := vn.(nodes.Value)
 	if !ok {
 		return nil, ErrExpectedValue.New(vn)
 	}
@@ -602,7 +603,7 @@ func (op opLookupOp) eval(st *State) (Op, error) {
 	return sub, nil
 }
 
-func (op opLookupOp) Check(st *State, n uast.Node) (bool, error) {
+func (op opLookupOp) Check(st *State, n nodes.Node) (bool, error) {
 	sub, err := op.eval(st)
 	if err != nil {
 		return false, err
@@ -610,7 +611,7 @@ func (op opLookupOp) Check(st *State, n uast.Node) (bool, error) {
 	return sub.Check(st, n)
 }
 
-func (op opLookupOp) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opLookupOp) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	sub, err := op.eval(st)
 	if err != nil {
 		return nil, err
@@ -620,7 +621,7 @@ func (op opLookupOp) Construct(st *State, n uast.Node) (uast.Node, error) {
 
 // LookupArrOpVar is like LookupOpVar but returns an array operation.
 // Default value can be specified by setting the nil key.
-func LookupArrOpVar(vr string, cases map[uast.Value]ArrayOp) ArrayOp {
+func LookupArrOpVar(vr string, cases map[nodes.Value]ArrayOp) ArrayOp {
 	def := cases[nil]
 	delete(cases, nil)
 	return opLookupArrOp{vr: vr, cases: cases, def: def}
@@ -629,7 +630,7 @@ func LookupArrOpVar(vr string, cases map[uast.Value]ArrayOp) ArrayOp {
 type opLookupArrOp struct {
 	vr    string
 	def   ArrayOp
-	cases map[uast.Value]ArrayOp
+	cases map[nodes.Value]ArrayOp
 }
 
 func (op opLookupArrOp) arr(st *State) (opArr, error) {
@@ -637,7 +638,7 @@ func (op opLookupArrOp) arr(st *State) (opArr, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, ok := vn.(uast.Value)
+	v, ok := vn.(nodes.Value)
 	if !ok {
 		return nil, ErrExpectedValue.New(vn)
 	}
@@ -651,7 +652,7 @@ func (op opLookupArrOp) arr(st *State) (opArr, error) {
 	return sub.arr(st)
 }
 
-func (op opLookupArrOp) Check(st *State, n uast.Node) (bool, error) {
+func (op opLookupArrOp) Check(st *State, n nodes.Node) (bool, error) {
 	sub, err := op.arr(st)
 	if err != nil {
 		return false, err
@@ -659,7 +660,7 @@ func (op opLookupArrOp) Check(st *State, n uast.Node) (bool, error) {
 	return sub.Check(st, n)
 }
 
-func (op opLookupArrOp) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opLookupArrOp) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	sub, err := op.arr(st)
 	if err != nil {
 		return nil, err
@@ -681,8 +682,8 @@ type opAppend struct {
 	arrs opAppendArr
 }
 
-func (op opAppend) Check(st *State, n uast.Node) (bool, error) {
-	arr, ok := n.(uast.Array)
+func (op opAppend) Check(st *State, n nodes.Node) (bool, error) {
+	arr, ok := n.(nodes.Array)
 	if !ok {
 		return filtered("%+v is not a list, %+v", n, op)
 	}
@@ -708,12 +709,12 @@ func (op opAppend) Check(st *State, n uast.Node) (bool, error) {
 	return sarr.Check(st, arrs)
 }
 
-func (op opAppend) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opAppend) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	n, err := op.op.Construct(st, n)
 	if err != nil {
 		return nil, err
 	}
-	arr, ok := n.(uast.Array)
+	arr, ok := n.(nodes.Array)
 	if !ok {
 		return nil, ErrExpectedList.New(n)
 	}
@@ -725,7 +726,7 @@ func (op opAppend) Construct(st *State, n uast.Node) (uast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	arr2, ok := nn.(uast.Array)
+	arr2, ok := nn.(nodes.Array)
 	if !ok {
 		return nil, ErrExpectedList.New(n)
 	}
@@ -758,7 +759,7 @@ func (op opAppendArr) arr(st *State) (opArr, error) {
 	return arr, nil
 }
 
-func (op opAppendArr) Check(st *State, n uast.Node) (bool, error) {
+func (op opAppendArr) Check(st *State, n nodes.Node) (bool, error) {
 	sarr, err := op.arr(st)
 	if err != nil {
 		return false, err
@@ -766,7 +767,7 @@ func (op opAppendArr) Check(st *State, n uast.Node) (bool, error) {
 	return sarr.Check(st, n)
 }
 
-func (op opAppendArr) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opAppendArr) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	sarr, err := op.arr(st)
 	if err != nil {
 		return nil, err
@@ -775,7 +776,7 @@ func (op opAppendArr) Construct(st *State, n uast.Node) (uast.Node, error) {
 }
 
 // ValueFunc is a function that transforms values.
-type ValueFunc func(uast.Value) (uast.Value, error)
+type ValueFunc func(nodes.Value) (nodes.Value, error)
 
 // ValueConv converts a value with a provided function and passes it to sub-operation.
 func ValueConv(on Op, conv, rev ValueFunc) Op {
@@ -788,16 +789,16 @@ type StringFunc func(string) (string, error)
 // StringConv is like ValueConv, but only processes string arguments.
 func StringConv(on Op, conv, rev StringFunc) Op {
 	apply := func(fnc StringFunc) ValueFunc {
-		return func(v uast.Value) (uast.Value, error) {
-			sv, ok := v.(uast.String)
+		return func(v nodes.Value) (nodes.Value, error) {
+			sv, ok := v.(nodes.String)
 			if !ok {
-				return nil, ErrUnexpectedType.New(uast.String(""), v)
+				return nil, ErrUnexpectedType.New(nodes.String(""), v)
 			}
 			s, err := fnc(string(sv))
 			if err != nil {
 				return nil, err
 			}
-			return uast.String(s), nil
+			return nodes.String(s), nil
 		}
 	}
 	return ValueConv(on, apply(conv), apply(rev))
@@ -808,8 +809,8 @@ type opValueConv struct {
 	conv, rev ValueFunc
 }
 
-func (op opValueConv) Check(st *State, n uast.Node) (bool, error) {
-	v, ok := n.(uast.Value)
+func (op opValueConv) Check(st *State, n nodes.Node) (bool, error) {
+	v, ok := n.(nodes.Value)
 	if !ok {
 		return false, nil
 	}
@@ -822,12 +823,12 @@ func (op opValueConv) Check(st *State, n uast.Node) (bool, error) {
 	return op.op.Check(st, nv)
 }
 
-func (op opValueConv) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opValueConv) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	n, err := op.op.Construct(st, n)
 	if err != nil {
 		return nil, err
 	}
-	v, ok := n.(uast.Value)
+	v, ok := n.(nodes.Value)
 	if !ok {
 		return nil, ErrExpectedValue.New(n)
 	}
@@ -848,19 +849,19 @@ type opIf struct {
 	then, els Op
 }
 
-func (op opIf) Check(st *State, n uast.Node) (bool, error) {
+func (op opIf) Check(st *State, n nodes.Node) (bool, error) {
 	st1 := st.Clone()
 	ok1, err1 := op.then.Check(st1, n)
 	if ok1 && err1 == nil {
 		st.ApplyFrom(st1)
-		st.SetVar(op.cond, uast.Bool(true))
+		st.SetVar(op.cond, nodes.Bool(true))
 		return true, nil
 	}
 	st2 := st.Clone()
 	ok2, err2 := op.els.Check(st2, n)
 	if ok2 && err2 == nil {
 		st.ApplyFrom(st2)
-		st.SetVar(op.cond, uast.Bool(false))
+		st.SetVar(op.cond, nodes.Bool(false))
 		return true, nil
 	}
 	err := err1
@@ -870,14 +871,14 @@ func (op opIf) Check(st *State, n uast.Node) (bool, error) {
 	return false, err
 }
 
-func (op opIf) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opIf) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	vn, err := st.MustGetVar(op.cond)
 	if err != nil {
 		return nil, err
 	}
-	cond, ok := vn.(uast.Bool)
+	cond, ok := vn.(nodes.Bool)
 	if !ok {
-		return nil, ErrUnexpectedType.New(uast.Bool(false), vn)
+		return nil, ErrUnexpectedType.New(nodes.Bool(false), vn)
 	}
 	if cond {
 		return op.then.Construct(st, n)
@@ -896,8 +897,8 @@ type opEach struct {
 	op Op
 }
 
-func (op opEach) Check(st *State, n uast.Node) (bool, error) {
-	arr, ok := n.(uast.Array)
+func (op opEach) Check(st *State, n nodes.Node) (bool, error) {
+	arr, ok := n.(nodes.Array)
 	if !ok && n != nil {
 		return filtered("%+v is not a list, %+v", n, op)
 	}
@@ -921,7 +922,7 @@ func (op opEach) Check(st *State, n uast.Node) (bool, error) {
 	return true, nil
 }
 
-func (op opEach) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opEach) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	if err := noNode(n); err != nil {
 		return nil, err
 	}
@@ -932,7 +933,7 @@ func (op opEach) Construct(st *State, n uast.Node) (uast.Node, error) {
 	if subs == nil {
 		return nil, nil
 	}
-	arr := make(uast.Array, 0, len(subs))
+	arr := make(nodes.Array, 0, len(subs))
 	for i, stt := range subs {
 		sub, err := op.op.Construct(stt, nil)
 		if err != nil {
@@ -952,15 +953,15 @@ type opNotEmpty struct {
 	op Op
 }
 
-func (op opNotEmpty) Check(st *State, n uast.Node) (bool, error) {
+func (op opNotEmpty) Check(st *State, n nodes.Node) (bool, error) {
 	switch n := n.(type) {
 	case nil:
 		return filtered("empty value %T for %v", n, op)
-	case uast.Array:
+	case nodes.Array:
 		if len(n) == 0 {
 			return filtered("empty value %T for %v", n, op)
 		}
-	case uast.Object:
+	case nodes.Object:
 		if len(n) == 0 {
 			return filtered("empty value %T for %v", n, op)
 		}
@@ -968,7 +969,7 @@ func (op opNotEmpty) Check(st *State, n uast.Node) (bool, error) {
 	return op.op.Check(st, n)
 }
 
-func (op opNotEmpty) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opNotEmpty) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	n, err := op.op.Construct(st, n)
 	if err != nil {
 		return nil, err
@@ -976,11 +977,11 @@ func (op opNotEmpty) Construct(st *State, n uast.Node) (uast.Node, error) {
 	switch n := n.(type) {
 	case nil:
 		return nil, ErrUnexpectedValue.New(n)
-	case uast.Array:
+	case nodes.Array:
 		if len(n) == 0 {
 			return nil, ErrUnexpectedValue.New(n)
 		}
-	case uast.Object:
+	case nodes.Object:
 		if len(n) == 0 {
 			return nil, ErrUnexpectedValue.New(n)
 		}
@@ -998,8 +999,8 @@ type opOptional struct {
 	op Op
 }
 
-func (op opOptional) Check(st *State, n uast.Node) (bool, error) {
-	if err := st.SetVar(op.vr, uast.Bool(n != nil)); err != nil {
+func (op opOptional) Check(st *State, n nodes.Node) (bool, error) {
+	if err := st.SetVar(op.vr, nodes.Bool(n != nil)); err != nil {
 		return false, err
 	}
 	if n == nil {
@@ -1008,14 +1009,14 @@ func (op opOptional) Check(st *State, n uast.Node) (bool, error) {
 	return op.op.Check(st, n)
 }
 
-func (op opOptional) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opOptional) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	vn, err := st.MustGetVar(op.vr)
 	if err != nil {
 		return nil, err
 	}
-	exists, ok := vn.(uast.Bool)
+	exists, ok := vn.(nodes.Bool)
 	if !ok {
-		return nil, ErrUnexpectedType.New(uast.Bool(false), vn)
+		return nil, ErrUnexpectedType.New(nodes.Bool(false), vn)
 	}
 	if !exists {
 		return nil, nil
@@ -1034,14 +1035,14 @@ type opCheck struct {
 	op  Op
 }
 
-func (op opCheck) Check(st *State, n uast.Node) (bool, error) {
+func (op opCheck) Check(st *State, n nodes.Node) (bool, error) {
 	if ok, err := op.sel.Check(st.Clone(), n); err != nil || !ok {
 		return ok, err
 	}
 	return op.op.Check(st, n)
 }
 
-func (op opCheck) Construct(st *State, n uast.Node) (uast.Node, error) {
+func (op opCheck) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return op.op.Construct(st, n)
 }
 
@@ -1054,7 +1055,7 @@ type opNot struct {
 	sel Sel
 }
 
-func (op opNot) Check(st *State, n uast.Node) (bool, error) {
+func (op opNot) Check(st *State, n nodes.Node) (bool, error) {
 	ok, err := op.sel.Check(st.Clone(), n)
 	if err != nil {
 		return false, err
@@ -1069,7 +1070,7 @@ func And(sels ...Sel) Sel {
 
 type opAnd []Sel
 
-func (op opAnd) Check(st *State, n uast.Node) (bool, error) {
+func (op opAnd) Check(st *State, n nodes.Node) (bool, error) {
 	for _, sub := range op {
 		if ok, err := sub.Check(st.Clone(), n); err != nil {
 			return false, err
@@ -1092,8 +1093,8 @@ type opAny struct {
 	sel Sel
 }
 
-func (op opAny) Check(st *State, n uast.Node) (bool, error) {
-	l, ok := n.(uast.Array)
+func (op opAny) Check(st *State, n nodes.Node) (bool, error) {
+	l, ok := n.(nodes.Array)
 	if !ok {
 		return false, nil
 	}
@@ -1116,8 +1117,8 @@ type opAll struct {
 	sel Sel
 }
 
-func (op opAll) Check(st *State, n uast.Node) (bool, error) {
-	l, ok := n.(uast.Array)
+func (op opAll) Check(st *State, n nodes.Node) (bool, error) {
+	l, ok := n.(nodes.Array)
 	if !ok {
 		return false, nil
 	}
@@ -1135,8 +1136,8 @@ var _ Sel = Has{}
 type Has map[string]Sel
 
 // Check verifies that specified fields exists and matches the provided sub-operations.
-func (m Has) Check(st *State, n uast.Node) (bool, error) {
-	o, ok := n.(uast.Object)
+func (m Has) Check(st *State, n nodes.Node) (bool, error) {
+	o, ok := n.(nodes.Object)
 	if !ok {
 		return false, nil
 	}
@@ -1153,8 +1154,8 @@ func (m Has) Check(st *State, n uast.Node) (bool, error) {
 }
 
 // In check that the node is a value from a given list.
-func In(vals ...uast.Value) Sel {
-	m := make(map[uast.Value]struct{}, len(vals))
+func In(vals ...nodes.Value) Sel {
+	m := make(map[nodes.Value]struct{}, len(vals))
 	for _, v := range vals {
 		m[v] = struct{}{}
 	}
@@ -1162,11 +1163,11 @@ func In(vals ...uast.Value) Sel {
 }
 
 type opIn struct {
-	m map[uast.Value]struct{}
+	m map[nodes.Value]struct{}
 }
 
-func (op opIn) Check(st *State, n uast.Node) (bool, error) {
-	v, ok := n.(uast.Value)
+func (op opIn) Check(st *State, n nodes.Node) (bool, error) {
+	v, ok := n.(nodes.Value)
 	if !ok && n != nil {
 		return false, nil
 	}

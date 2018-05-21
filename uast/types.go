@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
@@ -37,8 +38,8 @@ func RegisterPackage(ns string, o interface{}) {
 func TypeOf(o interface{}) string {
 	if o == nil {
 		return ""
-	} else if obj, ok := o.(Object); ok {
-		tp, _ := obj[KeyType].(String)
+	} else if obj, ok := o.(nodes.Object); ok {
+		tp, _ := obj[KeyType].(nodes.String)
 		return string(tp)
 	}
 	tp := reflect.TypeOf(o)
@@ -75,10 +76,18 @@ func fieldName(f reflect.StructField) (string, error) {
 
 var (
 	reflString = reflect.TypeOf("")
-	reflNode   = reflect.TypeOf((*Node)(nil)).Elem()
+	reflNode   = reflect.TypeOf((*nodes.Node)(nil)).Elem()
 )
 
-func toNodeReflect(rv reflect.Value) (Node, error) {
+// ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
+// It also supports types from packages registered via RegisterPackage.
+func ToNode(o interface{}) (nodes.Node, error) {
+	return nodes.ToNode(o, func(o interface{}) (nodes.Node, error) {
+		return toNodeReflect(reflect.ValueOf(o))
+	})
+}
+
+func toNodeReflect(rv reflect.Value) (nodes.Node, error) {
 	rt := rv.Type()
 	if rt.Kind() == reflect.Ptr {
 		rv = rv.Elem()
@@ -86,18 +95,18 @@ func toNodeReflect(rv reflect.Value) (Node, error) {
 	}
 	switch rt.Kind() {
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
-		return Int(rv.Int()), nil
+		return nodes.Int(rv.Int()), nil
 	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
-		return Int(rv.Uint()), nil
+		return nodes.Int(rv.Uint()), nil
 	case reflect.Float64, reflect.Float32:
-		return Float(rv.Float()), nil
+		return nodes.Float(rv.Float()), nil
 	case reflect.Bool:
-		return Bool(rv.Bool()), nil
+		return nodes.Bool(rv.Bool()), nil
 	case reflect.String:
-		return String(rv.String()), nil
+		return nodes.String(rv.String()), nil
 	case reflect.Slice:
 		// TODO: catch []byte
-		arr := make(Array, 0, rv.Len())
+		arr := make(nodes.Array, 0, rv.Len())
 		for i := 0; i < rv.Len(); i++ {
 			v, err := toNodeReflect(rv.Index(i))
 			if err != nil {
@@ -122,8 +131,8 @@ func toNodeReflect(rv reflect.Value) (Node, error) {
 			sz = rv.Len()
 		}
 
-		obj := make(Object, sz+1)
-		obj[KeyType] = String(typ)
+		obj := make(nodes.Object, sz+1)
+		obj[KeyType] = nodes.String(typ)
 
 		if isStruct {
 			for i := 0; i < rt.NumField(); i++ {
@@ -159,7 +168,7 @@ func toNodeReflect(rv reflect.Value) (Node, error) {
 	return nil, fmt.Errorf("unsupported type: %v", rt)
 }
 
-func NodeAs(n Node, dst interface{}) error {
+func NodeAs(n nodes.Node, dst interface{}) error {
 	var rv reflect.Value
 	if v, ok := dst.(reflect.Value); ok {
 		rv = v
@@ -169,7 +178,7 @@ func NodeAs(n Node, dst interface{}) error {
 	return nodeAs(n, rv)
 }
 
-func nodeAs(n Node, rv reflect.Value) error {
+func nodeAs(n nodes.Node, rv reflect.Value) error {
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
@@ -179,7 +188,7 @@ func nodeAs(n Node, rv reflect.Value) error {
 	switch n := n.(type) {
 	case nil:
 		return nil
-	case Object:
+	case nodes.Object:
 		rt := rv.Type()
 		kind := rt.Kind()
 		if kind != reflect.Struct && kind != reflect.Map {
@@ -225,7 +234,7 @@ func nodeAs(n Node, rv reflect.Value) error {
 			}
 		}
 		return nil
-	case Array:
+	case nodes.Array:
 		rt := rv.Type()
 		if rt.Kind() != reflect.Slice {
 			return fmt.Errorf("expected slice, got %v", rt)
@@ -241,7 +250,7 @@ func nodeAs(n Node, rv reflect.Value) error {
 			}
 		}
 		return nil
-	case String, Int, Float, Bool:
+	case nodes.String, nodes.Int, nodes.Float, nodes.Bool:
 		rt := rv.Type()
 		nv := reflect.ValueOf(n)
 		if !nv.Type().ConvertibleTo(rt) {

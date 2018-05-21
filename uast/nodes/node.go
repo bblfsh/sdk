@@ -1,8 +1,7 @@
-package uast
+package nodes
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 )
 
@@ -18,7 +17,7 @@ func Equal(n1, n2 Node) bool {
 	return false
 }
 
-// Node is a generic interface for structures used in AST.
+// Node is a generic interface for a tree structure.
 //
 // Can be one of:
 //	* Object
@@ -32,7 +31,7 @@ type Node interface {
 	isNode() // to limit possible types
 }
 
-// Value is a generic interface for values of AST node fields.
+// Value is a generic interface for values stored inside the tree.
 //
 // Can be one of:
 //	* String
@@ -50,7 +49,7 @@ type NodePtr interface {
 	SetNode(v Node) error
 }
 
-// Object is a representation of generic AST node with fields.
+// Object is a representation of generic node with fields.
 type Object map[string]Node
 
 func (Object) isNode() {}
@@ -94,7 +93,7 @@ func (m Object) Clone() Node {
 	return out
 }
 
-// CloneObject clones this AST node only, without deep copy of field values.
+// CloneObject clones this node only, without deep copy of field values.
 func (m Object) CloneObject() Object {
 	out := make(Object, len(m))
 	for k, v := range m {
@@ -136,7 +135,7 @@ func (m Object) EqualObject(m2 Object) bool {
 	return true
 }
 
-// Array is an ordered list of AST nodes.
+// Array is an ordered list of nodes.
 type Array []Node
 
 func (Array) isNode() {}
@@ -202,7 +201,7 @@ func (m *Array) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// String is a string value used in AST fields.
+// String is a string value used in tree fields.
 type String string
 
 func (String) isNode()  {}
@@ -231,7 +230,7 @@ func (v *String) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// Int is a integer value used in AST fields.
+// Int is a integer value used in tree fields.
 type Int int64
 
 func (Int) isNode()  {}
@@ -260,7 +259,7 @@ func (v *Int) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// Float is a floating point value used in AST fields.
+// Float is a floating point value used in tree fields.
 type Float float64
 
 func (Float) isNode()  {}
@@ -289,7 +288,7 @@ func (v *Float) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// Bool is a boolean value used in AST fields.
+// Bool is a boolean value used in tree fields.
 type Bool bool
 
 func (Bool) isNode()  {}
@@ -318,9 +317,10 @@ func (v *Bool) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
+type ToNodeFunc func(interface{}) (Node, error)
+
 // ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
-// It also supports types from packages registered via RegisterPackage.
-func ToNode(o interface{}) (Node, error) {
+func ToNode(o interface{}, fallback ToNodeFunc) (Node, error) {
 	switch o := o.(type) {
 	case nil:
 		return nil, nil
@@ -329,7 +329,7 @@ func ToNode(o interface{}) (Node, error) {
 	case map[string]interface{}:
 		n := make(Object, len(o))
 		for k, v := range o {
-			nv, err := ToNode(v)
+			nv, err := ToNode(v, fallback)
 			if err != nil {
 				return nil, err
 			}
@@ -339,7 +339,7 @@ func ToNode(o interface{}) (Node, error) {
 	case []interface{}:
 		n := make(Array, 0, len(o))
 		for _, v := range o {
-			nv, err := ToNode(v)
+			nv, err := ToNode(v, fallback)
 			if err != nil {
 				return nil, err
 			}
@@ -360,7 +360,10 @@ func ToNode(o interface{}) (Node, error) {
 	case bool:
 		return Bool(o), nil
 	default:
-		return toNodeReflect(reflect.ValueOf(o))
+		if fallback != nil {
+			return fallback(o)
+		}
+		return nil, fmt.Errorf("unsupported type: %T", o)
 	}
 }
 

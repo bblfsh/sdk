@@ -5,12 +5,13 @@ import (
 	"strings"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 // Transformer is an interface for transformations that operates on AST trees.
 // An implementation is responsible for walking the tree and executing transformation on each AST node.
 type Transformer interface {
-	Do(root uast.Node) (uast.Node, error)
+	Do(root nodes.Node) (nodes.Node, error)
 }
 
 // CodeTransformer is a special case of Transformer that needs an original source code to operate.
@@ -22,14 +23,14 @@ type CodeTransformer interface {
 type Sel interface {
 	// Check will verify constraints for a single node and returns true if an objects matches them.
 	// It can also populate the State with variables that can be used later to Construct a different object from the State.
-	Check(st *State, n uast.Node) (bool, error)
+	Check(st *State, n nodes.Node) (bool, error)
 }
 
 // Mod is an operation that can reconstruct an AST node from a given State.
 type Mod interface {
 	// Construct will use variables stored in State to reconstruct an AST node.
 	// Node that is provided as an argument may be used as a base for reconstruction.
-	Construct(st *State, n uast.Node) (uast.Node, error)
+	Construct(st *State, n nodes.Node) (nodes.Node, error)
 }
 
 // Op is a generic AST transformation step that describes a shape of an AST tree.
@@ -54,12 +55,12 @@ var _ Transformer = (TransformFunc)(nil)
 // TransformFunc is a function that will be applied to each AST node to transform the tree.
 // It returns a new AST and true if tree was changed, or an old node and false if no modifications were done.
 // The the tree will be traversed automatically and the callback will be called for each node.
-type TransformFunc func(n uast.Node) (uast.Node, bool, error)
+type TransformFunc func(n nodes.Node) (nodes.Node, bool, error)
 
 // Do runs a transformation function for each AST node.
-func (f TransformFunc) Do(n uast.Node) (uast.Node, error) {
+func (f TransformFunc) Do(n nodes.Node) (nodes.Node, error) {
 	var last error
-	nn, ok := uast.Apply(n, func(n uast.Node) (uast.Node, bool) {
+	nn, ok := nodes.Apply(n, func(n nodes.Node) (nodes.Node, bool) {
 		nn, ok, err := f(n)
 		if err != nil {
 			last = err
@@ -78,12 +79,12 @@ func (f TransformFunc) Do(n uast.Node) (uast.Node, error) {
 var _ Transformer = (TransformObjFunc)(nil)
 
 // TransformObjFunc is like TransformFunc, but only matches Object nodes.
-type TransformObjFunc func(n uast.Object) (uast.Object, bool, error)
+type TransformObjFunc func(n nodes.Object) (nodes.Object, bool, error)
 
 // Func converts this TransformObjFunc to a regular TransformFunc by skipping all non-object nodes.
 func (f TransformObjFunc) Func() TransformFunc {
-	return TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
-		obj, ok := n.(uast.Object)
+	return TransformFunc(func(n nodes.Node) (nodes.Node, bool, error) {
+		obj, ok := n.(nodes.Object)
 		if !ok {
 			return n, false, nil
 		}
@@ -98,7 +99,7 @@ func (f TransformObjFunc) Func() TransformFunc {
 }
 
 // Do runs a transformation function for each AST node.
-func (f TransformObjFunc) Do(n uast.Node) (uast.Node, error) {
+func (f TransformObjFunc) Do(n nodes.Node) (nodes.Node, error) {
 	return f.Func().Do(n)
 }
 
@@ -123,20 +124,20 @@ func (m Mapping) Reverse() Mapping {
 	return m
 }
 
-func (m Mapping) apply(root uast.Node) (uast.Node, error) {
+func (m Mapping) apply(root nodes.Node) (nodes.Node, error) {
 	src, dst := m.src, m.dst
 	var errs []error
 	_, objOp := src.(ObjectOp)
 	_, arrOp := src.(ArrayOp)
 	st := NewState()
-	nn, ok := uast.Apply(root, func(n uast.Node) (uast.Node, bool) {
+	nn, ok := nodes.Apply(root, func(n nodes.Node) (nodes.Node, bool) {
 		if n != nil {
 			if objOp {
-				if _, ok := n.(uast.Object); !ok {
+				if _, ok := n.(nodes.Object); !ok {
 					return n, false
 				}
 			} else if arrOp {
-				if _, ok := n.(uast.Array); !ok {
+				if _, ok := n.(nodes.Array); !ok {
 					return n, false
 				}
 			}
@@ -163,7 +164,7 @@ func (m Mapping) apply(root uast.Node) (uast.Node, error) {
 }
 
 // Do will traverse the whole tree and will apply transformation steps for each node.
-func (m Mapping) Do(n uast.Node) (uast.Node, error) {
+func (m Mapping) Do(n nodes.Node) (nodes.Node, error) {
 	nn, err := m.apply(n)
 	if err != nil {
 		return n, errMapping.Wrap(err, m.name)
@@ -230,7 +231,7 @@ func (m *mappings) index() {
 			specific := false
 			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
 				if is, ok := f.Op.(opIs); ok {
-					if typ, ok := is.v.(uast.String); ok {
+					if typ, ok := is.v.(nodes.String); ok {
 						s := string(typ)
 						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
 						specific = true
@@ -264,22 +265,22 @@ func (m *mappings) index() {
 	}
 }
 
-func (m mappings) Do(root uast.Node) (uast.Node, error) {
+func (m mappings) Do(root nodes.Node) (nodes.Node, error) {
 	var errs []error
 	st := NewState()
-	nn, ok := uast.Apply(root, func(old uast.Node) (uast.Node, bool) {
+	nn, ok := nodes.Apply(root, func(old nodes.Node) (nodes.Node, bool) {
 		maps := m.all
 		switch old := old.(type) {
 		case nil:
 			// apply all
-		case uast.Object:
+		case nodes.Object:
 			maps = m.objs
-			if typ, ok := old[uast.KeyType].(uast.String); ok {
+			if typ, ok := old[uast.KeyType].(nodes.String); ok {
 				if mp, ok := m.typedObj[string(typ)]; ok {
 					maps = mp
 				}
 			}
-		case uast.Array:
+		case nodes.Array:
 			maps = m.arrs
 		default:
 			maps = m.others
@@ -325,7 +326,7 @@ func NewState() *State {
 }
 
 // Vars is a set of variables with their values.
-type Vars map[string]uast.Node
+type Vars map[string]nodes.Node
 
 // State stores all variables (placeholder values, flags and wny other state) between Check and Construct steps.
 type State struct {
@@ -379,13 +380,13 @@ func (st *State) ApplyFrom(st2 *State) {
 }
 
 // GetVar looks up a named variable.
-func (st *State) GetVar(name string) (uast.Node, bool) {
+func (st *State) GetVar(name string) (nodes.Node, bool) {
 	n, ok := st.vars[name]
 	return n, ok
 }
 
 // MustGetVar looks up a named variable and returns ErrVariableNotDefined in case it does not exists.
-func (st *State) MustGetVar(name string) (uast.Node, error) {
+func (st *State) MustGetVar(name string) (nodes.Node, error) {
 	n, ok := st.GetVar(name)
 	if !ok {
 		return nil, ErrVariableNotDefined.New(name)
@@ -394,7 +395,7 @@ func (st *State) MustGetVar(name string) (uast.Node, error) {
 }
 
 // VarsPtrs is a set of variable pointers.
-type VarsPtrs map[string]uast.NodePtr
+type VarsPtrs map[string]nodes.NodePtr
 
 // MustGetVars is like MustGetVar but fetches multiple variables in one operation.
 func (st *State) MustGetVars(vars VarsPtrs) error {
@@ -411,8 +412,8 @@ func (st *State) MustGetVars(vars VarsPtrs) error {
 }
 
 // SetVar sets a named variable. It will return ErrVariableRedeclared if a variable with the same name is already set.
-// It will ignore the operation if variable already exists and has the same value (uast.Value).
-func (st *State) SetVar(name string, val uast.Node) error {
+// It will ignore the operation if variable already exists and has the same value (nodes.Value).
+func (st *State) SetVar(name string, val nodes.Node) error {
 	cur, ok := st.vars[name]
 	if !ok {
 		// not declared
@@ -422,7 +423,7 @@ func (st *State) SetVar(name string, val uast.Node) error {
 		st.vars[name] = val
 		return nil
 	}
-	if uast.Equal(cur, val) {
+	if nodes.Equal(cur, val) {
 		// already declared, and the same value is already in the map
 		return nil
 	}
@@ -460,12 +461,12 @@ func (st *State) SetStateVar(name string, sub []*State) error {
 
 // DefaultNamespace is a transform that sets a specified namespace for predicates and values that doesn't have a namespace.
 func DefaultNamespace(ns string) Transformer {
-	return TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
-		obj, ok := n.(uast.Object)
+	return TransformFunc(func(n nodes.Node) (nodes.Node, bool, error) {
+		obj, ok := n.(nodes.Object)
 		if !ok {
 			return n, false, nil
 		}
-		tp, ok := obj[uast.KeyType].(uast.String)
+		tp, ok := obj[uast.KeyType].(nodes.String)
 		if !ok {
 			return n, false, nil
 		}
@@ -473,7 +474,7 @@ func DefaultNamespace(ns string) Transformer {
 			return n, false, nil
 		}
 		obj = obj.CloneObject()
-		obj[uast.KeyType] = uast.String(ns + ":" + string(tp))
+		obj[uast.KeyType] = nodes.String(ns + ":" + string(tp))
 		return obj, true, nil
 	})
 }

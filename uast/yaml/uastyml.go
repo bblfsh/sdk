@@ -11,10 +11,11 @@ import (
 	"unicode"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/yaml.v2"
 )
 
-func Marshal(n uast.Node) ([]byte, error) {
+func Marshal(n nodes.Node) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	enc := NewEncoder(buf)
 	if err := enc.Encode(n); err != nil {
@@ -37,7 +38,7 @@ type Encoder struct {
 	err error
 }
 
-func (enc *Encoder) Encode(n uast.Node) error {
+func (enc *Encoder) Encode(n nodes.Node) error {
 	enc.marshal(nil, n, false)
 	if enc.err != nil {
 		return enc.err
@@ -45,22 +46,22 @@ func (enc *Encoder) Encode(n uast.Node) error {
 	return enc.w.Flush()
 }
 
-func (enc *Encoder) marshal(tabs []byte, n uast.Node, field bool) {
+func (enc *Encoder) marshal(tabs []byte, n nodes.Node, field bool) {
 	switch n := n.(type) {
 	case nil:
 		enc.writeString(null)
-	case uast.Object:
+	case nodes.Object:
 		enc.writeObject(tabs, n)
-	case uast.Array:
+	case nodes.Array:
 		enc.writeArray(tabs, n)
-	case uast.Value:
+	case nodes.Value:
 		enc.writeValue(n, field)
 	default:
 		enc.err = fmt.Errorf("unexpected type: %T", n)
 	}
 }
 
-func (enc *Encoder) writeObject(tabs []byte, m uast.Object) {
+func (enc *Encoder) writeObject(tabs []byte, m nodes.Object) {
 	if len(m) == 0 {
 		enc.writeString("{}")
 		return
@@ -80,14 +81,14 @@ func (enc *Encoder) writeObject(tabs []byte, m uast.Object) {
 	}
 
 	typ := ""
-	if v, ok := m[uast.KeyType].(uast.String); ok {
+	if v, ok := m[uast.KeyType].(nodes.String); ok {
 		enc.writeString(" ")
 		writeSysKey(uast.KeyType, false)
 		enc.marshalString(string(v), true)
 		enc.writeString(",")
 		typ = string(v)
 	}
-	if v, ok := m[uast.KeyToken].(uast.Value); ok {
+	if v, ok := m[uast.KeyToken].(nodes.Value); ok {
 		writeSysKey(uast.KeyToken, true)
 		enc.writeValue(v, true)
 		enc.writeString(",")
@@ -102,14 +103,14 @@ func (enc *Encoder) writeObject(tabs []byte, m uast.Object) {
 	}
 	// enforce specific sorting for known types
 	emitObj := func(key string) {
-		if v, ok := m[key].(uast.Object); ok {
+		if v, ok := m[key].(nodes.Object); ok {
 			writeSysKey(key, true)
 			enc.marshal(ntabs, v, true)
 			enc.writeString(",")
 		}
 	}
 	emitInt := func(key string) {
-		if v, ok := m[key].(uast.Int); ok {
+		if v, ok := m[key].(nodes.Int); ok {
 			writeSysKey(key, true)
 			enc.marshal(ntabs, v, true)
 			enc.writeString(",")
@@ -145,14 +146,14 @@ func (enc *Encoder) writeObject(tabs []byte, m uast.Object) {
 	enc.writeString("}")
 }
 
-func (enc *Encoder) writeArray(tabs []byte, m uast.Array) {
+func (enc *Encoder) writeArray(tabs []byte, m nodes.Array) {
 	if len(m) == 0 {
 		enc.writeString("[]")
 		return
 	}
 	small := true
 	for _, o := range m {
-		if _, ok := o.(uast.Value); !ok {
+		if _, ok := o.(nodes.Value); !ok {
 			small = false
 			break
 		}
@@ -180,21 +181,21 @@ func (enc *Encoder) writeArray(tabs []byte, m uast.Array) {
 	enc.writeString("]")
 }
 
-func (enc *Encoder) writeValue(v uast.Value, field bool) {
+func (enc *Encoder) writeValue(v nodes.Value, field bool) {
 	switch v := v.(type) {
 	case nil:
 		enc.writeString(null)
-	case uast.String:
+	case nodes.String:
 		enc.marshalString(string(v), field)
-	case uast.Bool:
+	case nodes.Bool:
 		if v {
 			enc.writeString("true")
 		} else {
 			enc.writeString("false")
 		}
-	case uast.Int:
+	case nodes.Int:
 		enc.writeInt(int64(v))
-	case uast.Float:
+	case nodes.Float:
 		enc.writeFloat(float64(v))
 	default:
 		enc.err = fmt.Errorf("unexpected type: %T", v)
@@ -294,7 +295,7 @@ func bestStringFormat(s string) stringFormat {
 	return stringPlain
 }
 
-func Unmarshal(data []byte) (uast.Node, error) {
+func Unmarshal(data []byte) (nodes.Node, error) {
 	var o interface{}
 	if err := yaml.Unmarshal(data, &o); err != nil {
 		return nil, err

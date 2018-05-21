@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
-func tObj(typ, tok string) Object {
-	obj := Object{KeyType: String(typ)}
+func tObj(typ, tok string) Obj {
+	obj := Obj{KeyType: Str(typ)}
 	if tok != "" {
-		obj[KeyToken] = String(tok)
+		obj[KeyToken] = Str(tok)
 	}
 	return obj
 }
@@ -18,13 +19,13 @@ func tObj(typ, tok string) Object {
 func TestPrefixTokens(t *testing.T) {
 	require := require.New(t)
 
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id3"),
 			// Prefix is the default so it doesnt need any role
-			Object{
-				KeyType: String("op_prefix"), KeyToken: String("Prefix+"),
-				"b": Array{
+			Obj{
+				KeyType: Str("op_prefix"), KeyToken: Str("Prefix+"),
+				"b": Arr{
 					tObj("left", "tok_pre_left"),
 					tObj("right", "tok_pre_right"),
 				},
@@ -37,17 +38,17 @@ func TestPrefixTokens(t *testing.T) {
 func TestPrefixTokensSubtree(t *testing.T) {
 	require := require.New(t)
 
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id3"),
 			// Prefix is the default so it doesnt need any role
-			Object{KeyType: String("op_prefix"), KeyToken: String("Prefix+"), "b": Array{
-				Object{KeyType: String("left"), KeyToken: String("tok_pre_left"), "c": Array{
-					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), "d": Array{
+			Obj{KeyType: Str("op_prefix"), KeyToken: Str("Prefix+"), "b": Arr{
+				Obj{KeyType: Str("left"), KeyToken: Str("tok_pre_left"), "c": Arr{
+					Obj{KeyType: Str("subleft_1a"), KeyToken: Str("subleft_1a"), "d": Arr{
 						tObj("subleft_1a_2a", "subleft_1a_2a"),
 						tObj("subleft_1a_2b", "subleft_1a_2b"),
 					}},
-					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), "e": Array{
+					Obj{KeyType: Str("subleft_1b"), KeyToken: Str("subleft_1b"), "e": Arr{
 						tObj("subleft_b_2a", "subleft_b_2a"),
 						tObj("subleft_b_2b", "subleft_b_2b"),
 					}},
@@ -65,8 +66,8 @@ func TestPrefixTokensSubtree(t *testing.T) {
 func TestPrefixTokensPlain(t *testing.T) {
 	require := require.New(t)
 
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id3"),
 			// Prefix is the default so it doesnt need any role
 			tObj("op_prefix", "Prefix+"),
@@ -80,10 +81,10 @@ func TestPrefixTokensPlain(t *testing.T) {
 
 func TestInfixTokens(t *testing.T) {
 	require := require.New(t)
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id1"),
-			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: RoleList(role.Infix), "b": Array{
+			Obj{KeyType: Str("op_infix"), KeyToken: Str("Infix+"), KeyRoles: RoleList(role.Infix), "b": Arr{
 				tObj("left", "tok_in_left"),
 				tObj("right", "tok_in_right"),
 			}}}}
@@ -95,17 +96,17 @@ func TestInfixTokens(t *testing.T) {
 func TestInfixTokensSubtree(t *testing.T) {
 	require := require.New(t)
 
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id3", "id3"),
 			// Prefix is the default so it doesnt need any role
-			Object{KeyType: String("op_infix"), KeyToken: String("op_infix"), KeyRoles: RoleList(role.Infix), "b": Array{
-				Object{KeyType: String("left"), KeyToken: String("left"), KeyRoles: RoleList(role.Infix), "c": Array{
-					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), KeyRoles: RoleList(role.Infix), "d": Array{
+			Obj{KeyType: Str("op_infix"), KeyToken: Str("op_infix"), KeyRoles: RoleList(role.Infix), "b": Arr{
+				Obj{KeyType: Str("left"), KeyToken: Str("left"), KeyRoles: RoleList(role.Infix), "c": Arr{
+					Obj{KeyType: Str("subleft_1a"), KeyToken: Str("subleft_1a"), KeyRoles: RoleList(role.Infix), "d": Arr{
 						tObj("subleft_1a_2a", "subleft_1a_2a"),
 						tObj("subleft_1a_2b", "subleft_1a_2b"),
 					}},
-					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), KeyRoles: RoleList(role.Infix), "e": Array{
+					Obj{KeyType: Str("subleft_1b"), KeyToken: Str("subleft_1b"), KeyRoles: RoleList(role.Infix), "e": Arr{
 						tObj("subleft_1b_2a", "subleft_1b_2a"),
 						tObj("subleft_1b_2b", "subleft_1b_2b"),
 					}},
@@ -122,11 +123,11 @@ func TestInfixTokensSubtree(t *testing.T) {
 
 func TestInfixTokensPlain(t *testing.T) {
 	require := require.New(t)
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id1"),
 			tObj("left", "tok_in_left"),
-			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: RoleList(role.Infix)},
+			Obj{KeyType: Str("op_infix"), KeyToken: Str("Infix+"), KeyRoles: RoleList(role.Infix)},
 			tObj("right", "tok_in_right"),
 		}}
 	result := Tokens(n)
@@ -136,10 +137,10 @@ func TestInfixTokensPlain(t *testing.T) {
 
 func TestPostfixTokens(t *testing.T) {
 	require := require.New(t)
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id2"),
-			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: RoleList(role.Postfix), "b": Array{
+			Obj{KeyType: Str("op_postfix"), KeyToken: Str("Postfix+"), KeyRoles: RoleList(role.Postfix), "b": Arr{
 				tObj("left", "tok_post_left"),
 				tObj("right", "tok_post_right"),
 			}}}}
@@ -151,17 +152,17 @@ func TestPostfixTokens(t *testing.T) {
 func TestPostfixTokensSubtree(t *testing.T) {
 	require := require.New(t)
 
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id2"),
 			// Prefix is the default so it doesnt need any role
-			Object{KeyType: String("op_postfix"), KeyToken: String("op_postfix"), KeyRoles: RoleList(role.Postfix), "b": Array{
-				Object{KeyType: String("left"), KeyToken: String("left"), KeyRoles: RoleList(role.Postfix), "c": Array{
-					Object{KeyType: String("subleft_1a"), KeyToken: String("subleft_1a"), KeyRoles: RoleList(role.Postfix), "d": Array{
+			Obj{KeyType: Str("op_postfix"), KeyToken: Str("op_postfix"), KeyRoles: RoleList(role.Postfix), "b": Arr{
+				Obj{KeyType: Str("left"), KeyToken: Str("left"), KeyRoles: RoleList(role.Postfix), "c": Arr{
+					Obj{KeyType: Str("subleft_1a"), KeyToken: Str("subleft_1a"), KeyRoles: RoleList(role.Postfix), "d": Arr{
 						tObj("subleft_1a_2a", "subleft_1a_2a"),
 						tObj("subleft_1a_2b", "subleft_1a_2b"),
 					}},
-					Object{KeyType: String("subleft_1b"), KeyToken: String("subleft_1b"), KeyRoles: RoleList(role.Postfix), "e": Array{
+					Obj{KeyType: Str("subleft_1b"), KeyToken: Str("subleft_1b"), KeyRoles: RoleList(role.Postfix), "e": Arr{
 						tObj("subleft_1b_2a", "subleft_1b_2a"),
 						tObj("subleft_1b_2b", "subleft_1b_2b"),
 					}},
@@ -177,12 +178,12 @@ func TestPostfixTokensSubtree(t *testing.T) {
 
 func TestPostfixTokensPlain(t *testing.T) {
 	require := require.New(t)
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id2"),
 			tObj("left", "tok_post_left"),
 			tObj("right", "tok_post_right"),
-			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: RoleList(role.Postfix)},
+			Obj{KeyType: Str("op_postfix"), KeyToken: Str("Postfix+"), KeyRoles: RoleList(role.Postfix)},
 		}}
 	result := Tokens(n)
 	expected := []string{"id2", "tok_post_left", "tok_post_right", "Postfix+"}
@@ -193,21 +194,21 @@ func TestPostfixTokensPlain(t *testing.T) {
 func TestOrderTokens(t *testing.T) {
 	require := require.New(t)
 
-	n := Object{KeyType: String("module"),
-		"a": Array{
+	n := Obj{KeyType: Str("module"),
+		"a": Arr{
 			tObj("id", "id1"),
-			Object{KeyType: String("op_infix"), KeyToken: String("Infix+"), KeyRoles: RoleList(role.Infix), "b": Array{
+			Obj{KeyType: Str("op_infix"), KeyToken: Str("Infix+"), KeyRoles: RoleList(role.Infix), "b": Arr{
 				tObj("left", "tok_in_left"),
-				Object{KeyType: String("right"), KeyToken: String("tok_in_right"), KeyRoles: RoleList(role.Postfix), "c": Array{
+				Obj{KeyType: Str("right"), KeyToken: Str("tok_in_right"), KeyRoles: RoleList(role.Postfix), "c": Arr{
 					tObj("subright1", "subright1"),
 					tObj("subright2", "subright2"),
 				}},
 			}},
 			tObj("id", "id2"),
-			Object{KeyType: String("op_postfix"), KeyToken: String("Postfix+"), KeyRoles: RoleList(role.Postfix), "d": Array{
+			Obj{KeyType: Str("op_postfix"), KeyToken: Str("Postfix+"), KeyRoles: RoleList(role.Postfix), "d": Arr{
 				tObj("left", "tok_post_left"),
 				// Prefix
-				Object{KeyType: String("right"), KeyToken: String("tok_post_right"), "e": Array{
+				Obj{KeyType: Str("right"), KeyToken: Str("tok_post_right"), "e": Arr{
 					tObj("subright_pre1", "subright_pre1"),
 					tObj("subright_pre2", "subright_pre2"),
 				}},
@@ -215,9 +216,9 @@ func TestOrderTokens(t *testing.T) {
 			tObj("id", "id3"),
 
 			// Prefix is the default so it doesnt need any role
-			Object{KeyType: String("op_prefix"), KeyToken: String("Prefix+"), "f": Array{
+			Obj{KeyType: Str("op_prefix"), KeyToken: Str("Prefix+"), "f": Arr{
 				tObj("left", "tok_pre_left"),
-				Object{KeyType: String("right"), KeyToken: String("tok_pre_right"), KeyRoles: RoleList(role.Infix), "g": Array{
+				Obj{KeyType: Str("right"), KeyToken: Str("tok_pre_right"), KeyRoles: RoleList(role.Infix), "g": Arr{
 					tObj("subright_in1", "subright_in1"),
 					tObj("subright_in2", "subright_in2"),
 				}},
@@ -228,4 +229,28 @@ func TestOrderTokens(t *testing.T) {
 		"id2", "Postfix+", "tok_post_left", "tok_post_right", "subright_pre1", "subright_pre2",
 		"id3", "Prefix+", "tok_pre_left", "tok_pre_right", "subright_in1", "subright_in2"}
 	require.Equal(expected, result)
+}
+
+func TestWalkPreOrder(t *testing.T) {
+	require := require.New(t)
+
+	n := Obj{
+		KeyType: Str("a"),
+		"a":     Obj{KeyType: Str("aa")},
+		"b": Obj{
+			KeyType: Str("ab"),
+			"a":     Obj{KeyType: Str("aba")},
+		},
+		"c": Obj{KeyType: Str("ac")},
+	}
+
+	var result []string
+	nodes.WalkPreOrder(n, func(n Node) bool {
+		if obj, ok := n.(nodes.Object); ok {
+			result = append(result, TypeOf(obj))
+		}
+		return true
+	})
+
+	require.Equal([]string{"a", "aa", "ab", "aba", "ac"}, result)
 }

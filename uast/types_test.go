@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 var casesTypeOf = []struct {
@@ -31,26 +32,26 @@ func TestTypeOf(t *testing.T) {
 var casesToNode = []struct {
 	name string
 	obj  interface{}
-	exp  Node
+	exp  nodes.Node
 }{
 	{
 		name: "Position",
 		obj:  Position{Offset: 5, Line: 2, Col: 3},
-		exp: Object{
-			KeyType:  String("uast:Position"),
-			"offset": Int(5),
-			"line":   Int(2),
-			"col":    Int(3),
+		exp: nodes.Object{
+			KeyType:  nodes.String("uast:Position"),
+			"offset": nodes.Int(5),
+			"line":   nodes.Int(2),
+			"col":    nodes.Int(3),
 		},
 	},
 	{
 		name: "Position (consts)",
 		obj:  Position{Offset: 0, Line: 0, Col: 0},
-		exp: Object{
-			KeyType:    String(TypePosition),
-			KeyPosOff:  Int(0),
-			KeyPosLine: Int(0),
-			KeyPosCol:  Int(0),
+		exp: nodes.Object{
+			KeyType:    nodes.String(TypePosition),
+			KeyPosOff:  nodes.Int(0),
+			KeyPosLine: nodes.Int(0),
+			KeyPosCol:  nodes.Int(0),
 		},
 	},
 	{
@@ -59,19 +60,19 @@ var casesToNode = []struct {
 			KeyStart: {Offset: 3, Line: 2, Col: 1},
 			KeyEnd:   {Offset: 4, Line: 2, Col: 2},
 		},
-		exp: Object{
-			KeyType: String(TypePositions),
-			KeyStart: Object{
-				KeyType:    String(TypePosition),
-				KeyPosOff:  Int(3),
-				KeyPosLine: Int(2),
-				KeyPosCol:  Int(1),
+		exp: nodes.Object{
+			KeyType: nodes.String(TypePositions),
+			KeyStart: nodes.Object{
+				KeyType:    nodes.String(TypePosition),
+				KeyPosOff:  nodes.Int(3),
+				KeyPosLine: nodes.Int(2),
+				KeyPosCol:  nodes.Int(1),
 			},
-			KeyEnd: Object{
-				KeyType:    String(TypePosition),
-				KeyPosOff:  Int(4),
-				KeyPosLine: Int(2),
-				KeyPosCol:  Int(2),
+			KeyEnd: nodes.Object{
+				KeyType:    nodes.String(TypePosition),
+				KeyPosOff:  nodes.Int(4),
+				KeyPosLine: nodes.Int(2),
+				KeyPosCol:  nodes.Int(2),
 			},
 		},
 	},

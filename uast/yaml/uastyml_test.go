@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	. "gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	. "gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
@@ -40,7 +41,7 @@ var casesYML = []struct {
 	},
 	{
 		name: "type",
-		n:    String(KeyType), exp: "'@type'",
+		n:    String(uast.KeyType), exp: "'@type'",
 	},
 	{
 		name: "one value",
@@ -64,13 +65,13 @@ var casesYML = []struct {
 	{
 		name: "system fields",
 		n: Object{
-			KeyType:  String("ns:type"),
-			KeyToken: String(":="),
-			KeyRoles: RoleList(role.Alias, role.Expression, role.Anonymous),
-			KeyPos: Object{
-				KeyType:  String(TypePositions),
-				KeyStart: Position{Offset: 5, Line: 1, Col: 1}.ToObject(),
-				KeyEnd:   Position{Offset: 6, Line: 1, Col: 2}.ToObject(),
+			uast.KeyType:  String("ns:type"),
+			uast.KeyToken: String(":="),
+			uast.KeyRoles: uast.RoleList(role.Alias, role.Expression, role.Anonymous),
+			uast.KeyPos: Object{
+				uast.KeyType:  String(uast.TypePositions),
+				uast.KeyStart: uast.Position{Offset: 5, Line: 1, Col: 1}.ToObject(),
+				uast.KeyEnd:   uast.Position{Offset: 6, Line: 1, Col: 2}.ToObject(),
 			},
 			"key": String("val"),
 			"raw": String(":="),
@@ -94,13 +95,13 @@ var casesYML = []struct {
    raw: ":=",
 }`,
 		expn: Object{
-			KeyType:  String("ns:type"),
-			KeyToken: String(":="),
-			KeyRoles: RoleList(role.Alias, role.Anonymous, role.Expression),
-			KeyPos: Object{
-				KeyType:  String(TypePositions),
-				KeyStart: Position{Offset: 5, Line: 1, Col: 1}.ToObject(),
-				KeyEnd:   Position{Offset: 6, Line: 1, Col: 2}.ToObject(),
+			uast.KeyType:  String("ns:type"),
+			uast.KeyToken: String(":="),
+			uast.KeyRoles: uast.RoleList(role.Alias, role.Anonymous, role.Expression),
+			uast.KeyPos: Object{
+				uast.KeyType:  String(uast.TypePositions),
+				uast.KeyStart: uast.Position{Offset: 5, Line: 1, Col: 1}.ToObject(),
+				uast.KeyEnd:   uast.Position{Offset: 6, Line: 1, Col: 2}.ToObject(),
 			},
 			"key": String("val"),
 			"raw": String(":="),

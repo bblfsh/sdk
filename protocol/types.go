@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
@@ -243,7 +244,7 @@ const (
 )
 
 // ToNode converts a generic AST node to Node object used in the protocol.
-func ToNode(n uast.Node) (*Node, error) {
+func ToNode(n nodes.Node) (*Node, error) {
 	nd, err := asNode(n, "")
 	if err != nil {
 		return nil, err
@@ -258,7 +259,7 @@ func ToNode(n uast.Node) (*Node, error) {
 	}
 }
 
-func arrayAsNode(n uast.Array, field string) ([]*Node, error) {
+func arrayAsNode(n nodes.Array, field string) ([]*Node, error) {
 	arr := make([]*Node, 0, len(n))
 	for _, s := range n {
 		nd, err := asNode(s, field)
@@ -270,7 +271,7 @@ func arrayAsNode(n uast.Array, field string) ([]*Node, error) {
 	return arr, nil
 }
 
-func objectAsNode(n uast.Object, field string) ([]*Node, error) {
+func objectAsNode(n nodes.Object, field string) ([]*Node, error) {
 	ps := uast.PositionsOf(n)
 	nd := &Node{
 		InternalType:  uast.TypeOf(n),
@@ -302,7 +303,7 @@ func objectAsNode(n uast.Object, field string) ([]*Node, error) {
 			// already processed
 			continue
 		}
-		if nv, ok := v.(uast.Value); ok {
+		if nv, ok := v.(nodes.Value); ok {
 			nd.Properties[k] = fmt.Sprint(nv.Native())
 		} else {
 			sn, err := asNode(v, k)
@@ -316,7 +317,7 @@ func objectAsNode(n uast.Object, field string) ([]*Node, error) {
 	return []*Node{nd}, nil
 }
 
-func valueAsNode(n uast.Value, field string) ([]*Node, error) {
+func valueAsNode(n nodes.Value, field string) ([]*Node, error) {
 	nd := &Node{
 		Token:      fmt.Sprint(n),
 		Properties: make(map[string]string),
@@ -327,15 +328,15 @@ func valueAsNode(n uast.Value, field string) ([]*Node, error) {
 	return []*Node{nd}, nil
 }
 
-func asNode(n uast.Node, field string) ([]*Node, error) {
+func asNode(n nodes.Node, field string) ([]*Node, error) {
 	switch n := n.(type) {
 	case nil:
 		return nil, nil
-	case uast.Array:
+	case nodes.Array:
 		return arrayAsNode(n, field)
-	case uast.Object:
+	case nodes.Object:
 		return objectAsNode(n, field)
-	case uast.Value:
+	case nodes.Value:
 		return valueAsNode(n, field)
 	default:
 		return nil, fmt.Errorf("argument should be a node or a list, got: %T", n)

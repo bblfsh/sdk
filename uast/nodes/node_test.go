@@ -1,13 +1,9 @@
-package uast
+package nodes
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-)
-
-var (
-	fixtureDir = "fixtures"
 )
 
 func TestClone(t *testing.T) {
@@ -38,30 +34,6 @@ func TestClone(t *testing.T) {
 			"new": Int(0),
 		},
 	}, arr)
-}
-
-func TestWalkPreOrder(t *testing.T) {
-	require := require.New(t)
-
-	n := Object{
-		KeyType: String("a"),
-		"a":     Object{KeyType: String("aa")},
-		"b": Object{
-			KeyType: String("ab"),
-			"a":     Object{KeyType: String("aba")},
-		},
-		"c": Object{KeyType: String("ac")},
-	}
-
-	var result []string
-	WalkPreOrder(n, func(n Node) bool {
-		if obj, ok := n.(Object); ok {
-			result = append(result, TypeOf(obj))
-		}
-		return true
-	})
-
-	require.Equal([]string{"a", "aa", "ab", "aba", "ac"}, result)
 }
 
 func TestApply(t *testing.T) {
