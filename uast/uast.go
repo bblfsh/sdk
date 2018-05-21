@@ -14,9 +14,19 @@
 package uast
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
+)
+
+// Special field keys for Object
+const (
+	KeyType  = "@type"  // InternalType
+	KeyToken = "@token" // Token
+	KeyRoles = "@role"  // Roles, for representations see RoleList
+	KeyPos   = "@pos"   // All positional information is stored in this field
 )
 
 const (
@@ -69,7 +79,7 @@ func (p Positions) End() *Position {
 
 // AsPosition transforms a generic AST node to a Position object.
 func AsPosition(m Object) *Position {
-	if m.Type() != TypePosition {
+	if TypeOf(m) != TypePosition {
 		return nil
 	}
 	var p Position
@@ -77,6 +87,22 @@ func AsPosition(m Object) *Position {
 		panic(err)
 	}
 	return &p
+}
+
+// PositionsOf returns an object with all positional information for a node.
+func PositionsOf(m Object) Positions {
+	o, _ := m[KeyPos].(Object)
+	if len(o) == 0 {
+		return nil
+	}
+	ps := make(Positions, len(o))
+	for k, v := range o {
+		po, _ := v.(Object)
+		if p := AsPosition(po); p != nil {
+			ps[k] = *p
+		}
+	}
+	return ps
 }
 
 // ToObject converts Position to a generic AST node.
@@ -97,12 +123,44 @@ func RoleList(roles ...role.Role) Array {
 	return arr
 }
 
+// RolesOf is a helper for getting node UAST roles (see KeyRoles).
+func RolesOf(m Object) role.Roles {
+	arr, ok := m[KeyRoles].(Array)
+	if !ok || len(arr) == 0 {
+		if tp := TypeOf(m); tp == "" || strings.HasPrefix(tp, NS+":") {
+			return nil
+		}
+		return role.Roles{role.Unannotated}
+	}
+	out := make(role.Roles, 0, len(arr))
+	for _, v := range arr {
+		if r, ok := v.(String); ok {
+			out = append(out, role.FromString(string(r)))
+		}
+	}
+	return out
+}
+
+// TokenOf is a helper for getting node token (see KeyToken).
+func TokenOf(m Object) string {
+	t := m[KeyToken]
+	s, ok := t.(String)
+	if ok {
+		return string(s)
+	}
+	v, _ := t.(Value)
+	if v != nil {
+		return fmt.Sprint(v)
+	}
+	return ""
+}
+
 // Tokens collects all tokens of the tree recursively (pre-order).
 func Tokens(n Node) []string {
 	var tokens []string
 	WalkPreOrder(n, func(n Node) bool {
 		if obj, ok := n.(Object); ok {
-			if tok := obj.Token(); tok != "" {
+			if tok := TokenOf(obj); tok != "" {
 				tokens = append(tokens, tok)
 			}
 		}

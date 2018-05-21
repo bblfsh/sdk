@@ -37,6 +37,9 @@ func RegisterPackage(ns string, o interface{}) {
 func TypeOf(o interface{}) string {
 	if o == nil {
 		return ""
+	} else if obj, ok := o.(Object); ok {
+		tp, _ := obj[KeyType].(String)
+		return string(tp)
 	}
 	tp := reflect.TypeOf(o)
 	ns, name := typeOf(tp)
@@ -184,8 +187,7 @@ func nodeAs(n Node, rv reflect.Value) error {
 		}
 		ns, name := typeOf(rt)
 		etyp := ns + ":" + name
-		typ := n.Type()
-		if typ != etyp {
+		if typ := TypeOf(n); typ != etyp {
 			return ErrIncorrectType.New(typ, etyp)
 		}
 		if kind == reflect.Struct {

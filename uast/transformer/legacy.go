@@ -112,7 +112,7 @@ func RolesDedup() TransformFunc {
 		if !ok {
 			return n, false, nil
 		}
-		roles := obj.Roles()
+		roles := uast.RolesOf(obj)
 		if len(roles) == 0 {
 			return n, false, nil
 		}
@@ -131,7 +131,7 @@ func RolesDedup() TransformFunc {
 		if dedupCloneObj {
 			obj = obj.CloneObject()
 		}
-		obj.SetRoles(out...)
+		obj[uast.KeyRoles] = uast.RoleList(out...)
 		return obj, dedupCloneObj, nil
 	})
 }

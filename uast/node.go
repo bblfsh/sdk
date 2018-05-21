@@ -4,20 +4,9 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strings"
-
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 const applySort = false
-
-// Special field keys for Object
-const (
-	KeyType  = "@type"  // InternalType
-	KeyToken = "@token" // Token
-	KeyRoles = "@role"  // Roles, for representations see RoleList
-	KeyPos   = "@pos"   // All positional information is stored in this field
-)
 
 // Equal compares two subtrees.
 func Equal(n1, n2 Node) bool {
@@ -114,115 +103,10 @@ func (m Object) CloneObject() Object {
 	return out
 }
 
-// CloneProperties returns an object containing all field that are values.
-func (m Object) CloneProperties() Object {
-	out := make(Object)
-	for k, v := range m {
-		if v, ok := v.(Value); ok {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-// Children returns a list of all internal nodes of type Object and Array.
-func (m Object) Children() []Node {
-	out := make([]Node, 0, len(m))
-	// order should be predictable
-	for _, k := range m.Keys() {
-		v := m[k]
-		if _, ok := v.(Value); !ok {
-			out = append(out, v)
-		}
-	}
-	return out
-}
-
-// Properties returns a map containing all field of object that are values.
-func (m Object) Properties() map[string]Value {
-	out := make(map[string]Value)
-	for k, v := range m {
-		if v, ok := v.(Value); ok {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-// SetProperty is a helper for setting node properties.
-func (m Object) SetProperty(k, v string) Object {
-	m[k] = String(v)
+// Set is a helper for setting node properties.
+func (m Object) Set(k string, v Node) Object {
+	m[k] = v
 	return m
-}
-
-// Type is a helper for getting node type (see KeyType).
-func (m Object) Type() string {
-	s, _ := m[KeyType].(String)
-	return string(s)
-}
-
-// SetType is a helper for setting node type (see KeyType).
-func (m Object) SetType(typ string) Object {
-	return m.SetProperty(KeyType, typ)
-}
-
-// Token is a helper for getting node token (see KeyToken).
-func (m Object) Token() string {
-	t := m[KeyToken]
-	s, ok := t.(String)
-	if ok {
-		return string(s)
-	}
-	v, _ := t.(Value)
-	if v != nil {
-		return fmt.Sprint(v)
-	}
-	return ""
-}
-
-// SetToken is a helper for setting node type (see KeyToken).
-func (m Object) SetToken(tok string) Object {
-	return m.SetProperty(KeyToken, tok)
-}
-
-// Roles is a helper for getting node UAST roles (see KeyRoles).
-func (m Object) Roles() role.Roles {
-	arr, ok := m[KeyRoles].(Array)
-	if !ok || len(arr) == 0 {
-		if tp := m.Type(); tp == "" || strings.HasPrefix(tp, NS+":") {
-			return nil
-		}
-		return role.Roles{role.Unannotated}
-	}
-	out := make(role.Roles, 0, len(arr))
-	for _, v := range arr {
-		if r, ok := v.(String); ok {
-			out = append(out, role.FromString(string(r)))
-		}
-	}
-	return out
-}
-
-// SetRoles is a helper for setting node UAST roles (see KeyRoles).
-func (m Object) SetRoles(roles ...role.Role) Object {
-	m[KeyRoles] = RoleList(roles...)
-	return m
-}
-
-// Positions returns an object with all positional information for a object.
-func (m Object) Positions() Positions {
-	o, _ := m[KeyPos].(Object)
-	if len(o) == 0 {
-		return nil
-	}
-	ps := make(Positions, len(o))
-	for k, v := range o {
-		po, _ := v.(Object)
-		if p := AsPosition(po); p != nil {
-			ps[k] = *p
-		}
-	}
-	return ps
 }
 
 func (m *Object) SetNode(n Node) error {

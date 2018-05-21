@@ -92,7 +92,7 @@ func (enc *Encoder) writeObject(tabs []byte, m uast.Object) {
 		enc.writeValue(v, true)
 		enc.writeString(",")
 	}
-	if v := m.Roles(); len(v) != 0 {
+	if v := uast.RolesOf(m); len(v) != 0 {
 		writeSysKey(uast.KeyRoles, true)
 		sort.Slice(v, func(i, j int) bool {
 			return v[i].String() < v[j].String()

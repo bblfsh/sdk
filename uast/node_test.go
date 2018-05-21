@@ -56,7 +56,7 @@ func TestWalkPreOrder(t *testing.T) {
 	var result []string
 	WalkPreOrder(n, func(n Node) bool {
 		if obj, ok := n.(Object); ok {
-			result = append(result, obj.Type())
+			result = append(result, TypeOf(obj))
 		}
 		return true
 	})

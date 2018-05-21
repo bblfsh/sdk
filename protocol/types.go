@@ -271,11 +271,11 @@ func arrayAsNode(n uast.Array, field string) ([]*Node, error) {
 }
 
 func objectAsNode(n uast.Object, field string) ([]*Node, error) {
-	ps := n.Positions()
+	ps := uast.PositionsOf(n)
 	nd := &Node{
-		InternalType:  n.Type(),
-		Token:         n.Token(),
-		Roles:         n.Roles(),
+		InternalType:  uast.TypeOf(n),
+		Token:         uast.TokenOf(n),
+		Roles:         uast.RolesOf(n),
 		StartPosition: ps.Start(),
 		EndPosition:   ps.End(),
 		Properties:    make(map[string]string),
