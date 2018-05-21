@@ -2,6 +2,7 @@ package transformer
 
 import (
 	"sort"
+	"strings"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
 )
@@ -455,4 +456,24 @@ func (st *State) SetStateVar(name string, sub []*State) error {
 	}
 	st.states[name] = sub
 	return nil
+}
+
+// DefaultNamespace is a transform that sets a specified namespace for predicates and values that doesn't have a namespace.
+func DefaultNamespace(ns string) Transformer {
+	return TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
+		obj, ok := n.(uast.Object)
+		if !ok {
+			return n, false, nil
+		}
+		tp, ok := obj[uast.KeyType].(uast.String)
+		if !ok {
+			return n, false, nil
+		}
+		if strings.Contains(string(tp), ":") {
+			return n, false, nil
+		}
+		obj = obj.CloneObject()
+		obj[uast.KeyType] = uast.String(ns + ":" + string(tp))
+		return obj, true, nil
+	})
 }
