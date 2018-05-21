@@ -1,7 +1,6 @@
 package fixtures
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,16 +12,15 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
 	"gopkg.in/bblfsh/sdk.v2/uast"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const Dir = "fixtures"
 
 type Suite struct {
-	Lang     string
-	Ext      string // with dot
-	Path     string
-	WriteYML bool
+	Lang string
+	Ext  string // with dot
+	Path string
 
 	// Update* flags below should never be committed in "true" state.
 	// They serve only as an automation for updating fixture files.
@@ -56,7 +54,12 @@ func (s *Suite) deleteFixturesFile(name string) {
 
 func (s *Suite) RunTests(t *testing.T) {
 	t.Run("native", s.testFixturesNative)
-	t.Run("uast", s.testFixturesUAST)
+	t.Run("uast", func(t *testing.T) {
+		s.testFixturesUAST(t, driver.ModeAST, uastExt)
+	})
+	t.Run("semantic", func(t *testing.T) {
+		s.testFixturesUAST(t, driver.ModeHighLevel, highExt)
+	})
 }
 
 func (s *Suite) RunBenchmarks(t *testing.B) {
@@ -64,10 +67,23 @@ func (s *Suite) RunBenchmarks(t *testing.B) {
 }
 
 const (
-	gotSuffix = "2"
+	gotSuffix = "_got"
 	nativeExt = ".native"
 	uastExt   = ".uast"
+	highExt   = ".sem.uast"
 )
+
+func marshalNative(o *driver.InternalParseResponse) ([]byte, error) {
+	n, err := uast.ToNode(o.AST)
+	if err != nil {
+		return nil, err
+	}
+	return uastyml.Marshal(n)
+}
+
+func marshalUAST(o uast.Node) ([]byte, error) {
+	return uastyml.Marshal(o)
+}
 
 func (s *Suite) testFixturesNative(t *testing.T) {
 	list, err := ioutil.ReadDir(s.Path)
@@ -94,24 +110,11 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			if s.WriteYML {
-				ya, err := yaml.Marshal(resp.AST)
-				require.NoError(t, err)
-				s.writeFixturesFile(t, name+suffix+nativeExt+".yml", string(ya))
-			}
-
-			js, err := json.Marshal(resp.AST)
+			js, err := marshalNative(resp)
 			require.NoError(t, err)
 
 			exp := s.readFixturesFile(t, name+suffix+nativeExt)
-			got := (&protocol.NativeParseResponse{
-				Response: protocol.Response{
-					Status: protocol.Status(resp.Status),
-					Errors: resp.Errors,
-				},
-				AST:      string(js),
-				Language: s.Lang,
-			}).String()
+			got := string(js)
 			if exp == "" {
 				s.writeFixturesFile(t, name+suffix+nativeExt, got)
 				t.Skip("no test file found - generating")
@@ -130,7 +133,7 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 	}
 }
 
-func (s *Suite) testFixturesUAST(t *testing.T) {
+func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string) {
 	list, err := ioutil.ReadDir(s.Path)
 	require.NoError(t, err)
 
@@ -161,39 +164,26 @@ func (s *Suite) testFixturesUAST(t *testing.T) {
 			require.NoError(t, err)
 
 			tr := s.Transforms
-			ua, err := tr.Do(driver.ModeAST, code, ast)
+			ua, err := tr.Do(mode, code, ast)
 			require.NoError(t, err)
 
-			if s.WriteYML {
-				ya, err := yaml.Marshal(ua)
-				require.NoError(t, err)
-				s.writeFixturesFile(t, name+suffix+uastExt+".yml", string(ya))
-			}
-
-			un, err := protocol.ToNode(ua)
+			un, err := marshalUAST(ua)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+suffix+uastExt)
-			got := (&protocol.ParseResponse{
-				Response: protocol.Response{
-					Status: protocol.Status(resp.Status),
-					Errors: resp.Errors,
-				},
-				UAST:     un,
-				Language: s.Lang,
-			}).String()
+			exp := s.readFixturesFile(t, name+suffix+suf)
+			got := string(un)
 			if exp == "" {
-				s.writeFixturesFile(t, name+suffix+uastExt, got)
+				s.writeFixturesFile(t, name+suffix+suf, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
-				ext := uastExt + gotSuffix
+				ext := suf + gotSuffix
 				if s.UpdateUAST {
-					ext = uastExt
+					ext = suf
 				}
 				s.writeFixturesFile(t, name+suffix+ext, got)
 			} else {
-				s.deleteFixturesFile(name + suffix + uastExt + gotSuffix)
+				s.deleteFixturesFile(name + suffix + suf + gotSuffix)
 			}
 			require.Equal(t, exp, got)
 		})
