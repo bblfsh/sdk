@@ -5,12 +5,6 @@ import (
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
-	"gopkg.in/src-d/go-errors.v1"
-)
-
-var (
-	// ErrUnsupported is returned for features that are not supported by an implementation.
-	ErrUnsupported = errors.NewKind("unsupported: %s")
 )
 
 const applySort = false

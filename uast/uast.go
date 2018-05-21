@@ -17,9 +17,6 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
-// Hash is a hash value.
-type Hash uint32
-
 const (
 	// TypePosition is a node type for positional information in AST. See AsPosition.
 	TypePosition = "ast:Position"
@@ -78,49 +75,6 @@ func RoleList(roles ...role.Role) Array {
 		arr = append(arr, String(r.String()))
 	}
 	return arr
-}
-
-// Path represents a Node with its path in a tree. It is a slice with every
-// token in the path, where the last one is the node itself. The empty path is
-// is the zero value (e.g. parent of the root node).
-type Path []Node
-
-// NewPath creates a new Path from a slice of nodes.
-func NewPath(nodes ...Node) Path {
-	return Path(nodes)
-}
-
-// IsEmpty returns true if the path is empty.
-func (p Path) IsEmpty() bool {
-	return len(p) == 0
-}
-
-// Node returns the node. If the path is empty, the result is nil.
-func (p Path) Node() Node {
-	if p.IsEmpty() {
-		return nil
-	}
-
-	return p[len(p)-1]
-}
-
-// Child creates a Path for a given child.
-func (p Path) Child(n Node) Path {
-	dst := make(Path, len(p)+1)
-	copy(dst, p)
-	dst[len(p)] = n
-	return dst
-}
-
-// Parent returns the path of the parent of this node.
-func (p Path) Parent() Path {
-	if len(p) <= 1 {
-		return Path(nil)
-	}
-
-	dst := make(Path, 0, len(p)-1)
-	copy(dst, p)
-	return dst
 }
 
 // Tokens collects all tokens of the tree recursively (pre-order).
