@@ -2,7 +2,9 @@ package uast
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
+	"strings"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
@@ -14,20 +16,8 @@ const (
 	KeyType  = "@type"  // InternalType
 	KeyToken = "@token" // Token
 	KeyRoles = "@role"  // Roles, for representations see RoleList
-	// TODO: a single @pos field with "start" and "end" fields?
-	KeyStart = "@start" // StartPosition
-	KeyEnd   = "@end"   // EndPosition
+	KeyPos   = "@pos"   // All positional information is stored in this field
 )
-
-// NewNode creates a default AST node with Unannotated role.
-func NewNode() Object {
-	return Object{KeyRoles: RoleList(role.Unannotated)}
-}
-
-// EmptyNode creates a new empty node with no fields.
-func EmptyNode() Object {
-	return Object{}
-}
 
 // Equal compares two subtrees.
 func Equal(n1, n2 Node) bool {
@@ -199,9 +189,7 @@ func (m Object) SetToken(tok string) Object {
 func (m Object) Roles() role.Roles {
 	arr, ok := m[KeyRoles].(Array)
 	if !ok || len(arr) == 0 {
-		switch m.Type() {
-		case "", TypePosition:
-			// TODO: find a better solution to blacklist roles for specific types
+		if tp := m.Type(); tp == "" || strings.HasPrefix(tp, NS+":") {
 			return nil
 		}
 		return role.Roles{role.Unannotated}
@@ -221,16 +209,20 @@ func (m Object) SetRoles(roles ...role.Role) Object {
 	return m
 }
 
-// StartPosition returns start position of the node in source file.
-func (m Object) StartPosition() *Position {
-	o, _ := m[KeyStart].(Object)
-	return AsPosition(o)
-}
-
-// EndPosition returns start position of the node in source file.
-func (m Object) EndPosition() *Position {
-	o, _ := m[KeyEnd].(Object)
-	return AsPosition(o)
+// Positions returns an object with all positional information for a object.
+func (m Object) Positions() Positions {
+	o, _ := m[KeyPos].(Object)
+	if len(o) == 0 {
+		return nil
+	}
+	ps := make(Positions, len(o))
+	for k, v := range o {
+		po, _ := v.(Object)
+		if p := AsPosition(po); p != nil {
+			ps[k] = *p
+		}
+	}
+	return ps
 }
 
 func (m *Object) SetNode(n Node) error {
@@ -443,6 +435,7 @@ func (v *Bool) SetNode(n Node) error {
 }
 
 // ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
+// It also supports types from packages registered via RegisterPackage.
 func ToNode(o interface{}) (Node, error) {
 	switch o := o.(type) {
 	case nil:
@@ -483,7 +476,7 @@ func ToNode(o interface{}) (Node, error) {
 	case bool:
 		return Bool(o), nil
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", o)
+		return toNodeReflect(reflect.ValueOf(o))
 	}
 }
 

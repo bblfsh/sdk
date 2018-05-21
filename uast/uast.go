@@ -14,32 +14,57 @@
 package uast
 
 import (
+	"reflect"
+
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 const (
+	// NS is a namespace for the UAST types.
+	NS = "uast"
+
 	// TypePosition is a node type for positional information in AST. See AsPosition.
-	TypePosition = "ast:Position"
+	TypePosition = NS + ":Position"
+	// TypePositions is a node type for a root node of positional information in AST. See AsPositions.
+	TypePositions = NS + ":Positions"
 	// TypeOperator is a node type for an operator AST node. See Operator.
-	TypeOperator = "ast:Operator"
+	TypeOperator = NS + ":Operator"
 	// KeyPosOff is a name for a Position object field that stores a bytes offset.
-	KeyPosOff = "off"
+	KeyPosOff = "offset"
 	// KeyPosLine is a name for a Position object field that stores a source line.
 	KeyPosLine = "line"
 	// KeyPosCol is a name for a Position object field that stores a source column.
 	KeyPosCol = "col"
+
+	KeyStart = "start" // StartPosition
+	KeyEnd   = "end"   // EndPosition
 )
 
 // Position represents a position in a source code file.
 type Position struct {
-	// Offset is the position as an absolute byte offset. It is a 0-based
-	// index.
-	Offset uint32
+	// Offset is the position as an absolute byte offset. It is a 0-based index.
+	Offset uint32 `json:"offset"`
 	// Line is the line number. It is a 1-based index.
-	Line uint32
+	Line uint32 `json:"line"`
 	// Col is the column number (the byte offset of the position relative to
 	// a line. It is a 1-based index.
-	Col uint32
+	Col uint32 `json:"col"`
+}
+
+// Positions is a container object that stores all positional information for a node.
+type Positions map[string]Position
+
+func (p Positions) Start() *Position {
+	if p, ok := p[KeyStart]; ok {
+		return &p
+	}
+	return nil
+}
+func (p Positions) End() *Position {
+	if p, ok := p[KeyEnd]; ok {
+		return &p
+	}
+	return nil
 }
 
 // AsPosition transforms a generic AST node to a Position object.
@@ -47,25 +72,20 @@ func AsPosition(m Object) *Position {
 	if m.Type() != TypePosition {
 		return nil
 	}
-	off, _ := m[KeyPosOff].(Int)
-	line, _ := m[KeyPosLine].(Int)
-	col, _ := m[KeyPosCol].(Int)
-	return &Position{
-		Offset: uint32(off),
-		Line:   uint32(line),
-		Col:    uint32(col),
+	var p Position
+	if err := NodeAs(m, &p); err != nil {
+		panic(err)
 	}
+	return &p
 }
 
 // ToObject converts Position to a generic AST node.
 func (p Position) ToObject() Object {
-	// TODO: add struct fields and generate this via reflection
-	return Object{
-		KeyType:    String(TypePosition),
-		KeyPosOff:  Int(p.Offset),
-		KeyPosLine: Int(p.Line),
-		KeyPosCol:  Int(p.Col),
+	n, err := toNodeReflect(reflect.ValueOf(&p))
+	if err != nil {
+		panic(err)
 	}
+	return n.(Object)
 }
 
 // RoleList converts a set of roles into a list node.

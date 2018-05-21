@@ -271,22 +271,34 @@ func arrayAsNode(n uast.Array, field string) ([]*Node, error) {
 }
 
 func objectAsNode(n uast.Object, field string) ([]*Node, error) {
+	ps := n.Positions()
 	nd := &Node{
 		InternalType:  n.Type(),
 		Token:         n.Token(),
 		Roles:         n.Roles(),
-		StartPosition: n.StartPosition(),
-		EndPosition:   n.EndPosition(),
+		StartPosition: ps.Start(),
+		EndPosition:   ps.End(),
 		Properties:    make(map[string]string),
 	}
 	if field != "" {
 		nd.Properties[InternalRoleKey] = field
 	}
+	for k, p := range ps {
+		switch k {
+		case uast.KeyStart, uast.KeyEnd:
+			// already processed
+			continue
+		}
+		sn, err := asNode(p.ToObject(), k)
+		if err != nil {
+			return nil, err
+		}
+		nd.Children = append(nd.Children, sn...)
+	}
 
 	for k, v := range n {
 		switch k {
-		case uast.KeyType, uast.KeyToken, uast.KeyRoles,
-			uast.KeyStart, uast.KeyEnd:
+		case uast.KeyType, uast.KeyToken, uast.KeyRoles, uast.KeyPos:
 			// already processed
 			continue
 		}
