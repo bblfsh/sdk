@@ -14,15 +14,22 @@ type Mode int
 
 const (
 	ModeAST = Mode(iota)
+	ModeHighLevel
 )
 
 // Transforms describes a set of AST transformations this driver requires.
 type Transforms struct {
-	// Native transforms normalizes native AST.
+	// Namespace for this language driver
+	Namespace string
+	// Preprocess transforms normalizes native AST.
 	// It usually includes:
 	//	* changing type key to uast.KeyType
 	//	* changing token key to uast.KeyToken
 	//	* restructure positional information
+	Preprocess []transformer.Transformer
+	// Normalize converts known AST structures to high-level AST representation (UAST).
+	Normalize []transformer.Transformer
+	// Native annotates the tree with roles.
 	Native []transformer.Transformer
 	// Code transforms are applied directly after Native and provide a way
 	// to extract more information from source files, fix positional info, etc.
@@ -32,16 +39,37 @@ type Transforms struct {
 // Do applies AST transformation pipeline for specified nodes.
 func (t Transforms) Do(mode Mode, code string, nd uast.Node) (uast.Node, error) {
 	var err error
-	for _, t := range t.Native {
-		nd, err = t.Do(nd)
-		if err != nil {
+
+	runAll := func(list []transformer.Transformer) error {
+		for _, t := range list {
+			nd, err = t.Do(nd)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := runAll(t.Preprocess); err != nil {
+		return nd, err
+	}
+	if mode >= ModeHighLevel {
+		if err := runAll(t.Normalize); err != nil {
 			return nd, err
 		}
+	}
+	if err := runAll(t.Native); err != nil {
+		return nd, err
 	}
 
 	for _, ct := range t.Code {
 		t := ct.OnCode(code)
 		nd, err = t.Do(nd)
+		if err != nil {
+			return nd, err
+		}
+	}
+	if mode >= ModeHighLevel && t.Namespace != "" {
+		nd, err = transformer.DefaultNamespace(t.Namespace).Do(nd)
 		if err != nil {
 			return nd, err
 		}
