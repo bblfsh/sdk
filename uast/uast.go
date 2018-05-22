@@ -22,7 +22,13 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
-// Special field keys for Object
+func init() {
+	type token struct{}
+	// Register all types from the package under this namespace
+	RegisterPackage(NS, token{})
+}
+
+// Special field keys for nodes.Object
 const (
 	KeyType  = "@type"  // InternalType
 	KeyToken = "@token" // Token
@@ -168,4 +174,89 @@ func Tokens(n nodes.Node) []string {
 		return true
 	})
 	return tokens
+}
+
+// Any is an alias type for any UAST node.
+type Any = nodes.Node
+
+type GenNode struct {
+	Positions Positions `json:"@pos,omitempty"`
+}
+
+type Identifier struct {
+	GenNode
+	Name string `json:"Name"`
+}
+
+type String struct {
+	GenNode
+	Value  string `json:"Value"`
+	Format string `json:"Format"` // TODO: make an enum later
+}
+
+type QualifiedIdentifier struct {
+	GenNode
+	Names []Identifier `json:"Names"`
+}
+
+type Comment struct {
+	GenNode
+	Text   string `json:"Text"`
+	Prefix string `json:"Prefix"`
+	Suffix string `json:"Suffix"`
+	Tab    string `json:"Tab"`
+	Block  bool   `json:"Block"`
+}
+
+type Group struct {
+	GenNode
+	Nodes []Any `json:"Nodes"`
+}
+
+type FunctionGroup Group
+
+type Block struct {
+	GenNode
+	Statements []Any `json:"Statements"`
+	// Scope *Scope
+}
+
+type Alias struct {
+	GenNode
+	Name Identifier `json:"Name"`
+	Node Any        `json:"Node"`
+	// Target *Scope
+}
+
+type Import struct {
+	GenNode
+	Path  Any   `json:"Path"`
+	All   bool  `json:"All"`
+	Names []Any `json:"Names"`
+	// Target *Scope
+}
+
+type RuntimeImport Import
+
+//type InlineImport Import
+
+type Argument struct {
+	GenNode
+	Name        *Identifier `json:"Name"`
+	Type        Any         `json:"Type"`
+	Init        Any         `json:"Init"`
+	Variadic    bool        `json:"Variadic"`
+	MapVariadic bool        `json:"MapVariadic"`
+}
+
+type FunctionType struct {
+	GenNode
+	Arguments []Argument `json:"Arguments"`
+	Returns   []Argument `json:"Returns"`
+}
+
+type Function struct {
+	GenNode
+	Type FunctionType `json:"Type"`
+	Body *Block       `json:"Body"`
 }

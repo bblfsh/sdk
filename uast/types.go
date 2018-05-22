@@ -13,11 +13,6 @@ var (
 	ErrIncorrectType = errors.NewKind("incorrect object type: %q, expected: %q")
 )
 
-func init() {
-	type token struct{}
-	RegisterPackage(NS, token{})
-}
-
 var (
 	namespaces = make(map[string]string)
 	package2ns = make(map[string]string)
