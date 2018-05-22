@@ -12,6 +12,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
@@ -81,7 +82,7 @@ func marshalNative(o *driver.InternalParseResponse) ([]byte, error) {
 	return uastyml.Marshal(n)
 }
 
-func marshalUAST(o uast.Node) ([]byte, error) {
+func marshalUAST(o nodes.Node) ([]byte, error) {
 	return uastyml.Marshal(o)
 }
 

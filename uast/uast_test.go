@@ -8,6 +8,12 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
+type Obj = nodes.Object
+
+type Arr = nodes.Array
+
+type Str = nodes.String
+
 func tObj(typ, tok string) Obj {
 	obj := Obj{KeyType: Str(typ)}
 	if tok != "" {
@@ -245,7 +251,7 @@ func TestWalkPreOrder(t *testing.T) {
 	}
 
 	var result []string
-	nodes.WalkPreOrder(n, func(n Node) bool {
+	nodes.WalkPreOrder(n, func(n nodes.Node) bool {
 		if obj, ok := n.(nodes.Object); ok {
 			result = append(result, TypeOf(obj))
 		}

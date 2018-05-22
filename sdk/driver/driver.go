@@ -7,6 +7,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/manifest"
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/transformer"
 )
 
@@ -37,7 +38,7 @@ type Transforms struct {
 }
 
 // Do applies AST transformation pipeline for specified nodes.
-func (t Transforms) Do(mode Mode, code string, nd uast.Node) (uast.Node, error) {
+func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error) {
 	var err error
 
 	runAll := func(list []transformer.Transformer) error {
