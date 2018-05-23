@@ -71,6 +71,7 @@ func fieldName(f reflect.StructField) (string, error) {
 
 var (
 	reflString = reflect.TypeOf("")
+	reflAny    = reflect.TypeOf((*Any)(nil)).Elem()
 	reflNode   = reflect.TypeOf((*nodes.Node)(nil)).Elem()
 )
 
@@ -84,9 +85,15 @@ func ToNode(o interface{}) (nodes.Node, error) {
 
 func toNodeReflect(rv reflect.Value) (nodes.Node, error) {
 	rt := rv.Type()
-	if rt.Kind() == reflect.Ptr {
+	for rt.Kind() == reflect.Interface || rt.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil, nil
+		}
 		rv = rv.Elem()
 		rt = rv.Type()
+	}
+	if rt.ConvertibleTo(reflNode) {
+		return rv.Interface().(nodes.Node), nil
 	}
 	switch rt.Kind() {
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
@@ -130,21 +137,8 @@ func toNodeReflect(rv reflect.Value) (nodes.Node, error) {
 		obj[KeyType] = nodes.String(typ)
 
 		if isStruct {
-			for i := 0; i < rt.NumField(); i++ {
-				f := rv.Field(i)
-				if !f.CanInterface() {
-					continue
-				}
-				ft := rt.Field(i)
-				name, err := fieldName(ft)
-				if err != nil {
-					return nil, fmt.Errorf("type %s: %v", rt.Name(), err)
-				}
-				v, err := toNodeReflect(f)
-				if err != nil {
-					return nil, err
-				}
-				obj[name] = v
+			if err := structToNode(obj, rv, rt); err != nil {
+				return nil, err
 			}
 		} else {
 			if rt.Key() != reflString {
@@ -161,6 +155,32 @@ func toNodeReflect(rv reflect.Value) (nodes.Node, error) {
 		return obj, nil
 	}
 	return nil, fmt.Errorf("unsupported type: %v", rt)
+}
+
+func structToNode(obj nodes.Object, rv reflect.Value, rt reflect.Type) error {
+	for i := 0; i < rt.NumField(); i++ {
+		f := rv.Field(i)
+		if !f.CanInterface() {
+			continue
+		}
+		ft := rt.Field(i)
+		if ft.Anonymous {
+			if err := structToNode(obj, f, ft.Type); err != nil {
+				return err
+			}
+			continue
+		}
+		name, err := fieldName(ft)
+		if err != nil {
+			return fmt.Errorf("type %s: %v", rt.Name(), err)
+		}
+		v, err := toNodeReflect(f)
+		if err != nil {
+			return err
+		}
+		obj[name] = v
+	}
+	return nil
 }
 
 func NodeAs(n nodes.Node, dst interface{}) error {
@@ -185,6 +205,10 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 		return nil
 	case nodes.Object:
 		rt := rv.Type()
+		if rt == reflAny || rt == reflNode {
+			rv.Set(reflect.ValueOf(n))
+			return nil
+		}
 		kind := rt.Kind()
 		if kind != reflect.Struct && kind != reflect.Map {
 			return fmt.Errorf("expected struct or map, got %v", rt)
@@ -195,23 +219,8 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 			return ErrIncorrectType.New(typ, etyp)
 		}
 		if kind == reflect.Struct {
-			for i := 0; i < rt.NumField(); i++ {
-				f := rv.Field(i)
-				if !f.CanInterface() {
-					continue
-				}
-				ft := rt.Field(i)
-				name, err := fieldName(ft)
-				if err != nil {
-					return fmt.Errorf("type %s: %v", rt.Name(), err)
-				}
-				v, ok := n[name]
-				if !ok {
-					continue
-				}
-				if err = nodeAs(v, f); err != nil {
-					return err
-				}
+			if err := nodeToStruct(rv, rt, n); err != nil {
+				return err
 			}
 		} else {
 			if rv.IsNil() {
@@ -231,6 +240,10 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 		return nil
 	case nodes.Array:
 		rt := rv.Type()
+		if rt == reflAny || rt == reflNode {
+			rv.Set(reflect.ValueOf(n))
+			return nil
+		}
 		if rt.Kind() != reflect.Slice {
 			return fmt.Errorf("expected slice, got %v", rt)
 		}
@@ -255,4 +268,32 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 		return nil
 	}
 	return fmt.Errorf("unexpected type: %T", n)
+}
+
+func nodeToStruct(rv reflect.Value, rt reflect.Type, obj nodes.Object) error {
+	for i := 0; i < rt.NumField(); i++ {
+		f := rv.Field(i)
+		if !f.CanInterface() {
+			continue
+		}
+		ft := rt.Field(i)
+		if ft.Anonymous {
+			if err := nodeToStruct(f, ft.Type, obj); err != nil {
+				return err
+			}
+			continue
+		}
+		name, err := fieldName(ft)
+		if err != nil {
+			return fmt.Errorf("type %s: %v", rt.Name(), err)
+		}
+		v, ok := obj[name]
+		if !ok {
+			continue
+		}
+		if err = nodeAs(v, f); err != nil {
+			return err
+		}
+	}
+	return nil
 }

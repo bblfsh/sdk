@@ -177,7 +177,7 @@ func Tokens(n nodes.Node) []string {
 }
 
 // Any is an alias type for any UAST node.
-type Any = nodes.Node
+type Any interface{}
 
 type GenNode struct {
 	Positions Positions `json:"@pos,omitempty"`
