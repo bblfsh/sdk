@@ -12,6 +12,8 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/sdk/jsonlines"
 
+	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
@@ -194,12 +196,35 @@ type InternalParseRequest struct {
 	Encoding Encoding `json:"encoding"`
 }
 
+var _ json.Unmarshaler = (*InternalParseResponse)(nil)
+
 // InternalParseResponse is the reply to InternalParseRequest by the native
 // parser.
 type InternalParseResponse struct {
-	Status Status      `json:"status"`
-	Errors []string    `json:"errors"`
-	AST    interface{} `json:"ast"`
+	Status Status     `json:"status"`
+	Errors []string   `json:"errors"`
+	AST    nodes.Node `json:"ast"`
+}
+
+func (r *InternalParseResponse) UnmarshalJSON(data []byte) error {
+	var resp struct {
+		Status Status      `json:"status"`
+		Errors []string    `json:"errors"`
+		AST    interface{} `json:"ast"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return err
+	}
+	ast, err := uast.ToNode(resp.AST)
+	if err != nil {
+		return err
+	}
+	*r = InternalParseResponse{
+		Status: resp.Status,
+		Errors: resp.Errors,
+		AST:    ast,
+	}
+	return nil
 }
 
 type Status protocol.Status

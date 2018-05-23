@@ -7,6 +7,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
 	"gopkg.in/bblfsh/sdk.v2/sdk/jsonlines"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 func main() {
@@ -31,9 +32,9 @@ func main() {
 
 		resp := &driver.InternalParseResponse{
 			Status: driver.Status(protocol.Ok),
-			AST: map[string]interface{}{
-				"root": map[string]interface{}{
-					"key": "val",
+			AST: nodes.Object{
+				"root": nodes.Object{
+					"key": nodes.String("val"),
 				},
 			},
 		}

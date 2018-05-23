@@ -75,11 +75,7 @@ const (
 )
 
 func marshalNative(o *driver.InternalParseResponse) ([]byte, error) {
-	n, err := uast.ToNode(o.AST)
-	if err != nil {
-		return nil, err
-	}
-	return uastyml.Marshal(n)
+	return uastyml.Marshal(o.AST)
 }
 
 func marshalUAST(o nodes.Node) ([]byte, error) {
