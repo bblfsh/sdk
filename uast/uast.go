@@ -83,6 +83,13 @@ func (p Positions) End() *Position {
 	}
 	return nil
 }
+func (p Positions) ToObject() nodes.Object {
+	n, err := toNodeReflect(reflect.ValueOf(p))
+	if err != nil {
+		panic(err)
+	}
+	return n.(nodes.Object)
+}
 
 // AsPosition transforms a generic AST node to a Position object.
 func AsPosition(m nodes.Object) *Position {
