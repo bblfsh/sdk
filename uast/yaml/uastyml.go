@@ -127,19 +127,17 @@ func (enc *Encoder) writeObject(tabs []byte, m nodes.Object) {
 	default:
 		emitObj(uast.KeyPos)
 	}
-	if len(m) != len(written) {
-		for _, k := range m.Keys() {
-			if _, ok := written[k]; ok {
-				continue
-			}
-			v := m[k]
-			enc.writeString("\n")
-			enc.write(ntabs)
-			enc.marshalString(k, false)
-			enc.writeString(": ")
-			enc.marshal(ntabs, v, true)
-			enc.writeString(",")
+	for _, k := range m.Keys() {
+		if _, ok := written[k]; ok {
+			continue
 		}
+		v := m[k]
+		enc.writeString("\n")
+		enc.write(ntabs)
+		enc.marshalString(k, false)
+		enc.writeString(": ")
+		enc.marshal(ntabs, v, true)
+		enc.writeString(",")
 	}
 	enc.writeString("\n")
 	enc.write(tabs)
