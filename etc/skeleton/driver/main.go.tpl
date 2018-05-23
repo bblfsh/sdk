@@ -9,7 +9,9 @@ import (
 
 func main() {
 	driver.Run(driver.Transforms{
-		Native: normalizer.Native,
-		Code:   normalizer.Code,
+		Preprocess: normalizer.Preprocess,
+		Normalize:  normalizer.Normalize,
+		Native:     normalizer.Native,
+		Code:       normalizer.Code,
 	})
 }

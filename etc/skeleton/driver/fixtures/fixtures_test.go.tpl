@@ -12,23 +12,30 @@ import (
 const projectRoot = "../../"
 
 var Suite = &fixtures.Suite{
-	Lang: "lang-name",
-	Ext:  ".ext",
+	Lang: "{{.Manifest.Language}}",
+	Ext:  ".ext", // TODO: specify correct file extension for source files in ./fixtures
 	Path: filepath.Join(projectRoot, fixtures.Dir),
 	NewDriver: func() driver.BaseDriver {
 		return driver.NewExecDriverAt(filepath.Join(projectRoot, "build/bin/native"))
 	},
 	Transforms: driver.Transforms{
-		Native: normalizer.Native,
-		Code:   normalizer.Code,
+		Preprocess: normalizer.Preprocess,
+		Normalize:  normalizer.Normalize,
+		Native:     normalizer.Native,
+		Code:       normalizer.Code,
 	},
 	//BenchName: "fixture-name", // TODO: specify a largest file
+	Semantic: fixtures.SemanticConfig{
+		BlacklistTypes: []string{
+			// TODO: list native types that should be converted to semantic UAST
+		},
+	},
 }
 
-func TestXxxDriver(t *testing.T) {
+func Test{{expName .Manifest.Language}}Driver(t *testing.T) {
 	Suite.RunTests(t)
 }
 
-func BenchmarkXxxDriver(b *testing.B) {
+func Benchmark{{expName .Manifest.Language}}Driver(b *testing.B) {
 	Suite.RunBenchmarks(b)
 }
