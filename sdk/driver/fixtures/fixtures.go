@@ -18,6 +18,12 @@ import (
 
 const Dir = "fixtures"
 
+type SemanticConfig struct {
+	// BlacklistTypes is a list og types that should not appear in semantic UAST.
+	// Used to test if all cases of a specific native AST type were converted to semantic UAST.
+	BlacklistTypes []string
+}
+
 type Suite struct {
 	Lang string
 	Ext  string // with dot
@@ -33,6 +39,8 @@ type Suite struct {
 	Transforms driver.Transforms
 
 	BenchName string // fixture name to benchmark (with no extension)
+
+	Semantic SemanticConfig
 }
 
 func (s *Suite) readFixturesFile(t testing.TB, name string) string {
@@ -59,7 +67,7 @@ func (s *Suite) RunTests(t *testing.T) {
 		s.testFixturesUAST(t, driver.ModeAST, uastExt)
 	})
 	t.Run("semantic", func(t *testing.T) {
-		s.testFixturesUAST(t, driver.ModeHighLevel, highExt)
+		s.testFixturesUAST(t, driver.ModeHighLevel, highExt, s.Semantic.BlacklistTypes...)
 	})
 }
 
@@ -130,7 +138,7 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 	}
 }
 
-func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string) {
+func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, blacklist ...string) {
 	list, err := ioutil.ReadDir(s.Path)
 	require.NoError(t, err)
 
@@ -163,6 +171,30 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string) {
 			tr := s.Transforms
 			ua, err := tr.Do(mode, code, ast)
 			require.NoError(t, err)
+
+			if len(blacklist) != 0 {
+				foundBlack := make(map[string]int, len(blacklist))
+				for _, typ := range blacklist {
+					foundBlack[typ] = 0
+				}
+				nodes.WalkPreOrder(ua, func(n nodes.Node) bool {
+					typ := uast.TypeOf(n)
+					if typ == "" {
+						return true
+					}
+					if cnt, ok := foundBlack[typ]; ok {
+						foundBlack[typ] = cnt + 1
+					}
+					return true
+				})
+				for typ, cnt := range foundBlack {
+					if cnt == 0 {
+						delete(foundBlack, typ)
+						continue
+					}
+					t.Errorf("nodes of type %q (%d) found in the tree", typ, cnt)
+				}
+			}
 
 			un, err := marshalUAST(ua)
 			require.NoError(t, err)
