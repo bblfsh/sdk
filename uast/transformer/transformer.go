@@ -231,7 +231,7 @@ func (m *mappings) index() {
 			specific := false
 			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
 				if is, ok := f.Op.(opIs); ok {
-					if typ, ok := is.v.(nodes.String); ok {
+					if typ, ok := is.n.(nodes.String); ok {
 						s := string(typ)
 						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
 						specific = true

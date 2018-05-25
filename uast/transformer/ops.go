@@ -27,27 +27,32 @@ func filtered(format string, args ...interface{}) (bool, error) {
 	return false, fmt.Errorf(format, args...)
 }
 
-// Is checks if the current node is a primitive and is equal to a given value.
-// Reversal changes the type of the node to primitive and assigns given value to the node.
-func Is(v nodes.Value) Op {
-	return opIs{v: v}
+// Is checks if the current node to a given node. It can be a value, array or an object.
+// Reversal clones the provided value into the tree.
+func Is(o interface{}) Op {
+	if n, ok := o.(nodes.Node); ok || o == nil {
+		return opIs{n: n}
+	}
+	n, err := uast.ToNode(o)
+	if err != nil {
+		panic(err)
+	}
+	return opIs{n: n}
 }
 
 type opIs struct {
-	v nodes.Value
+	n nodes.Node
 }
 
 func (op opIs) Check(st *State, n nodes.Node) (bool, error) {
-	v2, ok := n.(nodes.Value)
-	if !ok {
-		return op.v == nil && n == nil, nil
-	}
-	return op.v == v2, nil
+	return nodes.Equal(op.n, n), nil
 }
 
 func (op opIs) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	nv := op.v
-	return nv, nil
+	if op.n == nil {
+		return nil, nil
+	}
+	return op.n.Clone(), nil
 }
 
 // Var stores current node as a value to a named variable in the shared state.
