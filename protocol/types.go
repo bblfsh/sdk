@@ -294,6 +294,12 @@ func objectAsNode(n nodes.Object, field string) ([]*Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		sp := p
+		ep := sp
+		ep.Col++
+		ep.Offset++
+		sn[0].StartPosition = &sp
+		sn[0].EndPosition = &ep
 		nd.Children = append(nd.Children, sn...)
 	}
 
