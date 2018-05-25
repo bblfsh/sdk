@@ -59,24 +59,27 @@ type ObjectToNode struct {
 
 // Mapping construct a transformation from ObjectToNode definition.
 func (n ObjectToNode) Mapping() Mapping {
-	var ast Object
-	// ->
-	var norm Object
+	var (
+		ast Object
+		// ->
+		norm, normPos Object
+	)
 
 	if n.InternalTypeKey != "" {
 		const vr = "itype"
 		ast.SetField(n.InternalTypeKey, Var(vr))
 		norm.SetField(uast.KeyType, Var(vr))
 	}
+
 	if n.OffsetKey != "" {
 		const vr = "pos_off_start"
 		ast.SetField(n.OffsetKey, Var(vr))
-		norm.SetField(uast.KeyStart, SavePosOffset(vr))
+		normPos.SetField(uast.KeyStart, SavePosOffset(vr))
 	}
 	if n.EndOffsetKey != "" {
 		const vr = "pos_off_end"
 		ast.SetField(n.EndOffsetKey, Var(vr))
-		norm.SetField(uast.KeyEnd, SavePosOffset(vr))
+		normPos.SetField(uast.KeyEnd, SavePosOffset(vr))
 	}
 	if n.LineKey != "" && n.ColumnKey != "" {
 		const (
@@ -85,7 +88,7 @@ func (n ObjectToNode) Mapping() Mapping {
 		)
 		ast.SetField(n.LineKey, Var(vrl))
 		ast.SetField(n.ColumnKey, Var(vrc))
-		norm.SetField(uast.KeyStart, SavePosLineCol(vrl, vrc))
+		normPos.SetField(uast.KeyStart, SavePosLineCol(vrl, vrc))
 	} else if (n.LineKey != "" && n.ColumnKey == "") || (n.LineKey == "" && n.ColumnKey != "") {
 		panic("both LineKey and ColumnKey should either be set or not")
 	}
@@ -96,9 +99,12 @@ func (n ObjectToNode) Mapping() Mapping {
 		)
 		ast.SetField(n.EndLineKey, Var(vrl))
 		ast.SetField(n.EndColumnKey, Var(vrc))
-		norm.SetField(uast.KeyEnd, SavePosLineCol(vrl, vrc))
+		normPos.SetField(uast.KeyEnd, SavePosLineCol(vrl, vrc))
 	} else if (n.EndLineKey != "" && n.EndColumnKey == "") || (n.EndLineKey == "" && n.EndColumnKey != "") {
 		panic("both EndLineKey and EndColumnKey should either be set or not")
+	}
+	if len(normPos.fields) != 0 {
+		norm.SetField(uast.KeyPos, UASTType(uast.Positions{}, normPos))
 	}
 	return ASTMap("ObjectToNode",
 		Part("other", ast),
