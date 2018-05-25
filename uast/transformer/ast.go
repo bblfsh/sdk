@@ -11,14 +11,14 @@ import (
 
 // SavePosOffset makes an operation that describes a uast.Position object with Offset field set to a named variable.
 func SavePosOffset(vr string) Op {
-	return TypedObj(uast.TypePosition, map[string]Op{
+	return UASTType(uast.Position{}, Obj{
 		uast.KeyPosOff: Var(vr),
 	})
 }
 
 // SavePosLineCol makes an operation that describes a uast.Position object with Line and Col field set to named variables.
 func SavePosLineCol(varLine, varCol string) Op {
-	return TypedObj(uast.TypePosition, map[string]Op{
+	return UASTType(uast.Position{}, Obj{
 		uast.KeyPosLine: Var(varLine),
 		uast.KeyPosCol:  Var(varCol),
 	})
