@@ -3,6 +3,7 @@ package driver
 import (
 	"testing"
 
+	"gopkg.in/bblfsh/sdk.v1/manifest"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
 
@@ -137,4 +138,21 @@ func TestDriverParserVersion(t *testing.T) {
 	v := d.Version(nil)
 	require.Equal(v.Version, "42")
 	require.Equal(v.Build.String(), "2015-10-21 04:29:00 +0000 UTC")
+}
+
+func TestDriverDetails(t *testing.T) {
+	require := require.New(t)
+
+	manifest := manifest.Manifest{
+		Name:     "Foo",
+		Language: "foo",
+		Version:  "v0.1",
+		Status:   manifest.Alpha,
+	}
+
+	details := protocol.NewDriverDetails(&manifest)
+	require.Equal(manifest.Name, details.Name)
+	require.Equal(manifest.Language, details.Language)
+	require.Equal(manifest.Version, details.Version)
+	require.Equal(manifest.Status, details.Status)
 }
