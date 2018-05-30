@@ -75,6 +75,10 @@ type commentUAST struct {
 	pref, suff, tab string
 }
 
+func (commentUAST) Kinds() nodes.Kind {
+	return nodes.KindString
+}
+
 func (op commentUAST) Check(st *State, n nodes.Node) (bool, error) {
 	s, ok := n.(nodes.String)
 	if !ok {

@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 const applySort = false
@@ -29,6 +30,7 @@ type Node interface {
 	Native() interface{}
 	Equal(n2 Node) bool
 	isNode() // to limit possible types
+	kind() Kind
 }
 
 // Value is a generic interface for values stored inside the tree.
@@ -49,10 +51,92 @@ type NodePtr interface {
 	SetNode(v Node) error
 }
 
+// Kind is a node kind.
+type Kind int
+
+func (k Kind) Split() []Kind {
+	var kinds []Kind
+	for _, k2 := range []Kind{
+		KindNil,
+		KindObject,
+		KindArray,
+		KindString,
+		KindInt,
+		KindFloat,
+		KindBool,
+	} {
+		if k.In(k2) {
+			kinds = append(kinds, k2)
+		}
+	}
+	if k2 := k &^ KindsAny; k2 != 0 {
+		kinds = append(kinds, k2)
+	}
+	return kinds
+}
+func (k Kind) In(k2 Kind) bool {
+	return (k & k2) != 0
+}
+func (k Kind) String() string {
+	kinds := k.Split()
+	str := make([]string, 0, len(kinds))
+	for _, k := range kinds {
+		var s string
+		switch k {
+		case KindNil:
+			s = "Nil"
+		case KindObject:
+			s = "Object"
+		case KindArray:
+			s = "Array"
+		case KindString:
+			s = "String"
+		case KindInt:
+			s = "Int"
+		case KindFloat:
+			s = "Float"
+		case KindBool:
+			s = "Bool"
+		default:
+			s = fmt.Sprintf("Kind(%d)", int(k))
+		}
+		str = append(str, s)
+	}
+	return strings.Join(str, " | ")
+}
+
+const (
+	KindNil = Kind(1 << iota)
+	KindObject
+	KindArray
+	KindString
+	KindInt
+	KindFloat
+	KindBool
+)
+
+const (
+	KindsValues = KindString | KindInt | KindFloat | KindBool
+	KindsNotNil = KindObject | KindArray | KindsValues
+	KindsAny    = KindNil | KindsNotNil
+)
+
+// KindOf returns a kind of the node.
+func KindOf(n Node) Kind {
+	if n == nil {
+		return KindNil
+	}
+	return n.kind()
+}
+
 // Object is a representation of generic node with fields.
 type Object map[string]Node
 
 func (Object) isNode() {}
+
+func (Object) kind() Kind {
+	return KindObject
+}
 
 // Native converts an object to a generic Go map type (map[string]interface{}).
 func (m Object) Native() interface{} {
@@ -140,6 +224,10 @@ type Array []Node
 
 func (Array) isNode() {}
 
+func (Array) kind() Kind {
+	return KindArray
+}
+
 // Native converts an array to a generic Go slice type ([]interface{}).
 func (m Array) Native() interface{} {
 	if m == nil {
@@ -206,6 +294,9 @@ type String string
 
 func (String) isNode()  {}
 func (String) isValue() {}
+func (String) kind() Kind {
+	return KindString
+}
 
 // Native converts the value to a string.
 func (v String) Native() interface{} {
@@ -235,6 +326,9 @@ type Int int64
 
 func (Int) isNode()  {}
 func (Int) isValue() {}
+func (Int) kind() Kind {
+	return KindInt
+}
 
 // Native converts the value to an int64.
 func (v Int) Native() interface{} {
@@ -264,6 +358,9 @@ type Float float64
 
 func (Float) isNode()  {}
 func (Float) isValue() {}
+func (Float) kind() Kind {
+	return KindFloat
+}
 
 // Native converts the value to a float64.
 func (v Float) Native() interface{} {
@@ -293,6 +390,9 @@ type Bool bool
 
 func (Bool) isNode()  {}
 func (Bool) isValue() {}
+func (Bool) kind() Kind {
+	return KindBool
+}
 
 // Native converts the value to a bool.
 func (v Bool) Native() interface{} {

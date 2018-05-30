@@ -21,6 +21,8 @@ type CodeTransformer interface {
 
 // Sel is an operation that can verify if a specific node matches a set of constraints or not.
 type Sel interface {
+	// Kinds returns a mask of all nodes kinds that this operation might match.
+	Kinds() nodes.Kind
 	// Check will verify constraints for a single node and returns true if an objects matches them.
 	// It can also populate the State with variables that can be used later to Construct a different object from the State.
 	Check(st *State, n nodes.Node) (bool, error)
@@ -180,7 +182,8 @@ func Mappings(maps ...Mapping) Transformer {
 		return maps[0]
 	}
 	mp := mappings{
-		all: maps,
+		all:    maps,
+		byKind: make(map[nodes.Kind][]Mapping),
 	}
 	mp.index()
 	return mp
@@ -191,9 +194,7 @@ type mappings struct {
 
 	// indexed mappings
 
-	objs   []Mapping // mappings applied to objects
-	arrs   []Mapping // mappings applied to arrays
-	others []Mapping // mappings to other types
+	byKind map[nodes.Kind][]Mapping // mappings applied to specific node kind
 
 	typedObj map[string][]Mapping // mappings for objects with specific type
 	typedAny []Mapping            // mappings for any typed object (operations that does not mention the type)
@@ -225,9 +226,11 @@ func (m *mappings) index() {
 		}
 		// switch by operation type and make a separate list
 		// next time we will see a node with matching type, we will apply only specific ops
+		for _, k := range oop.Kinds().Split() {
+			m.byKind[k] = append(m.byKind[k], mp)
+		}
 		switch op := oop.(type) {
 		case ObjectOp:
-			m.objs = append(m.objs, mp)
 			specific := false
 			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
 				if is, ok := f.Op.(opIs); ok {
@@ -241,14 +244,9 @@ func (m *mappings) index() {
 			if !specific {
 				typedAny = append(typedAny, ordered{ind: i, mp: mp})
 			}
-		case ArrayOp:
-			m.arrs = append(m.arrs, mp)
 		default:
-			m.others = append(m.others, mp)
 			// the type is unknown, thus we should try to apply it to objects and array as well
 			typedAny = append(typedAny, ordered{ind: i, mp: mp})
-			m.objs = append(m.objs, mp)
-			m.arrs = append(m.arrs, mp)
 		}
 	}
 	m.typedObj = make(map[string][]Mapping, len(typed))
@@ -269,21 +267,14 @@ func (m mappings) Do(root nodes.Node) (nodes.Node, error) {
 	var errs []error
 	st := NewState()
 	nn, ok := nodes.Apply(root, func(old nodes.Node) (nodes.Node, bool) {
-		maps := m.all
+		maps := m.byKind[nodes.KindOf(old)]
 		switch old := old.(type) {
-		case nil:
-			// apply all
 		case nodes.Object:
-			maps = m.objs
 			if typ, ok := old[uast.KeyType].(nodes.String); ok {
 				if mp, ok := m.typedObj[string(typ)]; ok {
 					maps = mp
 				}
 			}
-		case nodes.Array:
-			maps = m.arrs
-		default:
-			maps = m.others
 		}
 
 		n := old

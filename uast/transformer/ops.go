@@ -44,6 +44,10 @@ type opIs struct {
 	n nodes.Node
 }
 
+func (op opIs) Kinds() nodes.Kind {
+	return nodes.KindOf(op.n)
+}
+
 func (op opIs) Check(st *State, n nodes.Node) (bool, error) {
 	return nodes.Equal(op.n, n), nil
 }
@@ -58,11 +62,16 @@ func (op opIs) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 // Var stores current node as a value to a named variable in the shared state.
 // Reversal replaces current node with the one from named variable. Variables can store subtrees.
 func Var(name string) Op {
-	return opVar{name: name}
+	return opVar{name: name, kinds: nodes.KindsAny}
 }
 
 type opVar struct {
-	name string
+	name  string
+	kinds nodes.Kind
+}
+
+func (op opVar) Kinds() nodes.Kind {
+	return op.kinds
 }
 
 func (op opVar) Check(st *State, n nodes.Node) (bool, error) {
@@ -96,6 +105,10 @@ type opAnyNode struct {
 	create Mod
 }
 
+func (opAnyNode) Kinds() nodes.Kind {
+	return nodes.KindsAny
+}
+
 func (op opAnyNode) Check(st *State, n nodes.Node) (bool, error) {
 	return true, nil // always succeeds
 }
@@ -121,6 +134,14 @@ func Seq(ops ...Op) Op {
 }
 
 type opSeq []Op
+
+func (op opSeq) Kinds() nodes.Kind {
+	var k nodes.Kind
+	for _, s := range op {
+		k |= s.Kinds()
+	}
+	return k
+}
 
 func (op opSeq) Check(st *State, n nodes.Node) (bool, error) {
 	for i, sub := range op {
@@ -149,6 +170,10 @@ var _ ObjectOp = Obj{}
 // Obj is a helper for defining a transformation on an object fields. See Object.
 // Operations will be sorted by the field name before execution.
 type Obj map[string]Op
+
+func (Obj) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
 
 // Object converts this helper to a full Object description.
 func (o Obj) Object() Object {
@@ -223,6 +248,10 @@ var _ ObjectOp = Fields{}
 // Fields is a helper for multiple operations on object fields with a specific execution order. See Object.
 type Fields []Field
 
+func (Fields) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
+
 // Object converts this helper to a full Object description.
 func (o Fields) Object() Object {
 	obj := Object{fields: o, set: make(map[string]struct{})}
@@ -278,6 +307,10 @@ type Object struct {
 	fields []Field
 	set    map[string]struct{}
 	other  string // preserve other fields
+}
+
+func (Object) Kinds() nodes.Kind {
+	return nodes.KindObject
 }
 
 // Object returns the same object description.
@@ -475,6 +508,10 @@ func Arr(ops ...Op) ArrayOp {
 
 type opArr []Op
 
+func (opArr) Kinds() nodes.Kind {
+	return nodes.KindArray
+}
+
 func (op opArr) arr(_ *State) (opArr, error) {
 	return op, nil
 }
@@ -537,6 +574,10 @@ type opLookup struct {
 	fwd, rev map[nodes.Value]nodes.Value
 }
 
+func (opLookup) Kinds() nodes.Kind {
+	return nodes.KindsValues
+}
+
 func (op opLookup) Check(st *State, n nodes.Node) (bool, error) {
 	v, ok := n.(nodes.Value)
 	if !ok {
@@ -589,6 +630,10 @@ type opLookupOp struct {
 	cases map[nodes.Value]Op
 }
 
+func (opLookupOp) Kinds() nodes.Kind {
+	return nodes.KindsAny
+}
+
 func (op opLookupOp) eval(st *State) (Op, error) {
 	vn, err := st.MustGetVar(op.vr)
 	if err != nil {
@@ -638,6 +683,10 @@ type opLookupArrOp struct {
 	cases map[nodes.Value]ArrayOp
 }
 
+func (opLookupArrOp) Kinds() nodes.Kind {
+	return nodes.KindArray
+}
+
 func (op opLookupArrOp) arr(st *State) (opArr, error) {
 	vn, err := st.MustGetVar(op.vr)
 	if err != nil {
@@ -685,6 +734,10 @@ func Append(to Op, items ...ArrayOp) Op {
 type opAppend struct {
 	op   Op
 	arrs opAppendArr
+}
+
+func (opAppend) Kinds() nodes.Kind {
+	return nodes.KindArray
 }
 
 func (op opAppend) Check(st *State, n nodes.Node) (bool, error) {
@@ -752,6 +805,10 @@ type opAppendArr struct {
 	arrs []ArrayOp
 }
 
+func (opAppendArr) Kinds() nodes.Kind {
+	return nodes.KindArray
+}
+
 func (op opAppendArr) arr(st *State) (opArr, error) {
 	var arr opArr
 	for _, sub := range op.arrs {
@@ -785,7 +842,11 @@ type ValueFunc func(nodes.Value) (nodes.Value, error)
 
 // ValueConv converts a value with a provided function and passes it to sub-operation.
 func ValueConv(on Op, conv, rev ValueFunc) Op {
-	return opValueConv{op: on, conv: conv, rev: rev}
+	return valueConvKind(on, nodes.KindsValues, conv, rev)
+}
+
+func valueConvKind(on Op, kinds nodes.Kind, conv, rev ValueFunc) Op {
+	return opValueConv{op: on, kinds: kinds & nodes.KindsValues, conv: conv, rev: rev}
 }
 
 // StringFunc is a function that transforms string values.
@@ -806,12 +867,17 @@ func StringConv(on Op, conv, rev StringFunc) Op {
 			return nodes.String(s), nil
 		}
 	}
-	return ValueConv(on, apply(conv), apply(rev))
+	return valueConvKind(on, nodes.KindString, apply(conv), apply(rev))
 }
 
 type opValueConv struct {
 	op        Op
+	kinds     nodes.Kind
 	conv, rev ValueFunc
+}
+
+func (op opValueConv) Kinds() nodes.Kind {
+	return op.kinds
 }
 
 func (op opValueConv) Check(st *State, n nodes.Node) (bool, error) {
@@ -852,6 +918,10 @@ func If(cond string, then, els Op) Op {
 type opIf struct {
 	cond      string
 	then, els Op
+}
+
+func (op opIf) Kinds() nodes.Kind {
+	return op.then.Kinds() | op.els.Kinds()
 }
 
 func (op opIf) Check(st *State, n nodes.Node) (bool, error) {
@@ -900,6 +970,10 @@ func Each(vr string, op Op) Op {
 type opEach struct {
 	vr string
 	op Op
+}
+
+func (opEach) Kinds() nodes.Kind {
+	return nodes.KindNil | nodes.KindArray
 }
 
 func (op opEach) Check(st *State, n nodes.Node) (bool, error) {
@@ -958,6 +1032,10 @@ type opNotEmpty struct {
 	op Op
 }
 
+func (opNotEmpty) Kinds() nodes.Kind {
+	return nodes.KindsNotNil
+}
+
 func (op opNotEmpty) Check(st *State, n nodes.Node) (bool, error) {
 	switch n := n.(type) {
 	case nil:
@@ -1004,6 +1082,10 @@ type opOptional struct {
 	op Op
 }
 
+func (op opOptional) Kinds() nodes.Kind {
+	return nodes.KindNil | op.op.Kinds()
+}
+
 func (op opOptional) Check(st *State, n nodes.Node) (bool, error) {
 	if err := st.SetVar(op.vr, nodes.Bool(n != nil)); err != nil {
 		return false, err
@@ -1040,6 +1122,10 @@ type opCheck struct {
 	op  Op
 }
 
+func (op opCheck) Kinds() nodes.Kind {
+	return op.sel.Kinds() & op.op.Kinds()
+}
+
 func (op opCheck) Check(st *State, n nodes.Node) (bool, error) {
 	if ok, err := op.sel.Check(st.Clone(), n); err != nil || !ok {
 		return ok, err
@@ -1060,6 +1146,10 @@ type opNot struct {
 	sel Sel
 }
 
+func (opNot) Kinds() nodes.Kind {
+	return nodes.KindsAny // can't be sure
+}
+
 func (op opNot) Check(st *State, n nodes.Node) (bool, error) {
 	ok, err := op.sel.Check(st.Clone(), n)
 	if err != nil {
@@ -1068,12 +1158,25 @@ func (op opNot) Check(st *State, n nodes.Node) (bool, error) {
 	return !ok, nil
 }
 
+// Not nil is a condition that ensures that node is not nil.
+func NotNil() Sel {
+	return Not(Is(nil))
+}
+
 // And serves as a logical And operation for conditions.
 func And(sels ...Sel) Sel {
 	return opAnd(sels)
 }
 
 type opAnd []Sel
+
+func (op opAnd) Kinds() nodes.Kind {
+	var k nodes.Kind
+	for _, s := range op {
+		k &= s.Kinds()
+	}
+	return k
+}
 
 func (op opAnd) Check(st *State, n nodes.Node) (bool, error) {
 	for _, sub := range op {
@@ -1096,6 +1199,10 @@ func Any(s Sel) Sel {
 
 type opAny struct {
 	sel Sel
+}
+
+func (opAny) Kinds() nodes.Kind {
+	return nodes.KindArray
 }
 
 func (op opAny) Check(st *State, n nodes.Node) (bool, error) {
@@ -1122,6 +1229,10 @@ type opAll struct {
 	sel Sel
 }
 
+func (opAll) Kinds() nodes.Kind {
+	return nodes.KindArray
+}
+
 func (op opAll) Check(st *State, n nodes.Node) (bool, error) {
 	l, ok := n.(nodes.Array)
 	if !ok {
@@ -1139,6 +1250,10 @@ var _ Sel = Has{}
 
 // Has is a check-only operation that verifies that object has specific fields and they match given checks.
 type Has map[string]Sel
+
+func (Has) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
 
 // Check verifies that specified fields exists and matches the provided sub-operations.
 func (m Has) Check(st *State, n nodes.Node) (bool, error) {
@@ -1169,6 +1284,14 @@ func In(vals ...nodes.Value) Sel {
 
 type opIn struct {
 	m map[nodes.Value]struct{}
+}
+
+func (op opIn) Kinds() nodes.Kind {
+	var k nodes.Kind
+	for v := range op.m {
+		k |= nodes.KindOf(v)
+	}
+	return k
 }
 
 func (op opIn) Check(st *State, n nodes.Node) (bool, error) {
