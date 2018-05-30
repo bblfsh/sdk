@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/bblfsh/sdk.v1/manifest"
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
@@ -32,6 +33,7 @@ type Service interface {
 	Parse(*ParseRequest) *ParseResponse
 	NativeParse(*NativeParseRequest) *NativeParseResponse
 	Version(*VersionRequest) *VersionResponse
+	SupportedLanguages(*SupportedLanguagesRequest) *SupportedLanguagesResponse
 }
 
 // Status is the status of a response.
@@ -139,10 +141,10 @@ type NativeParseResponse struct {
 
 func (r *NativeParseResponse) String() string {
 	var s struct {
-		Status string      `json:"status"`
-		Language string    `json:"language"`
-		Errors []string    `json:"errors"`
-		AST    interface{} `json:"ast"`
+		Status   string      `json:"status"`
+		Language string      `json:"language"`
+		Errors   []string    `json:"errors"`
+		AST      interface{} `json:"ast"`
 	}
 
 	s.Status = strings.ToLower(r.Status.String())
@@ -186,4 +188,35 @@ type VersionResponse struct {
 	Version string `json:"version"`
 	// Build contains the timestamp at the time of the build.
 	Build time.Time `json:"build"`
+}
+
+// SupportedLanguagesRequest is a request to get the supported languages
+//proteus:generate
+type SupportedLanguagesRequest struct{}
+
+// SupportedLanguagesResponse is the reply to SupportedLanguagesRequest
+//proteus:generate
+type SupportedLanguagesResponse struct {
+	Response
+	// Drivers are the loaded drivers
+	Drivers []DriverDetails `json:"drivers"`
+}
+
+// DriverDetails is the installed driver exported data
+//proteus:generate
+type DriverDetails struct {
+	Name     string `json:"name"`
+	Language string `json:"language"`
+	Version  string `json:"version"`
+	Status   string `json:"status"`
+}
+
+// NewDriverDetails returns a DriverDetails from a Manifest
+func NewDriverDetails(manifest *manifest.Manifest) DriverDetails {
+	return DriverDetails{
+		Name:     manifest.Name,
+		Language: manifest.Language,
+		Version:  manifest.Version,
+		Status:   string(manifest.Status),
+	}
 }
