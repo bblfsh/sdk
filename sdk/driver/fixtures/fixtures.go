@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v2/sdk/viewer"
 	"gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
@@ -29,11 +30,12 @@ type Suite struct {
 	Ext  string // with dot
 	Path string
 
-	// Update* flags below should never be committed in "true" state.
-	// They serve only as an automation for updating fixture files.
+	// Update* and Write* flags below should never be committed in "true" state.
+	// They serve only as helpers for debugging.
 
-	UpdateNative bool // update native ASTs in fixtures to ones produced by driver
-	UpdateUAST   bool // update UASTs in fixtures to ones produced by driver
+	UpdateNative    bool // update native ASTs in fixtures to ones produced by driver
+	UpdateUAST      bool // update UASTs in fixtures to ones produced by driver
+	WriteViewerJSON bool // write JSON compatible with uast-viewer
 
 	NewDriver  func() driver.BaseDriver
 	Transforms driver.Transforms
@@ -55,6 +57,12 @@ func (s *Suite) readFixturesFile(t testing.TB, name string) string {
 func (s *Suite) writeFixturesFile(t testing.TB, name string, data string) {
 	err := ioutil.WriteFile(filepath.Join(s.Path, name), []byte(data), 0644)
 	require.NoError(t, err)
+}
+
+func (s *Suite) writeViewerJSON(t testing.TB, name string, code string, ast nodes.Node) {
+	data, err := viewer.MarshalUAST(s.Lang, code, ast)
+	require.NoError(t, err)
+	s.writeFixturesFile(t, name+".json", string(data))
 }
 
 func (s *Suite) deleteFixturesFile(name string) {
@@ -215,6 +223,9 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 				s.deleteFixturesFile(name + suffix + suf + gotSuffix)
 			}
 			require.Equal(t, exp, got)
+			if s.WriteViewerJSON {
+				s.writeViewerJSON(t, name+suffix+suf, code, ua)
+			}
 		})
 	}
 }
