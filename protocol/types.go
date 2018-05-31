@@ -205,18 +205,25 @@ type SupportedLanguagesResponse struct {
 // DriverDetails is the installed driver exported data
 //proteus:generate
 type DriverDetails struct {
-	Name     string `json:"name"`
-	Language string `json:"language"`
-	Version  string `json:"version"`
-	Status   string `json:"status"`
+	Name     string   `json:"name"`
+	Language string   `json:"language"`
+	Version  string   `json:"version"`
+	Status   string   `json:"status"`
+	Features []string `json:"features"`
 }
 
 // NewDriverDetails returns a DriverDetails from a Manifest
 func NewDriverDetails(manifest *manifest.Manifest) DriverDetails {
+	features := make([]string, len(manifest.Features))
+	for i, feature := range manifest.Features {
+		features[i] = string(feature)
+	}
+
 	return DriverDetails{
 		Name:     manifest.Name,
 		Language: manifest.Language,
 		Version:  manifest.Version,
 		Status:   string(manifest.Status),
+		Features: features,
 	}
 }
