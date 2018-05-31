@@ -106,7 +106,7 @@ func (n ObjectToNode) Mapping() Mapping {
 	if len(normPos.fields) != 0 {
 		norm.SetField(uast.KeyPos, UASTType(uast.Positions{}, normPos))
 	}
-	return ASTMap("ObjectToNode",
+	return Map(
 		Part("other", ast),
 		Part("other", norm),
 	)

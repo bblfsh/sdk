@@ -72,7 +72,7 @@ var mappingCases = []struct {
 			},
 		},
 		m: Mappings(
-			Map("test",
+			Map(
 				Part("_", Obj{
 					"pred": Var("x"),
 				}),
@@ -80,11 +80,11 @@ var mappingCases = []struct {
 					"p": Var("x"),
 				}),
 			),
-			MapAST("typed", Obj{
+			MapAST("typed", MapObj(Obj{
 				"k": Var("x"),
 			}, Obj{
 				"key": Var("x"),
-			}, 10),
+			}), 10),
 		),
 		exp: un.Array{
 			un.Object{
@@ -115,7 +115,7 @@ var mappingCases = []struct {
 				"pred":    un.String("val2"),
 			},
 		},
-		m: AnnotateIfNoRoles("typed", 10),
+		m: Mappings(AnnotateIfNoRoles("typed", 10)),
 		exp: un.Array{
 			un.Object{
 				u.KeyType:  un.String("typed"),

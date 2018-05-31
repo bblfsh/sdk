@@ -458,7 +458,7 @@ func TestOps(t *testing.T) {
 			if c.skip {
 				t.SkipNow()
 			}
-			m := Map("test", c.src, c.dst)
+			m := Map(c.src, c.dst)
 
 			do := func(m Mapping, er *errors.Kind, inpf, expf func() un.Node) bool {
 				inp := inpf()
@@ -480,14 +480,14 @@ func TestOps(t *testing.T) {
 				return
 			}
 			// test reverse transformation
-			do(m.Reverse(), nil, c.exp, c.inp)
+			do(Reverse(m), nil, c.exp, c.inp)
 
 			// test identity transform (forward)
-			m = Map("test", c.src, c.src)
+			m = Identity(c.src)
 			do(m, nil, c.inp, c.inp)
 
 			// test identity transform (reverse)
-			m = Map("test", c.dst, c.dst)
+			m = Identity(c.dst)
 			do(m, nil, c.exp, c.exp)
 		})
 	}

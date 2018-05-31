@@ -29,7 +29,7 @@ func filtered(format string, args ...interface{}) (bool, error) {
 
 // Is checks if the current node to a given node. It can be a value, array or an object.
 // Reversal clones the provided value into the tree.
-func Is(o interface{}) Op {
+func Is(o interface{}) MappingOp {
 	if n, ok := o.(nodes.Node); ok || o == nil {
 		return opIs{n: n}
 	}
@@ -42,6 +42,10 @@ func Is(o interface{}) Op {
 
 type opIs struct {
 	n nodes.Node
+}
+
+func (op opIs) Mapping() (src, dst Op) {
+	return op, op
 }
 
 func (op opIs) Kinds() nodes.Kind {
@@ -61,13 +65,17 @@ func (op opIs) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 
 // Var stores current node as a value to a named variable in the shared state.
 // Reversal replaces current node with the one from named variable. Variables can store subtrees.
-func Var(name string) Op {
+func Var(name string) MappingOp {
 	return opVar{name: name, kinds: nodes.KindsAny}
 }
 
 type opVar struct {
 	name  string
 	kinds nodes.Kind
+}
+
+func (op opVar) Mapping() (src, dst Op) {
+	return op, op
 }
 
 func (op opVar) Kinds() nodes.Kind {
@@ -287,6 +295,57 @@ func (arr ByFieldName) Swap(i, j int) {
 	arr[i], arr[j] = arr[j], arr[i]
 }
 
+func Scope(name string, m Mapping) Mapping {
+	src, dst := m.Mapping()
+	return Map(OpScope(name, src), OpScope(name, dst))
+}
+
+func ObjScope(name string, m ObjMapping) ObjMapping {
+	src, dst := m.ObjMapping()
+	return MapObj(ObjOpScope(name, src), ObjOpScope(name, dst))
+}
+
+func OpScope(name string, op Op) Op {
+	return opScope{name: name, op: op}
+}
+
+func ObjOpScope(name string, op ObjectOp) ObjectOp {
+	obj := op.Object()
+	obj.scope = name
+	return obj
+}
+
+type opScope struct {
+	name string
+	op   Op
+}
+
+func (op opScope) Kinds() nodes.Kind {
+	return op.op.Kinds()
+}
+
+func (op opScope) Check(st *State, n nodes.Node) (bool, error) {
+	sub := NewState()
+	if ok, err := op.op.Check(sub, n); err != nil || !ok {
+		return false, err
+	}
+	if err := st.SetStateVar(op.name, []*State{sub}); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (op opScope) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	sts, ok := st.GetStateVar(op.name)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.name)
+	} else if len(sts) != 1 {
+		return nil, fmt.Errorf("expected one state var, got %d", len(sts))
+	}
+	sub := sts[0]
+	return op.op.Construct(sub, n)
+}
+
 // Field is an operation on a specific field of an object.
 type Field struct {
 	Name string // name of the field
@@ -304,6 +363,7 @@ type Field struct {
 // Implementation will track a list of unprocessed object keys and will return an
 // error in case the field was not used. To preserve all unprocessed keys use Part.
 type Object struct {
+	scope  string
 	fields []Field
 	set    map[string]struct{}
 	other  string // preserve other fields
@@ -369,7 +429,16 @@ func (o *Object) setFields(fields ...Field) error {
 // descriptions. If Pre was used, all unknown fields will be saved and restored to a new object on Construct.
 //
 // For information on optional fields see Field documentation.
-func (o Object) Check(st *State, n nodes.Node) (bool, error) {
+func (o Object) Check(st *State, n nodes.Node) (_ bool, gerr error) {
+	parent := st
+	if o.scope != "" {
+		st = NewState()
+	}
+	defer func() {
+		if gerr == nil && o.scope != "" {
+			gerr = parent.SetStateVar(o.scope, []*State{st})
+		}
+	}()
 	cur, ok := n.(nodes.Object)
 	if !ok {
 		if errorOnFilterCheck {
@@ -427,6 +496,15 @@ func (o Object) Construct(st *State, old nodes.Node) (nodes.Node, error) {
 	if err := noNode(old); err != nil {
 		return nil, err
 	}
+	if o.scope != "" {
+		sts, ok := st.GetStateVar(o.scope)
+		if !ok {
+			return nil, ErrVariableNotDefined.New(o.scope)
+		} else if len(sts) != 1 {
+			return nil, fmt.Errorf("expected one state var, got %d", len(sts))
+		}
+		st = sts[0]
+	}
 	obj := make(nodes.Object, len(o.fields))
 	for _, f := range o.fields {
 		if f.Optional != "" {
@@ -470,18 +548,34 @@ func (o Object) Construct(st *State, old nodes.Node) (nodes.Node, error) {
 }
 
 // String asserts that value equals a specific string value.
-func String(val string) Op {
+func String(val string) MappingOp {
 	return Is(nodes.String(val))
 }
 
 // Int asserts that value equals a specific integer value.
-func Int(val int) Op {
+func Int(val int) MappingOp {
 	return Is(nodes.Int(val))
 }
 
 // Bool asserts that value equals a specific boolean value.
-func Bool(val bool) Op {
+func Bool(val bool) MappingOp {
 	return Is(nodes.Bool(val))
+}
+
+var _ ObjMapping = ObjMap{}
+
+type ObjMap map[string]Mapping
+
+func (m ObjMap) Mapping() (src, dst Op) {
+	return m.ObjMapping()
+}
+
+func (m ObjMap) ObjMapping() (src, dst Object) {
+	so, do := make(Obj, len(m)), make(Obj, len(m))
+	for k, f := range m {
+		so[k], do[k] = f.Mapping()
+	}
+	return so.Object(), do.Object()
 }
 
 // TypedObj is a shorthand for an object with a specific type

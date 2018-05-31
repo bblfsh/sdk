@@ -108,25 +108,64 @@ func (f TransformObjFunc) Do(n nodes.Node) (nodes.Node, error) {
 // Map creates a two-way mapping between two transform operations.
 // The first operation will be used to check constraints for each node and store state, while the second one will use
 // the state to construct a new tree.
-func Map(name string, src, dst Op) Mapping {
-	return Mapping{name: name, src: src, dst: dst}
+func Map(src, dst Op) Mapping {
+	return mapping{src: src, dst: dst}
 }
 
-var _ Transformer = Mapping{}
+func MapObj(src, dst ObjectOp) ObjMapping {
+	return objMapping{src: src.Object(), dst: dst.Object()}
+}
 
-// Mapping is a set of transformation steps executed in order.
-type Mapping struct {
-	name     string
+func MapPart(vr string, m ObjMapping) ObjMapping {
+	src, dst := m.ObjMapping()
+	return MapObj(Part(vr, src), Part(vr, dst))
+}
+
+func Identity(op Op) Mapping {
+	return Map(op, op)
+}
+
+type Mapping interface {
+	Mapping() (src, dst Op)
+}
+
+type ObjMapping interface {
+	Mapping
+	ObjMapping() (src, dst Object)
+}
+
+type MappingOp interface {
+	Op
+	Mapping
+}
+
+type mapping struct {
 	src, dst Op
 }
 
-// Reverse changes a transformation direction, allowing to construct the source tree.
-func (m Mapping) Reverse() Mapping {
-	m.src, m.dst = m.dst, m.src
-	return m
+func (m mapping) Mapping() (src, dst Op) {
+	return m.src, m.dst
 }
 
-func (m Mapping) apply(root nodes.Node) (nodes.Node, error) {
+type objMapping struct {
+	src, dst Object
+}
+
+func (m objMapping) Mapping() (src, dst Op) {
+	return m.src, m.dst
+}
+
+func (m objMapping) ObjMapping() (src, dst Object) {
+	return m.src, m.dst
+}
+
+// Reverse changes a transformation direction, allowing to construct the source tree.
+func Reverse(m Mapping) Mapping {
+	src, dst := m.Mapping()
+	return Map(dst, src)
+}
+
+func (m mapping) apply(root nodes.Node) (nodes.Node, error) {
 	src, dst := m.src, m.dst
 	var errs []error
 	_, objOp := src.(ObjectOp)
@@ -165,21 +204,10 @@ func (m Mapping) apply(root nodes.Node) (nodes.Node, error) {
 	return root, err
 }
 
-// Do will traverse the whole tree and will apply transformation steps for each node.
-func (m Mapping) Do(n nodes.Node) (nodes.Node, error) {
-	nn, err := m.apply(n)
-	if err != nil {
-		return n, errMapping.Wrap(err, m.name)
-	}
-	return nn, nil
-}
-
 // Mappings takes multiple mappings and optimizes the process of applying them as a single transformation.
 func Mappings(maps ...Mapping) Transformer {
 	if len(maps) == 0 {
 		return mappings{}
-	} else if len(maps) == 1 {
-		return maps[0]
 	}
 	mp := mappings{
 		all:    maps,
@@ -201,14 +229,8 @@ type mappings struct {
 }
 
 func (m *mappings) index() {
-	precompile := func(op Op) Op {
-		// TODO: recurse somehow
-		if oop, ok := op.(ObjectOp); ok {
-			if _, ok := op.(Object); !ok {
-				return oop.Object()
-			}
-		}
-		return op
+	precompile := func(m Mapping) Mapping {
+		return Map(m.Mapping())
 	}
 	type ordered struct {
 		ind int
@@ -218,9 +240,9 @@ func (m *mappings) index() {
 	typed := make(map[string][]ordered)
 	for i, mp := range m.all {
 		// pre-compile object operations (sort fields for unordered ops, etc)
-		mp.src, mp.dst = precompile(mp.src), precompile(mp.dst)
+		mp = precompile(mp)
 
-		oop := mp.src
+		oop, _ := mp.Mapping()
 		if chk, ok := oop.(opCheck); ok {
 			oop = chk.op
 		}
@@ -280,7 +302,7 @@ func (m mappings) Do(root nodes.Node) (nodes.Node, error) {
 		n := old
 		applied := false
 		for _, mp := range maps {
-			src, dst := mp.src, mp.dst
+			src, dst := mp.Mapping()
 			st.Reset()
 			if ok, err := src.Check(st, n); err != nil {
 				errs = append(errs, errCheck.Wrap(err))
@@ -289,6 +311,7 @@ func (m mappings) Do(root nodes.Node) (nodes.Node, error) {
 				continue
 			}
 			applied = true
+
 			nn, err := dst.Construct(st, nil)
 			if err != nil {
 				errs = append(errs, errConstruct.Wrap(err))

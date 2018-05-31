@@ -19,33 +19,36 @@ func UASTType(uobj interface{}, op ObjectOp) ObjectOp {
 	return obj
 }
 
-func MapSemantic(name, nativeType string, semType interface{}, pos map[string]string, src, dst ObjectOp) Mapping {
-	utyp := uast.TypeOf(semType)
-	if strings.HasPrefix(name, " ") {
-		name = nativeType + " -> " + utyp + name
-	} else if name == "" {
-		name = nativeType + " -> " + utyp
-	}
-	so, do := src.Object(), dst.Object()
+func RemapPos(m ObjMapping, names map[string]string) ObjMapping {
+	so, do := m.ObjMapping() // TODO: clone?
 
 	sp := UASTType(uast.Positions{}, Obj{
-		uast.KeyStart: Var("start"),
-		uast.KeyEnd:   Var("end"),
+		uast.KeyStart: Var(uast.KeyStart),
+		uast.KeyEnd:   Var(uast.KeyEnd),
 	}).Object()
 	dp := UASTType(uast.Positions{}, Obj{
-		uast.KeyStart: Var("start"),
-		uast.KeyEnd:   Var("end"),
+		uast.KeyStart: Var(uast.KeyStart),
+		uast.KeyEnd:   Var(uast.KeyEnd),
 	}).Object()
-	for k, v := range pos {
+	for k, v := range names {
 		sp.SetField(k, Var(v))
-		if v != "start" && v != "end" {
+		if v != uast.KeyStart && v != uast.KeyEnd {
 			dp.SetField(k, Var(v))
 		}
 	}
-	so.SetField(uast.KeyType, String(nativeType))
 	so.SetField(uast.KeyPos, sp)
 	do.SetField(uast.KeyPos, dp)
-	return Map(name, so, UASTType(semType, do))
+	return MapObj(so, do)
+}
+
+func MapSemantic(nativeType string, semType interface{}, m ObjMapping) ObjMapping {
+	return MapSemanticPos(nativeType, semType, nil, m)
+}
+
+func MapSemanticPos(nativeType string, semType interface{}, pos map[string]string, m ObjMapping) ObjMapping {
+	so, do := m.ObjMapping() // TODO: clone?
+	so.SetField(uast.KeyType, String(nativeType))
+	return RemapPos(MapObj(so, UASTType(semType, do)), pos)
 }
 
 func CommentText(tokens [2]string, vr string) Op {
