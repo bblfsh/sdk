@@ -255,15 +255,15 @@ func (m *mappings) index() {
 		case ObjectOp:
 			specific := false
 			fields, _ := op.Fields()
-			if req, ok := fields[uast.KeyType]; ok && req {
-				// FIXME: fix the type matcher, or replace with field match
-				//if is, ok := f.Op.(opIs); ok {
-				//	if typ, ok := is.n.(nodes.String); ok {
-				//		s := string(typ)
-				//		typed[s] = append(typed[s], ordered{ind: i, mp: mp})
-				//		specific = true
-				//	}
-				//}
+			if f, ok := fields[uast.KeyType]; ok && !f.Optional {
+				if f.Fixed != nil {
+					typ := *f.Fixed
+					if typ, ok := typ.(nodes.String); ok {
+						s := string(typ)
+						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
+						specific = true
+					}
+				}
 			}
 			if !specific {
 				typedAny = append(typedAny, ordered{ind: i, mp: mp})

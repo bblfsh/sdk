@@ -183,12 +183,17 @@ func (Obj) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-func (o Obj) Fields() (map[string]bool, bool) {
-	required := make(map[string]bool, len(o))
-	for k := range o {
-		required[k] = true
+func (o Obj) Fields() (FieldDescs, bool) {
+	fields := make(FieldDescs, len(o))
+	for k, v := range o {
+		f := FieldDesc{Optional: false}
+		if is, ok := v.(opIs); ok {
+			n := is.n
+			f.Fixed = &n
+		}
+		fields[k] = f
 	}
-	return required, true
+	return fields, true
 }
 
 // Object converts this helper to a full Object description.
@@ -221,13 +226,20 @@ func (o Obj) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
 	return o.fields().ConstructObj(st, n)
 }
 
+type FieldDesc struct {
+	Optional bool        // field might not exists in the object
+	Fixed    *nodes.Node // field is require to have a fixed value
+}
+
+type FieldDescs map[string]FieldDesc
+
 // ObjectOp is an operation that is executed on an object. See Object.
 type ObjectOp interface {
 	Op
 	// Fields returns a map of field names that will be processed by this operation.
 	// The flag if the map indicates if the field is required.
 	// False bool value returned as a second argument indicates that implementation will process all fields.
-	Fields() (required map[string]bool, ok bool)
+	Fields() (FieldDescs, bool)
 
 	CheckObj(st *State, n nodes.Object) (bool, error)
 	ConstructObj(st *State, n nodes.Object) (nodes.Object, error)
@@ -245,7 +257,7 @@ func Part(vr string, o ObjectOp) ObjectOp {
 
 type opPartialObj struct {
 	vr   string
-	used map[string]bool // fields that will be used by child operation
+	used FieldDescs // fields that will be used by child operation
 	op   ObjectOp
 }
 
@@ -253,7 +265,7 @@ func (op opPartialObj) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-func (op opPartialObj) Fields() (map[string]bool, bool) {
+func (op opPartialObj) Fields() (FieldDescs, bool) {
 	return nil, false
 }
 
@@ -339,7 +351,7 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 		partial ObjectOp
 		out     []processedOp
 	)
-	required := make(map[string]bool)
+	required := make(FieldDescs)
 	for _, s := range ops {
 		if j, ok := s.(opObjJoin); ok {
 			if j.partial != nil {
@@ -381,22 +393,25 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 
 type processedOp struct {
 	op     ObjectOp
-	fields map[string]bool
+	fields FieldDescs
 }
 
 type opObjJoin struct {
 	ops       []processedOp
 	partial   ObjectOp
-	allFields map[string]bool
+	allFields FieldDescs
 }
 
 func (op opObjJoin) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-func (op opObjJoin) Fields() (map[string]bool, bool) {
-	// TODO: clone the map?
-	return op.allFields, op.partial == nil
+func (op opObjJoin) Fields() (FieldDescs, bool) {
+	fields := make(FieldDescs, len(op.allFields))
+	for k, v := range op.allFields {
+		fields[k] = v
+	}
+	return fields, op.partial == nil
 }
 
 func (op opObjJoin) Check(st *State, n nodes.Node) (bool, error) {
@@ -523,7 +538,7 @@ func (op opObjScope) Kinds() nodes.Kind {
 	return op.op.Kinds()
 }
 
-func (op opObjScope) Fields() (map[string]bool, bool) {
+func (op opObjScope) Fields() (FieldDescs, bool) {
 	return op.op.Fields()
 }
 
@@ -612,6 +627,8 @@ type Field struct {
 	Op       Op // operation used to check/construct the field value
 }
 
+var _ ObjectOp = Fields{}
+
 // Fields verifies that current node is an object and checks its fields with a
 // defined operations. If field does not exist, object will be skipped.
 // Reversal changes node type to object and creates all fields with a specified
@@ -624,12 +641,17 @@ func (Fields) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-func (o Fields) Fields() (map[string]bool, bool) {
-	required := make(map[string]bool, len(o))
+func (o Fields) Fields() (FieldDescs, bool) {
+	fields := make(FieldDescs, len(o))
 	for _, f := range o {
-		required[f.Name] = f.Optional == ""
+		fld := FieldDesc{Optional: f.Optional != ""}
+		if is, ok := f.Op.(opIs); ok {
+			n := is.n
+			fld.Fixed = &n
+		}
+		fields[f.Name] = fld
 	}
-	return required, true
+	return fields, true
 }
 
 // Check will verify that a node is an object and that fields matches a defined set of rules.
