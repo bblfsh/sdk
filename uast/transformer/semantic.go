@@ -17,6 +17,10 @@ func UASTType(uobj interface{}, op ObjectOp) ObjectOp {
 	return JoinObj(Obj{uast.KeyType: String(utyp)}, op)
 }
 
+func UASTTypePart(vr string, uobj interface{}, op ObjectOp) ObjectOp {
+	return Part(vr, UASTType(uobj, op))
+}
+
 func RemapPos(m ObjMapping, names map[string]string) ObjMapping {
 	so, do := m.ObjMapping() // TODO: clone?
 
