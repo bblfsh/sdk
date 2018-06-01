@@ -341,8 +341,21 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 	)
 	required := make(map[string]bool)
 	for _, s := range ops {
-		if _, ok := s.(opObjJoin); ok {
-			// FIXME: merge joins
+		if j, ok := s.(opObjJoin); ok {
+			if j.partial != nil {
+				if partial != nil {
+					panic("only one partial transform is allowed")
+				}
+				partial = j.partial
+			}
+			for k, req := range j.allFields {
+				if _, ok := required[k]; ok {
+					panic(ErrDuplicateField.New(k))
+				}
+				required[k] = req
+			}
+			out = append(out, j.ops...)
+			continue
 		}
 		fields, ok := s.Fields()
 		if !ok {
