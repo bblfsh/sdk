@@ -361,8 +361,11 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 				partial = j.partial
 			}
 			for k, req := range j.allFields {
-				if _, ok := required[k]; ok {
-					panic(ErrDuplicateField.New(k))
+				if req2, ok := required[k]; ok {
+					// only allow this if values are fixed and equal
+					if req.Fixed == nil || req2.Fixed == nil || !nodes.Equal(*req.Fixed, *req2.Fixed) {
+						panic(ErrDuplicateField.New(k))
+					}
 				}
 				required[k] = req
 			}
@@ -441,11 +444,12 @@ func (op opObjJoin) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 }
 
 func (op opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
+	src := n
 	n = n.CloneObject()
 	for _, s := range op.ops {
 		sub := make(nodes.Object, len(s.fields))
 		for k := range s.fields {
-			if v, ok := n[k]; ok {
+			if v, ok := src[k]; ok {
 				sub[k] = v
 				delete(n, k)
 			}
@@ -473,7 +477,7 @@ func (op opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, error
 			return nil, err
 		}
 		for k, v := range np {
-			if _, ok := n[k]; ok {
+			if v2, ok := n[k]; ok && !nodes.Equal(v, v2) {
 				return nil, ErrDuplicateField.New(k)
 			}
 			n[k] = v
@@ -485,7 +489,7 @@ func (op opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, error
 			return nil, err
 		}
 		for k, v := range n2 {
-			if _, ok := n[k]; ok {
+			if v2, ok := n[k]; ok && !nodes.Equal(v, v2) {
 				return nil, ErrDuplicateField.New(k)
 			} else if _, ok = s.fields[k]; !ok {
 				return nil, fmt.Errorf("undeclared field was set: %v", k)
