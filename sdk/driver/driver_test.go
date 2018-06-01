@@ -1,9 +1,11 @@
 package driver
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v1/manifest"
 	"gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v1/uast"
 
@@ -140,24 +142,55 @@ func TestDriverParserVersion(t *testing.T) {
 	require.Equal(v.Build.String(), "2015-10-21 04:29:00 +0000 UTC")
 }
 
-func TestDriverManifest(t *testing.T) {
+func TestDriverSupportedLanguages(t *testing.T) {
 	require := require.New(t)
 
-	manifestfeatures := []manifest.Feature{manifest.AST, manifest.UAST}
-	expectedFeatures := []string{string(manifest.AST), string(manifest.UAST)}
+	manifestDir, manifestPath, err := prepareFixtureManifest()
+	if manifestDir != "" {
+		defer os.RemoveAll(manifestDir)
+	}
+	require.NoError(err)
 
-	manifest := manifest.Manifest{
-		Name:     "Foo",
-		Language: "foo",
-		Version:  "v0.1",
-		Status:   manifest.Alpha,
-		Features: manifestfeatures,
+	expectedVersion := "42"
+	ManifestLocation = manifestPath
+	d, err := NewDriver(&uast.ObjectToNode{}, nil)
+	d.m.Version = expectedVersion
+	require.NotNil(d)
+	require.NoError(err)
+
+	supportedLanguagesResp := d.SupportedLanguages(&protocol.SupportedLanguagesRequest{})
+	require.Len(supportedLanguagesResp.Errors, 0)
+	require.Len(supportedLanguagesResp.Languages, 1)
+	expectedDriverDetails := protocol.DriverManifest{
+		Name:     "Fixture",
+		Language: "fixture",
+		Version:  expectedVersion,
+		Status:   "beta",
+		Features: []string{"ast", "uast"},
+	}
+	require.Equal(expectedDriverDetails, supportedLanguagesResp.Languages[0])
+	require.Equal(protocol.Ok, supportedLanguagesResp.Status)
+}
+
+func prepareFixtureManifest() (dirPath string, manifestPath string, err error) {
+
+	driverManifestFixture := `
+name = "Fixture"
+language = "fixture"
+status = "beta"
+features = ["ast", "uast"]
+`[1:]
+
+	dirPath, err = ioutil.TempDir("", "fixture-driver")
+	if err != nil {
+		return "", "", err
 	}
 
-	details := protocol.NewDriverManifest(&manifest)
-	require.Equal(manifest.Name, details.Name)
-	require.Equal(manifest.Language, details.Language)
-	require.Equal(manifest.Version, details.Version)
-	require.Equal(string(manifest.Status), details.Status)
-	require.Equal(expectedFeatures, details.Features)
+	manifestPath = filepath.Join(dirPath, "manifest.Filename")
+	err = ioutil.WriteFile(manifestPath, []byte(driverManifestFixture), 0666)
+	if err != nil {
+		return dirPath, "", err
+	}
+
+	return dirPath, manifestPath, nil
 }
