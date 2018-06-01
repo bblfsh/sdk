@@ -60,35 +60,35 @@ type ObjectToNode struct {
 // Mapping construct a transformation from ObjectToNode definition.
 func (n ObjectToNode) Mapping() Mapping {
 	var (
-		ast Object
+		ast = make(Obj)
 		// ->
-		norm, normPos Object
+		norm, normPos = make(Obj), make(Obj)
 	)
 
 	if n.InternalTypeKey != "" {
 		const vr = "itype"
-		ast.SetField(n.InternalTypeKey, Var(vr))
-		norm.SetField(uast.KeyType, Var(vr))
+		ast[n.InternalTypeKey] = Var(vr)
+		norm[uast.KeyType] = Var(vr)
 	}
 
 	if n.OffsetKey != "" {
 		const vr = "pos_off_start"
-		ast.SetField(n.OffsetKey, Var(vr))
-		normPos.SetField(uast.KeyStart, SavePosOffset(vr))
+		ast[n.OffsetKey] = Var(vr)
+		normPos[uast.KeyStart] = SavePosOffset(vr)
 	}
 	if n.EndOffsetKey != "" {
 		const vr = "pos_off_end"
-		ast.SetField(n.EndOffsetKey, Var(vr))
-		normPos.SetField(uast.KeyEnd, SavePosOffset(vr))
+		ast[n.EndOffsetKey] = Var(vr)
+		normPos[uast.KeyEnd] = SavePosOffset(vr)
 	}
 	if n.LineKey != "" && n.ColumnKey != "" {
 		const (
 			vrl = "pos_line_start"
 			vrc = "pos_col_start"
 		)
-		ast.SetField(n.LineKey, Var(vrl))
-		ast.SetField(n.ColumnKey, Var(vrc))
-		normPos.SetField(uast.KeyStart, SavePosLineCol(vrl, vrc))
+		ast[n.LineKey] = Var(vrl)
+		ast[n.ColumnKey] = Var(vrc)
+		normPos[uast.KeyStart] = SavePosLineCol(vrl, vrc)
 	} else if (n.LineKey != "" && n.ColumnKey == "") || (n.LineKey == "" && n.ColumnKey != "") {
 		panic("both LineKey and ColumnKey should either be set or not")
 	}
@@ -97,19 +97,16 @@ func (n ObjectToNode) Mapping() Mapping {
 			vrl = "pos_line_end"
 			vrc = "pos_col_end"
 		)
-		ast.SetField(n.EndLineKey, Var(vrl))
-		ast.SetField(n.EndColumnKey, Var(vrc))
-		normPos.SetField(uast.KeyEnd, SavePosLineCol(vrl, vrc))
+		ast[n.EndLineKey] = Var(vrl)
+		ast[n.EndColumnKey] = Var(vrc)
+		normPos[uast.KeyEnd] = SavePosLineCol(vrl, vrc)
 	} else if (n.EndLineKey != "" && n.EndColumnKey == "") || (n.EndLineKey == "" && n.EndColumnKey != "") {
 		panic("both EndLineKey and EndColumnKey should either be set or not")
 	}
-	if len(normPos.fields) != 0 {
-		norm.SetField(uast.KeyPos, UASTType(uast.Positions{}, normPos))
+	if len(normPos) != 0 {
+		norm[uast.KeyPos] = UASTType(uast.Positions{}, normPos)
 	}
-	return Map(
-		Part("other", ast),
-		Part("other", norm),
-	)
+	return MapPart("other", MapObj(ast, norm))
 }
 
 // RolesDedup is an irreversible transformation that removes duplicate roles from AST nodes.

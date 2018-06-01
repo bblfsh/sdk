@@ -70,15 +70,17 @@ func RolesFieldOp(vr string, op ArrayOp, roles ...role.Role) Field {
 
 // ASTObjectLeft construct a native AST shape for a given type name.
 func ASTObjectLeft(typ string, ast ObjectOp) ObjectOp {
-	a := ast.Object()
-	if _, ok := a.GetField(uast.KeyRoles); ok {
+	if fields, ok := ast.Fields(); !ok {
+		panic("unexpected partial transform")
+	} else if _, ok := fields[uast.KeyRoles]; ok {
 		panic("unexpected roles filed")
 	}
+	var obj Fields
 	if typ != "" {
-		a.SetField(uast.KeyType, String(typ))
+		obj = append(obj, Field{Name: uast.KeyType, Op: String(typ)})
 	}
-	a.SetFieldObj(RolesField(typ + "_roles"))
-	return Part("_", a)
+	obj = append(obj, RolesField(typ+"_roles"))
+	return Part("_", JoinObj(ast, obj))
 }
 
 // ASTObjectRight constructs an annotated native AST shape with specific roles.
@@ -91,12 +93,14 @@ type RolesByType func(typ string) role.Roles
 
 // ASTObjectRightCustom is like ASTObjectRight but allow to specify additional roles for each type.
 func ASTObjectRightCustom(typ string, norm ObjectOp, fnc RolesByType, rop ArrayOp, roles ...role.Role) ObjectOp {
-	b := norm.Object()
-	if _, ok := b.GetField(uast.KeyRoles); ok {
+	if fields, ok := norm.Fields(); !ok {
+		panic("unexpected partial transform")
+	} else if _, ok := fields[uast.KeyRoles]; ok {
 		panic("unexpected roles field")
 	}
+	var obj Fields
 	if typ != "" {
-		b.SetField(uast.KeyType, String(typ)) // TODO: "<lang>:" namespace
+		obj = append(obj, Field{Name: uast.KeyType, Op: String(typ)}) // TODO: "<lang>:" namespace
 	}
 	// it merges 3 slices:
 	// 1) roles saved from left side (if any)
@@ -108,8 +112,8 @@ func ASTObjectRightCustom(typ string, norm ObjectOp, fnc RolesByType, rop ArrayO
 			roles = append(roles, static...)
 		}
 	}
-	b.SetFieldObj(RolesFieldOp(typ+"_roles", rop, roles...))
-	return Part("_", b)
+	obj = append(obj, RolesFieldOp(typ+"_roles", rop, roles...))
+	return Part("_", JoinObj(norm, obj))
 }
 
 // ObjectRoles creates a shape that adds additional roles to an object.
@@ -126,13 +130,11 @@ func ObjectRolesCustom(vr string, obj ObjectOp, roles ...role.Role) Op {
 
 // ObjectRolesCustomOp is like ObjectRolesCustom but allows to apecify a custom roles lookup.
 func ObjectRolesCustomOp(vr string, obj ObjectOp, rop ArrayOp, roles ...role.Role) Op {
-	f := RolesFieldOp(vr+"_roles", rop, roles...)
+	f := Fields{RolesFieldOp(vr+"_roles", rop, roles...)}
 	if obj == nil {
-		obj = Fields{f}
+		obj = f
 	} else {
-		o := obj.Object()
-		o.SetFieldObj(f)
-		obj = o
+		obj = JoinObj(obj, f)
 	}
 	return Part(vr, obj)
 }
@@ -242,7 +244,7 @@ type ObjRoles map[string][]role.Role
 func (o ObjRoles) Mapping() (src, dst Op) {
 	return o.ObjMapping()
 }
-func (o ObjRoles) ObjMapping() (src, dst Object) {
+func (o ObjRoles) ObjMapping() (src, dst ObjectOp) {
 	m := make(FieldRoles, len(o))
 	for name, roles := range o {
 		m[name] = FieldRole{Opt: true, Roles: roles}
@@ -294,10 +296,8 @@ func (f FieldRole) build(name, pref string) (names [2]string, ops [2]Op, _ error
 	if f.Sub != nil {
 		lo, ro := ObjScope(pref, f.Sub).ObjMapping()
 		if len(f.Roles) != 0 {
-			lf, rf := lo.Object(), ro.Object()
-			lf.SetFieldObj(RolesField(vr))
-			rf.SetFieldObj(RolesField(vr, f.Roles...))
-			lo, ro = lf, rf
+			lo = JoinObj(lo, Fields{RolesField(vr)})
+			ro = JoinObj(ro, Fields{RolesField(vr, f.Roles...)})
 		}
 		pvr := vr + "m"
 		l, r = Part(pvr, lo), Part(pvr, ro)
@@ -345,7 +345,7 @@ type FieldRoles map[string]FieldRole
 func (f FieldRoles) Mapping() (src, dst Op) {
 	return f.ObjMapping()
 }
-func (f FieldRoles) ObjMapping() (src, dst Object) {
+func (f FieldRoles) ObjMapping() (src, dst ObjectOp) {
 	l := make(Obj, len(f))
 	r := make(Obj, len(f))
 	for name, fld := range f {
@@ -360,7 +360,7 @@ func (f FieldRoles) ObjMapping() (src, dst Object) {
 			r[names[1]] = ops[1]
 		}
 	}
-	return l.Object(), r.Object()
+	return l, r
 }
 
 // AnnotateTypeCustom is like AnnotateType but allows to specify custom roles operation as well as a mapper function.

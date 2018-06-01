@@ -240,7 +240,7 @@ var opCases = []struct {
 		src: Obj{
 			"t": Var("typ"),
 		},
-		dst: Pre(Fields{
+		dst: JoinObj(Fields{
 			{Name: "t", Op: Var("typ")},
 		}, Obj{
 			"v2": Append(LookupOpVar("typ", map[un.Value]Op{

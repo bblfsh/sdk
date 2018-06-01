@@ -14,9 +14,7 @@ func UASTType(uobj interface{}, op ObjectOp) ObjectOp {
 	if utyp == "" {
 		panic(fmt.Errorf("type is not registered: %T", uobj))
 	}
-	obj := op.Object()
-	obj.SetField(uast.KeyType, String(utyp))
-	return obj
+	return JoinObj(Obj{uast.KeyType: String(utyp)}, op)
 }
 
 func RemapPos(m ObjMapping, names map[string]string) ObjMapping {
@@ -25,20 +23,25 @@ func RemapPos(m ObjMapping, names map[string]string) ObjMapping {
 	sp := UASTType(uast.Positions{}, Obj{
 		uast.KeyStart: Var(uast.KeyStart),
 		uast.KeyEnd:   Var(uast.KeyEnd),
-	}).Object()
+	})
 	dp := UASTType(uast.Positions{}, Obj{
 		uast.KeyStart: Var(uast.KeyStart),
 		uast.KeyEnd:   Var(uast.KeyEnd),
-	}).Object()
-	for k, v := range names {
-		sp.SetField(k, Var(v))
-		if v != uast.KeyStart && v != uast.KeyEnd {
-			dp.SetField(k, Var(v))
+	})
+	if len(names) != 0 {
+		sa, da := make(Obj), make(Obj)
+		for k, v := range names {
+			sa[k] = Var(v)
+			if v != uast.KeyStart && v != uast.KeyEnd {
+				da[k] = Var(v)
+			}
 		}
+		sp, dp = JoinObj(sp, sa), JoinObj(dp, da)
 	}
-	so.SetField(uast.KeyPos, sp)
-	do.SetField(uast.KeyPos, dp)
-	return MapObj(so, do)
+	return MapObj(
+		JoinObj(so, Obj{uast.KeyPos: sp}),
+		JoinObj(do, Obj{uast.KeyPos: dp}),
+	)
 }
 
 func MapSemantic(nativeType string, semType interface{}, m ObjMapping) ObjMapping {
@@ -47,7 +50,7 @@ func MapSemantic(nativeType string, semType interface{}, m ObjMapping) ObjMappin
 
 func MapSemanticPos(nativeType string, semType interface{}, pos map[string]string, m ObjMapping) ObjMapping {
 	so, do := m.ObjMapping() // TODO: clone?
-	so.SetField(uast.KeyType, String(nativeType))
+	so = JoinObj(Obj{uast.KeyType: String(nativeType)}, so)
 	return RemapPos(MapObj(so, UASTType(semType, do)), pos)
 }
 

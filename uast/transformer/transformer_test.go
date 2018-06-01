@@ -80,7 +80,7 @@ var mappingCases = []struct {
 					"p": Var("x"),
 				}),
 			),
-			MapAST("typed", MapObj(Obj{
+			AnnotateType("typed", MapObj(Obj{
 				"k": Var("x"),
 			}, Obj{
 				"key": Var("x"),

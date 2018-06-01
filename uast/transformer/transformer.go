@@ -113,7 +113,7 @@ func Map(src, dst Op) Mapping {
 }
 
 func MapObj(src, dst ObjectOp) ObjMapping {
-	return objMapping{src: src.Object(), dst: dst.Object()}
+	return objMapping{src: src, dst: dst}
 }
 
 func MapPart(vr string, m ObjMapping) ObjMapping {
@@ -131,7 +131,7 @@ type Mapping interface {
 
 type ObjMapping interface {
 	Mapping
-	ObjMapping() (src, dst Object)
+	ObjMapping() (src, dst ObjectOp)
 }
 
 type MappingOp interface {
@@ -148,14 +148,14 @@ func (m mapping) Mapping() (src, dst Op) {
 }
 
 type objMapping struct {
-	src, dst Object
+	src, dst ObjectOp
 }
 
 func (m objMapping) Mapping() (src, dst Op) {
 	return m.src, m.dst
 }
 
-func (m objMapping) ObjMapping() (src, dst Object) {
+func (m objMapping) ObjMapping() (src, dst ObjectOp) {
 	return m.src, m.dst
 }
 
@@ -254,14 +254,16 @@ func (m *mappings) index() {
 		switch op := oop.(type) {
 		case ObjectOp:
 			specific := false
-			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
-				if is, ok := f.Op.(opIs); ok {
-					if typ, ok := is.n.(nodes.String); ok {
-						s := string(typ)
-						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
-						specific = true
-					}
-				}
+			fields, _ := op.Fields()
+			if req, ok := fields[uast.KeyType]; ok && req {
+				// FIXME: fix the type matcher, or replace with field match
+				//if is, ok := f.Op.(opIs); ok {
+				//	if typ, ok := is.n.(nodes.String); ok {
+				//		s := string(typ)
+				//		typed[s] = append(typed[s], ordered{ind: i, mp: mp})
+				//		specific = true
+				//	}
+				//}
 			}
 			if !specific {
 				typedAny = append(typedAny, ordered{ind: i, mp: mp})

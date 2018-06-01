@@ -183,101 +183,289 @@ func (Obj) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
+func (o Obj) Fields() (map[string]bool, bool) {
+	required := make(map[string]bool, len(o))
+	for k := range o {
+		required[k] = true
+	}
+	return required, true
+}
+
 // Object converts this helper to a full Object description.
-func (o Obj) Object() Object {
-	obj := Object{
-		set:    make(map[string]struct{}, len(o)),
-		fields: make(Fields, 0, len(o)),
-	}
+func (o Obj) fields() Fields {
+	fields := make(Fields, 0, len(o))
 	for k, op := range o {
-		obj.set[k] = struct{}{}
-		obj.fields = append(obj.fields, Field{Name: k, Op: op})
+		fields = append(fields, Field{Name: k, Op: op})
 	}
-	sort.Sort(ByFieldName(obj.fields))
-	return obj
+	sort.Sort(ByFieldName(fields))
+	return fields
 }
 
 // Check will make an Object operation from this helper and call Check on it.
 func (o Obj) Check(st *State, n nodes.Node) (bool, error) {
-	return o.Object().Check(st, n)
+	return o.fields().Check(st, n)
 }
 
 // Construct will make an Object operation from this helper and call Construct on it.
 func (o Obj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	return o.Object().Construct(st, n)
+	return o.fields().Construct(st, n)
+}
+
+// CheckObj will make an Object operation from this helper and call Check on it.
+func (o Obj) CheckObj(st *State, n nodes.Object) (bool, error) {
+	return o.fields().CheckObj(st, n)
+}
+
+// ConstructObj will make an Object operation from this helper and call Construct on it.
+func (o Obj) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+	return o.fields().ConstructObj(st, n)
 }
 
 // ObjectOp is an operation that is executed on an object. See Object.
 type ObjectOp interface {
 	Op
-	Object() Object
+	// Fields returns a map of field names that will be processed by this operation.
+	// The flag if the map indicates if the field is required.
+	// False bool value returned as a second argument indicates that implementation will process all fields.
+	Fields() (required map[string]bool, ok bool)
+
+	CheckObj(st *State, n nodes.Object) (bool, error)
+	ConstructObj(st *State, n nodes.Object) (nodes.Object, error)
 }
 
 // Part defines a partial transformation of an object.
 // All unused fields will be stored into variable with a specified name.
 func Part(vr string, o ObjectOp) ObjectOp {
-	obj := o.Object()
-	obj.other = vr
-	return obj
-}
-
-// Pre will execute provided field operation before executing the rest of operations for an object.
-func Pre(fields Fields, o ObjectOp) ObjectOp {
-	obj := o.Object()
-	if err := obj.setFields(fields...); err != nil {
-		panic(err)
+	used, ok := o.Fields()
+	if !ok {
+		panic("partial transform on an object with unknown fields")
 	}
-	arr := make([]Field, len(fields)+len(obj.fields))
-
-	i := copy(arr, fields)
-	copy(arr[i:], obj.fields)
-
-	obj.fields = arr
-	return obj
+	return opPartialObj{vr: vr, used: used, op: o}
 }
 
-// Post will execute provided field operation after executing the rest of operations for an object.
-func Post(o ObjectOp, fields Fields) ObjectOp {
-	obj := o.Object()
-	if err := obj.setFields(fields...); err != nil {
-		panic(err)
-	}
-	arr := make([]Field, len(fields)+len(obj.fields))
-
-	i := copy(arr, obj.fields)
-	copy(arr[i:], fields)
-
-	obj.fields = arr
-	return obj
+type opPartialObj struct {
+	vr   string
+	used map[string]bool // fields that will be used by child operation
+	op   ObjectOp
 }
 
-var _ ObjectOp = Fields{}
-
-// Fields is a helper for multiple operations on object fields with a specific execution order. See Object.
-type Fields []Field
-
-func (Fields) Kinds() nodes.Kind {
+func (op opPartialObj) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-// Object converts this helper to a full Object description.
-func (o Fields) Object() Object {
-	obj := Object{fields: o, set: make(map[string]struct{})}
-	err := obj.setFields(obj.fields...)
-	if err != nil {
-		panic(err)
+func (op opPartialObj) Fields() (map[string]bool, bool) {
+	return nil, false
+}
+
+func (op opPartialObj) Check(st *State, n nodes.Node) (bool, error) {
+	cur, ok := n.(nodes.Object)
+	if !ok {
+		if errorOnFilterCheck {
+			return filtered("%+v is not an object\n%+v", n, op)
+		}
+		return false, nil
 	}
-	return obj
+	return op.CheckObj(st, cur)
 }
 
-// Check will make an Object operation from this helper and call Check on it.
-func (o Fields) Check(st *State, n nodes.Node) (bool, error) {
-	return o.Object().Check(st, n)
+// CheckObj will save all unknown fields and restore them to a new object on ConstructObj.
+func (op opPartialObj) CheckObj(st *State, n nodes.Object) (bool, error) {
+	// TODO: consider throwing an error if a transform is defined as partial, but in fact it's not
+	other := n.CloneObject()
+	n = make(nodes.Object)
+	for k := range op.used {
+		if _, ok := other[k]; ok {
+			n[k] = other[k]
+			delete(other, k)
+		}
+	}
+	if err := st.SetVar(op.vr, other); err != nil {
+		return false, err
+	}
+	return op.op.CheckObj(st, n)
 }
 
-// Construct will make an Object operation from this helper and call Construct on it.
-func (o Fields) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	return o.Object().Construct(st, n)
+func (op opPartialObj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	obj, ok := n.(nodes.Object)
+	if !ok {
+		if n != nil {
+			return nil, ErrExpectedObject.New(n)
+		}
+		obj = make(nodes.Object)
+	}
+	obj, err := op.ConstructObj(st, obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+// ConstructObj it will run a child operation and will also restore all unhandled fields.
+func (op opPartialObj) ConstructObj(st *State, obj nodes.Object) (nodes.Object, error) {
+	if obj == nil {
+		obj = make(nodes.Object)
+	}
+	obj, err := op.op.ConstructObj(st, obj)
+	if err != nil {
+		return nil, err
+	}
+	v, err := st.MustGetVar(op.vr)
+	if err != nil {
+		return nil, err
+	}
+	other, ok := v.(nodes.Object)
+	if !ok {
+		return nil, ErrExpectedObject.New(v)
+	}
+	for k, v := range other {
+		if v2, ok := obj[k]; ok {
+			return nil, fmt.Errorf("trying to overwrite already set field with partial object data: %q: %v = %v",
+				k, v2, v)
+		}
+		obj[k] = v
+	}
+	return obj, nil
+}
+
+// JoinObj will execute all object operations on a specific object in a sequence.
+func JoinObj(ops ...ObjectOp) ObjectOp {
+	if len(ops) == 0 {
+		return Obj{}
+	} else if len(ops) == 1 {
+		return ops[0]
+	}
+	// make sure that there is no field collision and allow only one partial
+	var (
+		partial ObjectOp
+		out     []processedOp
+	)
+	required := make(map[string]bool)
+	for _, s := range ops {
+		if _, ok := s.(opObjJoin); ok {
+			// FIXME: merge joins
+		}
+		fields, ok := s.Fields()
+		if !ok {
+			if partial != nil {
+				panic("only one partial transform is allowed")
+			}
+			partial = s
+			continue
+		}
+		for k, req := range fields {
+			if _, ok := required[k]; ok {
+				panic(ErrDuplicateField.New(k))
+			}
+			required[k] = req
+		}
+		out = append(out, processedOp{op: s, fields: fields})
+	}
+	if partial != nil {
+		required = nil
+	}
+	return opObjJoin{ops: out, partial: partial, allFields: required}
+}
+
+type processedOp struct {
+	op     ObjectOp
+	fields map[string]bool
+}
+
+type opObjJoin struct {
+	ops       []processedOp
+	partial   ObjectOp
+	allFields map[string]bool
+}
+
+func (op opObjJoin) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
+
+func (op opObjJoin) Fields() (map[string]bool, bool) {
+	// TODO: clone the map?
+	return op.allFields, op.partial == nil
+}
+
+func (op opObjJoin) Check(st *State, n nodes.Node) (bool, error) {
+	cur, ok := n.(nodes.Object)
+	if !ok {
+		if errorOnFilterCheck {
+			return filtered("%+v is not an object\n%+v", n, op)
+		}
+		return false, nil
+	}
+	return op.CheckObj(st, cur)
+}
+
+func (op opObjJoin) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	obj, ok := n.(nodes.Object)
+	if !ok {
+		if n != nil {
+			return nil, ErrExpectedObject.New(n)
+		}
+		obj = make(nodes.Object)
+	}
+	obj, err := op.ConstructObj(st, obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func (op opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
+	n = n.CloneObject()
+	for _, s := range op.ops {
+		sub := make(nodes.Object, len(s.fields))
+		for k := range s.fields {
+			if v, ok := n[k]; ok {
+				sub[k] = v
+				delete(n, k)
+			}
+		}
+		if ok, err := s.op.CheckObj(st, sub); err != nil || !ok {
+			return false, err
+		}
+	}
+	if op.partial != nil {
+		if ok, err := op.partial.CheckObj(st, n); err != nil || !ok {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (op opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+	if n == nil {
+		n = make(nodes.Object)
+	}
+	// make sure that ops won't overwrite fields
+	if op.partial != nil {
+		np, err := op.partial.ConstructObj(st, make(nodes.Object))
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range np {
+			if _, ok := n[k]; ok {
+				return nil, ErrDuplicateField.New(k)
+			}
+			n[k] = v
+		}
+	}
+	for _, s := range op.ops {
+		n2, err := s.op.ConstructObj(st, make(nodes.Object))
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range n2 {
+			if _, ok := n[k]; ok {
+				return nil, ErrDuplicateField.New(k)
+			} else if _, ok = s.fields[k]; !ok {
+				return nil, fmt.Errorf("undeclared field was set: %v", k)
+			}
+			n[k] = v
+		}
+	}
+	return n, nil
 }
 
 // ByFieldName will sort fields descriptions by their names.
@@ -310,9 +498,64 @@ func OpScope(name string, op Op) Op {
 }
 
 func ObjOpScope(name string, op ObjectOp) ObjectOp {
-	obj := op.Object()
-	obj.scope = name
-	return obj
+	return opObjScope{name: name, op: op}
+}
+
+type opObjScope struct {
+	name string
+	op   ObjectOp
+}
+
+func (op opObjScope) Kinds() nodes.Kind {
+	return op.op.Kinds()
+}
+
+func (op opObjScope) Fields() (map[string]bool, bool) {
+	return op.op.Fields()
+}
+
+func (op opObjScope) Check(st *State, n nodes.Node) (bool, error) {
+	sub := NewState()
+	if ok, err := op.op.Check(sub, n); err != nil || !ok {
+		return false, err
+	}
+	if err := st.SetStateVar(op.name, []*State{sub}); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (op opObjScope) CheckObj(st *State, n nodes.Object) (bool, error) {
+	sub := NewState()
+	if ok, err := op.op.CheckObj(sub, n); err != nil || !ok {
+		return false, err
+	}
+	if err := st.SetStateVar(op.name, []*State{sub}); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (op opObjScope) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	sts, ok := st.GetStateVar(op.name)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.name)
+	} else if len(sts) != 1 {
+		return nil, fmt.Errorf("expected one state var, got %d", len(sts))
+	}
+	sub := sts[0]
+	return op.op.Construct(sub, n)
+}
+
+func (op opObjScope) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+	sts, ok := st.GetStateVar(op.name)
+	if !ok {
+		return nil, ErrVariableNotDefined.New(op.name)
+	} else if len(sts) != 1 {
+		return nil, fmt.Errorf("expected one state var, got %d", len(sts))
+	}
+	sub := sts[0]
+	return op.op.ConstructObj(sub, n)
 }
 
 type opScope struct {
@@ -356,71 +599,24 @@ type Field struct {
 	Op       Op // operation used to check/construct the field value
 }
 
-// Object verifies that current node is an object and checks its fields with a
+// Fields verifies that current node is an object and checks its fields with a
 // defined operations. If field does not exist, object will be skipped.
 // Reversal changes node type to object and creates all fields with a specified
 // operations.
 // Implementation will track a list of unprocessed object keys and will return an
 // error in case the field was not used. To preserve all unprocessed keys use Part.
-type Object struct {
-	scope  string
-	fields []Field
-	set    map[string]struct{}
-	other  string // preserve other fields
-}
+type Fields []Field
 
-func (Object) Kinds() nodes.Kind {
+func (Fields) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-// Object returns the same object description.
-func (o Object) Object() Object {
-	return o
-}
-
-// GetField returns a field description by it's name.
-func (o Object) GetField(k string) (Field, bool) {
-	if _, ok := o.set[k]; !ok {
-		return Field{}, false
+func (o Fields) Fields() (map[string]bool, bool) {
+	required := make(map[string]bool, len(o))
+	for _, f := range o {
+		required[f.Name] = f.Optional == ""
 	}
-	for _, f := range o.fields {
-		if f.Name == k {
-			return f, true
-		}
-	}
-	return Field{}, false
-}
-
-// SetField sets an operation for a named field. For more options, see SetFieldObj.
-func (o *Object) SetField(k string, v Op) {
-	o.SetFieldObj(Field{Name: k, Op: v})
-}
-
-// SetFieldObj sets a field to a specified description.
-// It will override an existing field with the same name if it exists.
-func (o *Object) SetFieldObj(f2 Field) {
-	if _, ok := o.set[f2.Name]; ok {
-		for i, f := range o.fields {
-			if f.Name == f2.Name {
-				o.fields[i] = f2
-				return
-			}
-		}
-	}
-	if o.set == nil {
-		o.set = make(map[string]struct{})
-	}
-	o.set[f2.Name] = struct{}{}
-	o.fields = append(o.fields, f2)
-}
-func (o *Object) setFields(fields ...Field) error {
-	for _, f := range fields {
-		if _, ok := o.set[f.Name]; ok {
-			return ErrDuplicateField.New(f.Name)
-		}
-		o.set[f.Name] = struct{}{}
-	}
-	return nil
+	return required, true
 }
 
 // Check will verify that a node is an object and that fields matches a defined set of rules.
@@ -429,16 +625,7 @@ func (o *Object) setFields(fields ...Field) error {
 // descriptions. If Pre was used, all unknown fields will be saved and restored to a new object on Construct.
 //
 // For information on optional fields see Field documentation.
-func (o Object) Check(st *State, n nodes.Node) (_ bool, gerr error) {
-	parent := st
-	if o.scope != "" {
-		st = NewState()
-	}
-	defer func() {
-		if gerr == nil && o.scope != "" {
-			gerr = parent.SetStateVar(o.scope, []*State{st})
-		}
-	}()
+func (o Fields) Check(st *State, n nodes.Node) (_ bool, gerr error) {
 	cur, ok := n.(nodes.Object)
 	if !ok {
 		if errorOnFilterCheck {
@@ -446,17 +633,27 @@ func (o Object) Check(st *State, n nodes.Node) (_ bool, gerr error) {
 		}
 		return false, nil
 	}
-	for _, f := range o.fields {
-		n, ok := cur[f.Name]
+	return o.CheckObj(st, cur)
+}
+
+// Check will verify that a node is an object and that fields matches a defined set of rules.
+//
+// If Part transform was not used, this operation will also ensure that all fields in the object are covered by field
+// descriptions.
+//
+// For information on optional fields see Field documentation.
+func (o Fields) CheckObj(st *State, n nodes.Object) (bool, error) {
+	for _, f := range o {
+		n, ok := n[f.Name]
 		if f.Optional != "" {
 			if err := st.SetVar(f.Optional, nodes.Bool(ok)); err != nil {
 				return false, errKey.Wrap(err, f.Name)
 			}
-		}
-		if !ok {
-			if f.Optional != "" {
+			if !ok {
 				continue
 			}
+		}
+		if !ok {
 			if errorOnFilterCheck {
 				return filtered("field %+v is missing in %+v\n%+v", f, n, o)
 			}
@@ -469,44 +666,40 @@ func (o Object) Check(st *State, n nodes.Node) (_ bool, gerr error) {
 			return false, nil
 		}
 	}
-	if o.other == "" { // do not save unused fields
-		if !allowUnusedFields {
-			for k := range cur {
-				if _, ok := o.set[k]; !ok {
-					return false, ErrUnusedField.New(k)
-				}
+	if !allowUnusedFields {
+		set, _ := o.Fields() // TODO: optimize
+		for k := range n {
+			if _, ok := set[k]; !ok {
+				return false, ErrUnusedField.New(k)
 			}
 		}
-		return true, nil
 	}
-	// TODO: consider throwing an error if a transform is defined as partial, but in fact it's not
-	left := make(nodes.Object)
-	for k, v := range cur {
-		if _, ok := o.set[k]; !ok {
-			left[k] = v
-		}
-	}
-	err := st.SetVar(o.other, left)
-	return err == nil, err
+	return true, nil
 }
 
 // Construct will create a new object and will populate it's fields according to field descriptions.
 // If Part was used, it will also restore all unhandled fields.
-func (o Object) Construct(st *State, old nodes.Node) (nodes.Node, error) {
-	if err := noNode(old); err != nil {
+func (o Fields) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	obj, ok := n.(nodes.Object)
+	if !ok {
+		if n != nil {
+			return nil, ErrExpectedObject.New(n)
+		}
+		obj = make(nodes.Object)
+	}
+	obj, err := o.ConstructObj(st, obj)
+	if err != nil {
 		return nil, err
 	}
-	if o.scope != "" {
-		sts, ok := st.GetStateVar(o.scope)
-		if !ok {
-			return nil, ErrVariableNotDefined.New(o.scope)
-		} else if len(sts) != 1 {
-			return nil, fmt.Errorf("expected one state var, got %d", len(sts))
-		}
-		st = sts[0]
+	return obj, nil
+}
+
+// ConstructObj will create a new object and will populate it's fields according to field descriptions.
+func (o Fields) ConstructObj(st *State, obj nodes.Object) (nodes.Object, error) {
+	if obj == nil {
+		obj = make(nodes.Object, len(o))
 	}
-	obj := make(nodes.Object, len(o.fields))
-	for _, f := range o.fields {
+	for _, f := range o {
 		if f.Optional != "" {
 			on, err := st.MustGetVar(f.Optional)
 			if err != nil {
@@ -525,24 +718,6 @@ func (o Object) Construct(st *State, old nodes.Node) (nodes.Node, error) {
 			return obj, errKey.Wrap(err, f.Name)
 		}
 		obj[f.Name] = v
-	}
-	if o.other == "" {
-		return obj, nil
-	}
-	v, err := st.MustGetVar(o.other)
-	if err != nil {
-		return obj, err
-	}
-	left, ok := v.(nodes.Object)
-	if !ok {
-		return obj, ErrExpectedObject.New(v)
-	}
-	for k, v := range left {
-		if v2, ok := obj[k]; ok {
-			return nil, fmt.Errorf("trying to overwrite already set field with partial pbject data: %q: %v = %v",
-				k, v2, v)
-		}
-		obj[k] = v
 	}
 	return obj, nil
 }
@@ -570,12 +745,12 @@ func (m ObjMap) Mapping() (src, dst Op) {
 	return m.ObjMapping()
 }
 
-func (m ObjMap) ObjMapping() (src, dst Object) {
+func (m ObjMap) ObjMapping() (src, dst ObjectOp) {
 	so, do := make(Obj, len(m)), make(Obj, len(m))
 	for k, f := range m {
 		so[k], do[k] = f.Mapping()
 	}
-	return so.Object(), do.Object()
+	return so, do
 }
 
 // TypedObj is a shorthand for an object with a specific type
@@ -814,6 +989,55 @@ func (op opLookupArrOp) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 		return nil, err
 	}
 	return sub.Construct(st, n)
+}
+
+// PrependOne prepends a single element to an array.
+func PrependOne(first Op, arr Op) Op {
+	return prependOne{first: first, tail: arr}
+}
+
+type prependOne struct {
+	first, tail Op
+}
+
+func (prependOne) Kinds() nodes.Kind {
+	return nodes.KindArray
+}
+
+func (op prependOne) Check(st *State, n nodes.Node) (bool, error) {
+	arr, ok := n.(nodes.Array)
+	if !ok {
+		return false, nil
+	} else if len(arr) < 1 {
+		return false, nil
+	}
+	first, tail := arr[0], arr[1:]
+	if ok, err := op.first.Check(st, first); err != nil || !ok {
+		return false, err
+	}
+	if ok, err := op.tail.Check(st, tail); err != nil || !ok {
+		return false, err
+	}
+	return true, nil
+}
+
+func (op prependOne) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	first, err := op.first.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	tail, err := op.tail.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	arr, ok := tail.(nodes.Array)
+	if !ok {
+		return nil, ErrExpectedList.New(tail)
+	}
+	out := make(nodes.Array, 0, len(arr)+1)
+	out = append(out, first)
+	out = append(out, arr...)
+	return out, nil
 }
 
 // Append is like AppendArr but allows to set more complex first operation.
@@ -1203,6 +1427,54 @@ func (op opOptional) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 		return nil, nil
 	}
 	return op.op.Construct(st, n)
+}
+
+// SetFields will use an operation to construct an object and add provided fields.
+func SetFields(obj Op, fields nodes.Object) Op {
+	return setFields{obj: obj, fields: fields}
+}
+
+type setFields struct {
+	obj    Op
+	fields nodes.Object
+}
+
+func (setFields) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
+
+func (op setFields) Check(st *State, n nodes.Node) (bool, error) {
+	obj, ok := n.(nodes.Object)
+	if !ok {
+		return false, nil
+	}
+	obj = obj.CloneObject()
+	for k, v := range op.fields {
+		if v2, ok := obj[k]; !ok || !nodes.Equal(v, v2) {
+			return false, nil
+		}
+		delete(obj, k)
+	}
+	return op.obj.Check(st, obj)
+}
+
+func (op setFields) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	nd, err := op.obj.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	obj, ok := nd.(nodes.Object)
+	if !ok {
+		return nil, ErrExpectedObject.New(nd)
+	}
+	obj = obj.CloneObject()
+	for k, v := range op.fields {
+		if _, ok := obj[k]; ok {
+			return nil, fmt.Errorf("trying to overwrite field %q", k)
+		}
+		obj[k] = v
+	}
+	return obj, nil
 }
 
 // Check tests first check-only operation before applying the main op. It won't use the check-only argument for Construct.
