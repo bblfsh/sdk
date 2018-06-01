@@ -10,8 +10,8 @@ option (gogoproto.protosizer_all) = true;
 option (gogoproto.sizer_all) = false;
 option go_package = "protocol";
 
-// DriverDetails is the installed driver exported data
-message DriverDetails {
+// DriverManifest is the installed driver exported data
+message DriverManifest {
 	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
 	string name = 1;
@@ -81,7 +81,7 @@ message SupportedLanguagesResponse {
 	gopkg.in.bblfsh.sdk.v1.protocol.Status status = 1;
 	repeated string errors = 2;
 	google.protobuf.Duration elapsed = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-	repeated gopkg.in.bblfsh.sdk.v1.protocol.DriverDetails drivers = 4 [(gogoproto.nullable) = false];
+	repeated gopkg.in.bblfsh.sdk.v1.protocol.DriverManifest languages = 4 [(gogoproto.nullable) = false];
 }
 
 // VersionRequest is a request to get server version

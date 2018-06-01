@@ -157,8 +157,8 @@ func (d *Driver) Version(req *protocol.VersionRequest) *protocol.VersionResponse
 // SupportedLanguages handles a SupportedLanguagesRequest including information from the manifest.
 func (d *Driver) SupportedLanguages(req *protocol.SupportedLanguagesRequest) *protocol.SupportedLanguagesResponse {
 	return &protocol.SupportedLanguagesResponse{
-		Drivers: []protocol.DriverDetails{
-			protocol.NewDriverDetails(d.m),
+		Languages: []protocol.DriverManifest{
+			protocol.NewDriverManifest(d.m),
 		},
 	}
 }

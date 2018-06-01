@@ -198,13 +198,13 @@ type SupportedLanguagesRequest struct{}
 //proteus:generate
 type SupportedLanguagesResponse struct {
 	Response
-	// Drivers are the loaded drivers
-	Drivers []DriverDetails `json:"drivers"`
+	// Languages contains the details of the supported languages
+	Languages []DriverManifest `json:"drivers"`
 }
 
-// DriverDetails is the installed driver exported data
+// DriverManifest is the installed driver exported data
 //proteus:generate
-type DriverDetails struct {
+type DriverManifest struct {
 	Name     string   `json:"name"`
 	Language string   `json:"language"`
 	Version  string   `json:"version"`
@@ -212,14 +212,14 @@ type DriverDetails struct {
 	Features []string `json:"features"`
 }
 
-// NewDriverDetails returns a DriverDetails from a Manifest
-func NewDriverDetails(manifest *manifest.Manifest) DriverDetails {
+// NewDriverManifest returns a DriverManifest from a Manifest
+func NewDriverManifest(manifest *manifest.Manifest) DriverManifest {
 	features := make([]string, len(manifest.Features))
 	for i, feature := range manifest.Features {
 		features[i] = string(feature)
 	}
 
-	return DriverDetails{
+	return DriverManifest{
 		Name:     manifest.Name,
 		Language: manifest.Language,
 		Version:  manifest.Version,

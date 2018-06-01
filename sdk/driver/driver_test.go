@@ -140,7 +140,7 @@ func TestDriverParserVersion(t *testing.T) {
 	require.Equal(v.Build.String(), "2015-10-21 04:29:00 +0000 UTC")
 }
 
-func TestDriverDetails(t *testing.T) {
+func TestDriverManifest(t *testing.T) {
 	require := require.New(t)
 
 	manifestfeatures := []manifest.Feature{manifest.AST, manifest.UAST}
@@ -154,7 +154,7 @@ func TestDriverDetails(t *testing.T) {
 		Features: manifestfeatures,
 	}
 
-	details := protocol.NewDriverDetails(&manifest)
+	details := protocol.NewDriverManifest(&manifest)
 	require.Equal(manifest.Name, details.Name)
 	require.Equal(manifest.Language, details.Language)
 	require.Equal(manifest.Version, details.Version)
