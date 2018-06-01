@@ -118,6 +118,14 @@ func MapObj(src, dst ObjectOp) ObjMapping {
 
 func MapPart(vr string, m ObjMapping) ObjMapping {
 	src, dst := m.ObjMapping()
+	_, sok := src.Fields()
+	_, dok := dst.Fields()
+	if !sok && !dok {
+		// both contain partial op, ignore current label
+		return MapObj(src, dst)
+	} else if sok != dok {
+		panic("inconsistent use of Part")
+	}
 	return MapObj(Part(vr, src), Part(vr, dst))
 }
 

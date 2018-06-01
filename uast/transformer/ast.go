@@ -300,7 +300,8 @@ func (f FieldRole) build(name, pref string) (names [2]string, ops [2]Op, _ error
 			ro = JoinObj(ro, Fields{RolesField(vr, f.Roles...)})
 		}
 		pvr := vr + "m"
-		l, r = Part(pvr, lo), Part(pvr, ro)
+		// this helper performs an additional checkto see if it already contains Part
+		l, r = MapPart(pvr, MapObj(lo, ro)).ObjMapping()
 		if f.Arr {
 			lvr := vr + "list"
 			l, r = Each(lvr, l), Each(lvr, r)

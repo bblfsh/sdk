@@ -175,6 +175,18 @@ func (op opSeq) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 
 var _ ObjectOp = Obj{}
 
+var _ ObjectOps = Objs{}
+
+type Objs []Obj
+
+func (o Objs) ObjectOps() []ObjectOp {
+	l := make([]ObjectOp, 0, len(o))
+	for _, s := range o {
+		l = append(l, s)
+	}
+	return l
+}
+
 // Obj is a helper for defining a transformation on an object fields. See Object.
 // Operations will be sorted by the field name before execution.
 type Obj map[string]Op
@@ -233,6 +245,17 @@ type FieldDesc struct {
 
 type FieldDescs map[string]FieldDesc
 
+func (f FieldDescs) Clone() FieldDescs {
+	if f == nil {
+		return nil
+	}
+	fields := make(FieldDescs, len(f))
+	for k, v := range f {
+		fields[k] = v
+	}
+	return fields
+}
+
 // ObjectOp is an operation that is executed on an object. See Object.
 type ObjectOp interface {
 	Op
@@ -243,6 +266,44 @@ type ObjectOp interface {
 
 	CheckObj(st *State, n nodes.Object) (bool, error)
 	ConstructObj(st *State, n nodes.Object) (nodes.Object, error)
+}
+
+type ObjectOps interface {
+	ObjectOps() []ObjectOp
+}
+
+var _ ObjectOps = Objects{}
+
+type Objects []ObjectOp
+
+func (o Objects) ObjectOps() []ObjectOp {
+	return o
+}
+
+func checkObj(op ObjectOp, st *State, n nodes.Node) (bool, error) {
+	cur, ok := n.(nodes.Object)
+	if !ok {
+		if errorOnFilterCheck {
+			return filtered("%+v is not an object\n%+v", n, op)
+		}
+		return false, nil
+	}
+	return op.CheckObj(st, cur)
+}
+
+func constructObj(op ObjectOp, st *State, n nodes.Node) (nodes.Node, error) {
+	obj, ok := n.(nodes.Object)
+	if !ok {
+		if n != nil {
+			return nil, ErrExpectedObject.New(n)
+		}
+		obj = make(nodes.Object)
+	}
+	obj, err := op.ConstructObj(st, obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 // Part defines a partial transformation of an object.
@@ -270,14 +331,7 @@ func (op opPartialObj) Fields() (FieldDescs, bool) {
 }
 
 func (op opPartialObj) Check(st *State, n nodes.Node) (bool, error) {
-	cur, ok := n.(nodes.Object)
-	if !ok {
-		if errorOnFilterCheck {
-			return filtered("%+v is not an object\n%+v", n, op)
-		}
-		return false, nil
-	}
-	return op.CheckObj(st, cur)
+	return checkObj(op, st, n)
 }
 
 // CheckObj will save all unknown fields and restore them to a new object on ConstructObj.
@@ -298,18 +352,7 @@ func (op opPartialObj) CheckObj(st *State, n nodes.Object) (bool, error) {
 }
 
 func (op opPartialObj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	obj, ok := n.(nodes.Object)
-	if !ok {
-		if n != nil {
-			return nil, ErrExpectedObject.New(n)
-		}
-		obj = make(nodes.Object)
-	}
-	obj, err := op.ConstructObj(st, obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
+	return constructObj(op, st, n)
 }
 
 // ConstructObj it will run a child operation and will also restore all unhandled fields.
@@ -410,37 +453,15 @@ func (op opObjJoin) Kinds() nodes.Kind {
 }
 
 func (op opObjJoin) Fields() (FieldDescs, bool) {
-	fields := make(FieldDescs, len(op.allFields))
-	for k, v := range op.allFields {
-		fields[k] = v
-	}
-	return fields, op.partial == nil
+	return op.allFields.Clone(), op.partial == nil
 }
 
 func (op opObjJoin) Check(st *State, n nodes.Node) (bool, error) {
-	cur, ok := n.(nodes.Object)
-	if !ok {
-		if errorOnFilterCheck {
-			return filtered("%+v is not an object\n%+v", n, op)
-		}
-		return false, nil
-	}
-	return op.CheckObj(st, cur)
+	return checkObj(op, st, n)
 }
 
 func (op opObjJoin) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	obj, ok := n.(nodes.Object)
-	if !ok {
-		if n != nil {
-			return nil, ErrExpectedObject.New(n)
-		}
-		obj = make(nodes.Object)
-	}
-	obj, err := op.ConstructObj(st, obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
+	return constructObj(op, st, n)
 }
 
 func (op opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
@@ -665,14 +686,7 @@ func (o Fields) Fields() (FieldDescs, bool) {
 //
 // For information on optional fields see Field documentation.
 func (o Fields) Check(st *State, n nodes.Node) (_ bool, gerr error) {
-	cur, ok := n.(nodes.Object)
-	if !ok {
-		if errorOnFilterCheck {
-			return filtered("%+v is not an object\n%+v", n, o)
-		}
-		return false, nil
-	}
-	return o.CheckObj(st, cur)
+	return checkObj(o, st, n)
 }
 
 // Check will verify that a node is an object and that fields matches a defined set of rules.
@@ -719,18 +733,7 @@ func (o Fields) CheckObj(st *State, n nodes.Object) (bool, error) {
 // Construct will create a new object and will populate it's fields according to field descriptions.
 // If Part was used, it will also restore all unhandled fields.
 func (o Fields) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	obj, ok := n.(nodes.Object)
-	if !ok {
-		if n != nil {
-			return nil, ErrExpectedObject.New(n)
-		}
-		obj = make(nodes.Object)
-	}
-	obj, err := o.ConstructObj(st, obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
+	return constructObj(o, st, n)
 }
 
 // ConstructObj will create a new object and will populate it's fields according to field descriptions.
@@ -1706,4 +1709,149 @@ func (op opIn) Check(st *State, n nodes.Node) (bool, error) {
 	}
 	_, ok = op.m[v]
 	return ok, nil
+}
+
+func Cases(vr string, cases ...Op) Op {
+	return opCases{vr: vr, cases: cases}
+}
+
+func CasesObj(vr string, common ObjectOp, cases ObjectOps) ObjectOp {
+	list := cases.ObjectOps()
+	if len(list) == 0 {
+		panic("no cases")
+	}
+	var fields FieldDescs
+	for i, c := range list {
+		// do not allow partial or optional - it might indicate a mistake
+		arr, ok := c.Fields()
+		if !ok {
+			panic("partial transforms are not allowed in Cases")
+		}
+		for _, f := range arr {
+			if f.Optional {
+				panic("optional fields are not allowed in Cases")
+			}
+		}
+		if i == 0 {
+			// use as a baseline wipe all specific constraints (might differ in cases)
+			fields = make(FieldDescs, len(arr))
+			for k := range arr {
+				fields[k] = FieldDesc{Optional: false}
+			}
+			continue
+		}
+		// check that all other cases mention the case set of fields
+		if len(arr) != len(fields) {
+			panic("all cases should have the same number of fields")
+		}
+		for k := range arr {
+			if _, ok := fields[k]; !ok {
+				panic(fmt.Errorf("field %s does not exists in case %d", k, i))
+			}
+		}
+	}
+	var op ObjectOp = opObjCases{vr: vr, cases: list, fields: fields}
+	if common != nil {
+		op = JoinObj(common, op)
+	}
+	return op
+}
+
+type opCases struct {
+	vr    string
+	cases []Op
+}
+
+func (op opCases) Kinds() nodes.Kind {
+	var k nodes.Kind
+	for _, s := range op.cases {
+		k |= s.Kinds()
+	}
+	return k
+}
+
+func (op opCases) Check(st *State, n nodes.Node) (bool, error) {
+	// find the first cases that matches and write an index to a variable
+	for i, s := range op.cases {
+		ls := st.Clone()
+		if ok, err := s.Check(ls, n); err != nil {
+			return false, err
+		} else if ok {
+			st.ApplyFrom(ls)
+			if err = st.SetVar(op.vr, nodes.Int(i)); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (op opCases) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	// use the variable to decide what branch to take
+	v, err := st.MustGetVar(op.vr)
+	if err != nil {
+		return nil, err
+	}
+	i, ok := v.(nodes.Int)
+	if !ok || i < 0 || int(i) >= len(op.cases) {
+		return nil, ErrUnexpectedValue.New(v)
+	}
+	return op.cases[i].Construct(st, n)
+}
+
+type opObjCases struct {
+	vr     string
+	fields FieldDescs
+	cases  []ObjectOp
+}
+
+func (op opObjCases) Fields() (FieldDescs, bool) {
+	return op.fields.Clone(), true
+}
+
+func (op opObjCases) Kinds() nodes.Kind {
+	var k nodes.Kind
+	for _, s := range op.cases {
+		k |= s.Kinds()
+	}
+	return k
+}
+
+func (op opObjCases) Check(st *State, n nodes.Node) (bool, error) {
+	return checkObj(op, st, n)
+}
+
+func (op opObjCases) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	return constructObj(op, st, n)
+}
+
+func (op opObjCases) CheckObj(st *State, n nodes.Object) (bool, error) {
+	// find the first cases that matches and write an index to a variable
+	for i, s := range op.cases {
+		ls := st.Clone()
+		if ok, err := s.CheckObj(ls, n); err != nil {
+			return false, err
+		} else if ok {
+			st.ApplyFrom(ls)
+			if err = st.SetVar(op.vr, nodes.Int(i)); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (op opObjCases) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+	// use the variable to decide what branch to take
+	v, err := st.MustGetVar(op.vr)
+	if err != nil {
+		return nil, err
+	}
+	i, ok := v.(nodes.Int)
+	if !ok || i < 0 || int(i) >= len(op.cases) {
+		return nil, ErrUnexpectedValue.New(v)
+	}
+	return op.cases[i].ConstructObj(st, n)
 }
