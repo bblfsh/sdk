@@ -9,19 +9,50 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
-func UASTType(uobj interface{}, op ObjectOp) ObjectOp {
+func uastType(uobj interface{}, op ObjectOp, part string) ObjectOp {
 	utyp := uast.TypeOf(uobj)
 	if utyp == "" {
 		panic(fmt.Errorf("type is not registered: %T", uobj))
 	}
-	return JoinObj(Obj{uast.KeyType: String(utyp)}, op)
+	obj := Obj{uast.KeyType: String(utyp)}
+	if part != "" {
+		return JoinObj(obj, Part(part, op))
+	}
+	fields, ok := op.Fields()
+	if !ok {
+		return JoinObj(obj, op)
+	}
+	zero, opt := uast.NewObjectByTypeOpt(utyp)
+	delete(zero, uast.KeyType)
+	if len(zero) == 0 {
+		return JoinObj(obj, op)
+	}
+	for k := range fields {
+		if k == uast.KeyType {
+			continue
+		}
+		_, ok := zero[k]
+		_, ok2 := opt[k]
+		if !ok && !ok2 {
+			panic(ErrUndefinedField.New(utyp + "." + k))
+		}
+		delete(zero, k)
+	}
+	for k, v := range zero {
+		obj[k] = Is(v)
+	}
+	return JoinObj(obj, op)
+}
+
+func UASTType(uobj interface{}, op ObjectOp) ObjectOp {
+	return uastType(uobj, op, "")
 }
 
 func UASTTypePart(vr string, uobj interface{}, op ObjectOp) ObjectOp {
-	return Part(vr, UASTType(uobj, op))
+	return uastType(uobj, op, vr)
 }
 
-func RemapPos(m ObjMapping, names map[string]string) ObjMapping {
+func remapPos(m ObjMapping, names map[string]string) ObjMapping {
 	so, do := m.ObjMapping() // TODO: clone?
 
 	sp := UASTType(uast.Positions{}, Obj{
@@ -55,7 +86,8 @@ func MapSemantic(nativeType string, semType interface{}, m ObjMapping) ObjMappin
 func MapSemanticPos(nativeType string, semType interface{}, pos map[string]string, m ObjMapping) ObjMapping {
 	so, do := m.ObjMapping() // TODO: clone?
 	so = JoinObj(Obj{uast.KeyType: String(nativeType)}, so)
-	return RemapPos(MapObj(so, UASTType(semType, do)), pos)
+	so, do = remapPos(MapObj(so, do), pos).ObjMapping()
+	return MapObj(so, UASTType(semType, do))
 }
 
 func CommentText(tokens [2]string, vr string) Op {

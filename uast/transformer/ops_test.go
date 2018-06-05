@@ -33,7 +33,7 @@ func arrObjVal2(key1, key2 string, v1, v2 un.Value) func() un.Node {
 	}
 }
 
-var opCases = []struct {
+var opsCases = []struct {
 	name     string
 	inp, exp func() un.Node
 	src, dst Op
@@ -444,10 +444,56 @@ var opCases = []struct {
 		},
 		exp: arrObjVal("v2", un.String(`a"b`)),
 	},
+	{
+		name: "semantic",
+		inp: func() un.Node {
+			return un.Object{
+				"type": un.String("ident"),
+				"name": un.String("A"),
+			}
+		},
+		src: Obj{
+			"type": String("ident"),
+			"name": Var("name"),
+		},
+		dst: UASTType(u.Identifier{}, Obj{
+			"Name": Var("name"),
+		}),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType: un.String("uast:Identifier"),
+				"Name":    un.String("A"),
+			}
+		},
+	},
+	{
+		name: "semantic (part)",
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyPos: un.Object{u.KeyStart: un.Int(1)},
+				"type":   un.String("ident"),
+				"name":   un.String("A"),
+			}
+		},
+		src: Part("p", Obj{
+			"type": String("ident"),
+			"name": Var("name"),
+		}),
+		dst: UASTTypePart("p", u.Identifier{}, Obj{
+			"Name": Var("name"),
+		}),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyPos:  un.Object{u.KeyStart: un.Int(1)},
+				u.KeyType: un.String("uast:Identifier"),
+				"Name":    un.String("A"),
+			}
+		},
+	},
 }
 
 func TestOps(t *testing.T) {
-	for _, c := range opCases {
+	for _, c := range opsCases {
 		if c.exp == nil {
 			c.exp = c.inp
 		}

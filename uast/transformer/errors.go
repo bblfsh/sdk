@@ -41,6 +41,8 @@ var (
 	ErrUnusedField = errors.NewKind("field was not used: %v")
 	// ErrDuplicateField is returned when trying to create a Fields definition with two items with the same name.
 	ErrDuplicateField = errors.NewKind("duplicate field: %v")
+	// ErrUndefinedField is returned when trying to create an object with a field that is not defined in the type spec.
+	ErrUndefinedField = errors.NewKind("undefined field: %v")
 
 	errAnd     = errors.NewKind("op %d (%T)")
 	errKey     = errors.NewKind("key %q")

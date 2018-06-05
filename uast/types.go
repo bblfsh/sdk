@@ -16,18 +16,138 @@ var (
 var (
 	namespaces = make(map[string]string)
 	package2ns = make(map[string]string)
+	type2name  = make(map[reflect.Type]nodeID)
+	name2type  = make(map[nodeID]reflect.Type)
 )
 
-func RegisterPackage(ns string, o interface{}) {
+func parseNodeID(s string) nodeID {
+	i := strings.Index(s, ":")
+	if i < 0 {
+		return nodeID{Name: s}
+	}
+	return nodeID{
+		NS: s[:i], Name: s[i+1:],
+	}
+}
+
+type nodeID struct {
+	NS   string
+	Name string
+}
+
+func (n nodeID) IsValid() bool {
+	return n != (nodeID{})
+}
+func (n nodeID) String() string {
+	if n.NS == "" {
+		return n.Name
+	}
+	return n.NS + ":" + n.Name
+}
+
+func RegisterPackage(ns string, types ...interface{}) {
 	if _, ok := namespaces[ns]; ok {
 		panic("namespace already registered")
+	} else if len(types) == 0 {
+		panic("at least one type should be specified")
 	}
-	pkg := reflect.TypeOf(o).PkgPath()
+	pkg := reflect.TypeOf(types[0]).PkgPath()
 	if _, ok := package2ns[pkg]; ok {
 		panic("package already registered")
 	}
 	namespaces[ns] = pkg
 	package2ns[pkg] = ns
+
+	for _, o := range types {
+		rt := reflect.TypeOf(o)
+		if rt.Kind() == reflect.Ptr {
+			rt = rt.Elem()
+		}
+		if name, ok := type2name[rt]; ok {
+			panic(fmt.Errorf("type %v already registered under %s name", rt, name))
+		}
+		name := nodeID{NS: ns, Name: rt.Name()}
+		type2name[rt] = name
+		name2type[name] = rt
+	}
+}
+
+func LookupType(typ string) (reflect.Type, bool) {
+	name := parseNodeID(typ)
+	rt, ok := name2type[name]
+	return rt, ok
+}
+
+func zeroFieldsTo(obj, opt nodes.Object, rt reflect.Type) error {
+	for i := 0; i < rt.NumField(); i++ {
+		f := rt.Field(i)
+		if f.Anonymous {
+			if err := zeroFieldsTo(obj, opt, f.Type); err != nil {
+				return err
+			}
+			continue
+		}
+		name, omit, err := fieldName(f)
+		if err != nil {
+			return err
+		}
+		var v nodes.Node
+		switch f.Type.Kind() {
+		case reflect.String:
+			v = nodes.String("")
+		case reflect.Bool:
+			v = nodes.Bool(false)
+		case reflect.Float32, reflect.Float64:
+			v = nodes.Float(0)
+		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8,
+			reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+			v = nodes.Int(0)
+		}
+		if omit {
+			opt[name] = v
+		} else {
+			obj[name] = v
+		}
+	}
+	return nil
+}
+
+func NewObjectByType(typ string) nodes.Object {
+	obj, _ := NewObjectByTypeOpt(typ)
+	return obj
+}
+
+func NewObjectByTypeOpt(typ string) (obj, opt nodes.Object) {
+	name := parseNodeID(typ)
+	rt, ok := name2type[name]
+	if !ok {
+		return nil, nil
+	}
+	obj = make(nodes.Object)
+	opt = make(nodes.Object)
+	obj[KeyType] = nodes.String(typ)
+	switch rt.Kind() {
+	case reflect.Map:
+		// do nothing
+	default:
+		if err := zeroFieldsTo(obj, opt, rt); err != nil {
+			panic(err)
+		}
+	}
+	return obj, opt
+}
+
+func NewValue(typ string) (reflect.Value, error) {
+	rt, ok := LookupType(typ)
+	if !ok {
+		return reflect.Value{}, fmt.Errorf("type %q is not registered", typ)
+	}
+	switch rt.Kind() {
+	case reflect.Map:
+		return reflect.MakeMap(rt), nil
+	default:
+		return reflect.New(rt).Elem(), nil
+	}
 }
 
 func TypeOf(o interface{}) string {
@@ -38,35 +158,42 @@ func TypeOf(o interface{}) string {
 		return string(tp)
 	}
 	tp := reflect.TypeOf(o)
-	ns, name := typeOf(tp)
-	if ns == "" {
+	return typeOf(tp).String()
+}
+
+func typeOf(tp reflect.Type) nodeID {
+	if name, ok := type2name[tp]; ok {
 		return name
 	}
-	return ns + ":" + name
-}
-
-func typeOf(tp reflect.Type) (ns, name string) {
 	pkg := tp.PkgPath()
 	if pkg == "" {
-		return
+		return nodeID{}
 	}
-	name = tp.Name()
+	name := tp.Name()
 	if name == "" {
-		return
+		return nodeID{Name: name}
 	}
-	ns = package2ns[pkg]
-	return
+	ns := package2ns[pkg]
+	return nodeID{NS: ns, Name: name}
 }
 
-func fieldName(f reflect.StructField) (string, error) {
+func fieldName(f reflect.StructField) (string, bool, error) {
 	name := strings.SplitN(f.Tag.Get("uast"), ",", 2)[0]
+	omitempty := false
 	if name == "" {
-		name = strings.SplitN(f.Tag.Get("json"), ",", 2)[0]
+		tags := strings.Split(f.Tag.Get("json"), ",")
+		for _, s := range tags[1:] {
+			if s == "omitempty" {
+				omitempty = true
+				break
+			}
+		}
+		name = tags[0]
 	}
 	if name == "" {
-		return "", fmt.Errorf("field %s should have uast or json name", f.Name)
+		return "", false, fmt.Errorf("field %s should have uast or json name", f.Name)
 	}
-	return name, nil
+	return name, omitempty, nil
 }
 
 var (
@@ -118,11 +245,11 @@ func toNodeReflect(rv reflect.Value) (nodes.Node, error) {
 		}
 		return arr, nil
 	case reflect.Struct, reflect.Map:
-		ns, name := typeOf(rt)
-		if ns == "" {
+		name := typeOf(rt)
+		if name.NS == "" {
 			return nil, fmt.Errorf("type %v is not registered", rt)
 		}
-		typ := ns + ":" + name
+		typ := name.String()
 
 		isStruct := rt.Kind() == reflect.Struct
 
@@ -170,13 +297,16 @@ func structToNode(obj nodes.Object, rv reflect.Value, rt reflect.Type) error {
 			}
 			continue
 		}
-		name, err := fieldName(ft)
+		name, omit, err := fieldName(ft)
 		if err != nil {
 			return fmt.Errorf("type %s: %v", rt.Name(), err)
 		}
 		v, err := toNodeReflect(f)
 		if err != nil {
 			return err
+		}
+		if v == nil && omit {
+			continue
 		}
 		obj[name] = v
 	}
@@ -213,8 +343,8 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 		if kind != reflect.Struct && kind != reflect.Map {
 			return fmt.Errorf("expected struct or map, got %v", rt)
 		}
-		ns, name := typeOf(rt)
-		etyp := ns + ":" + name
+		name := typeOf(rt)
+		etyp := name.String()
 		if typ := TypeOf(n); typ != etyp {
 			return ErrIncorrectType.New(typ, etyp)
 		}
@@ -283,7 +413,7 @@ func nodeToStruct(rv reflect.Value, rt reflect.Type, obj nodes.Object) error {
 			}
 			continue
 		}
-		name, err := fieldName(ft)
+		name, _, err := fieldName(ft)
 		if err != nil {
 			return fmt.Errorf("type %s: %v", rt.Name(), err)
 		}

@@ -23,9 +23,25 @@ import (
 )
 
 func init() {
-	type token struct{}
 	// Register all types from the package under this namespace
-	RegisterPackage(NS, token{})
+	RegisterPackage(NS,
+		Position{},
+		Positions{},
+		GenNode{},
+		Identifier{},
+		String{},
+		QualifiedIdentifier{},
+		Comment{},
+		Group{},
+		FunctionGroup{},
+		Block{},
+		Alias{},
+		Import{},
+		RuntimeImport{},
+		Argument{},
+		FunctionType{},
+		Function{},
+	)
 }
 
 // Special field keys for nodes.Object
@@ -186,6 +202,9 @@ func Tokens(n nodes.Node) []string {
 // Any is an alias type for any UAST node.
 type Any interface{}
 
+// Scope is a temporary definition of a scope semantic type.
+type Scope interface{}
+
 type GenNode struct {
 	Positions Positions `json:"@pos,omitempty"`
 }
@@ -237,10 +256,10 @@ type Alias struct {
 
 type Import struct {
 	GenNode
-	Path  Any   `json:"Path"`
-	All   bool  `json:"All"`
-	Names []Any `json:"Names"`
-	// Target *Scope
+	Path   Any   `json:"Path"`
+	All    bool  `json:"All"`
+	Names  []Any `json:"Names"`
+	Target Scope `json:"Target"`
 }
 
 type RuntimeImport Import
@@ -254,6 +273,7 @@ type Argument struct {
 	Init        Any         `json:"Init"`
 	Variadic    bool        `json:"Variadic"`
 	MapVariadic bool        `json:"MapVariadic"`
+	Receiver    bool        `json:"Receiver"`
 }
 
 type FunctionType struct {
