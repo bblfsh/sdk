@@ -8,6 +8,8 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
+const optimizeCheck = true
+
 // Transformer is an interface for transformations that operates on AST trees.
 // An implementation is responsible for walking the tree and executing transformation on each AST node.
 type Transformer interface {
@@ -218,10 +220,12 @@ func Mappings(maps ...Mapping) Transformer {
 		return mappings{}
 	}
 	mp := mappings{
-		all:    maps,
-		byKind: make(map[nodes.Kind][]Mapping),
+		all: maps,
 	}
-	mp.index()
+	if optimizeCheck {
+		mp.byKind = make(map[nodes.Kind][]Mapping)
+		mp.index()
+	}
 	return mp
 }
 
@@ -299,12 +303,17 @@ func (m mappings) Do(root nodes.Node) (nodes.Node, error) {
 	var errs []error
 	st := NewState()
 	nn, ok := nodes.Apply(root, func(old nodes.Node) (nodes.Node, bool) {
-		maps := m.byKind[nodes.KindOf(old)]
-		switch old := old.(type) {
-		case nodes.Object:
-			if typ, ok := old[uast.KeyType].(nodes.String); ok {
-				if mp, ok := m.typedObj[string(typ)]; ok {
-					maps = mp
+		var maps []Mapping
+		if !optimizeCheck {
+			maps = m.all
+		} else {
+			maps = m.byKind[nodes.KindOf(old)]
+			switch old := old.(type) {
+			case nodes.Object:
+				if typ, ok := old[uast.KeyType].(nodes.String); ok {
+					if mp, ok := m.typedObj[string(typ)]; ok {
+						maps = mp
+					}
 				}
 			}
 		}
