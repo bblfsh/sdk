@@ -282,6 +282,13 @@ var opsCases = []struct {
 		},
 	},
 	{
+		name: "each (nil)",
+		inp: func() un.Node {
+			return nil
+		},
+		src: Each("objs", Var("part")),
+	},
+	{
 		name: "optional field",
 		inp: func() un.Node {
 			return un.Object{

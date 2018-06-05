@@ -327,7 +327,7 @@ func (op opPartialObj) Kinds() nodes.Kind {
 }
 
 func (op opPartialObj) Fields() (FieldDescs, bool) {
-	return nil, false
+	return op.used, false
 }
 
 func (op opPartialObj) Check(st *State, n nodes.Node) (bool, error) {
@@ -1268,6 +1268,16 @@ func (op opAll) Check(st *State, n nodes.Node) (bool, error) {
 }
 
 var _ Sel = Has{}
+
+func HasType(o interface{}) Sel {
+	var typ string
+	if s, ok := o.(string); ok {
+		typ = s
+	} else {
+		typ = uast.TypeOf(o)
+	}
+	return Has{uast.KeyType: String(typ)}
+}
 
 // Has is a check-only operation that verifies that object has specific fields and they match given checks.
 type Has map[string]Sel

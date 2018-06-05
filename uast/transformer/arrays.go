@@ -2,6 +2,11 @@ package transformer
 
 import "gopkg.in/bblfsh/sdk.v2/uast/nodes"
 
+func MapEach(vr string, m Mapping) Mapping {
+	src, dst := m.Mapping()
+	return Map(Each(vr, src), Each(vr, dst))
+}
+
 // ArrayOp is a subset of operations that operates on an arrays with a pre-defined size. See Arr.
 type ArrayOp interface {
 	Op
@@ -337,6 +342,70 @@ func (op opEach) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 			return nil, errElem.Wrap(err, i, nil)
 		}
 		arr = append(arr, sub)
+	}
+	return arr, nil
+}
+
+func ArrWith(arr Op, items ...Op) Op {
+	if len(items) == 0 {
+		return arr
+	}
+	return opArrWith{arr: arr, items: items}
+}
+
+type opArrWith struct {
+	arr   Op
+	items []Op
+}
+
+func (op opArrWith) Kinds() nodes.Kind {
+	return (nodes.KindArray | nodes.KindNil) & op.arr.Kinds()
+}
+
+func (op opArrWith) Check(st *State, n nodes.Node) (bool, error) {
+	arr, ok := n.(nodes.Array)
+	if !ok {
+		return false, nil
+	}
+	arr = arr.CloneList()
+	// find items in the array and remove them from it
+	for _, s := range op.items {
+		found := false
+		for i, v := range arr {
+			sst := st.Clone()
+			if ok, err := s.Check(sst, v); err != nil {
+				return false, err
+			} else if ok {
+				st.ApplyFrom(sst)
+				arr = append(arr[:i], arr[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			if ok, err := s.Check(st, nil); err != nil || !ok {
+				return false, err
+			}
+		}
+	}
+	return op.arr.Check(st, arr)
+}
+
+func (op opArrWith) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	n, err := op.arr.Construct(st, n)
+	if err != nil {
+		return nil, err
+	}
+	arr, ok := n.(nodes.Array)
+	if !ok {
+		return nil, ErrExpectedList.New(n)
+	}
+	for _, s := range op.items {
+		v, err := s.Construct(st, nil)
+		if err != nil {
+			return nil, err
+		}
+		arr = append(arr, v)
 	}
 	return arr, nil
 }
