@@ -1471,54 +1471,6 @@ func (op opOptional) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return op.op.Construct(st, n)
 }
 
-// SetFields will use an operation to construct an object and add provided fields.
-func SetFields(obj Op, fields nodes.Object) Op {
-	return setFields{obj: obj, fields: fields}
-}
-
-type setFields struct {
-	obj    Op
-	fields nodes.Object
-}
-
-func (setFields) Kinds() nodes.Kind {
-	return nodes.KindObject
-}
-
-func (op setFields) Check(st *State, n nodes.Node) (bool, error) {
-	obj, ok := n.(nodes.Object)
-	if !ok {
-		return false, nil
-	}
-	obj = obj.CloneObject()
-	for k, v := range op.fields {
-		if v2, ok := obj[k]; !ok || !nodes.Equal(v, v2) {
-			return false, nil
-		}
-		delete(obj, k)
-	}
-	return op.obj.Check(st, obj)
-}
-
-func (op setFields) Construct(st *State, n nodes.Node) (nodes.Node, error) {
-	nd, err := op.obj.Construct(st, n)
-	if err != nil {
-		return nil, err
-	}
-	obj, ok := nd.(nodes.Object)
-	if !ok {
-		return nil, ErrExpectedObject.New(nd)
-	}
-	obj = obj.CloneObject()
-	for k, v := range op.fields {
-		if _, ok := obj[k]; ok {
-			return nil, fmt.Errorf("trying to overwrite field %q", k)
-		}
-		obj[k] = v
-	}
-	return obj, nil
-}
-
 // Check tests first check-only operation before applying the main op. It won't use the check-only argument for Construct.
 // The check-only operation will not be able to set any variables or change state by other means.
 func Check(s Sel, op Op) Op {
