@@ -114,6 +114,10 @@ func (enc *Encoder) writeObject(tabs []byte, m nodes.Object) {
 			writeSysKey(key, true)
 			enc.marshal(ntabs, v, true)
 			enc.writeString(",")
+		} else if v, ok := m[key].(nodes.Uint); ok {
+			writeSysKey(key, true)
+			enc.marshal(ntabs, v, true)
+			enc.writeString(",")
 		}
 	}
 	switch typ {
@@ -193,6 +197,8 @@ func (enc *Encoder) writeValue(v nodes.Value, field bool) {
 		}
 	case nodes.Int:
 		enc.writeInt(int64(v))
+	case nodes.Uint:
+		enc.writeUint(uint64(v))
 	case nodes.Float:
 		enc.writeFloat(float64(v))
 	default:
@@ -238,6 +244,14 @@ func (enc *Encoder) writeInt(v int64) {
 		return
 	}
 	data := strconv.FormatInt(v, 10)
+	_, enc.err = enc.w.WriteString(data)
+}
+
+func (enc *Encoder) writeUint(v uint64) {
+	if enc.err != nil {
+		return
+	}
+	data := strconv.FormatUint(v, 10)
 	_, enc.err = enc.w.WriteString(data)
 }
 

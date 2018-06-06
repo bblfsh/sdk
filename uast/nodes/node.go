@@ -38,6 +38,7 @@ type Node interface {
 // Can be one of:
 //	* String
 //	* Int
+//	* Uint
 //	* Float
 //	* Bool
 type Value interface {
@@ -111,12 +112,13 @@ const (
 	KindArray
 	KindString
 	KindInt
+	KindUint
 	KindFloat
 	KindBool
 )
 
 const (
-	KindsValues = KindString | KindInt | KindFloat | KindBool
+	KindsValues = KindString | KindInt | KindUint | KindFloat | KindBool
 	KindsNotNil = KindObject | KindArray | KindsValues
 	KindsAny    = KindNil | KindsNotNil
 )
@@ -353,6 +355,38 @@ func (v *Int) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
+// Uint is a unsigned integer value used in tree fields.
+type Uint int64
+
+func (Uint) isNode()  {}
+func (Uint) isValue() {}
+func (Uint) kind() Kind {
+	return KindUint
+}
+
+// Native converts the value to an int64.
+func (v Uint) Native() interface{} {
+	return uint64(v)
+}
+
+// Clone returns a copy of the value.
+func (v Uint) Clone() Node {
+	return v
+}
+
+func (v Uint) Equal(n Node) bool {
+	v2, ok := n.(Uint)
+	return ok && v == v2
+}
+
+func (v *Uint) SetNode(n Node) error {
+	if v2, ok := n.(Uint); ok || n == nil {
+		*v = v2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
+}
+
 // Float is a floating point value used in tree fields.
 type Float float64
 
@@ -452,6 +486,10 @@ func ToNode(o interface{}, fallback ToNodeFunc) (Node, error) {
 		return Int(o), nil
 	case int64:
 		return Int(o), nil
+	case uint:
+		return Uint(o), nil
+	case uint64:
+		return Uint(o), nil
 	case float64:
 		if float64(int64(o)) != o {
 			return Float(o), nil

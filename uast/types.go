@@ -99,9 +99,10 @@ func zeroFieldsTo(obj, opt nodes.Object, rt reflect.Type) error {
 			v = nodes.Bool(false)
 		case reflect.Float32, reflect.Float64:
 			v = nodes.Float(0)
-		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8,
-			reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			v = nodes.Int(0)
+		case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+			v = nodes.Uint(0)
 		}
 		if omit {
 			opt[name] = v
@@ -226,7 +227,7 @@ func toNodeReflect(rv reflect.Value) (nodes.Node, error) {
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 		return nodes.Int(rv.Int()), nil
 	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
-		return nodes.Int(rv.Uint()), nil
+		return nodes.Uint(rv.Uint()), nil
 	case reflect.Float64, reflect.Float32:
 		return nodes.Float(rv.Float()), nil
 	case reflect.Bool:
@@ -388,7 +389,7 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 			}
 		}
 		return nil
-	case nodes.String, nodes.Int, nodes.Float, nodes.Bool:
+	case nodes.String, nodes.Int, nodes.Uint, nodes.Float, nodes.Bool:
 		rt := rv.Type()
 		nv := reflect.ValueOf(n)
 		if !nv.Type().ConvertibleTo(rt) {

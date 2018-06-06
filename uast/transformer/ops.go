@@ -774,6 +774,11 @@ func Int(val int) MappingOp {
 	return Is(nodes.Int(val))
 }
 
+// Uint asserts that value equals a specific unsigned integer value.
+func Uint(val uint) MappingOp {
+	return Is(nodes.Uint(val))
+}
+
 // Bool asserts that value equals a specific boolean value.
 func Bool(val bool) MappingOp {
 	return Is(nodes.Bool(val))
