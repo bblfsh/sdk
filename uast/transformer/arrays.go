@@ -63,7 +63,7 @@ func (op opArr) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 }
 
 // One is a shorthand for a list with one element.
-func One(op Op) Op {
+func One(op Op) ArrayOp {
 	return Arr(op)
 }
 
