@@ -38,6 +38,7 @@ func init() {
 		Alias{},
 		Import{},
 		RuntimeImport{},
+		RuntimeReImport{},
 		Argument{},
 		FunctionType{},
 		Function{},
@@ -263,6 +264,8 @@ type Import struct {
 }
 
 type RuntimeImport Import
+
+type RuntimeReImport RuntimeImport
 
 //type InlineImport Import
 
