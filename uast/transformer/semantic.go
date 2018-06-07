@@ -55,13 +55,13 @@ func UASTTypePart(vr string, uobj interface{}, op ObjectOp) ObjectOp {
 func remapPos(m ObjMapping, names map[string]string) ObjMapping {
 	so, do := m.ObjMapping() // TODO: clone?
 
-	sp := UASTType(uast.Positions{}, Obj{
-		uast.KeyStart: Var(uast.KeyStart),
-		uast.KeyEnd:   Var(uast.KeyEnd),
+	sp := UASTType(uast.Positions{}, Fields{
+		{Name: uast.KeyStart, Op: Var(uast.KeyStart), Optional: uast.KeyStart + "_exists"},
+		{Name: uast.KeyEnd, Op: Var(uast.KeyEnd), Optional: uast.KeyEnd + "_exists"},
 	})
-	dp := UASTType(uast.Positions{}, Obj{
-		uast.KeyStart: Var(uast.KeyStart),
-		uast.KeyEnd:   Var(uast.KeyEnd),
+	dp := UASTType(uast.Positions{}, Fields{
+		{Name: uast.KeyStart, Op: Var(uast.KeyStart), Optional: uast.KeyStart + "_exists"},
+		{Name: uast.KeyEnd, Op: Var(uast.KeyEnd), Optional: uast.KeyEnd + "_exists"},
 	})
 	if len(names) != 0 {
 		sa, da := make(Obj), make(Obj)
