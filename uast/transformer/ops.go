@@ -187,6 +187,10 @@ func (o Objs) ObjectOps() []ObjectOp {
 	return l
 }
 
+func EmptyObj() Op {
+	return Is(nodes.Object{})
+}
+
 // Obj is a helper for defining a transformation on an object fields. See Object.
 // Operations will be sorted by the field name before execution.
 type Obj map[string]Op
