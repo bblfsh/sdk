@@ -40,6 +40,22 @@ func Is(o interface{}) MappingOp {
 	return opIs{n: n}
 }
 
+func OfKind(k nodes.Kind) Sel {
+	return opKind{k: k}
+}
+
+type opKind struct {
+	k nodes.Kind
+}
+
+func (op opKind) Kinds() nodes.Kind {
+	return op.k
+}
+
+func (op opKind) Check(st *State, n nodes.Node) (bool, error) {
+	return nodes.KindOf(n).In(op.k), nil
+}
+
 type opIs struct {
 	n nodes.Node
 }
@@ -67,6 +83,10 @@ func (op opIs) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 // Reversal replaces current node with the one from named variable. Variables can store subtrees.
 func Var(name string) MappingOp {
 	return opVar{name: name, kinds: nodes.KindsAny}
+}
+
+func VarKind(name string, k nodes.Kind) Op {
+	return Check(OfKind(k), Var(name))
 }
 
 type opVar struct {
