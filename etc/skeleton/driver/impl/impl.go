@@ -1,8 +1,11 @@
 package impl
 
-import "gopkg.in/bblfsh/sdk.v2/sdk/driver"
+import (
+	"gopkg.in/bblfsh/sdk.v2/driver/native"
+	"gopkg.in/bblfsh/sdk.v2/driver/server"
+)
 
 func init() {
 	// Can be overridden to link a native driver into a Go driver server.
-	driver.DefaultDriver = driver.NewExecDriver()
+	server.DefaultDriver = native.NewDriver(native.UTF8)
 }

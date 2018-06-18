@@ -1,10 +1,10 @@
 package normalizer
 
-import "gopkg.in/bblfsh/sdk.v2/sdk/driver"
+import "gopkg.in/bblfsh/sdk.v2/driver"
 
 var Transforms = driver.Transforms{
-	Preprocess: Preprocess,
-	Normalize:  Normalize,
-	Native:     Native,
-	Code:       Code,
+	Preprocess:  Preprocess,
+	Normalize:   Normalize,
+	Annotations: Native,
+	Code:        Code,
 }

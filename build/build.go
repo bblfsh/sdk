@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"gopkg.in/bblfsh/sdk.v2/assets/build"
+	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 	"gopkg.in/bblfsh/sdk.v2/internal/docker"
-	"gopkg.in/bblfsh/sdk.v2/manifest"
 	"gopkg.in/yaml.v2"
 )
 

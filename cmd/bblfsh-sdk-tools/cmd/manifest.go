@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"gopkg.in/bblfsh/sdk.v2/cmd"
-	"gopkg.in/bblfsh/sdk.v2/manifest"
+	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 )
 
 type manifestCommand struct {

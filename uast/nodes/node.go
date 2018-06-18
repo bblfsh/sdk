@@ -555,6 +555,18 @@ func WalkPreOrder(root Node, walk func(Node) bool) {
 	}
 }
 
+// Count returns a number of nodes with given kinds.
+func Count(root Node, kinds Kind) int {
+	var cnt int
+	WalkPreOrder(root, func(n Node) bool {
+		if KindOf(n).In(kinds) {
+			cnt++
+		}
+		return true
+	})
+	return cnt
+}
+
 // Apply takes a root node and applies callback to each node of the tree recursively.
 // Apply returns an old or a new node and a flag that indicates if node was changed or not.
 // If callback returns true and a new node, Apply will make a copy of parent node and
