@@ -62,7 +62,7 @@ const (
 	Base64
 )
 
-// Response basic response, never used directly. The Response.Status field should always be
+// Response is a basic response, never used directly. The Response.Status field should always be
 // checked to be protocol.Ok before further processing.
 type Response struct {
 	// Status is the status of the parsing request.
