@@ -1013,8 +1013,8 @@ import (
 	"testing"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
-	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
-	"gopkg.in/bblfsh/sdk.v2/sdk/driver/fixtures"
+	"gopkg.in/bblfsh/sdk.v2/driver"
+	"gopkg.in/bblfsh/sdk.v2/driver/fixtures"
 )
 
 const projectRoot = "../../"
@@ -1057,18 +1057,21 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1096, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1088, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
 var _driverImplImplGo = []byte(`package impl
 
-import "gopkg.in/bblfsh/sdk.v2/sdk/driver"
+import (
+	"gopkg.in/bblfsh/sdk.v2/driver/native"
+	"gopkg.in/bblfsh/sdk.v2/driver/server"
+)
 
 func init() {
 	// Can be overridden to link a native driver into a Go driver server.
-	driver.DefaultDriver = driver.NewExecDriver()
+	server.DefaultDriver = native.NewDriver(native.UTF8)
 }
 `)
 
@@ -1082,7 +1085,7 @@ func driverImplImplGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/impl/impl.go", size: 192, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/impl/impl.go", size: 247, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1093,11 +1096,11 @@ import (
 	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/impl"
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 
-	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v2/driver/server"
 )
 
 func main() {
-	driver.Run(normalizer.Transforms)
+	server.Run(normalizer.Transforms)
 }
 `)
 
@@ -1111,7 +1114,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 249, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 252, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1222,13 +1225,13 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 
 var _driverNormalizerTransformsGo = []byte(`package normalizer
 
-import "gopkg.in/bblfsh/sdk.v2/sdk/driver"
+import "gopkg.in/bblfsh/sdk.v2/driver"
 
 var Transforms = driver.Transforms{
-	Preprocess: Preprocess,
-	Normalize:  Normalize,
-	Native:     Native,
-	Code:       Code,
+	Preprocess:  Preprocess,
+	Normalize:   Normalize,
+	Annotations: Native,
+	Code:        Code,
 }
 `)
 

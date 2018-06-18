@@ -14,7 +14,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
 	"gopkg.in/bblfsh/sdk.v2/build"
 	"gopkg.in/bblfsh/sdk.v2/cmd"
-	"gopkg.in/bblfsh/sdk.v2/manifest"
+	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 )
 
 const (

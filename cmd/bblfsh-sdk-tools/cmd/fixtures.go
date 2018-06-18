@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v2/manifest"
+	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 
 	"google.golang.org/grpc"

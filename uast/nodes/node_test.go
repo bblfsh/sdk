@@ -285,3 +285,20 @@ func TestNodeNative(t *testing.T) {
 		})
 	}
 }
+
+func TestCount(t *testing.T) {
+	root := Array{
+		Int(3),
+		Object{
+			"k": Object{
+				"v":   Int(1),
+				"new": Int(0),
+			},
+			"v2": Int(2),
+			"v3": nil,
+		},
+	}
+	require.Equal(t, int(8), int(Count(root, KindsAny)))
+	require.Equal(t, int(7), int(Count(root, KindsNotNil)))
+	require.Equal(t, int(4), int(Count(root, KindsValues)))
+}
