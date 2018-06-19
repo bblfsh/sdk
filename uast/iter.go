@@ -48,6 +48,7 @@ func (i *sliceIter) Next() Path {
 type orderPathIter struct {
 	stack []PathIter
 	last  Path
+	seen  map[*Node]bool
 }
 
 // NewOrderPathIter creates an iterator that iterates all tree nodes (by default it
@@ -56,6 +57,7 @@ type orderPathIter struct {
 func NewOrderPathIter(p Path) PathStepIter {
 	return &orderPathIter{
 		stack: []PathIter{newSliceIter(p)},
+		seen:  make(map[*Node]bool),
 	}
 }
 
@@ -81,22 +83,14 @@ func getNextIterType(n *Node) int {
 	return order
 }
 
-// Make a copy of the Node removing the children. Used to
-// add nodes with the InOrder or PostOrder roles to the stack
-// when their children have been already added
-func noChildrenNodeCopy(n *Node) *Node {
-	noChildrenNode := *n
-	noChildrenNode.Children = nil
-	return &noChildrenNode
-}
-
 // Adds to the orderPathIter stack with the right order depending on
 // the order Role with (if set) can be Infix, Postfix or Prefix. Defaults to Preorder
 // if the order Role is not set. This also updates i.last.
 func (i *orderPathIter) addToStackWithOrder(n *Node) {
-	if len(n.Children) == 0 {
+	if len(n.Children) == 0 || i.seen[n] {
 		return
 	}
+	i.seen[n] = true
 
 	switch getNextIterType(n) {
 	case inOrder:
@@ -106,12 +100,12 @@ func (i *orderPathIter) addToStackWithOrder(n *Node) {
 		}
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[1]))
 		// Relator
-		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
+		i.stack = append(i.stack, newNodeSliceIter(i.last, n))
 		// left
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children[0]))
 	case postOrder:
 		// Children
-		i.stack = append(i.stack, newNodeSliceIter(i.last, noChildrenNodeCopy(n)))
+		i.stack = append(i.stack, newNodeSliceIter(i.last, n))
 		// Relator
 		i.stack = append(i.stack, newNodeSliceIter(i.last, n.Children...))
 	default:
@@ -140,16 +134,6 @@ func (i *orderPathIter) Next() Path {
 		}
 
 		i.last = p
-		n := p.Node()
-
-		// Check if the item has the role inOrder or postOrder and have children; in that
-		// case skip it since the children and the (childless) copy of the node have already
-		// been added in addToStackWithOrder in the correct order
-		iterType := getNextIterType(n)
-		if (iterType == inOrder || iterType == postOrder) && n.Children != nil {
-			continue
-		}
-
 		return p
 	}
 

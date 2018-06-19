@@ -532,3 +532,32 @@ func TestBetterErrorMessageForInorderTraversalOfNonBinaryNode(t *testing.T) {
 	err := rule.Apply(input)
 	require.EqualError(err, "unsupported iteration over node with 3 children")
 }
+
+func TestAllOrdersOfTraversalWithAlteredParent(t *testing.T) {
+	for _, order := range []uast.Role{uast.Postfix, uast.Infix, uast.Base} {
+		t.Run(order.String(), func(t *testing.T) {
+			require := require.New(t)
+
+			// This rule modifies the parent adding the Key role,
+			// the role should be present after annotation.
+			rule := On(Any).DescendantsOrSelf(
+				On(HasInternalType("foo")).Roles(order).
+					Self(On(Any).Roles(uast.Key)),
+			)
+
+			input := &uast.Node{
+				InternalType: "foo",
+				Properties:   map[string]string{"p": "true"},
+				Children: []*uast.Node{{
+					InternalType: "child",
+				}, {
+					InternalType: "child",
+				}},
+			}
+
+			err := rule.Apply(input)
+			require.Nil(err)
+			require.Contains(input.Roles, uast.Key)
+		})
+	}
+}
