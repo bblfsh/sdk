@@ -60,46 +60,53 @@ type ObjectToNode struct {
 // Mapping construct a transformation from ObjectToNode definition.
 func (n ObjectToNode) Mapping() Mapping {
 	var (
-		ast = make(Obj)
+		ast Fields
 		// ->
-		norm, normPos = make(Obj), make(Obj)
+		norm    = make(Obj)
+		normPos Fields
 	)
 
 	if n.InternalTypeKey != "" {
 		const vr = "itype"
-		ast[n.InternalTypeKey] = Var(vr)
+		ast = append(ast, Field{Name: n.InternalTypeKey, Op: Var(vr)})
 		norm[uast.KeyType] = Var(vr)
 	}
 
 	if n.OffsetKey != "" {
 		const vr = "pos_off_start"
-		ast[n.OffsetKey] = Var(vr)
-		normPos[uast.KeyStart] = SavePosOffset(vr)
+		ast = append(ast, Field{Name: n.OffsetKey, Op: Var(vr)})
+		normPos = append(normPos, Field{Name: uast.KeyStart, Op: SavePosOffset(vr)})
 	}
 	if n.EndOffsetKey != "" {
 		const vr = "pos_off_end"
-		ast[n.EndOffsetKey] = Var(vr)
-		normPos[uast.KeyEnd] = SavePosOffset(vr)
+		ast = append(ast, Field{Name: n.EndOffsetKey, Op: Var(vr)})
+		normPos = append(normPos, Field{Name: uast.KeyEnd, Op: SavePosOffset(vr)})
 	}
 	if n.LineKey != "" && n.ColumnKey != "" {
 		const (
+			vre = "pos_start_exists"
 			vrl = "pos_line_start"
 			vrc = "pos_col_start"
 		)
-		ast[n.LineKey] = Var(vrl)
-		ast[n.ColumnKey] = Var(vrc)
-		normPos[uast.KeyStart] = SavePosLineCol(vrl, vrc)
+		ast = append(ast,
+			Field{Name: n.LineKey, Op: Var(vrl), Optional: vre},
+			Field{Name: n.ColumnKey, Op: Var(vrc), Optional: vre},
+		)
+		normPos = append(normPos, Field{Name: uast.KeyStart, Op: SavePosLineCol(vrl, vrc), Optional: vre})
 	} else if (n.LineKey != "" && n.ColumnKey == "") || (n.LineKey == "" && n.ColumnKey != "") {
 		panic("both LineKey and ColumnKey should either be set or not")
 	}
 	if n.EndLineKey != "" && n.EndColumnKey != "" {
 		const (
+			vre = "pos_end_exists"
 			vrl = "pos_line_end"
 			vrc = "pos_col_end"
 		)
-		ast[n.EndLineKey] = Var(vrl)
-		ast[n.EndColumnKey] = Var(vrc)
-		normPos[uast.KeyEnd] = SavePosLineCol(vrl, vrc)
+		ast = append(ast,
+			Field{Name: n.EndLineKey, Op: Var(vrl), Optional: vre},
+			Field{Name: n.EndColumnKey, Op: Var(vrc), Optional: vre},
+		)
+		normPos = append(normPos, Field{Name: uast.KeyEnd, Op: SavePosLineCol(vrl, vrc), Optional: vre})
 	} else if (n.EndLineKey != "" && n.EndColumnKey == "") || (n.EndLineKey == "" && n.EndColumnKey != "") {
 		panic("both EndLineKey and EndColumnKey should either be set or not")
 	}

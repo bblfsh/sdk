@@ -9,6 +9,14 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
+func toNode(o interface{}) un.Node {
+	n, err := u.ToNode(o)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
 var mappingCases = []struct {
 	name     string
 	skip     bool
@@ -145,6 +153,51 @@ var mappingCases = []struct {
 		exp: un.Object{
 			u.KeyType:  un.String("typ"),
 			u.KeyRoles: u.RoleList(4),
+		},
+	},
+	{
+		name: "missing line col",
+		inp: un.Object{
+			"line": un.Uint(5),
+			"col":  un.Uint(3),
+		},
+		m: Mappings(
+			ObjectToNode{
+				LineKey: "line", ColumnKey: "col",
+				EndLineKey: "eline", EndColumnKey: "ecol",
+			}.Mapping(),
+		),
+		exp: un.Object{
+			u.KeyPos: toNode(u.Positions{
+				u.KeyStart: {
+					Line: 5, Col: 3,
+				},
+			}),
+		},
+	},
+	{
+		name: "conv line col",
+		inp: un.Object{
+			"line":  un.Uint(5),
+			"col":   un.Uint(3),
+			"eline": un.Uint(6),
+			"ecol":  un.Uint(4),
+		},
+		m: Mappings(
+			ObjectToNode{
+				LineKey: "line", ColumnKey: "col",
+				EndLineKey: "eline", EndColumnKey: "ecol",
+			}.Mapping(),
+		),
+		exp: un.Object{
+			u.KeyPos: toNode(u.Positions{
+				u.KeyStart: {
+					Line: 5, Col: 3,
+				},
+				u.KeyEnd: {
+					Line: 6, Col: 4,
+				},
+			}),
 		},
 	},
 }
