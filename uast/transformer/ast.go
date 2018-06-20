@@ -347,18 +347,22 @@ func (f FieldRoles) Mapping() (src, dst Op) {
 	return f.ObjMapping()
 }
 func (f FieldRoles) ObjMapping() (src, dst ObjectOp) {
-	l := make(Obj, len(f))
-	r := make(Obj, len(f))
+	l := make(Fields, 0, len(f))
+	r := make(Fields, 0, len(f))
 	for name, fld := range f {
 		names, ops, err := fld.build(name, name+"_")
 		if err != nil {
 			panic(fmt.Errorf("field %q: %v", name, err))
 		}
+		opt := ""
+		if fld.Opt {
+			opt = name + "__exists"
+		}
 		if names[0] != "" {
-			l[names[0]] = ops[0]
+			l = append(l, Field{Name: names[0], Op: ops[0], Optional: opt})
 		}
 		if names[1] != "" {
-			r[names[1]] = ops[1]
+			r = append(r, Field{Name: names[1], Op: ops[1], Optional: opt})
 		}
 	}
 	return l, r

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	u "gopkg.in/bblfsh/sdk.v2/uast"
 	un "gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 var mappingCases = []struct {
@@ -127,6 +128,23 @@ var mappingCases = []struct {
 				u.KeyRoles: u.RoleList(10),
 				"pred":     un.String("val2"),
 			},
+		},
+	},
+	{
+		name: "optional key missing",
+		inp: un.Object{
+			u.KeyType: un.String("typ"),
+		},
+		m: Mappings(
+			AnnotateType("typ",
+				FieldRoles{
+					"missing": {Opt: true, Roles: role.Roles{3}},
+				}, 4,
+			),
+		),
+		exp: un.Object{
+			u.KeyType:  un.String("typ"),
+			u.KeyRoles: u.RoleList(4),
 		},
 	},
 }
