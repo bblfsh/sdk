@@ -32,9 +32,9 @@ func TestTypeOf(t *testing.T) {
 func expPos(off int, line int, col int) nodes.Object {
 	return nodes.Object{
 		KeyType:    nodes.String(TypePosition),
-		KeyPosOff:  nodes.Int(off),
-		KeyPosLine: nodes.Int(line),
-		KeyPosCol:  nodes.Int(col),
+		KeyPosOff:  nodes.Uint(off),
+		KeyPosLine: nodes.Uint(line),
+		KeyPosCol:  nodes.Uint(col),
 	}
 }
 
@@ -49,9 +49,9 @@ var casesToNode = []struct {
 		obj:  Position{Offset: 5, Line: 2, Col: 3},
 		exp: nodes.Object{
 			KeyType:  nodes.String("uast:Position"),
-			"offset": nodes.Int(5),
-			"line":   nodes.Int(2),
-			"col":    nodes.Int(3),
+			"offset": nodes.Uint(5),
+			"line":   nodes.Uint(2),
+			"col":    nodes.Uint(3),
 		},
 	},
 	{

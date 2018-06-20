@@ -123,7 +123,7 @@ func TestNodeYML(t *testing.T) {
 			if en == nil {
 				en = c.n
 			}
-			require.Equal(t, en, nn)
+			require.True(t, Equal(en, nn))
 		})
 	}
 }

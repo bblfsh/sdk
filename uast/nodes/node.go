@@ -343,8 +343,16 @@ func (v Int) Clone() Node {
 }
 
 func (v Int) Equal(n Node) bool {
-	v2, ok := n.(Int)
-	return ok && v == v2
+	switch n := n.(type) {
+	case Int:
+		return v == n
+	case Uint:
+		if v < 0 {
+			return false
+		}
+		return Uint(v) == n
+	}
+	return false
 }
 
 func (v *Int) SetNode(n Node) error {
@@ -375,8 +383,16 @@ func (v Uint) Clone() Node {
 }
 
 func (v Uint) Equal(n Node) bool {
-	v2, ok := n.(Uint)
-	return ok && v == v2
+	switch n := n.(type) {
+	case Uint:
+		return v == n
+	case Int:
+		if n < 0 {
+			return false
+		}
+		return v == Uint(n)
+	}
+	return false
 }
 
 func (v *Uint) SetNode(n Node) error {
