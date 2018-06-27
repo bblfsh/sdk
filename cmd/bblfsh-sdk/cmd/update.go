@@ -23,10 +23,11 @@ const (
 
 // managedFiles are files that always are overwritten
 var managedFiles = map[string]bool{
-	".travis.yml":        true,
-	"README.md.tpl":      true,
-	"LICENSE":            true,
-	"driver/main.go.tpl": true,
+	".travis.yml":                     true,
+	"README.md.tpl":                   true,
+	"LICENSE":                         true,
+	"driver/main.go.tpl":              true,
+	"driver/normalizer/transforms.go": true,
 }
 
 const UpdateCommandDescription = "updates an already initialized driver"

@@ -12,6 +12,7 @@
 // etc/skeleton/driver/main.go.tpl
 // etc/skeleton/driver/normalizer/annotation.go
 // etc/skeleton/driver/normalizer/normalizer.go
+// etc/skeleton/driver/normalizer/transforms.go
 // etc/skeleton/git/hooks/pre-commit
 // etc/skeleton/manifest.toml.tpl
 // etc/skeleton/native/README.md.tpl
@@ -1000,12 +1001,7 @@ var Suite = &fixtures.Suite{
 	NewDriver: func() driver.BaseDriver {
 		return driver.NewExecDriverAt(filepath.Join(projectRoot, "build/bin/native"))
 	},
-	Transforms: driver.Transforms{
-		Preprocess: normalizer.Preprocess,
-		Normalize:  normalizer.Normalize,
-		Native:     normalizer.Native,
-		Code:       normalizer.Code,
-	},
+	Transforms: normalizer.Transforms,
 	//BenchName: "fixture-name", // TODO: specify a largest file
 	Semantic: fixtures.SemanticConfig{
 		BlacklistTypes: []string{
@@ -1033,7 +1029,7 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1121, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 984, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1073,12 +1069,7 @@ import (
 )
 
 func main() {
-	driver.Run(driver.Transforms{
-		Preprocess: normalizer.Preprocess,
-		Normalize:  normalizer.Normalize,
-		Native:     normalizer.Native,
-		Code:       normalizer.Code,
-	})
+	driver.Run(normalizer.Transforms)
 }
 `)
 
@@ -1092,7 +1083,7 @@ func driverMainGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/main.go.tpl", size: 386, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/main.go.tpl", size: 249, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1197,6 +1188,32 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 951, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _driverNormalizerTransformsGo = []byte(`package normalizer
+
+import "gopkg.in/bblfsh/sdk.v2/sdk/driver"
+
+var Transforms = driver.Transforms{
+	Preprocess: Preprocess,
+	Normalize:  Normalize,
+	Native:     Native,
+	Code:       Code,
+}`)
+
+func driverNormalizerTransformsGoBytes() ([]byte, error) {
+	return _driverNormalizerTransformsGo, nil
+}
+
+func driverNormalizerTransformsGo() (*asset, error) {
+	bytes, err := driverNormalizerTransformsGoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "driver/normalizer/transforms.go", size: 190, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1364,6 +1381,7 @@ var _bindata = map[string]func() (*asset, error){
 	"driver/main.go.tpl":                   driverMainGoTpl,
 	"driver/normalizer/annotation.go":      driverNormalizerAnnotationGo,
 	"driver/normalizer/normalizer.go":      driverNormalizerNormalizerGo,
+	"driver/normalizer/transforms.go":      driverNormalizerTransformsGo,
 	"git/hooks/pre-commit":                 gitHooksPreCommit,
 	"manifest.toml.tpl":                    manifestTomlTpl,
 	"native/README.md.tpl":                 nativeReadmeMdTpl,
@@ -1428,6 +1446,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"normalizer": &bintree{nil, map[string]*bintree{
 			"annotation.go": &bintree{driverNormalizerAnnotationGo, map[string]*bintree{}},
 			"normalizer.go": &bintree{driverNormalizerNormalizerGo, map[string]*bintree{}},
+			"transforms.go": &bintree{driverNormalizerTransformsGo, map[string]*bintree{}},
 		}},
 	}},
 	"git": &bintree{nil, map[string]*bintree{

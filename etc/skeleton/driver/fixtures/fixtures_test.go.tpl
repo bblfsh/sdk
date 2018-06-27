@@ -18,12 +18,7 @@ var Suite = &fixtures.Suite{
 	NewDriver: func() driver.BaseDriver {
 		return driver.NewExecDriverAt(filepath.Join(projectRoot, "build/bin/native"))
 	},
-	Transforms: driver.Transforms{
-		Preprocess: normalizer.Preprocess,
-		Normalize:  normalizer.Normalize,
-		Native:     normalizer.Native,
-		Code:       normalizer.Code,
-	},
+	Transforms: normalizer.Transforms,
 	//BenchName: "fixture-name", // TODO: specify a largest file
 	Semantic: fixtures.SemanticConfig{
 		BlacklistTypes: []string{
