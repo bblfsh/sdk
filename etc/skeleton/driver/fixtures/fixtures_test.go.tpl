@@ -25,6 +25,9 @@ var Suite = &fixtures.Suite{
 			// TODO: list native types that should be converted to semantic UAST
 		},
 	},
+	Docker:fixtures.DockerConfig{
+		//Image:"image:tag", // TODO: specify a docker image with language runtime
+	},
 }
 
 func Test{{expName .Manifest.Language}}Driver(t *testing.T) {

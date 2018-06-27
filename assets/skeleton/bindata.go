@@ -1008,6 +1008,9 @@ var Suite = &fixtures.Suite{
 			// TODO: list native types that should be converted to semantic UAST
 		},
 	},
+	Docker:fixtures.DockerConfig{
+		//Image:"image:tag", // TODO: specify a docker image with language runtime
+	},
 }
 
 func Test{{expName .Manifest.Language}}Driver(t *testing.T) {
@@ -1029,7 +1032,7 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 984, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1096, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1201,7 +1204,8 @@ var Transforms = driver.Transforms{
 	Normalize:  Normalize,
 	Native:     Native,
 	Code:       Code,
-}`)
+}
+`)
 
 func driverNormalizerTransformsGoBytes() ([]byte, error) {
 	return _driverNormalizerTransformsGo, nil
@@ -1213,7 +1217,7 @@ func driverNormalizerTransformsGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/transforms.go", size: 190, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/transforms.go", size: 191, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

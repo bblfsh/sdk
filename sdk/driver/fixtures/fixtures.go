@@ -25,6 +25,10 @@ type SemanticConfig struct {
 	BlacklistTypes []string
 }
 
+type DockerConfig struct {
+	Image string
+}
+
 type Suite struct {
 	Lang string
 	Ext  string // with dot
@@ -43,6 +47,7 @@ type Suite struct {
 	BenchName string // fixture name to benchmark (with no extension)
 
 	Semantic SemanticConfig
+	Docker   DockerConfig
 }
 
 func (s *Suite) readFixturesFile(t testing.TB, name string) string {
@@ -70,6 +75,10 @@ func (s *Suite) deleteFixturesFile(name string) {
 }
 
 func (s *Suite) RunTests(t *testing.T) {
+	if s.Docker.Image != "" && runInDocker {
+		s.runTestsDocker(t)
+		return
+	}
 	t.Run("native", s.testFixturesNative)
 	t.Run("uast", func(t *testing.T) {
 		s.testFixturesUAST(t, driver.ModeAST, uastExt)
