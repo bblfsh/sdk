@@ -6,9 +6,9 @@ import (
 	"html/template"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-
 	"unicode"
 
 	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
@@ -158,7 +158,11 @@ func (c *UpdateCommand) doWriteFile(file string, content []byte, m os.FileMode) 
 	}
 
 	_, err = f.Write(content)
-	return err
+	if err != nil {
+		return err
+	}
+	_ = exec.Command("git", "add", file).Run()
+	return nil
 }
 
 func (c *UpdateCommand) readManifest() (*manifest.Manifest, error) {
