@@ -273,8 +273,12 @@ func arrayAsNode(n nodes.Array, field string) ([]*Node, error) {
 
 func objectAsNode(n nodes.Object, field string) ([]*Node, error) {
 	ps := uast.PositionsOf(n)
+	typ := uast.TypeOf(n)
+	if i := strings.Index(typ, ":"); i >= 0 {
+		typ = typ[i+1:]
+	}
 	nd := &Node{
-		InternalType:  uast.TypeOf(n),
+		InternalType:  typ,
 		Token:         uast.TokenOf(n),
 		Roles:         uast.RolesOf(n),
 		StartPosition: ps.Start(),
