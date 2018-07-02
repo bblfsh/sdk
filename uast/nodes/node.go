@@ -364,7 +364,7 @@ func (v *Int) SetNode(n Node) error {
 }
 
 // Uint is a unsigned integer value used in tree fields.
-type Uint int64
+type Uint uint64
 
 func (Uint) isNode()  {}
 func (Uint) isValue() {}
@@ -500,12 +500,29 @@ func ToNode(o interface{}, fallback ToNodeFunc) (Node, error) {
 		return String(o), nil
 	case int:
 		return Int(o), nil
+	case int8:
+		return Int(o), nil
+	case int16:
+		return Int(o), nil
+	case int32:
+		return Int(o), nil
 	case int64:
 		return Int(o), nil
 	case uint:
 		return Uint(o), nil
+	case uint8:
+		return Uint(o), nil
+	case uint16:
+		return Uint(o), nil
+	case uint32:
+		return Uint(o), nil
 	case uint64:
 		return Uint(o), nil
+	case float32:
+		if float32(int64(o)) != o {
+			return Float(o), nil
+		}
+		return Int(o), nil
 	case float64:
 		if float64(int64(o)) != o {
 			return Float(o), nil
