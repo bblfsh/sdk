@@ -10,6 +10,9 @@ import (
 )
 
 func uastType(uobj interface{}, op ObjectOp, part string) ObjectOp {
+	if op == nil {
+		op = Obj{}
+	}
 	utyp := uast.TypeOf(uobj)
 	if utyp == "" {
 		panic(fmt.Errorf("type is not registered: %T", uobj))

@@ -200,6 +200,22 @@ var mappingCases = []struct {
 			}),
 		},
 	},
+	{
+		name: "semantic comment",
+		inp: un.Object{
+			"text": un.String("// line comment #"),
+		},
+		m: Mappings(Map(
+			Obj{
+				"text": CommentText([2]string{"//", "#"}, "c"),
+			},
+			CommentNode(false, "c", UASTType(u.Positions{}, nil)),
+		)),
+		exp: toNode(u.Comment{
+			Text:   "line comment",
+			Prefix: " ", Suffix: " ",
+		}),
+	},
 }
 
 func TestMappings(t *testing.T) {
