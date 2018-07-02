@@ -81,10 +81,10 @@ func (s *Suite) RunTests(t *testing.T) {
 	}
 	t.Run("native", s.testFixturesNative)
 	t.Run("uast", func(t *testing.T) {
-		s.testFixturesUAST(t, driver.ModeAST, uastExt)
+		s.testFixturesUAST(t, driver.ModeAnnotated, uastExt)
 	})
 	t.Run("semantic", func(t *testing.T) {
-		s.testFixturesUAST(t, driver.ModeHighLevel, highExt, s.Semantic.BlacklistTypes...)
+		s.testFixturesUAST(t, driver.ModeSemantic, highExt, s.Semantic.BlacklistTypes...)
 	})
 }
 
@@ -273,7 +273,7 @@ func (s *Suite) benchmarkTransform(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ast := rast.Clone()
 
-		ua, err := tr.Do(driver.ModeAST, code, ast)
+		ua, err := tr.Do(driver.ModeAnnotated, code, ast)
 		if err != nil {
 			b.Fatal(err)
 		}

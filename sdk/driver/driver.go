@@ -14,8 +14,8 @@ import (
 type Mode int
 
 const (
-	ModeAST = Mode(iota)
-	ModeHighLevel
+	ModeAnnotated = Mode(iota)
+	ModeSemantic
 )
 
 // Transforms describes a set of AST transformations this driver requires.
@@ -53,7 +53,7 @@ func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error
 	if err := runAll(t.Preprocess); err != nil {
 		return nd, err
 	}
-	if mode >= ModeHighLevel {
+	if mode >= ModeSemantic {
 		if err := runAll(t.Normalize); err != nil {
 			return nd, err
 		}
@@ -69,7 +69,7 @@ func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error
 			return nd, err
 		}
 	}
-	if mode >= ModeHighLevel && t.Namespace != "" {
+	if mode >= ModeSemantic && t.Namespace != "" {
 		nd, err = transformer.DefaultNamespace(t.Namespace).Do(nd)
 		if err != nil {
 			return nd, err
@@ -165,7 +165,7 @@ func (d *Driver) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 		addErr(err)
 		return r
 	}
-	nd, err = d.t.Do(ModeAST, code, nd)
+	nd, err = d.t.Do(ModeSemantic, code, nd)
 	if err != nil {
 		addErr(err)
 		return r
