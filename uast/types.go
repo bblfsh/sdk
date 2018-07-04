@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ErrIncorrectType = errors.NewKind("incorrect object type: %q, expected: %q")
+	ErrIncorrectType     = errors.NewKind("incorrect object type: %q, expected: %q")
+	ErrTypeNotRegistered = errors.NewKind("type is not registered: %q")
 )
 
 var (
@@ -141,7 +142,7 @@ func NewObjectByTypeOpt(typ string) (obj, opt nodes.Object) {
 func NewValue(typ string) (reflect.Value, error) {
 	rt, ok := LookupType(typ)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("type %q is not registered", typ)
+		return reflect.Value{}, ErrTypeNotRegistered.New(typ)
 	}
 	switch rt.Kind() {
 	case reflect.Map:
@@ -157,6 +158,9 @@ func TypeOf(o interface{}) string {
 	} else if obj, ok := o.(nodes.Object); ok {
 		tp, _ := obj[KeyType].(nodes.String)
 		return string(tp)
+	} else if _, ok = o.(nodes.Node); ok {
+		// other generic nodes cannot store type
+		return ""
 	}
 	tp := reflect.TypeOf(o)
 	return typeOf(tp).String()
@@ -325,10 +329,17 @@ func NodeAs(n nodes.Node, dst interface{}) error {
 }
 
 func nodeAs(n nodes.Node, rv reflect.Value) error {
+	orv := rv
 	if rv.Kind() == reflect.Ptr {
+		if rv.CanSet() && rv.IsNil() {
+			rv.Set(reflect.New(rv.Type().Elem()))
+		}
 		rv = rv.Elem()
 	}
-	if !rv.CanSet() {
+	if !rv.CanSet() && rv.Kind() != reflect.Map {
+		if !rv.IsValid() {
+			return fmt.Errorf("invalid value: %#v", orv)
+		}
 		return fmt.Errorf("argument should be a pointer: %v", rv.Type())
 	}
 	switch n := n.(type) {
@@ -340,33 +351,42 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 			rv.Set(reflect.ValueOf(n))
 			return nil
 		}
-		kind := rt.Kind()
-		if kind != reflect.Struct && kind != reflect.Map {
-			return fmt.Errorf("expected struct or map, got %v", rt)
-		}
-		name := typeOf(rt)
-		etyp := name.String()
-		if typ := TypeOf(n); typ != etyp {
-			return ErrIncorrectType.New(typ, etyp)
-		}
-		if kind == reflect.Struct {
-			if err := nodeToStruct(rv, rt, n); err != nil {
-				return err
+		switch kind := rt.Kind(); kind {
+		case reflect.Struct, reflect.Map:
+			name := typeOf(rt)
+			etyp := name.String()
+			if typ := TypeOf(n); typ != etyp {
+				return ErrIncorrectType.New(typ, etyp)
 			}
-		} else {
-			if rv.IsNil() {
-				rv.Set(reflect.MakeMapWithSize(rt, len(n)-1))
-			}
-			for k, v := range n {
-				if k == KeyType {
-					continue
-				}
-				nv := reflect.New(rt.Elem()).Elem()
-				if err := nodeAs(v, nv); err != nil {
+			if kind == reflect.Struct {
+				if err := nodeToStruct(rv, rt, n); err != nil {
 					return err
 				}
-				rv.SetMapIndex(reflect.ValueOf(k), nv)
+			} else {
+				if rv.IsNil() {
+					rv.Set(reflect.MakeMapWithSize(rt, len(n)-1))
+				}
+				for k, v := range n {
+					if k == KeyType {
+						continue
+					}
+					nv := reflect.New(rt.Elem()).Elem()
+					if err := nodeAs(v, nv); err != nil {
+						return err
+					}
+					rv.SetMapIndex(reflect.ValueOf(k), nv)
+				}
 			}
+		case reflect.Interface:
+			if nv, err := NewValue(TypeOf(n)); err == nil {
+				return nodeAs(n, nv.Elem())
+			} else if !reflect.TypeOf(n).ConvertibleTo(rt) {
+				return fmt.Errorf("cannot create interface value %v for %#v", rt, n)
+			}
+			// we cannot determine the type of an object at this level, so just set it as-is
+			rv.Set(reflect.ValueOf(n).Convert(rt))
+		default:
+			return fmt.Errorf("object: expected struct, map or interface as a field type, got %v", rt)
 		}
 		return nil
 	case nodes.Array:
@@ -379,7 +399,7 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 			return fmt.Errorf("expected slice, got %v", rt)
 		}
 		if rv.Cap() < len(n) {
-			rv.Set(reflect.MakeSlice(rt.Elem(), len(n), len(n)))
+			rv.Set(reflect.MakeSlice(rt, len(n), len(n)))
 		} else {
 			rv = rv.Slice(0, len(n))
 		}
@@ -391,6 +411,9 @@ func nodeAs(n nodes.Node, rv reflect.Value) error {
 		return nil
 	case nodes.String, nodes.Int, nodes.Uint, nodes.Float, nodes.Bool:
 		rt := rv.Type()
+		if rt == reflAny {
+			return fmt.Errorf("expected UAST node, got: %T", n)
+		}
 		nv := reflect.ValueOf(n)
 		if !nv.Type().ConvertibleTo(rt) {
 			return fmt.Errorf("cannot convert %T to %v", n, rt)

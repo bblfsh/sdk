@@ -210,8 +210,27 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 						delete(foundBlack, typ)
 						continue
 					}
-					t.Errorf("nodes of type %q (%d) found in the tree", typ, cnt)
+					t.Errorf("blacklisted nodes of type %q (%d) found in the tree", typ, cnt)
 				}
+			}
+			if mode >= driver.ModeSemantic {
+				nodes.WalkPreOrder(ua, func(n nodes.Node) bool {
+					typ := uast.TypeOf(n)
+					if typ == "" {
+						return true
+					}
+					rv, err := uast.NewValue(typ)
+					if uast.ErrTypeNotRegistered.Is(err) {
+						return true // skip unregistered native types
+					} else if err != nil {
+						t.Error(err)
+						return true
+					}
+					if err := uast.NodeAs(n, rv); err != nil {
+						t.Errorf("type check failed for %q: %v", typ, err)
+					}
+					return true
+				})
 			}
 
 			un, err := marshalUAST(ua)

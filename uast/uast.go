@@ -204,7 +204,7 @@ func Tokens(n nodes.Node) []string {
 type Any interface{}
 
 // Scope is a temporary definition of a scope semantic type.
-type Scope interface{}
+type Scope = Any
 
 type GenNode struct {
 	Positions Positions `json:"@pos,omitempty"`
