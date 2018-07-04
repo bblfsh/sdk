@@ -61,7 +61,7 @@ func (s *Suite) readFixturesFile(t testing.TB, name string) string {
 }
 
 func (s *Suite) writeFixturesFile(t testing.TB, name string, data string) {
-	err := ioutil.WriteFile(filepath.Join(s.Path, name), []byte(data), 0644)
+	err := ioutil.WriteFile(filepath.Join(s.Path, name), []byte(data), 0666)
 	require.NoError(t, err)
 }
 
