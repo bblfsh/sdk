@@ -41,7 +41,7 @@ func (s *Suite) runTestsDocker(t *testing.T) {
 	t.Log(imageid)
 
 	t.Log("Running tests...")
-	testOut := dockerRunFixtures(t, root, imageid)
+	testOut := dockerRunFixtures(t, root, imageid, s.Docker.Debug)
 	reconstructTestLog(t, testOut)
 }
 
@@ -86,7 +86,7 @@ func dockerBuild(t testing.TB, dir string) string {
 	return imageid
 }
 
-func dockerRunFixtures(t testing.TB, root, image string) io.Reader {
+func dockerRunFixtures(t testing.TB, root, image string, debug bool) io.Reader {
 	outBuf := bytes.NewBuffer(nil)
 	errBuf := bytes.NewBuffer(nil)
 	errc := make(chan error, 1)
@@ -113,10 +113,24 @@ func dockerRunFixtures(t testing.TB, root, image string) io.Reader {
 	}
 	args = append(args, image)
 
+	outWriter := func(w io.Writer) io.Writer {
+		return w
+	}
+
+	if debug {
+		logf, err := os.Create("docker_test.log")
+		require.NoError(t, err)
+		defer logf.Close()
+
+		outWriter = func(w io.Writer) io.Writer {
+			return io.MultiWriter(w, logf)
+		}
+	}
+
 	t.Log(strings.Join(append([]string{"docker"}, args...), " "))
 	cmd := exec.Command("docker", args...)
-	cmd.Stdout = pw
-	cmd.Stderr = errBuf
+	cmd.Stdout = outWriter(pw)
+	cmd.Stderr = outWriter(errBuf)
 	err := cmd.Run()
 	pw.Close()
 	if err != nil {

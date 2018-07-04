@@ -26,6 +26,7 @@ type SemanticConfig struct {
 }
 
 type DockerConfig struct {
+	Debug bool
 	Image string
 }
 
