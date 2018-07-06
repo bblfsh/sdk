@@ -51,8 +51,11 @@ type Suite struct {
 	Docker   DockerConfig
 }
 
+func (s *Suite) fixturesPath(name string) string {
+	return filepath.Join(s.Path, name)
+}
 func (s *Suite) readFixturesFile(t testing.TB, name string) string {
-	data, err := ioutil.ReadFile(filepath.Join(s.Path, name))
+	data, err := ioutil.ReadFile(s.fixturesPath(name))
 	if os.IsNotExist(err) {
 		return ""
 	}
@@ -61,7 +64,7 @@ func (s *Suite) readFixturesFile(t testing.TB, name string) string {
 }
 
 func (s *Suite) writeFixturesFile(t testing.TB, name string, data string) {
-	err := ioutil.WriteFile(filepath.Join(s.Path, name), []byte(data), 0666)
+	err := ioutil.WriteFile(s.fixturesPath(name), []byte(data), 0666)
 	require.NoError(t, err)
 }
 
@@ -125,7 +128,8 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 		}
 		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
-			code := s.readFixturesFile(t, name+suffix)
+			name += suffix
+			code := s.readFixturesFile(t, name)
 
 			resp, err := dr.Parse(&driver.InternalParseRequest{
 				Content:  string(code),
@@ -136,10 +140,10 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 			js, err := marshalNative(resp)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+suffix+nativeExt)
+			exp := s.readFixturesFile(t, name+nativeExt)
 			got := string(js)
 			if exp == "" {
-				s.writeFixturesFile(t, name+suffix+nativeExt, got)
+				s.writeFixturesFile(t, name+nativeExt, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
@@ -147,11 +151,19 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 				if s.UpdateNative {
 					ext = nativeExt
 				}
-				s.writeFixturesFile(t, name+suffix+ext, got)
+				s.writeFixturesFile(t, name+ext, got)
+				if !s.UpdateNative {
+					require.Fail(t, "unexpected AST returned by the driver",
+						"run diff command to debug:\ndiff -d ./%s ./%s",
+						strings.TrimLeft(s.fixturesPath(name+ext), "./"),
+						strings.TrimLeft(s.fixturesPath(name+nativeExt), "./"),
+					)
+				} else {
+					t.Skip("force update of native fixtures")
+				}
 			} else {
-				s.deleteFixturesFile(name + suffix + nativeExt + gotSuffix)
+				s.deleteFixturesFile(name + nativeExt + gotSuffix)
 			}
-			require.Equal(t, exp, got)
 		})
 	}
 }
@@ -173,7 +185,8 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 		}
 		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
-			code := s.readFixturesFile(t, name+suffix)
+			name += suffix
+			code := s.readFixturesFile(t, name)
 
 			req := &driver.InternalParseRequest{
 				Content:  string(code),
@@ -236,10 +249,10 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			un, err := marshalUAST(ua)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+suffix+suf)
+			exp := s.readFixturesFile(t, name+suf)
 			got := string(un)
 			if exp == "" {
-				s.writeFixturesFile(t, name+suffix+suf, got)
+				s.writeFixturesFile(t, name+suf, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
@@ -247,13 +260,21 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 				if s.UpdateUAST {
 					ext = suf
 				}
-				s.writeFixturesFile(t, name+suffix+ext, got)
+				s.writeFixturesFile(t, name+ext, got)
+				if !s.UpdateUAST {
+					require.Fail(t, "unexpected UAST returned by the driver",
+						"run diff command to debug:\ndiff -d ./%s ./%s",
+						strings.TrimLeft(s.fixturesPath(name+ext), "./"),
+						strings.TrimLeft(s.fixturesPath(name+suf), "./"),
+					)
+				} else {
+					t.Skip("force update of fixtures")
+				}
 			} else {
-				s.deleteFixturesFile(name + suffix + suf + gotSuffix)
+				s.deleteFixturesFile(name + suf + gotSuffix)
 			}
-			require.Equal(t, exp, got)
 			if s.WriteViewerJSON {
-				s.writeViewerJSON(t, name+suffix+suf, code, ua)
+				s.writeViewerJSON(t, name+suf, code, ua)
 			}
 		})
 	}
