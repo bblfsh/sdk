@@ -8,8 +8,5 @@ import (
 )
 
 func main() {
-	driver.Run(driver.Transforms{
-		Native: normalizer.Native,
-		Code:   normalizer.Code,
-	})
+	driver.Run(normalizer.Transforms)
 }

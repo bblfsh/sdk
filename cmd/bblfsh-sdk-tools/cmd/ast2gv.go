@@ -2,17 +2,17 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
-	"sort"
 	"strconv"
 
 	"github.com/ghodss/yaml"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const Ast2GraphvizCommandDescription = "" +
@@ -71,12 +71,14 @@ func (c *Ast2GraphvizCommand) processFile(name string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	var ast struct {
-		AST interface{} `json:"ast"`
-	}
-	if err := json.NewDecoder(f).Decode(&ast); err != nil {
+	data, err := ioutil.ReadAll(f)
+	f.Close()
+	if err != nil {
 		return err
+	}
+	ast, err := uastyml.Unmarshal(data)
+	if err != nil {
+		return fmt.Errorf("cannot unmarshal uast: %v", err)
 	}
 	ext := c.Output
 	if ext == "" {
@@ -90,11 +92,11 @@ func (c *Ast2GraphvizCommand) processFile(name string) error {
 	defer out.Close()
 
 	if ext == "dot" || ext == "gv" {
-		return c.writeGraphviz(out, ast.AST)
+		return c.writeGraphviz(out, ast)
 	}
 
 	buf := bytes.NewBuffer(nil)
-	if err := c.writeGraphviz(buf, ast.AST); err != nil {
+	if err := c.writeGraphviz(buf, ast); err != nil {
 		return err
 	}
 
@@ -104,7 +106,7 @@ func (c *Ast2GraphvizCommand) processFile(name string) error {
 	return cmd.Run()
 }
 
-func (c *Ast2GraphvizCommand) writeGraphviz(w io.Writer, o interface{}) error {
+func (c *Ast2GraphvizCommand) writeGraphviz(w io.Writer, n nodes.Node) error {
 	fmt.Fprintln(w, "digraph AST {")
 	defer fmt.Fprintln(w, "}")
 
@@ -147,36 +149,32 @@ func (c *Ast2GraphvizCommand) writeGraphviz(w io.Writer, o interface{}) error {
 	}
 	_, _, _ = writeNode, writePred, writeLink
 
-	var proc func(interface{}) string
-	proc = func(o interface{}) string {
+	var proc func(nodes.Node) string
+	proc = func(n nodes.Node) string {
 		id := nextID()
-		switch o := o.(type) {
-		case []interface{}:
+		switch n := n.(type) {
+		case nodes.Array:
 			writeNode(id, "", diamond, "", true)
-			for _, s := range o {
+			for _, s := range n {
 				sid := proc(s)
 				writeLink(id, sid)
 			}
-		case map[string]interface{}:
-			tp, _ := o[c.TypePred].(string)
-			delete(o, c.TypePred)
-			writeNode(id, tp, circle, c.nodeColors[tp], tp == "")
-
-			keys := make([]string, 0, len(o))
-			for k := range o {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
+		case nodes.Object:
+			n = n.CloneObject()
+			tp, _ := n[c.TypePred].(nodes.String)
+			delete(n, c.TypePred)
+			writeNode(id, string(tp), circle, c.nodeColors[string(tp)], tp == "")
+			keys := n.Keys()
 			for _, k := range keys {
-				v := o[k]
+				v := n[k]
 				sid := proc(v)
 				writePred(id, k, sid)
 			}
 		default:
-			writeNode(id, fmt.Sprint(o), box, "", true)
+			writeNode(id, fmt.Sprint(n), box, "", true)
 		}
 		return id
 	}
-	proc(o)
+	proc(n)
 	return nil
 }

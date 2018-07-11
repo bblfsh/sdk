@@ -1,7 +1,6 @@
 package fixtures
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,32 +11,51 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 	"gopkg.in/bblfsh/sdk.v2/sdk/driver"
+	"gopkg.in/bblfsh/sdk.v2/sdk/viewer"
 	"gopkg.in/bblfsh/sdk.v2/uast"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const Dir = "fixtures"
 
+type SemanticConfig struct {
+	// BlacklistTypes is a list og types that should not appear in semantic UAST.
+	// Used to test if all cases of a specific native AST type were converted to semantic UAST.
+	BlacklistTypes []string
+}
+
+type DockerConfig struct {
+	Debug bool
+	Image string
+}
+
 type Suite struct {
-	Lang     string
-	Ext      string // with dot
-	Path     string
-	WriteYML bool
+	Lang string
+	Ext  string // with dot
+	Path string
 
-	// Update* flags below should never be committed in "true" state.
-	// They serve only as an automation for updating fixture files.
+	// Update* and Write* flags below should never be committed in "true" state.
+	// They serve only as helpers for debugging.
 
-	UpdateNative bool // update native ASTs in fixtures to ones produced by driver
-	UpdateUAST   bool // update UASTs in fixtures to ones produced by driver
+	UpdateNative    bool // update native ASTs in fixtures to ones produced by driver
+	UpdateUAST      bool // update UASTs in fixtures to ones produced by driver
+	WriteViewerJSON bool // write JSON compatible with uast-viewer
 
 	NewDriver  func() driver.BaseDriver
 	Transforms driver.Transforms
 
 	BenchName string // fixture name to benchmark (with no extension)
+
+	Semantic SemanticConfig
+	Docker   DockerConfig
 }
 
+func (s *Suite) fixturesPath(name string) string {
+	return filepath.Join(s.Path, name)
+}
 func (s *Suite) readFixturesFile(t testing.TB, name string) string {
-	data, err := ioutil.ReadFile(filepath.Join(s.Path, name))
+	data, err := ioutil.ReadFile(s.fixturesPath(name))
 	if os.IsNotExist(err) {
 		return ""
 	}
@@ -46,8 +64,14 @@ func (s *Suite) readFixturesFile(t testing.TB, name string) string {
 }
 
 func (s *Suite) writeFixturesFile(t testing.TB, name string, data string) {
-	err := ioutil.WriteFile(filepath.Join(s.Path, name), []byte(data), 0644)
+	err := ioutil.WriteFile(s.fixturesPath(name), []byte(data), 0666)
 	require.NoError(t, err)
+}
+
+func (s *Suite) writeViewerJSON(t testing.TB, name string, code string, ast nodes.Node) {
+	data, err := viewer.MarshalUAST(s.Lang, code, ast)
+	require.NoError(t, err)
+	s.writeFixturesFile(t, name+".json", string(data))
 }
 
 func (s *Suite) deleteFixturesFile(name string) {
@@ -55,8 +79,17 @@ func (s *Suite) deleteFixturesFile(name string) {
 }
 
 func (s *Suite) RunTests(t *testing.T) {
+	if s.Docker.Image != "" && runInDocker {
+		s.runTestsDocker(t)
+		return
+	}
 	t.Run("native", s.testFixturesNative)
-	t.Run("uast", s.testFixturesUAST)
+	t.Run("uast", func(t *testing.T) {
+		s.testFixturesUAST(t, driver.ModeAnnotated, uastExt)
+	})
+	t.Run("semantic", func(t *testing.T) {
+		s.testFixturesUAST(t, driver.ModeSemantic, highExt, s.Semantic.BlacklistTypes...)
+	})
 }
 
 func (s *Suite) RunBenchmarks(t *testing.B) {
@@ -64,10 +97,19 @@ func (s *Suite) RunBenchmarks(t *testing.B) {
 }
 
 const (
-	gotSuffix = "2"
+	gotSuffix = "_got"
 	nativeExt = ".native"
 	uastExt   = ".uast"
+	highExt   = ".sem.uast"
 )
+
+func marshalNative(o *driver.InternalParseResponse) ([]byte, error) {
+	return uastyml.Marshal(o.AST)
+}
+
+func marshalUAST(o nodes.Node) ([]byte, error) {
+	return uastyml.Marshal(o)
+}
 
 func (s *Suite) testFixturesNative(t *testing.T) {
 	list, err := ioutil.ReadDir(s.Path)
@@ -86,7 +128,8 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 		}
 		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
-			code := s.readFixturesFile(t, name+suffix)
+			name += suffix
+			code := s.readFixturesFile(t, name)
 
 			resp, err := dr.Parse(&driver.InternalParseRequest{
 				Content:  string(code),
@@ -94,26 +137,13 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			if s.WriteYML {
-				ya, err := yaml.Marshal(resp.AST)
-				require.NoError(t, err)
-				s.writeFixturesFile(t, name+suffix+nativeExt+".yml", string(ya))
-			}
-
-			js, err := json.Marshal(resp.AST)
+			js, err := marshalNative(resp)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+suffix+nativeExt)
-			got := (&protocol.NativeParseResponse{
-				Response: protocol.Response{
-					Status: protocol.Status(resp.Status),
-					Errors: resp.Errors,
-				},
-				AST:      string(js),
-				Language: s.Lang,
-			}).String()
+			exp := s.readFixturesFile(t, name+nativeExt)
+			got := string(js)
 			if exp == "" {
-				s.writeFixturesFile(t, name+suffix+nativeExt, got)
+				s.writeFixturesFile(t, name+nativeExt, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
@@ -121,16 +151,24 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 				if s.UpdateNative {
 					ext = nativeExt
 				}
-				s.writeFixturesFile(t, name+suffix+ext, got)
+				s.writeFixturesFile(t, name+ext, got)
+				if !s.UpdateNative {
+					require.Fail(t, "unexpected AST returned by the driver",
+						"run diff command to debug:\ndiff -d ./%s ./%s",
+						strings.TrimLeft(s.fixturesPath(name+ext), "./"),
+						strings.TrimLeft(s.fixturesPath(name+nativeExt), "./"),
+					)
+				} else {
+					t.Skip("force update of native fixtures")
+				}
 			} else {
-				s.deleteFixturesFile(name + suffix + nativeExt + gotSuffix)
+				s.deleteFixturesFile(name + nativeExt + gotSuffix)
 			}
-			require.Equal(t, exp, got)
 		})
 	}
 }
 
-func (s *Suite) testFixturesUAST(t *testing.T) {
+func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, blacklist ...string) {
 	list, err := ioutil.ReadDir(s.Path)
 	require.NoError(t, err)
 
@@ -147,7 +185,8 @@ func (s *Suite) testFixturesUAST(t *testing.T) {
 		}
 		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
-			code := s.readFixturesFile(t, name+suffix)
+			name += suffix
+			code := s.readFixturesFile(t, name)
 
 			req := &driver.InternalParseRequest{
 				Content:  string(code),
@@ -161,41 +200,82 @@ func (s *Suite) testFixturesUAST(t *testing.T) {
 			require.NoError(t, err)
 
 			tr := s.Transforms
-			ua, err := tr.Do(driver.ModeAST, code, ast)
+			ua, err := tr.Do(mode, code, ast)
 			require.NoError(t, err)
 
-			if s.WriteYML {
-				ya, err := yaml.Marshal(ua)
-				require.NoError(t, err)
-				s.writeFixturesFile(t, name+suffix+uastExt+".yml", string(ya))
+			if len(blacklist) != 0 {
+				foundBlack := make(map[string]int, len(blacklist))
+				for _, typ := range blacklist {
+					foundBlack[typ] = 0
+				}
+				nodes.WalkPreOrder(ua, func(n nodes.Node) bool {
+					typ := uast.TypeOf(n)
+					if typ == "" {
+						return true
+					}
+					if cnt, ok := foundBlack[typ]; ok {
+						foundBlack[typ] = cnt + 1
+					}
+					return true
+				})
+				for typ, cnt := range foundBlack {
+					if cnt == 0 {
+						delete(foundBlack, typ)
+						continue
+					}
+					t.Errorf("blacklisted nodes of type %q (%d) found in the tree", typ, cnt)
+				}
+			}
+			if mode >= driver.ModeSemantic {
+				nodes.WalkPreOrder(ua, func(n nodes.Node) bool {
+					typ := uast.TypeOf(n)
+					if typ == "" {
+						return true
+					}
+					rv, err := uast.NewValue(typ)
+					if uast.ErrTypeNotRegistered.Is(err) {
+						return true // skip unregistered native types
+					} else if err != nil {
+						t.Error(err)
+						return true
+					}
+					if err := uast.NodeAs(n, rv); err != nil {
+						t.Errorf("type check failed for %q: %v", typ, err)
+					}
+					return true
+				})
 			}
 
-			un, err := protocol.ToNode(ua)
+			un, err := marshalUAST(ua)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+suffix+uastExt)
-			got := (&protocol.ParseResponse{
-				Response: protocol.Response{
-					Status: protocol.Status(resp.Status),
-					Errors: resp.Errors,
-				},
-				UAST:     un,
-				Language: s.Lang,
-			}).String()
+			exp := s.readFixturesFile(t, name+suf)
+			got := string(un)
 			if exp == "" {
-				s.writeFixturesFile(t, name+suffix+uastExt, got)
+				s.writeFixturesFile(t, name+suf, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
-				ext := uastExt + gotSuffix
+				ext := suf + gotSuffix
 				if s.UpdateUAST {
-					ext = uastExt
+					ext = suf
 				}
-				s.writeFixturesFile(t, name+suffix+ext, got)
+				s.writeFixturesFile(t, name+ext, got)
+				if !s.UpdateUAST {
+					require.Fail(t, "unexpected UAST returned by the driver",
+						"run diff command to debug:\ndiff -d ./%s ./%s",
+						strings.TrimLeft(s.fixturesPath(name+ext), "./"),
+						strings.TrimLeft(s.fixturesPath(name+suf), "./"),
+					)
+				} else {
+					t.Skip("force update of fixtures")
+				}
 			} else {
-				s.deleteFixturesFile(name + suffix + uastExt + gotSuffix)
+				s.deleteFixturesFile(name + suf + gotSuffix)
 			}
-			require.Equal(t, exp, got)
+			if s.WriteViewerJSON {
+				s.writeViewerJSON(t, name+suf, code, ua)
+			}
 		})
 	}
 }
@@ -234,7 +314,7 @@ func (s *Suite) benchmarkTransform(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ast := rast.Clone()
 
-		ua, err := tr.Do(driver.ModeAST, code, ast)
+		ua, err := tr.Do(driver.ModeAnnotated, code, ast)
 		if err != nil {
 			b.Fatal(err)
 		}

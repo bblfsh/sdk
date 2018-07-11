@@ -2,14 +2,18 @@ package transformer
 
 import (
 	"sort"
+	"strings"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
+
+const optimizeCheck = true
 
 // Transformer is an interface for transformations that operates on AST trees.
 // An implementation is responsible for walking the tree and executing transformation on each AST node.
 type Transformer interface {
-	Do(root uast.Node) (uast.Node, error)
+	Do(root nodes.Node) (nodes.Node, error)
 }
 
 // CodeTransformer is a special case of Transformer that needs an original source code to operate.
@@ -19,16 +23,18 @@ type CodeTransformer interface {
 
 // Sel is an operation that can verify if a specific node matches a set of constraints or not.
 type Sel interface {
+	// Kinds returns a mask of all nodes kinds that this operation might match.
+	Kinds() nodes.Kind
 	// Check will verify constraints for a single node and returns true if an objects matches them.
 	// It can also populate the State with variables that can be used later to Construct a different object from the State.
-	Check(st *State, n uast.Node) (bool, error)
+	Check(st *State, n nodes.Node) (bool, error)
 }
 
 // Mod is an operation that can reconstruct an AST node from a given State.
 type Mod interface {
 	// Construct will use variables stored in State to reconstruct an AST node.
 	// Node that is provided as an argument may be used as a base for reconstruction.
-	Construct(st *State, n uast.Node) (uast.Node, error)
+	Construct(st *State, n nodes.Node) (nodes.Node, error)
 }
 
 // Op is a generic AST transformation step that describes a shape of an AST tree.
@@ -53,12 +59,12 @@ var _ Transformer = (TransformFunc)(nil)
 // TransformFunc is a function that will be applied to each AST node to transform the tree.
 // It returns a new AST and true if tree was changed, or an old node and false if no modifications were done.
 // The the tree will be traversed automatically and the callback will be called for each node.
-type TransformFunc func(n uast.Node) (uast.Node, bool, error)
+type TransformFunc func(n nodes.Node) (nodes.Node, bool, error)
 
 // Do runs a transformation function for each AST node.
-func (f TransformFunc) Do(n uast.Node) (uast.Node, error) {
+func (f TransformFunc) Do(n nodes.Node) (nodes.Node, error) {
 	var last error
-	nn, ok := uast.Apply(n, func(n uast.Node) (uast.Node, bool) {
+	nn, ok := nodes.Apply(n, func(n nodes.Node) (nodes.Node, bool) {
 		nn, ok, err := f(n)
 		if err != nil {
 			last = err
@@ -77,12 +83,12 @@ func (f TransformFunc) Do(n uast.Node) (uast.Node, error) {
 var _ Transformer = (TransformObjFunc)(nil)
 
 // TransformObjFunc is like TransformFunc, but only matches Object nodes.
-type TransformObjFunc func(n uast.Object) (uast.Object, bool, error)
+type TransformObjFunc func(n nodes.Object) (nodes.Object, bool, error)
 
 // Func converts this TransformObjFunc to a regular TransformFunc by skipping all non-object nodes.
 func (f TransformObjFunc) Func() TransformFunc {
-	return TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
-		obj, ok := n.(uast.Object)
+	return TransformFunc(func(n nodes.Node) (nodes.Node, bool, error) {
+		obj, ok := n.(nodes.Object)
 		if !ok {
 			return n, false, nil
 		}
@@ -97,45 +103,92 @@ func (f TransformObjFunc) Func() TransformFunc {
 }
 
 // Do runs a transformation function for each AST node.
-func (f TransformObjFunc) Do(n uast.Node) (uast.Node, error) {
+func (f TransformObjFunc) Do(n nodes.Node) (nodes.Node, error) {
 	return f.Func().Do(n)
 }
 
 // Map creates a two-way mapping between two transform operations.
 // The first operation will be used to check constraints for each node and store state, while the second one will use
 // the state to construct a new tree.
-func Map(name string, src, dst Op) Mapping {
-	return Mapping{name: name, src: src, dst: dst}
+func Map(src, dst Op) Mapping {
+	return mapping{src: src, dst: dst}
 }
 
-var _ Transformer = Mapping{}
+func MapObj(src, dst ObjectOp) ObjMapping {
+	return objMapping{src: src, dst: dst}
+}
 
-// Mapping is a set of transformation steps executed in order.
-type Mapping struct {
-	name     string
+func MapPart(vr string, m ObjMapping) ObjMapping {
+	src, dst := m.ObjMapping()
+	_, sok := src.Fields()
+	_, dok := dst.Fields()
+	if !sok && !dok {
+		// both contain partial op, ignore current label
+		return MapObj(src, dst)
+	} else if sok != dok {
+		panic("inconsistent use of Part")
+	}
+	return MapObj(Part(vr, src), Part(vr, dst))
+}
+
+func Identity(op Op) Mapping {
+	return Map(op, op)
+}
+
+type Mapping interface {
+	Mapping() (src, dst Op)
+}
+
+type ObjMapping interface {
+	Mapping
+	ObjMapping() (src, dst ObjectOp)
+}
+
+type MappingOp interface {
+	Op
+	Mapping
+}
+
+type mapping struct {
 	src, dst Op
 }
 
-// Reverse changes a transformation direction, allowing to construct the source tree.
-func (m Mapping) Reverse() Mapping {
-	m.src, m.dst = m.dst, m.src
-	return m
+func (m mapping) Mapping() (src, dst Op) {
+	return m.src, m.dst
 }
 
-func (m Mapping) apply(root uast.Node) (uast.Node, error) {
+type objMapping struct {
+	src, dst ObjectOp
+}
+
+func (m objMapping) Mapping() (src, dst Op) {
+	return m.src, m.dst
+}
+
+func (m objMapping) ObjMapping() (src, dst ObjectOp) {
+	return m.src, m.dst
+}
+
+// Reverse changes a transformation direction, allowing to construct the source tree.
+func Reverse(m Mapping) Mapping {
+	src, dst := m.Mapping()
+	return Map(dst, src)
+}
+
+func (m mapping) apply(root nodes.Node) (nodes.Node, error) {
 	src, dst := m.src, m.dst
 	var errs []error
 	_, objOp := src.(ObjectOp)
 	_, arrOp := src.(ArrayOp)
 	st := NewState()
-	nn, ok := uast.Apply(root, func(n uast.Node) (uast.Node, bool) {
+	nn, ok := nodes.Apply(root, func(n nodes.Node) (nodes.Node, bool) {
 		if n != nil {
 			if objOp {
-				if _, ok := n.(uast.Object); !ok {
+				if _, ok := n.(nodes.Object); !ok {
 					return n, false
 				}
 			} else if arrOp {
-				if _, ok := n.(uast.Array); !ok {
+				if _, ok := n.(nodes.Array); !ok {
 					return n, false
 				}
 			}
@@ -161,26 +214,18 @@ func (m Mapping) apply(root uast.Node) (uast.Node, error) {
 	return root, err
 }
 
-// Do will traverse the whole tree and will apply transformation steps for each node.
-func (m Mapping) Do(n uast.Node) (uast.Node, error) {
-	nn, err := m.apply(n)
-	if err != nil {
-		return n, errMapping.Wrap(err, m.name)
-	}
-	return nn, nil
-}
-
 // Mappings takes multiple mappings and optimizes the process of applying them as a single transformation.
 func Mappings(maps ...Mapping) Transformer {
 	if len(maps) == 0 {
 		return mappings{}
-	} else if len(maps) == 1 {
-		return maps[0]
 	}
 	mp := mappings{
 		all: maps,
 	}
-	mp.index()
+	if optimizeCheck {
+		mp.byKind = make(map[nodes.Kind][]Mapping)
+		mp.index()
+	}
 	return mp
 }
 
@@ -189,23 +234,15 @@ type mappings struct {
 
 	// indexed mappings
 
-	objs   []Mapping // mappings applied to objects
-	arrs   []Mapping // mappings applied to arrays
-	others []Mapping // mappings to other types
+	byKind map[nodes.Kind][]Mapping // mappings applied to specific node kind
 
 	typedObj map[string][]Mapping // mappings for objects with specific type
 	typedAny []Mapping            // mappings for any typed object (operations that does not mention the type)
 }
 
 func (m *mappings) index() {
-	precompile := func(op Op) Op {
-		// TODO: recurse somehow
-		if oop, ok := op.(ObjectOp); ok {
-			if _, ok := op.(Object); !ok {
-				return oop.Object()
-			}
-		}
-		return op
+	precompile := func(m Mapping) Mapping {
+		return Map(m.Mapping())
 	}
 	type ordered struct {
 		ind int
@@ -215,21 +252,25 @@ func (m *mappings) index() {
 	typed := make(map[string][]ordered)
 	for i, mp := range m.all {
 		// pre-compile object operations (sort fields for unordered ops, etc)
-		mp.src, mp.dst = precompile(mp.src), precompile(mp.dst)
+		mp = precompile(mp)
 
-		oop := mp.src
+		oop, _ := mp.Mapping()
 		if chk, ok := oop.(opCheck); ok {
 			oop = chk.op
 		}
 		// switch by operation type and make a separate list
 		// next time we will see a node with matching type, we will apply only specific ops
+		for _, k := range oop.Kinds().Split() {
+			m.byKind[k] = append(m.byKind[k], mp)
+		}
 		switch op := oop.(type) {
 		case ObjectOp:
-			m.objs = append(m.objs, mp)
 			specific := false
-			if f, _ := op.Object().GetField(uast.KeyType); f.Optional == "" {
-				if is, ok := f.Op.(opIs); ok {
-					if typ, ok := is.v.(uast.String); ok {
+			fields, _ := op.Fields()
+			if f, ok := fields[uast.KeyType]; ok && !f.Optional {
+				if f.Fixed != nil {
+					typ := *f.Fixed
+					if typ, ok := typ.(nodes.String); ok {
 						s := string(typ)
 						typed[s] = append(typed[s], ordered{ind: i, mp: mp})
 						specific = true
@@ -239,14 +280,9 @@ func (m *mappings) index() {
 			if !specific {
 				typedAny = append(typedAny, ordered{ind: i, mp: mp})
 			}
-		case ArrayOp:
-			m.arrs = append(m.arrs, mp)
 		default:
-			m.others = append(m.others, mp)
 			// the type is unknown, thus we should try to apply it to objects and array as well
 			typedAny = append(typedAny, ordered{ind: i, mp: mp})
-			m.objs = append(m.objs, mp)
-			m.arrs = append(m.arrs, mp)
 		}
 	}
 	m.typedObj = make(map[string][]Mapping, len(typed))
@@ -263,31 +299,29 @@ func (m *mappings) index() {
 	}
 }
 
-func (m mappings) Do(root uast.Node) (uast.Node, error) {
+func (m mappings) Do(root nodes.Node) (nodes.Node, error) {
 	var errs []error
 	st := NewState()
-	nn, ok := uast.Apply(root, func(old uast.Node) (uast.Node, bool) {
-		maps := m.all
-		switch old := old.(type) {
-		case nil:
-			// apply all
-		case uast.Object:
-			maps = m.objs
-			if typ, ok := old[uast.KeyType].(uast.String); ok {
-				if mp, ok := m.typedObj[string(typ)]; ok {
-					maps = mp
+	nn, ok := nodes.Apply(root, func(old nodes.Node) (nodes.Node, bool) {
+		var maps []Mapping
+		if !optimizeCheck {
+			maps = m.all
+		} else {
+			maps = m.byKind[nodes.KindOf(old)]
+			switch old := old.(type) {
+			case nodes.Object:
+				if typ, ok := old[uast.KeyType].(nodes.String); ok {
+					if mp, ok := m.typedObj[string(typ)]; ok {
+						maps = mp
+					}
 				}
 			}
-		case uast.Array:
-			maps = m.arrs
-		default:
-			maps = m.others
 		}
 
 		n := old
 		applied := false
 		for _, mp := range maps {
-			src, dst := mp.src, mp.dst
+			src, dst := mp.Mapping()
 			st.Reset()
 			if ok, err := src.Check(st, n); err != nil {
 				errs = append(errs, errCheck.Wrap(err))
@@ -296,6 +330,7 @@ func (m mappings) Do(root uast.Node) (uast.Node, error) {
 				continue
 			}
 			applied = true
+
 			nn, err := dst.Construct(st, nil)
 			if err != nil {
 				errs = append(errs, errConstruct.Wrap(err))
@@ -324,7 +359,7 @@ func NewState() *State {
 }
 
 // Vars is a set of variables with their values.
-type Vars map[string]uast.Node
+type Vars map[string]nodes.Node
 
 // State stores all variables (placeholder values, flags and wny other state) between Check and Construct steps.
 type State struct {
@@ -378,13 +413,13 @@ func (st *State) ApplyFrom(st2 *State) {
 }
 
 // GetVar looks up a named variable.
-func (st *State) GetVar(name string) (uast.Node, bool) {
+func (st *State) GetVar(name string) (nodes.Node, bool) {
 	n, ok := st.vars[name]
 	return n, ok
 }
 
 // MustGetVar looks up a named variable and returns ErrVariableNotDefined in case it does not exists.
-func (st *State) MustGetVar(name string) (uast.Node, error) {
+func (st *State) MustGetVar(name string) (nodes.Node, error) {
 	n, ok := st.GetVar(name)
 	if !ok {
 		return nil, ErrVariableNotDefined.New(name)
@@ -393,7 +428,7 @@ func (st *State) MustGetVar(name string) (uast.Node, error) {
 }
 
 // VarsPtrs is a set of variable pointers.
-type VarsPtrs map[string]uast.NodePtr
+type VarsPtrs map[string]nodes.NodePtr
 
 // MustGetVars is like MustGetVar but fetches multiple variables in one operation.
 func (st *State) MustGetVars(vars VarsPtrs) error {
@@ -410,8 +445,8 @@ func (st *State) MustGetVars(vars VarsPtrs) error {
 }
 
 // SetVar sets a named variable. It will return ErrVariableRedeclared if a variable with the same name is already set.
-// It will ignore the operation if variable already exists and has the same value (uast.Value).
-func (st *State) SetVar(name string, val uast.Node) error {
+// It will ignore the operation if variable already exists and has the same value (nodes.Value).
+func (st *State) SetVar(name string, val nodes.Node) error {
 	cur, ok := st.vars[name]
 	if !ok {
 		// not declared
@@ -421,7 +456,7 @@ func (st *State) SetVar(name string, val uast.Node) error {
 		st.vars[name] = val
 		return nil
 	}
-	if uast.Equal(cur, val) {
+	if nodes.Equal(cur, val) {
 		// already declared, and the same value is already in the map
 		return nil
 	}
@@ -455,4 +490,24 @@ func (st *State) SetStateVar(name string, sub []*State) error {
 	}
 	st.states[name] = sub
 	return nil
+}
+
+// DefaultNamespace is a transform that sets a specified namespace for predicates and values that doesn't have a namespace.
+func DefaultNamespace(ns string) Transformer {
+	return TransformFunc(func(n nodes.Node) (nodes.Node, bool, error) {
+		obj, ok := n.(nodes.Object)
+		if !ok {
+			return n, false, nil
+		}
+		tp, ok := obj[uast.KeyType].(nodes.String)
+		if !ok {
+			return n, false, nil
+		}
+		if strings.Contains(string(tp), ":") {
+			return n, false, nil
+		}
+		obj = obj.CloneObject()
+		obj[uast.KeyType] = nodes.String(ns + ":" + string(tp))
+		return obj, true, nil
+	})
 }

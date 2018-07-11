@@ -6,8 +6,10 @@ import (
 	"html/template"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
 	"gopkg.in/bblfsh/sdk.v2/cmd"
@@ -21,10 +23,11 @@ const (
 
 // managedFiles are files that always are overwritten
 var managedFiles = map[string]bool{
-	".travis.yml":        true,
-	"README.md.tpl":      true,
-	"LICENSE":            true,
-	"driver/main.go.tpl": true,
+	".travis.yml":                     true,
+	"README.md.tpl":                   true,
+	"LICENSE":                         true,
+	"driver/main.go.tpl":              true,
+	"driver/normalizer/transforms.go": true,
 }
 
 const UpdateCommandDescription = "updates an already initialized driver"
@@ -84,6 +87,7 @@ func (c *UpdateCommand) processFileAsset(name string, overwrite bool) error {
 
 var funcs = map[string]interface{}{
 	"escape_shield": escapeShield,
+	"expName":       expName,
 }
 
 func (c *UpdateCommand) processTemplateAsset(name string, v interface{}, overwrite bool) error {
@@ -155,7 +159,11 @@ func (c *UpdateCommand) doWriteFile(file string, content []byte, m os.FileMode) 
 	}
 
 	_, err = f.Write(content)
-	return err
+	if err != nil {
+		return err
+	}
+	_ = exec.Command("git", "add", file).Run()
+	return nil
 }
 
 func (c *UpdateCommand) readManifest() (*manifest.Manifest, error) {
@@ -190,6 +198,15 @@ func (c *UpdateCommand) notifyChangedFile(file string) {
 
 func escapeShield(text interface{}) string {
 	return strings.Replace(fmt.Sprintf("%s", text), "-", "--", -1)
+}
+
+func expName(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	r := []rune(s)
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
 }
 
 func fixGitFolder(path string) string {

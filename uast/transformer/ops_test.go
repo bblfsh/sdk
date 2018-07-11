@@ -5,36 +5,37 @@ import (
 
 	"github.com/stretchr/testify/require"
 	u "gopkg.in/bblfsh/sdk.v2/uast"
+	un "gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/src-d/go-errors.v1"
 )
 
-func arrObjInt(key string, v int) func() u.Node {
-	return arrObjVal(key, u.Int(v))
+func arrObjInt(key string, v int) func() un.Node {
+	return arrObjVal(key, un.Int(v))
 }
 
-func arrObjStr(key string, v string) func() u.Node {
-	return arrObjVal(key, u.String(v))
+func arrObjStr(key string, v string) func() un.Node {
+	return arrObjVal(key, un.String(v))
 }
 
-func arrObjVal(key string, v u.Value) func() u.Node {
-	return func() u.Node {
-		return u.Array{
-			u.Object{key: v},
+func arrObjVal(key string, v un.Value) func() un.Node {
+	return func() un.Node {
+		return un.Array{
+			un.Object{key: v},
 		}
 	}
 }
 
-func arrObjVal2(key1, key2 string, v1, v2 u.Value) func() u.Node {
-	return func() u.Node {
-		return u.Array{
-			u.Object{key1: v1, key2: v2},
+func arrObjVal2(key1, key2 string, v1, v2 un.Value) func() un.Node {
+	return func() un.Node {
+		return un.Array{
+			un.Object{key1: v1, key2: v2},
 		}
 	}
 }
 
-var opCases = []struct {
+var opsCases = []struct {
 	name     string
-	inp, exp func() u.Node
+	inp, exp func() un.Node
 	src, dst Op
 	err      *errors.Kind
 	skip     bool
@@ -43,8 +44,8 @@ var opCases = []struct {
 	{
 		name: "is",
 		inp:  arrObjInt("v", 1),
-		src:  Is(u.Int(1)),
-		dst:  Is(u.Int(2)),
+		src:  Is(un.Int(1)),
+		dst:  Is(un.Int(2)),
 		exp:  arrObjInt("v", 2),
 	},
 	{
@@ -92,8 +93,8 @@ var opCases = []struct {
 		name: "lookup save",
 		inp:  arrObjInt("v", 1),
 		src: Obj{
-			"v": LookupVar("x", map[u.Value]u.Value{
-				u.Int(1): u.String("A"),
+			"v": LookupVar("x", map[un.Value]un.Value{
+				un.Int(1): un.String("A"),
 			}),
 		},
 		dst: Obj{"v2": Var("x")},
@@ -108,7 +109,7 @@ var opCases = []struct {
 	},
 	{
 		name: "var redeclared",
-		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
+		inp:  arrObjVal2("v1", "v2", un.Int(1), un.Int(2)),
 		src: Obj{
 			"v1": Var("x"),
 			"v2": Var("x"),
@@ -121,7 +122,7 @@ var opCases = []struct {
 	},
 	{
 		name: "var val twice",
-		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(1)),
+		inp:  arrObjVal2("v1", "v2", un.Int(1), un.Int(1)),
 		src: Obj{
 			"v1": Var("x"),
 			"v2": Var("x"),
@@ -129,22 +130,22 @@ var opCases = []struct {
 		dst: Obj{
 			"v3": Var("x"),
 		},
-		exp: arrObjVal("v3", u.Int(1)),
+		exp: arrObjVal("v3", un.Int(1)),
 	},
 	{
 		name: "partial transform",
-		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
+		inp:  arrObjVal2("v1", "v2", un.Int(1), un.Int(2)),
 		src: Part("other", Obj{
 			"v1": Var("x"),
 		}),
 		dst: Part("other", Obj{
 			"v3": Var("x"),
 		}),
-		exp: arrObjVal2("v3", "v2", u.Int(1), u.Int(2)),
+		exp: arrObjVal2("v3", "v2", un.Int(1), un.Int(2)),
 	},
 	{
 		name: "unused field",
-		inp:  arrObjVal2("v1", "v2", u.Int(1), u.Int(2)),
+		inp:  arrObjVal2("v1", "v2", un.Int(1), un.Int(2)),
 		src: Obj{
 			"v1": Var("x"),
 		},
@@ -155,115 +156,115 @@ var opCases = []struct {
 	},
 	{
 		name: "op lookup 1",
-		inp:  arrObjVal("v1", u.Int(1)),
+		inp:  arrObjVal("v1", un.Int(1)),
 		src: One(Obj{
 			"v1": Var("x"),
 		}),
 		dst: One(Obj{
 			"v1": Var("x"),
-			"v2": LookupOpVar("x", map[u.Value]Op{
-				u.Int(1): String("a"),
-				u.Int(2): String("b"),
+			"v2": LookupOpVar("x", map[un.Value]Op{
+				un.Int(1): String("a"),
+				un.Int(2): String("b"),
 			}),
 		}),
-		exp: arrObjVal2("v1", "v2", u.Int(1), u.String("a")),
+		exp: arrObjVal2("v1", "v2", un.Int(1), un.String("a")),
 	},
 	{
 		name: "op lookup 2",
-		inp:  arrObjVal("v1", u.Int(2)),
+		inp:  arrObjVal("v1", un.Int(2)),
 		src: One(Obj{
 			"v1": Var("x"),
 		}),
 		dst: One(Obj{
 			"v1": Var("x"),
-			"v2": LookupOpVar("x", map[u.Value]Op{
-				u.Int(1): String("a"),
-				u.Int(2): String("b"),
+			"v2": LookupOpVar("x", map[un.Value]Op{
+				un.Int(1): String("a"),
+				un.Int(2): String("b"),
 			}),
 		}),
-		exp: arrObjVal2("v1", "v2", u.Int(2), u.String("b")),
+		exp: arrObjVal2("v1", "v2", un.Int(2), un.String("b")),
 	},
 	{
 		name: "op lookup unhandled",
-		inp:  arrObjVal("v1", u.Int(3)),
+		inp:  arrObjVal("v1", un.Int(3)),
 		src: One(Obj{
 			"v1": Var("x"),
 		}),
 		dst: One(Obj{
 			"v1": Var("x"),
-			"v2": LookupOpVar("x", map[u.Value]Op{
-				u.Int(1): String("a"),
-				u.Int(2): String("b"),
+			"v2": LookupOpVar("x", map[un.Value]Op{
+				un.Int(1): String("a"),
+				un.Int(2): String("b"),
 			}),
 		}),
 		err: ErrUnhandledValueIn,
 	},
 	{
 		name: "op lookup default",
-		inp:  arrObjVal("v1", u.Int(3)),
+		inp:  arrObjVal("v1", un.Int(3)),
 		src: One(Obj{
 			"v1": Var("x"),
 		}),
 		dst: One(Obj{
 			"v1": Var("x"),
-			"v2": LookupOpVar("x", map[u.Value]Op{
-				u.Int(1): String("a"),
-				u.Int(2): String("b"),
-				nil:      String("c"),
+			"v2": LookupOpVar("x", map[un.Value]Op{
+				un.Int(1): String("a"),
+				un.Int(2): String("b"),
+				nil:       String("c"),
 			}),
 		}),
-		exp: arrObjVal2("v1", "v2", u.Int(3), u.String("c")),
+		exp: arrObjVal2("v1", "v2", un.Int(3), un.String("c")),
 	},
 	{
 		name: "op lookup order",
-		inp:  arrObjVal2("v1", "v2", u.String("b"), u.Int(2)),
+		inp:  arrObjVal2("v1", "v2", un.String("b"), un.Int(2)),
 		src: One(Fields{
 			{Name: "v2", Op: Var("x")},
-			{Name: "v1", Op: LookupOpVar("x", map[u.Value]Op{
-				u.Int(1): String("a"),
-				u.Int(2): String("b"),
+			{Name: "v1", Op: LookupOpVar("x", map[un.Value]Op{
+				un.Int(1): String("a"),
+				un.Int(2): String("b"),
 			})},
 		}),
 		dst: One(Obj{
 			"v1": Var("x"),
 		}),
-		exp: arrObjVal("v1", u.Int(2)),
+		exp: arrObjVal("v1", un.Int(2)),
 	},
 	{
 		name: "append",
-		inp: func() u.Node {
-			return u.Object{
-				"t": u.Int(1),
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.Int(1),
 			}
 		},
 		src: Obj{
 			"t": Var("typ"),
 		},
-		dst: Pre(Fields{
+		dst: JoinObj(Fields{
 			{Name: "t", Op: Var("typ")},
 		}, Obj{
-			"v2": Append(LookupOpVar("typ", map[u.Value]Op{
-				u.Int(1): Arr(String("a")),
-				u.Int(2): Arr(String("b")),
+			"v2": Append(LookupOpVar("typ", map[un.Value]Op{
+				un.Int(1): Arr(String("a")),
+				un.Int(2): Arr(String("b")),
 			}), Arr(String("c"), String("d"))),
 		}),
-		exp: func() u.Node {
-			return u.Object{
-				"t": u.Int(1),
-				"v2": u.Array{
-					u.String("a"),
-					u.String("c"), u.String("d"),
+		exp: func() un.Node {
+			return un.Object{
+				"t": un.Int(1),
+				"v2": un.Array{
+					un.String("a"),
+					un.String("c"), un.String("d"),
 				},
 			}
 		},
 	},
 	{
 		name: "each",
-		inp: func() u.Node {
-			return u.Array{
-				u.Object{"t": u.String("a"), "v": u.Int(1)},
-				u.Object{"t": u.String("a"), "v": u.Int(2)},
-				u.Object{"t": u.String("a"), "v": u.Int(3)},
+		inp: func() un.Node {
+			return un.Array{
+				un.Object{"t": un.String("a"), "v": un.Int(1)},
+				un.Object{"t": un.String("a"), "v": un.Int(2)},
+				un.Object{"t": un.String("a"), "v": un.Int(3)},
 			}
 		},
 		src: Each("objs", Part("part", Obj{
@@ -272,19 +273,26 @@ var opCases = []struct {
 		dst: Each("objs", Part("part", Obj{
 			"v2": Var("val"),
 		})),
-		exp: func() u.Node {
-			return u.Array{
-				u.Object{"t": u.String("a"), "v2": u.Int(1)},
-				u.Object{"t": u.String("a"), "v2": u.Int(2)},
-				u.Object{"t": u.String("a"), "v2": u.Int(3)},
+		exp: func() un.Node {
+			return un.Array{
+				un.Object{"t": un.String("a"), "v2": un.Int(1)},
+				un.Object{"t": un.String("a"), "v2": un.Int(2)},
+				un.Object{"t": un.String("a"), "v2": un.Int(3)},
 			}
 		},
 	},
 	{
+		name: "each (nil)",
+		inp: func() un.Node {
+			return nil
+		},
+		src: Each("objs", Var("part")),
+	},
+	{
 		name: "optional field",
-		inp: func() u.Node {
-			return u.Object{
-				"t": u.String("a"),
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
 			}
 		},
 		src: Fields{
@@ -294,9 +302,9 @@ var opCases = []struct {
 	},
 	{
 		name: "optional nil field",
-		inp: func() u.Node {
-			return u.Object{
-				"t": u.String("a"),
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
 				"v": nil,
 			}
 		},
@@ -307,9 +315,9 @@ var opCases = []struct {
 	},
 	{
 		name: "roles field",
-		inp: func() u.Node {
-			return u.Object{
-				u.KeyType: u.String("node"),
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyType: un.String("node"),
 			}
 		},
 		src: Fields{
@@ -320,34 +328,34 @@ var opCases = []struct {
 			{Name: u.KeyType, Op: String("node")},
 			RolesField("roles", 1),
 		},
-		exp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(1),
 			}
 		},
 	},
 	{
 		name: "obj roles",
-		inp: func() u.Node {
-			return u.Object{
-				u.KeyType: u.String("node"),
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyType: un.String("node"),
 			}
 		},
 		src: ObjectRolesCustom("o", Obj{u.KeyType: String("node")}),
 		dst: ObjectRolesCustom("o", Obj{u.KeyType: String("node")}, 1),
-		exp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(1),
 			}
 		},
 	},
 	{
 		name: "roles field exists",
-		inp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(2),
 			}
 		},
@@ -359,18 +367,18 @@ var opCases = []struct {
 			{Name: u.KeyType, Op: String("node")},
 			RolesField("roles", 1),
 		},
-		exp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(2, 1),
 			}
 		},
 	},
 	{
 		name: "roles field empty", skip: true, // TODO: track empty vs nil
-		inp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(),
 			}
 		},
@@ -382,18 +390,18 @@ var opCases = []struct {
 			{Name: u.KeyType, Op: String("node")},
 			RolesField("roles", 1),
 		},
-		exp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(1),
 			}
 		},
 	},
 	{
 		name: "roles field nil", skip: true, // TODO: track empty vs nil
-		inp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: nil,
 			}
 		},
@@ -405,19 +413,19 @@ var opCases = []struct {
 			{Name: u.KeyType, Op: String("node")},
 			RolesField("roles", 1),
 		},
-		exp: func() u.Node {
-			return u.Object{
-				u.KeyType:  u.String("node"),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType:  un.String("node"),
 				u.KeyRoles: u.RoleList(1),
 			}
 		},
 	},
 	{
 		name: "change type",
-		inp: func() u.Node {
-			return u.Object{
-				u.KeyType: u.String("node"),
-				"val":     u.String("a"),
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyType: un.String("node"),
+				"val":     un.String("a"),
 			}
 		},
 		src: Check(
@@ -428,25 +436,71 @@ var opCases = []struct {
 			},
 		),
 		dst: Arr(Var("x")),
-		exp: func() u.Node {
-			return u.Array{u.String("a")}
+		exp: func() un.Node {
+			return un.Array{un.String("a")}
 		},
 	},
 	{
 		name: "quote",
-		inp:  arrObjVal("v", u.String(`"a\"b"`)),
+		inp:  arrObjVal("v", un.String(`"a\"b"`)),
 		src: Obj{
 			"v": Quote(Var("x")),
 		},
 		dst: Obj{
 			"v2": Var("x"),
 		},
-		exp: arrObjVal("v2", u.String(`a"b`)),
+		exp: arrObjVal("v2", un.String(`a"b`)),
+	},
+	{
+		name: "semantic",
+		inp: func() un.Node {
+			return un.Object{
+				"type": un.String("ident"),
+				"name": un.String("A"),
+			}
+		},
+		src: Obj{
+			"type": String("ident"),
+			"name": Var("name"),
+		},
+		dst: UASTType(u.Identifier{}, Obj{
+			"Name": Var("name"),
+		}),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyType: un.String("uast:Identifier"),
+				"Name":    un.String("A"),
+			}
+		},
+	},
+	{
+		name: "semantic (part)",
+		inp: func() un.Node {
+			return un.Object{
+				u.KeyPos: un.Object{u.KeyStart: un.Int(1)},
+				"type":   un.String("ident"),
+				"name":   un.String("A"),
+			}
+		},
+		src: Part("p", Obj{
+			"type": String("ident"),
+			"name": Var("name"),
+		}),
+		dst: UASTTypePart("p", u.Identifier{}, Obj{
+			"Name": Var("name"),
+		}),
+		exp: func() un.Node {
+			return un.Object{
+				u.KeyPos:  un.Object{u.KeyStart: un.Int(1)},
+				u.KeyType: un.String("uast:Identifier"),
+				"Name":    un.String("A"),
+			}
+		},
 	},
 }
 
 func TestOps(t *testing.T) {
-	for _, c := range opCases {
+	for _, c := range opsCases {
 		if c.exp == nil {
 			c.exp = c.inp
 		}
@@ -457,9 +511,9 @@ func TestOps(t *testing.T) {
 			if c.skip {
 				t.SkipNow()
 			}
-			m := Map("test", c.src, c.dst)
+			m := Map(c.src, c.dst)
 
-			do := func(m Mapping, er *errors.Kind, inpf, expf func() u.Node) bool {
+			do := func(m Mapping, er *errors.Kind, inpf, expf func() un.Node) bool {
 				inp := inpf()
 				out, err := Mappings(m).Do(inp)
 				if er != nil {
@@ -479,14 +533,14 @@ func TestOps(t *testing.T) {
 				return
 			}
 			// test reverse transformation
-			do(m.Reverse(), nil, c.exp, c.inp)
+			do(Reverse(m), nil, c.exp, c.inp)
 
 			// test identity transform (forward)
-			m = Map("test", c.src, c.src)
+			m = Identity(c.src)
 			do(m, nil, c.inp, c.inp)
 
 			// test identity transform (reverse)
-			m = Map("test", c.dst, c.dst)
+			m = Identity(c.dst)
 			do(m, nil, c.exp, c.exp)
 		})
 	}

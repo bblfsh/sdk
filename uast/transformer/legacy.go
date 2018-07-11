@@ -2,6 +2,7 @@ package transformer
 
 import (
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
@@ -19,8 +20,8 @@ type ResponseMetadata struct {
 }
 
 // Do applies the transformation described by this object.
-func (n ResponseMetadata) Do(root uast.Node) (uast.Node, error) {
-	if obj, ok := root.(uast.Object); ok && !n.TopLevelIsRootNode && len(obj) == 1 {
+func (n ResponseMetadata) Do(root nodes.Node) (nodes.Node, error) {
+	if obj, ok := root.(nodes.Object); ok && !n.TopLevelIsRootNode && len(obj) == 1 {
 		for _, v := range obj {
 			root = v
 			break
@@ -58,61 +59,71 @@ type ObjectToNode struct {
 
 // Mapping construct a transformation from ObjectToNode definition.
 func (n ObjectToNode) Mapping() Mapping {
-	var ast Object
-	// ->
-	var norm Object
+	var (
+		ast Fields
+		// ->
+		norm    = make(Obj)
+		normPos Fields
+	)
 
 	if n.InternalTypeKey != "" {
 		const vr = "itype"
-		ast.SetField(n.InternalTypeKey, Var(vr))
-		norm.SetField(uast.KeyType, Var(vr))
+		ast = append(ast, Field{Name: n.InternalTypeKey, Op: Var(vr)})
+		norm[uast.KeyType] = Var(vr)
 	}
+
 	if n.OffsetKey != "" {
 		const vr = "pos_off_start"
-		ast.SetField(n.OffsetKey, Var(vr))
-		norm.SetField(uast.KeyStart, SavePosOffset(vr))
+		ast = append(ast, Field{Name: n.OffsetKey, Op: Var(vr)})
+		normPos = append(normPos, Field{Name: uast.KeyStart, Op: SavePosOffset(vr)})
 	}
 	if n.EndOffsetKey != "" {
 		const vr = "pos_off_end"
-		ast.SetField(n.EndOffsetKey, Var(vr))
-		norm.SetField(uast.KeyEnd, SavePosOffset(vr))
+		ast = append(ast, Field{Name: n.EndOffsetKey, Op: Var(vr)})
+		normPos = append(normPos, Field{Name: uast.KeyEnd, Op: SavePosOffset(vr)})
 	}
 	if n.LineKey != "" && n.ColumnKey != "" {
 		const (
+			vre = "pos_start_exists"
 			vrl = "pos_line_start"
 			vrc = "pos_col_start"
 		)
-		ast.SetField(n.LineKey, Var(vrl))
-		ast.SetField(n.ColumnKey, Var(vrc))
-		norm.SetField(uast.KeyStart, SavePosLineCol(vrl, vrc))
+		ast = append(ast,
+			Field{Name: n.LineKey, Op: Var(vrl), Optional: vre},
+			Field{Name: n.ColumnKey, Op: Var(vrc), Optional: vre},
+		)
+		normPos = append(normPos, Field{Name: uast.KeyStart, Op: SavePosLineCol(vrl, vrc), Optional: vre})
 	} else if (n.LineKey != "" && n.ColumnKey == "") || (n.LineKey == "" && n.ColumnKey != "") {
 		panic("both LineKey and ColumnKey should either be set or not")
 	}
 	if n.EndLineKey != "" && n.EndColumnKey != "" {
 		const (
+			vre = "pos_end_exists"
 			vrl = "pos_line_end"
 			vrc = "pos_col_end"
 		)
-		ast.SetField(n.EndLineKey, Var(vrl))
-		ast.SetField(n.EndColumnKey, Var(vrc))
-		norm.SetField(uast.KeyEnd, SavePosLineCol(vrl, vrc))
+		ast = append(ast,
+			Field{Name: n.EndLineKey, Op: Var(vrl), Optional: vre},
+			Field{Name: n.EndColumnKey, Op: Var(vrc), Optional: vre},
+		)
+		normPos = append(normPos, Field{Name: uast.KeyEnd, Op: SavePosLineCol(vrl, vrc), Optional: vre})
 	} else if (n.EndLineKey != "" && n.EndColumnKey == "") || (n.EndLineKey == "" && n.EndColumnKey != "") {
 		panic("both EndLineKey and EndColumnKey should either be set or not")
 	}
-	return ASTMap("ObjectToNode",
-		Part("other", ast),
-		Part("other", norm),
-	)
+	if len(normPos) != 0 {
+		norm[uast.KeyPos] = UASTType(uast.Positions{}, normPos)
+	}
+	return MapPart("other", MapObj(ast, norm))
 }
 
 // RolesDedup is an irreversible transformation that removes duplicate roles from AST nodes.
 func RolesDedup() TransformFunc {
-	return TransformFunc(func(n uast.Node) (uast.Node, bool, error) {
-		obj, ok := n.(uast.Object)
+	return TransformFunc(func(n nodes.Node) (nodes.Node, bool, error) {
+		obj, ok := n.(nodes.Object)
 		if !ok {
 			return n, false, nil
 		}
-		roles := obj.Roles()
+		roles := uast.RolesOf(obj)
 		if len(roles) == 0 {
 			return n, false, nil
 		}
@@ -131,7 +142,7 @@ func RolesDedup() TransformFunc {
 		if dedupCloneObj {
 			obj = obj.CloneObject()
 		}
-		obj.SetRoles(out...)
+		obj[uast.KeyRoles] = uast.RoleList(out...)
 		return obj, dedupCloneObj, nil
 	})
 }

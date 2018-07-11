@@ -1,13 +1,11 @@
-package uast
+package nodes
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-)
-
-var (
-	fixtureDir = "fixtures"
 )
 
 func TestClone(t *testing.T) {
@@ -38,30 +36,6 @@ func TestClone(t *testing.T) {
 			"new": Int(0),
 		},
 	}, arr)
-}
-
-func TestWalkPreOrder(t *testing.T) {
-	require := require.New(t)
-
-	n := Object{
-		KeyType: String("a"),
-		"a":     Object{KeyType: String("aa")},
-		"b": Object{
-			KeyType: String("ab"),
-			"a":     Object{KeyType: String("aba")},
-		},
-		"c": Object{KeyType: String("ac")},
-	}
-
-	var result []string
-	WalkPreOrder(n, func(n Node) bool {
-		if obj, ok := n.(Object); ok {
-			result = append(result, obj.Type())
-		}
-		return true
-	})
-
-	require.Equal([]string{"a", "aa", "ab", "aba", "ac"}, result)
 }
 
 func TestApply(t *testing.T) {
@@ -146,7 +120,8 @@ var casesEqual = []struct {
 			"k2": Array{
 				Object{"k4": Bool(false)},
 				nil,
-				Int(1),
+				Int(-1),
+				Uint(1),
 			},
 			"k3": nil,
 		},
@@ -159,7 +134,8 @@ var casesEqual = []struct {
 			"k2": Array{
 				Object{"k4": Bool(false)},
 				nil,
-				Int(1),
+				Int(-1),
+				Uint(1),
 			},
 		},
 		n2: Object{
@@ -167,7 +143,8 @@ var casesEqual = []struct {
 			"k2": Array{
 				Object{"k4": Bool(false), "k5": nil},
 				nil,
-				Int(1),
+				Int(-1),
+				Uint(1),
 			},
 		},
 		exp: false,
@@ -232,6 +209,26 @@ var casesEqual = []struct {
 		n1:   Bool(false), n2: String(""),
 		exp: false,
 	},
+	{
+		name: "int and uint equal",
+		n1:   Int(42), n2: Uint(42),
+		exp: true,
+	},
+	{
+		name: "int and uint overflow",
+		n1:   Int(-1), n2: Uint(math.MaxUint64),
+		exp: false,
+	},
+	{
+		name: "uint and int equal",
+		n1:   Uint(42), n2: Int(42),
+		exp: true,
+	},
+	{
+		name: "uint and int overflow",
+		n1:   Uint(math.MaxUint64), n2: Int(-1),
+		exp: false,
+	},
 }
 
 func TestNodeEqual(t *testing.T) {
@@ -242,6 +239,49 @@ func TestNodeEqual(t *testing.T) {
 				n2 = n1
 			}
 			require.Equal(t, c.exp, Equal(n1, n2))
+		})
+	}
+}
+
+var casesKinds = []struct {
+	n Node
+	k Kind
+}{
+	{n: nil, k: KindNil},
+	{n: Object{}, k: KindObject},
+	{n: Array{}, k: KindArray},
+	{n: String(""), k: KindString},
+	{n: Int(0), k: KindInt},
+	{n: Uint(0), k: KindUint},
+	{n: Float(0), k: KindFloat},
+	{n: Bool(false), k: KindBool},
+}
+
+func TestNodeKind(t *testing.T) {
+	for _, c := range casesKinds {
+		t.Run(c.k.String(), func(t *testing.T) {
+			require.Equal(t, c.k, KindOf(c.n))
+		})
+	}
+}
+
+var casesNative = []struct {
+	n Node
+	v interface{}
+}{
+	{n: Int(-1), v: int64(-1)},
+	{n: Uint(1), v: uint64(1)},
+	{n: Float(1.2), v: float64(1.2)},
+	{n: String("a"), v: string("a")},
+	{n: Bool(true), v: true},
+	{n: Array{Int(1)}, v: []interface{}{int64(1)}},
+	{n: Object{"k": Int(1)}, v: map[string]interface{}{"k": int64(1)}},
+}
+
+func TestNodeNative(t *testing.T) {
+	for _, c := range casesNative {
+		t.Run(fmt.Sprintf("%T", c.n), func(t *testing.T) {
+			require.Equal(t, c.v, c.n.Native())
 		})
 	}
 }

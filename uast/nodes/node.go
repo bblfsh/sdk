@@ -1,39 +1,12 @@
-package uast
+package nodes
 
 import (
 	"fmt"
 	"sort"
-
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
-	"gopkg.in/src-d/go-errors.v1"
-)
-
-var (
-	// ErrUnsupported is returned for features that are not supported by an implementation.
-	ErrUnsupported = errors.NewKind("unsupported: %s")
+	"strings"
 )
 
 const applySort = false
-
-// Special field keys for Object
-const (
-	KeyType  = "@type"  // InternalType
-	KeyToken = "@token" // Token
-	KeyRoles = "@role"  // Roles, for representations see RoleList
-	// TODO: a single @pos field with "start" and "end" fields?
-	KeyStart = "@start" // StartPosition
-	KeyEnd   = "@end"   // EndPosition
-)
-
-// NewNode creates a default AST node with Unannotated role.
-func NewNode() Object {
-	return Object{KeyRoles: RoleList(role.Unannotated)}
-}
-
-// EmptyNode creates a new empty node with no fields.
-func EmptyNode() Object {
-	return Object{}
-}
 
 // Equal compares two subtrees.
 func Equal(n1, n2 Node) bool {
@@ -45,7 +18,7 @@ func Equal(n1, n2 Node) bool {
 	return false
 }
 
-// Node is a generic interface for structures used in AST.
+// Node is a generic interface for a tree structure.
 //
 // Can be one of:
 //	* Object
@@ -57,13 +30,15 @@ type Node interface {
 	Native() interface{}
 	Equal(n2 Node) bool
 	isNode() // to limit possible types
+	kind() Kind
 }
 
-// Value is a generic interface for values of AST node fields.
+// Value is a generic interface for values stored inside the tree.
 //
 // Can be one of:
 //	* String
 //	* Int
+//	* Uint
 //	* Float
 //	* Bool
 type Value interface {
@@ -77,10 +52,93 @@ type NodePtr interface {
 	SetNode(v Node) error
 }
 
-// Object is a representation of generic AST node with fields.
+// Kind is a node kind.
+type Kind int
+
+func (k Kind) Split() []Kind {
+	var kinds []Kind
+	for _, k2 := range []Kind{
+		KindNil,
+		KindObject,
+		KindArray,
+		KindString,
+		KindInt,
+		KindFloat,
+		KindBool,
+	} {
+		if k.In(k2) {
+			kinds = append(kinds, k2)
+		}
+	}
+	if k2 := k &^ KindsAny; k2 != 0 {
+		kinds = append(kinds, k2)
+	}
+	return kinds
+}
+func (k Kind) In(k2 Kind) bool {
+	return (k & k2) != 0
+}
+func (k Kind) String() string {
+	kinds := k.Split()
+	str := make([]string, 0, len(kinds))
+	for _, k := range kinds {
+		var s string
+		switch k {
+		case KindNil:
+			s = "Nil"
+		case KindObject:
+			s = "Object"
+		case KindArray:
+			s = "Array"
+		case KindString:
+			s = "String"
+		case KindInt:
+			s = "Int"
+		case KindFloat:
+			s = "Float"
+		case KindBool:
+			s = "Bool"
+		default:
+			s = fmt.Sprintf("Kind(%d)", int(k))
+		}
+		str = append(str, s)
+	}
+	return strings.Join(str, " | ")
+}
+
+const (
+	KindNil = Kind(1 << iota)
+	KindObject
+	KindArray
+	KindString
+	KindInt
+	KindUint
+	KindFloat
+	KindBool
+)
+
+const (
+	KindsValues = KindString | KindInt | KindUint | KindFloat | KindBool
+	KindsNotNil = KindObject | KindArray | KindsValues
+	KindsAny    = KindNil | KindsNotNil
+)
+
+// KindOf returns a kind of the node.
+func KindOf(n Node) Kind {
+	if n == nil {
+		return KindNil
+	}
+	return n.kind()
+}
+
+// Object is a representation of generic node with fields.
 type Object map[string]Node
 
 func (Object) isNode() {}
+
+func (Object) kind() Kind {
+	return KindObject
+}
 
 // Native converts an object to a generic Go map type (map[string]interface{}).
 func (m Object) Native() interface{} {
@@ -121,7 +179,7 @@ func (m Object) Clone() Node {
 	return out
 }
 
-// CloneObject clones this AST node only, without deep copy of field values.
+// CloneObject clones this node only, without deep copy of field values.
 func (m Object) CloneObject() Object {
 	out := make(Object, len(m))
 	for k, v := range m {
@@ -130,113 +188,10 @@ func (m Object) CloneObject() Object {
 	return out
 }
 
-// CloneProperties returns an object containing all field that are values.
-func (m Object) CloneProperties() Object {
-	out := make(Object)
-	for k, v := range m {
-		if v, ok := v.(Value); ok {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-// Children returns a list of all internal nodes of type Object and Array.
-func (m Object) Children() []Node {
-	out := make([]Node, 0, len(m))
-	// order should be predictable
-	for _, k := range m.Keys() {
-		v := m[k]
-		if _, ok := v.(Value); !ok {
-			out = append(out, v)
-		}
-	}
-	return out
-}
-
-// Properties returns a map containing all field of object that are values.
-func (m Object) Properties() map[string]Value {
-	out := make(map[string]Value)
-	for k, v := range m {
-		if v, ok := v.(Value); ok {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-// SetProperty is a helper for setting node properties.
-func (m Object) SetProperty(k, v string) Object {
-	m[k] = String(v)
+// Set is a helper for setting node properties.
+func (m Object) Set(k string, v Node) Object {
+	m[k] = v
 	return m
-}
-
-// Type is a helper for getting node type (see KeyType).
-func (m Object) Type() string {
-	s, _ := m[KeyType].(String)
-	return string(s)
-}
-
-// SetType is a helper for setting node type (see KeyType).
-func (m Object) SetType(typ string) Object {
-	return m.SetProperty(KeyType, typ)
-}
-
-// Token is a helper for getting node token (see KeyToken).
-func (m Object) Token() string {
-	t := m[KeyToken]
-	s, ok := t.(String)
-	if ok {
-		return string(s)
-	}
-	v, _ := t.(Value)
-	if v != nil {
-		return fmt.Sprint(v)
-	}
-	return ""
-}
-
-// SetToken is a helper for setting node type (see KeyToken).
-func (m Object) SetToken(tok string) Object {
-	return m.SetProperty(KeyToken, tok)
-}
-
-// Roles is a helper for getting node UAST roles (see KeyRoles).
-func (m Object) Roles() role.Roles {
-	arr, ok := m[KeyRoles].(Array)
-	if !ok || len(arr) == 0 {
-		switch m.Type() {
-		case "", TypePosition:
-			// TODO: find a better solution to blacklist roles for specific types
-			return nil
-		}
-		return role.Roles{role.Unannotated}
-	}
-	out := make(role.Roles, 0, len(arr))
-	for _, v := range arr {
-		if r, ok := v.(String); ok {
-			out = append(out, role.FromString(string(r)))
-		}
-	}
-	return out
-}
-
-// SetRoles is a helper for setting node UAST roles (see KeyRoles).
-func (m Object) SetRoles(roles ...role.Role) Object {
-	m[KeyRoles] = RoleList(roles...)
-	return m
-}
-
-// StartPosition returns start position of the node in source file.
-func (m Object) StartPosition() *Position {
-	o, _ := m[KeyStart].(Object)
-	return AsPosition(o)
-}
-
-// EndPosition returns start position of the node in source file.
-func (m Object) EndPosition() *Position {
-	o, _ := m[KeyEnd].(Object)
-	return AsPosition(o)
 }
 
 func (m *Object) SetNode(n Node) error {
@@ -266,10 +221,14 @@ func (m Object) EqualObject(m2 Object) bool {
 	return true
 }
 
-// Array is an ordered list of AST nodes.
+// Array is an ordered list of nodes.
 type Array []Node
 
 func (Array) isNode() {}
+
+func (Array) kind() Kind {
+	return KindArray
+}
 
 // Native converts an array to a generic Go slice type ([]interface{}).
 func (m Array) Native() interface{} {
@@ -332,11 +291,14 @@ func (m *Array) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// String is a string value used in AST fields.
+// String is a string value used in tree fields.
 type String string
 
 func (String) isNode()  {}
 func (String) isValue() {}
+func (String) kind() Kind {
+	return KindString
+}
 
 // Native converts the value to a string.
 func (v String) Native() interface{} {
@@ -361,11 +323,14 @@ func (v *String) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// Int is a integer value used in AST fields.
+// Int is a integer value used in tree fields.
 type Int int64
 
 func (Int) isNode()  {}
 func (Int) isValue() {}
+func (Int) kind() Kind {
+	return KindInt
+}
 
 // Native converts the value to an int64.
 func (v Int) Native() interface{} {
@@ -378,8 +343,16 @@ func (v Int) Clone() Node {
 }
 
 func (v Int) Equal(n Node) bool {
-	v2, ok := n.(Int)
-	return ok && v == v2
+	switch n := n.(type) {
+	case Int:
+		return v == n
+	case Uint:
+		if v < 0 {
+			return false
+		}
+		return Uint(v) == n
+	}
+	return false
 }
 
 func (v *Int) SetNode(n Node) error {
@@ -390,11 +363,54 @@ func (v *Int) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// Float is a floating point value used in AST fields.
+// Uint is a unsigned integer value used in tree fields.
+type Uint uint64
+
+func (Uint) isNode()  {}
+func (Uint) isValue() {}
+func (Uint) kind() Kind {
+	return KindUint
+}
+
+// Native converts the value to an int64.
+func (v Uint) Native() interface{} {
+	return uint64(v)
+}
+
+// Clone returns a copy of the value.
+func (v Uint) Clone() Node {
+	return v
+}
+
+func (v Uint) Equal(n Node) bool {
+	switch n := n.(type) {
+	case Uint:
+		return v == n
+	case Int:
+		if n < 0 {
+			return false
+		}
+		return v == Uint(n)
+	}
+	return false
+}
+
+func (v *Uint) SetNode(n Node) error {
+	if v2, ok := n.(Uint); ok || n == nil {
+		*v = v2
+		return nil
+	}
+	return fmt.Errorf("unexpected type: %T", n)
+}
+
+// Float is a floating point value used in tree fields.
 type Float float64
 
 func (Float) isNode()  {}
 func (Float) isValue() {}
+func (Float) kind() Kind {
+	return KindFloat
+}
 
 // Native converts the value to a float64.
 func (v Float) Native() interface{} {
@@ -419,11 +435,14 @@ func (v *Float) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
-// Bool is a boolean value used in AST fields.
+// Bool is a boolean value used in tree fields.
 type Bool bool
 
 func (Bool) isNode()  {}
 func (Bool) isValue() {}
+func (Bool) kind() Kind {
+	return KindBool
+}
 
 // Native converts the value to a bool.
 func (v Bool) Native() interface{} {
@@ -448,8 +467,10 @@ func (v *Bool) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
+type ToNodeFunc func(interface{}) (Node, error)
+
 // ToNode converts objects returned by schema-less encodings such as JSON to Node objects.
-func ToNode(o interface{}) (Node, error) {
+func ToNode(o interface{}, fallback ToNodeFunc) (Node, error) {
 	switch o := o.(type) {
 	case nil:
 		return nil, nil
@@ -458,7 +479,7 @@ func ToNode(o interface{}) (Node, error) {
 	case map[string]interface{}:
 		n := make(Object, len(o))
 		for k, v := range o {
-			nv, err := ToNode(v)
+			nv, err := ToNode(v, fallback)
 			if err != nil {
 				return nil, err
 			}
@@ -468,7 +489,7 @@ func ToNode(o interface{}) (Node, error) {
 	case []interface{}:
 		n := make(Array, 0, len(o))
 		for _, v := range o {
-			nv, err := ToNode(v)
+			nv, err := ToNode(v, fallback)
 			if err != nil {
 				return nil, err
 			}
@@ -479,7 +500,28 @@ func ToNode(o interface{}) (Node, error) {
 		return String(o), nil
 	case int:
 		return Int(o), nil
+	case int8:
+		return Int(o), nil
+	case int16:
+		return Int(o), nil
+	case int32:
+		return Int(o), nil
 	case int64:
+		return Int(o), nil
+	case uint:
+		return Uint(o), nil
+	case uint8:
+		return Uint(o), nil
+	case uint16:
+		return Uint(o), nil
+	case uint32:
+		return Uint(o), nil
+	case uint64:
+		return Uint(o), nil
+	case float32:
+		if float32(int64(o)) != o {
+			return Float(o), nil
+		}
 		return Int(o), nil
 	case float64:
 		if float64(int64(o)) != o {
@@ -489,6 +531,9 @@ func ToNode(o interface{}) (Node, error) {
 	case bool:
 		return Bool(o), nil
 	default:
+		if fallback != nil {
+			return fallback(o)
+		}
 		return nil, fmt.Errorf("unsupported type: %T", o)
 	}
 }

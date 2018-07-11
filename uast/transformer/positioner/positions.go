@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/transformer"
 )
 
@@ -32,7 +33,7 @@ type Positioner struct {
 // OnCode uses the source code to update positional information.
 func (t Positioner) OnCode(code string) transformer.Transformer {
 	idx := newPositionIndex([]byte(code))
-	return transformer.TransformObjFunc(func(o uast.Object) (uast.Object, bool, error) {
+	return transformer.TransformObjFunc(func(o nodes.Object) (nodes.Object, bool, error) {
 		pos := uast.AsPosition(o)
 		if pos == nil {
 			return o, false, nil
