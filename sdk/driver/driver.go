@@ -14,7 +14,8 @@ import (
 type Mode int
 
 const (
-	ModeAnnotated = Mode(iota)
+	ModePreprocessed = Mode(iota)
+	ModeAnnotated
 	ModeSemantic
 )
 
@@ -52,6 +53,9 @@ func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error
 	}
 	if err := runAll(t.Preprocess); err != nil {
 		return nd, err
+	}
+	if mode <= ModePreprocessed {
+		return nd, nil
 	}
 	if mode >= ModeSemantic {
 		if err := runAll(t.Normalize); err != nil {
