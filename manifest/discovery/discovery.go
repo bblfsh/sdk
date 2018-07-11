@@ -6,12 +6,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -221,7 +223,20 @@ func getDriversForOrg(ctx context.Context, hc *http.Client, org string) ([]Drive
 			},
 			Type: "public",
 		})
-		if err != nil {
+		if e, ok := err.(*github.RateLimitError); ok {
+			dt := time.Until(e.Rate.Reset.Time)
+			log.Printf("github: hit a rate limit (%v/%v), waiting %v to reset",
+				e.Rate.Remaining, e.Rate.Limit, dt)
+			t := time.NewTimer(dt)
+			select {
+			case <-ctx.Done():
+				t.Stop()
+				return out, ctx.Err()
+			case <-t.C:
+			}
+			page--
+			continue
+		} else if err != nil {
 			return out, err
 		} else if len(repos) == 0 {
 			break
