@@ -7,18 +7,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
 
 const (
 	GithubOrg = "bblfsh"
 )
+
+var githubToken = os.Getenv("BABELFISH_GITHUB_TOKEN")
 
 // topics that each driver repository on Github should be annotated with
 var topics = []string{
@@ -115,10 +119,10 @@ func newReq(ctx context.Context, url string) *http.Request {
 }
 
 // loadManifest reads manifest file from repository and decodes it into object.
-func (d *Driver) loadManifest(ctx context.Context) error {
+func (d *Driver) loadManifest(ctx context.Context, cli *http.Client) error {
 	req := newReq(ctx, d.repositoryFileURL(manifest.Filename))
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := cli.Do(req)
 	if err != nil {
 		return err
 	}
@@ -172,10 +176,10 @@ func parseMaintainers(r io.Reader) []Maintainer {
 }
 
 // loadMaintainers reads MAINTAINERS file from repository and decodes it into object.
-func (d *Driver) loadMaintainers(ctx context.Context) error {
+func (d *Driver) loadMaintainers(ctx context.Context, cli *http.Client) error {
 	req := newReq(ctx, d.repositoryFileURL("MAINTAINERS"))
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := cli.Do(req)
 	if err != nil {
 		return err
 	}
@@ -196,9 +200,17 @@ type Options struct {
 	NoMaintainers bool   // do not load maintainers list
 }
 
+func httpClient(ctx context.Context) *http.Client {
+	if githubToken == "" {
+		return http.DefaultClient
+	}
+	tok := &oauth2.Token{AccessToken: githubToken}
+	return oauth2.NewClient(ctx, oauth2.StaticTokenSource(tok))
+}
+
 // getDriversForOrg lists all repositories for an organization and filters ones that contains topics of the driver.
-func getDriversForOrg(ctx context.Context, org string) ([]Driver, error) {
-	cli := github.NewClient(nil)
+func getDriversForOrg(ctx context.Context, hc *http.Client, org string) ([]Driver, error) {
+	cli := github.NewClient(hc)
 
 	var out []Driver
 	// list all repositories in organization
@@ -237,7 +249,8 @@ func OfficialDrivers(ctx context.Context, opt *Options) ([]Driver, error) {
 	if opt.Organization == "" {
 		opt.Organization = GithubOrg
 	}
-	out, err := getDriversForOrg(ctx, opt.Organization)
+	cli := httpClient(ctx)
+	out, err := getDriversForOrg(ctx, cli, opt.Organization)
 	if err != nil {
 		return out, err
 	}
@@ -270,11 +283,11 @@ func OfficialDrivers(ctx context.Context, opt *Options) ([]Driver, error) {
 			defer func() {
 				<-tokens
 			}()
-			if err := d.loadManifest(ctx); err != nil {
+			if err := d.loadManifest(ctx, cli); err != nil {
 				setErr(err)
 			}
 			if !opt.NoMaintainers {
-				if err := d.loadMaintainers(ctx); err != nil {
+				if err := d.loadMaintainers(ctx, cli); err != nil {
 					setErr(err)
 				}
 			}
