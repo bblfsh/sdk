@@ -38,9 +38,10 @@ type Suite struct {
 	// Update* and Write* flags below should never be committed in "true" state.
 	// They serve only as helpers for debugging.
 
-	UpdateNative    bool // update native ASTs in fixtures to ones produced by driver
-	UpdateUAST      bool // update UASTs in fixtures to ones produced by driver
-	WriteViewerJSON bool // write JSON compatible with uast-viewer
+	UpdateNative      bool // update native ASTs in fixtures to ones produced by driver
+	UpdateUAST        bool // update UASTs in fixtures to ones produced by driver
+	WriteViewerJSON   bool // write JSON compatible with uast-viewer
+	WritePreprocessed bool // write a preprocessed UAST for fixtures
 
 	NewDriver  func() driver.BaseDriver
 	Transforms driver.Transforms
@@ -99,6 +100,7 @@ func (s *Suite) RunBenchmarks(t *testing.B) {
 const (
 	gotSuffix = "_got"
 	nativeExt = ".native"
+	preExt    = ".pre.uast"
 	uastExt   = ".uast"
 	highExt   = ".sem.uast"
 )
@@ -200,6 +202,15 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			require.NoError(t, err)
 
 			tr := s.Transforms
+			if s.WritePreprocessed {
+				ua, err := tr.Do(driver.ModePreprocessed, code, ast)
+				require.NoError(t, err)
+
+				un, err := marshalUAST(ua)
+				require.NoError(t, err)
+
+				s.writeFixturesFile(t, name+preExt, string(un))
+			}
 			ua, err := tr.Do(mode, code, ast)
 			require.NoError(t, err)
 
