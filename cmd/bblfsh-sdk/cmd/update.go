@@ -21,6 +21,8 @@ const (
 	manifestTpl  = "manifest.toml.tpl"
 )
 
+var overwriteManagedFiles = os.Getenv("BABELFISH_OVERWRITE_MANAGED") == "true"
+
 // managedFiles are files that always are overwritten
 var managedFiles = map[string]bool{
 	".travis.yml":                     true,
@@ -69,6 +71,9 @@ func (c *UpdateCommand) Execute(args []string) error {
 
 func (c *UpdateCommand) processAsset(name string) error {
 	overwrite := managedFiles[name]
+	if overwriteManagedFiles {
+		overwrite = false
+	}
 
 	if strings.HasSuffix(name, tplExtension) {
 		return c.processTemplateAsset(name, c.context, overwrite)
