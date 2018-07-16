@@ -12,6 +12,7 @@ DOCKER_BUILD ?= $(DOCKER_CMD) build
 DOCKER_RUN ?= $(DOCKER_CMD) run --rm -t
 DOCKER_TAG ?= $(DOCKER_CMD) tag
 DOCKER_PUSH ?= $(DOCKER_CMD) push
+DOCKER_SOCK ?= /var/run/docker.sock
 
 BUILD_VOLUME_TARGET ?= /opt/driver/src/
 BUILD_VOLUME_PATH ?= $(location)
@@ -43,6 +44,7 @@ BUILD_NATIVE_CMD ?= $(DOCKER_RUN) \
 	$(DOCKER_BUILD_NATIVE_IMAGE)
 
 BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
+    -v $(DOCKER_SOCK):$(DOCKER_SOCK) \
 	-u $(BUILD_USER):$(BUILD_UID) \
 	-v $(BUILD_VOLUME_PATH):$(BUILD_VOLUME_TARGET) \
 	-v $(GO_PATH):/go \
@@ -86,12 +88,8 @@ test: | validate test-native test-driver
 test-native: $(DOCKER_BUILD_NATIVE_IMAGE)
 	@$(RUN_VERBOSE) $(BUILD_NATIVE_CMD) make test-native-internal
 
-test-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE) $(DOCKER_BUILD_DRIVER_IMAGE)
-	@$(RUN_VERBOSE) $(BUILD_DRIVER_CMD) make test-driver-internal
-
-test-driver-internal: build-native-internal
-	@cd driver; \
-	$(RUN_VERBOSE) $(GO_TEST) ./...
+test-driver: | check-gopath $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
+	@$(RUN_VERBOSE) $(GO_TEST) ./driver/...
 
 build: | build-native build-driver $(DOCKER_IMAGE_VERSIONED)
 build-native: $(BUILD_PATH) $(DOCKER_BUILD_NATIVE_IMAGE)
