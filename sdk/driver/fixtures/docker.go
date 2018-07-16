@@ -20,7 +20,31 @@ const envLocalTest = "BBLFSH_TEST_LOCAL"
 
 var runInDocker = os.Getenv(envLocalTest) != "true"
 
+const (
+	dockerBinary = "docker"
+	dockerSocket = "/var/run/docker.sock"
+)
+
+func checkDockerInstalled(t testing.TB) {
+	path, err := exec.LookPath(dockerBinary)
+	if err == nil {
+		t.Logf("found docker binary: %s", path)
+		return
+	}
+	t.Errorf("cannot find docker: %s", err)
+	t.Logf("BBLFSH_TEST_LOCAL: %s", os.Getenv(envLocalTest))
+	t.Logf("PATH: %q", filepath.SplitList(os.Getenv("PATH")))
+	if _, err := os.Stat(dockerSocket); err != nil {
+		t.Errorf("docker socket is not available: %v", err)
+	} else {
+		t.Logf("docker socket is available!")
+	}
+	t.FailNow()
+}
+
 func (s *Suite) runTestsDocker(t *testing.T) {
+	checkDockerInstalled(t)
+
 	pkgDir, err := os.Getwd()
 	require.NoError(t, err)
 	root := filepath.Join(pkgDir, "../..")
@@ -73,7 +97,7 @@ func compileTest(t testing.TB, path, dst string) {
 func dockerBuild(t testing.TB, dir string) string {
 	outBuf := bytes.NewBuffer(nil)
 	errBuf := bytes.NewBuffer(nil)
-	cmd := exec.Command("docker", "build", "-q", dir)
+	cmd := exec.Command(dockerBinary, "build", "-q", dir)
 	cmd.Stdout = outBuf
 	cmd.Stderr = errBuf
 	err := cmd.Run()
@@ -127,8 +151,8 @@ func dockerRunFixtures(t testing.TB, root, image string, debug bool) io.Reader {
 		}
 	}
 
-	t.Log(strings.Join(append([]string{"docker"}, args...), " "))
-	cmd := exec.Command("docker", args...)
+	t.Log(strings.Join(append([]string{dockerBinary}, args...), " "))
+	cmd := exec.Command(dockerBinary, args...)
 	cmd.Stdout = outWriter(pw)
 	cmd.Stderr = outWriter(errBuf)
 	err := cmd.Run()
@@ -149,7 +173,7 @@ func gopath(t testing.TB) []string {
 		require.NoError(t, err)
 		paths = strings.TrimSpace(string(data))
 	}
-	return strings.Split(paths, ":")
+	return filepath.SplitList(paths)
 }
 
 func findPackage(t testing.TB, dir string) string {
