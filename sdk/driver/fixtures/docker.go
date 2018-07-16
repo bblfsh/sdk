@@ -8,11 +8,14 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/docker"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,25 +24,15 @@ const envLocalTest = "BBLFSH_TEST_LOCAL"
 var runInDocker = os.Getenv(envLocalTest) != "true"
 
 const (
-	dockerBinary = "docker"
-	dockerSocket = "/var/run/docker.sock"
+	dockerFileName  = "Dockerfile"
+	dockerSocket    = "/var/run/docker.sock"
+	dockerSocketURL = "unix://" + dockerSocket
 )
 
 func checkDockerInstalled(t testing.TB) {
-	path, err := exec.LookPath(dockerBinary)
-	if err == nil {
-		t.Logf("found docker binary: %s", path)
-		return
-	}
-	t.Errorf("cannot find docker: %s", err)
-	t.Logf("BBLFSH_TEST_LOCAL: %s", os.Getenv(envLocalTest))
-	t.Logf("PATH: %q", filepath.SplitList(os.Getenv("PATH")))
 	if _, err := os.Stat(dockerSocket); err != nil {
-		t.Errorf("docker socket is not available: %v", err)
-	} else {
-		t.Logf("docker socket is available!")
+		t.Fatalf("docker socket is not available: %v", err)
 	}
-	t.FailNow()
 }
 
 func (s *Suite) runTestsDocker(t *testing.T) {
@@ -85,7 +78,7 @@ ENTRYPOINT ./fixtures.test -test.v
 `
 
 func (s *Suite) genDockerfile(t testing.TB, dir string) {
-	err := ioutil.WriteFile(filepath.Join(dir, "Dockerfile"), []byte(fmt.Sprintf(dockerFile, s.Docker.Image)), 0644)
+	err := ioutil.WriteFile(filepath.Join(dir, dockerFileName), []byte(fmt.Sprintf(dockerFile, s.Docker.Image)), 0644)
 	require.NoError(t, err)
 }
 
@@ -97,10 +90,18 @@ func compileTest(t testing.TB, path, dst string) {
 func dockerBuild(t testing.TB, dir string) string {
 	outBuf := bytes.NewBuffer(nil)
 	errBuf := bytes.NewBuffer(nil)
-	cmd := exec.Command(dockerBinary, "build", "-q", dir)
-	cmd.Stdout = outBuf
-	cmd.Stderr = errBuf
-	err := cmd.Run()
+
+	p, err := dockertest.NewPool(dockerSocketURL)
+	require.NoError(t, err)
+
+	err = p.Client.BuildImage(docker.BuildImageOptions{
+		ContextDir:     dir,
+		Dockerfile:     dockerFileName,
+		SuppressOutput: true,
+		OutputStream:   outBuf,
+		ErrorStream:    errBuf,
+	})
+
 	require.NoError(t, err, "%s", errBuf)
 
 	imageid := string(bytes.TrimSpace(outBuf.Bytes()))
@@ -123,20 +124,6 @@ func dockerRunFixtures(t testing.TB, root, image string, debug bool) io.Reader {
 		errc <- cmd.Run()
 	}()
 
-	args := []string{
-		"run", "--rm",
-	}
-	for _, d := range []string{
-		"fixtures",
-		"native",
-		"build",
-	} {
-		args = append(args,
-			"-v", filepath.Join(root, d)+":/test/"+d,
-		)
-	}
-	args = append(args, image)
-
 	outWriter := func(w io.Writer) io.Writer {
 		return w
 	}
@@ -151,11 +138,59 @@ func dockerRunFixtures(t testing.TB, root, image string, debug bool) io.Reader {
 		}
 	}
 
-	t.Log(strings.Join(append([]string{dockerBinary}, args...), " "))
-	cmd := exec.Command(dockerBinary, args...)
-	cmd.Stdout = outWriter(pw)
-	cmd.Stderr = outWriter(errBuf)
-	err := cmd.Run()
+	toMount := []string{
+		"fixtures",
+		"native",
+		"build",
+	}
+
+	umap := ""
+	if u, err := user.Current(); err != nil {
+		t.Logf("cannot get current user: %v", err)
+	} else {
+		umap = u.Uid + ":" + u.Gid
+	}
+
+	conf := &docker.HostConfig{
+		AutoRemove: true,
+	}
+	for _, d := range toMount {
+		conf.Binds = append(conf.Binds,
+			filepath.Join(root, d)+":/test/"+d,
+		)
+	}
+
+	p, err := dockertest.NewPool(dockerSocketURL)
+	require.NoError(t, err)
+
+	c, err := p.Client.CreateContainer(docker.CreateContainerOptions{
+
+		Config: &docker.Config{
+			User:         umap,
+			Image:        image,
+			AttachStdout: true,
+			AttachStderr: true,
+		},
+		HostConfig: conf,
+	})
+	require.NoError(t, err)
+	defer p.Client.RemoveContainer(docker.RemoveContainerOptions{
+		ID: c.ID, Force: true,
+	})
+
+	cw, err := p.Client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
+		Container:    c.ID,
+		OutputStream: outWriter(pw),
+		ErrorStream:  outWriter(errBuf),
+		Logs:         true, Stdout: true, Stderr: true, Stream: true,
+	})
+	require.NoError(t, err)
+	defer cw.Close()
+
+	err = p.Client.StartContainer(c.ID, nil)
+	require.NoError(t, err)
+	err = cw.Wait()
+
 	pw.Close()
 	if err != nil {
 		t.Error(errBuf.String())
