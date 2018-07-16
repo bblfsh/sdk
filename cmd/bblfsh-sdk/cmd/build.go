@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"path/filepath"
 
-	"gopkg.in/bblfsh/sdk.v2/assets/build"
+	assets "gopkg.in/bblfsh/sdk.v2/assets/build"
+	"gopkg.in/bblfsh/sdk.v2/build"
 	"gopkg.in/bblfsh/sdk.v2/cmd"
 )
 
@@ -17,5 +19,44 @@ type PrepareBuildCommand struct {
 
 func (c *PrepareBuildCommand) Execute(args []string) error {
 	sdkFolder := filepath.Join(c.Root, sdkPath)
-	return build.RestoreAssets(sdkFolder, "")
+	return assets.RestoreAssets(sdkFolder, "")
+}
+
+const PrepareCommandDescription = "installs locally the build system for a driver"
+
+type PrepareCommand struct {
+	cmd.Command
+}
+
+func (c *PrepareCommand) Execute(args []string) error {
+	return build.Prepare(c.Root)
+}
+
+const BuildCommandDescription = "builds the driver"
+
+type BuildCommand struct {
+	cmd.Command
+}
+
+func (c *BuildCommand) Execute(args []string) error {
+	name := ""
+	if len(args) != 0 {
+		name = args[0]
+	}
+	id, err := build.Build(c.Root, name)
+	if err != nil {
+		return err
+	}
+	fmt.Println(id)
+	return nil
+}
+
+const TestCommandDescription = "tests the driver using fixtures"
+
+type TestCommand struct {
+	cmd.Command
+}
+
+func (c *TestCommand) Execute(args []string) error {
+	return build.Test(c.Root)
 }

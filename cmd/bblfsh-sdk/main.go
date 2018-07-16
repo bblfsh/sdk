@@ -17,6 +17,9 @@ func main() {
 	parser.AddCommand("prepare-build", cmd.PrepareBuildCommandDescription, "", &cmd.PrepareBuildCommand{})
 	parser.AddCommand("update", cmd.UpdateCommandDescription, "", &cmd.UpdateCommand{})
 	parser.AddCommand("init", cmd.InitCommandDescription, "", &cmd.InitCommand{})
+	parser.AddCommand("prepare", cmd.PrepareCommandDescription, "", &cmd.PrepareCommand{})
+	parser.AddCommand("build", cmd.BuildCommandDescription, "", &cmd.BuildCommand{})
+	parser.AddCommand("test", cmd.TestCommandDescription, "", &cmd.TestCommand{})
 
 	if _, err := parser.Parse(); err != nil {
 		if _, ok := err.(*flags.Error); ok {
