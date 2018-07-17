@@ -107,13 +107,10 @@ func TestNativeDriverNativeParse_Malfunctioning(t *testing.T) {
 	err := d.Start()
 	require.Nil(err)
 
-	r, err := d.Parse(&InternalParseRequest{
+	_, err = d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
-	require.NoError(err)
-
-	require.Equal(r.Status, Status(protocol.Fatal))
-	require.Equal(len(r.Errors), 1)
+	require.NotNil(err)
 }
 
 func TestNativeDriverNativeParse_Malformed(t *testing.T) {
@@ -125,11 +122,8 @@ func TestNativeDriverNativeParse_Malformed(t *testing.T) {
 	err := d.Start()
 	require.NoError(err)
 
-	r, err := d.Parse(&InternalParseRequest{
+	_, err = d.Parse(&InternalParseRequest{
 		Content: "foo",
 	})
-	require.NoError(err)
-
-	require.Equal(r.Status, Status(protocol.Fatal))
-	require.Equal(len(r.Errors), 1)
+	require.NotNil(err)
 }
