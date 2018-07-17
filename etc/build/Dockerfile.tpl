@@ -44,9 +44,28 @@ WORKDIR /native
 RUN {{ . }}
 {{end}}
 
+#================================
+# Stage 1.1: Native Driver Tests
+#================================
+FROM native as native_test
+
+{{- if ne (len .Native.Test.Deps) 0}}
+# install test dependencies
+{{range .Native.Test.Deps -}}
+RUN {{ . }}
+{{end}}
+{{- end}}
+# run native driver tests
+{{range .Native.Test.Run -}}
+RUN {{ . }}
+{{end}}
+
 #=================================
 # Stage 2: Go Driver Server Build
 #=================================
+{{if ne .Native.Build.Gopath "" -}}
+FROM native as driver
+{{- else -}}
 FROM golang:{{ .Runtime.Version }} as driver
 
 ENV DRIVER_REPO=github.com/bblfsh/{{ .Language }}-driver
@@ -54,6 +73,8 @@ ENV DRIVER_REPO_PATH=/go/src/$DRIVER_REPO
 
 ADD vendor $DRIVER_REPO_PATH/vendor
 ADD driver $DRIVER_REPO_PATH/driver
+{{- end}}
+
 WORKDIR $DRIVER_REPO_PATH/
 
 # build tests

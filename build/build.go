@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -35,6 +36,10 @@ type manifest struct {
 			Run       []string   `yaml:"run"`
 			Artifacts []artifact `yaml:"artifacts"`
 		} `yaml:"build"`
+		Test struct {
+			Deps []string `yaml:"deps"`
+			Run  []string `yaml:"run"`
+		} `yaml:"test"`
 	} `yaml:"native"`
 	Runtime struct {
 		Version string `yaml:"version"`
@@ -49,8 +54,11 @@ func Prepare(path string) error {
 	var m manifest
 	if err := readYML(filepath.Join(path, manifestName), &m); err != nil {
 		return err
+	} else if m.SDK != "2" {
+		return fmt.Errorf("unknown SDK version: %q", m.SDK)
 	}
 	if m.Native.Build.Gopath == "" && m.Native.Build.Image == "" {
+		// if it's not a go build and build image is not specified - use native runtime image
 		m.Native.Build.Image = m.Native.Image
 	}
 
