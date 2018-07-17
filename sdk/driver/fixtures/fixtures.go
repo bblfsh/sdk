@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,8 @@ import (
 )
 
 const Dir = "fixtures"
+
+const maxParseErrors = 3
 
 type SemanticConfig struct {
 	// BlacklistTypes is a list og types that should not appear in semantic UAST.
@@ -123,13 +126,21 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 	require.NoError(t, err)
 	defer dr.Close()
 
+	var parseErrors uint32
+
 	suffix := s.Ext
 	for _, ent := range list {
 		if !strings.HasSuffix(ent.Name(), suffix) {
 			continue
+		} else if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
+			return
 		}
+
 		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
+			if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
+				t.SkipNow()
+			}
 			name += suffix
 			code := s.readFixturesFile(t, name)
 
@@ -137,6 +148,9 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 				Content:  string(code),
 				Encoding: driver.Encoding(protocol.UTF8),
 			})
+			if err != nil {
+				atomic.AddUint32(&parseErrors, 1)
+			}
 			require.NoError(t, err)
 
 			js, err := marshalNative(resp)
@@ -180,13 +194,21 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 	require.NoError(t, err)
 	defer dr.Close()
 
+	var parseErrors uint32
+
 	suffix := s.Ext
 	for _, ent := range list {
 		if !strings.HasSuffix(ent.Name(), suffix) {
 			continue
+		} else if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
+			return
 		}
+
 		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
+			if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
+				t.SkipNow()
+			}
 			name += suffix
 			code := s.readFixturesFile(t, name)
 
@@ -196,6 +218,9 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			}
 
 			resp, err := dr.Parse(req)
+			if err != nil {
+				atomic.AddUint32(&parseErrors, 1)
+			}
 			require.NoError(t, err)
 
 			ast, err := uast.ToNode(resp.AST)

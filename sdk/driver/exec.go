@@ -155,17 +155,28 @@ func (d *ExecDriver) Parse(req *InternalParseRequest) (*InternalParseResponse, e
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	_ = d.enc.Encode(&InternalParseRequest{
+	err := d.enc.Encode(&InternalParseRequest{
 		Content:  req.Content,
 		Encoding: Encoding(req.Encoding),
 	})
+	if err != nil {
+		// Cannot write data - this means the stream is broken or driver crashed.
+		// We will try to recover by reading the response, but since it might be
+		// a stack trace or an error message, we will read it as a "raw" value.
+		// This preserves an original text instead of failing with decoding error.
+		var raw json.RawMessage
+		// TODO: this reads a single line only; we can be smarter and read the whole log if driver cannot recover
+		if err := d.dec.Decode(&raw); err != nil {
+			// stream is broken on both sides, cannot get additional info
+			return nil, err
+		}
+		return nil, fmt.Errorf("error: %v; %s", err, string(raw))
+	}
 
 	r := &InternalParseResponse{}
 	if err := d.dec.Decode(r); err != nil {
-		r.Status = Status(protocol.Fatal)
-		r.Errors = append(r.Errors, err.Error())
+		return nil, err
 	}
-
 	return r, nil
 }
 
