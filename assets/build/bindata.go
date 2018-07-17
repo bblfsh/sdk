@@ -70,7 +70,7 @@ FROM {{ .Native.Build.Image }} as native
 # add dependency files
 {{range .Native.Build.Add -}}
 ADD {{ .Path }} {{ .Dest }}
-{{- end}}
+{{end}}
 {{- end}}
 
 {{- if ne (len .Native.Build.Deps) 0}}
@@ -78,7 +78,7 @@ ADD {{ .Path }} {{ .Dest }}
 # install build dependencies
 {{range .Native.Build.Deps -}}
 RUN {{ . }}
-{{- end}}
+{{end}}
 {{- end}}
 
 {{if ne .Native.Build.Gopath "" -}}
@@ -97,7 +97,7 @@ WORKDIR /native
 # build native driver
 {{range .Native.Build.Run -}}
 RUN {{ . }}
-{{- end}}
+{{end}}
 
 #=================================
 # Stage 2: Go Driver Server Build
@@ -134,13 +134,13 @@ ADD manifest.toml ./
 # copy static files from driver source directory
 {{range .Native.Static -}}
 ADD ./native/{{ .Path }} ./bin/{{ .Dest }}
-{{- end}}
+{{end}}
 {{- end}}
 
 # copy build artifacts for native driver
 {{range .Native.Build.Artifacts -}}
 COPY --from=native {{ .Path }} ./bin/{{ .Dest }}
-{{- end}}
+{{end}}
 
 # copy tests binary
 COPY --from=driver /tmp/fixtures.test ./bin/
@@ -163,7 +163,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2340, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2330, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
