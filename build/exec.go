@@ -8,13 +8,17 @@ import (
 	"strings"
 )
 
-func create(path string) (*os.File, error) {
+func create(path string) (io.WriteCloser, error) {
 	fmt.Fprintln(os.Stderr, "w", path)
 	return os.Create(path)
 }
 
-func execIn(wd string, out io.Writer, cmd string, args ...string) error {
+func printCommand(cmd string, args ...string) {
 	fmt.Fprintln(os.Stderr, "+", cmd, strings.Join(args, " "))
+}
+
+func execIn(wd string, out io.Writer, cmd string, args ...string) error {
+	printCommand(cmd, args...)
 	c := exec.Command(cmd, args...)
 	c.Dir = wd
 	c.Stderr = os.Stderr

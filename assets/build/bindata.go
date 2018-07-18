@@ -148,7 +148,7 @@ LABEL maintainer="source{d}" \
 WORKDIR /opt/driver
 
 # copy driver manifest and static files
-ADD manifest.toml ./
+ADD manifest.toml ./etc/
 
 {{- if ne (len .Native.Static) 0}}
 
@@ -184,7 +184,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2743, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2747, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

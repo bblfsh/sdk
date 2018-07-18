@@ -29,7 +29,11 @@ type PrepareCommand struct {
 }
 
 func (c *PrepareCommand) Execute(args []string) error {
-	return build.Prepare(c.Root)
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	return d.Prepare()
 }
 
 const BuildCommandDescription = "builds the driver"
@@ -43,7 +47,11 @@ func (c *BuildCommand) Execute(args []string) error {
 	if len(args) != 0 {
 		name = args[0]
 	}
-	id, err := build.Build(c.Root, name)
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	id, err := d.Build(name)
 	if err != nil {
 		return err
 	}
@@ -58,5 +66,9 @@ type TestCommand struct {
 }
 
 func (c *TestCommand) Execute(args []string) error {
-	return build.Test(c.Root)
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	return d.Test()
 }

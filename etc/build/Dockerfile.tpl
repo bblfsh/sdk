@@ -93,7 +93,7 @@ LABEL maintainer="source{d}" \
 WORKDIR /opt/driver
 
 # copy driver manifest and static files
-ADD manifest.toml ./
+ADD manifest.toml ./etc/
 
 {{- if ne (len .Native.Static) 0}}
 

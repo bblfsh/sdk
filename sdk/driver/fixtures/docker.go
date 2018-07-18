@@ -14,9 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ory/dockertest"
-	"github.com/ory/dockertest/docker"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/bblfsh/sdk.v2/internal/docker"
 )
 
 const envLocalTest = "BBLFSH_TEST_LOCAL"
@@ -24,14 +23,12 @@ const envLocalTest = "BBLFSH_TEST_LOCAL"
 var runInDocker = os.Getenv(envLocalTest) != "true"
 
 const (
-	dockerFileName  = "Dockerfile"
-	dockerSocket    = "/var/run/docker.sock"
-	dockerSocketURL = "unix://" + dockerSocket
+	dockerFileName = docker.FileName
 )
 
 func checkDockerInstalled(t testing.TB) {
-	if _, err := os.Stat(dockerSocket); err != nil {
-		t.Fatalf("docker socket is not available: %v", err)
+	if !docker.Installed() {
+		t.Fatalf("docker socket is not available")
 	}
 }
 
@@ -91,10 +88,10 @@ func dockerBuild(t testing.TB, dir string) string {
 	outBuf := bytes.NewBuffer(nil)
 	errBuf := bytes.NewBuffer(nil)
 
-	p, err := dockertest.NewPool(dockerSocketURL)
+	cli, err := docker.Dial()
 	require.NoError(t, err)
 
-	err = p.Client.BuildImage(docker.BuildImageOptions{
+	err = cli.BuildImage(docker.BuildImageOptions{
 		ContextDir:     dir,
 		Dockerfile:     dockerFileName,
 		SuppressOutput: true,
@@ -160,11 +157,10 @@ func dockerRunFixtures(t testing.TB, root, image string, debug bool) io.Reader {
 		)
 	}
 
-	p, err := dockertest.NewPool(dockerSocketURL)
+	cli, err := docker.Dial()
 	require.NoError(t, err)
 
-	c, err := p.Client.CreateContainer(docker.CreateContainerOptions{
-
+	err = docker.RunAndWait(cli, outWriter(pw), outWriter(errBuf), docker.CreateContainerOptions{
 		Config: &docker.Config{
 			User:         umap,
 			Image:        image,
@@ -174,22 +170,6 @@ func dockerRunFixtures(t testing.TB, root, image string, debug bool) io.Reader {
 		HostConfig: conf,
 	})
 	require.NoError(t, err)
-	defer p.Client.RemoveContainer(docker.RemoveContainerOptions{
-		ID: c.ID, Force: true,
-	})
-
-	cw, err := p.Client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
-		Container:    c.ID,
-		OutputStream: outWriter(pw),
-		ErrorStream:  outWriter(errBuf),
-		Logs:         true, Stdout: true, Stderr: true, Stream: true,
-	})
-	require.NoError(t, err)
-	defer cw.Close()
-
-	err = p.Client.StartContainer(c.ID, nil)
-	require.NoError(t, err)
-	err = cw.Wait()
 
 	pw.Close()
 	if err != nil {
