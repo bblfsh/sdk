@@ -7,6 +7,7 @@
 // etc/skeleton/LICENSE
 // etc/skeleton/Makefile
 // etc/skeleton/README.md.tpl
+// etc/skeleton/build.yml.tpl
 // etc/skeleton/driver/fixtures/fixtures_test.go.tpl
 // etc/skeleton/driver/impl/impl.go
 // etc/skeleton/driver/main.go.tpl
@@ -81,21 +82,24 @@ func Gitignore() (*asset, error) {
 var _TravisYml = []byte(`language: go
 
 go:
-  - 1.9
+  - '1.10'
 
 services:
   - docker
 
 before_script:
-  - go get -v gopkg.in/bblfsh/sdk.v2/...
-  - bblfsh-sdk prepare-build .
+  - curl https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 > /usr/bin/dep
+  - dep ensure --vendor-only
+  - go install ./vendor/gopkg.in/bblfsh/sdk.v2/cmd/...
+  - bblfsh-sdk
   - go get -v -t ./driver/...
 
 script:
-  - make test integration-test
+  - bblfsh-sdk update --dry-run
+  - bblfsh-sdk test ci-build
 
 after_success:
-  - make push
+  - bblfsh-sdk push ci-build
 `)
 
 func TravisYmlBytes() ([]byte, error) {
@@ -108,7 +112,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 236, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 406, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -883,20 +887,7 @@ func license() (*asset, error) {
 	return a, nil
 }
 
-var _makefile = []byte(`-include .sdk/Makefile
-
-$(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk with: "bblfsh-sdk prepare-build"))
-
-test-native-internal:
-	cd native; \
-	echo "not implemented"
-
-build-native-internal:
-	cd native; \
-	echo "not implemented"
-	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/bin/native
-	chmod +x $(BUILD_PATH)/bin/native
-`)
+var _makefile = []byte(`# DEPRECATED, see build.yml`)
 
 func makefileBytes() ([]byte, error) {
 	return _makefile, nil
@@ -908,7 +899,7 @@ func makefile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Makefile", size: 361, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Makefile", size: 27, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -977,6 +968,38 @@ func readmeMdTpl() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "README.md.tpl", size: 1973, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _buildYmlTpl = []byte(`sdk: '2'
+go-runtime:
+  version: '1.10'
+native:
+  image: '{{.Language}}:latest'
+  build:
+    deps:
+      - 'echo dependencies'
+    run:
+      - 'echo build'
+    artifacts:
+      - path: '/native/native-binary'
+        dest: 'native'
+  test:
+    run:
+      - 'echo tests'`)
+
+func buildYmlTplBytes() ([]byte, error) {
+	return _buildYmlTpl, nil
+}
+
+func buildYmlTpl() (*asset, error) {
+	bytes, err := buildYmlTplBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "build.yml.tpl", size: 269, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1380,6 +1403,7 @@ var _bindata = map[string]func() (*asset, error){
 	"LICENSE":                              license,
 	"Makefile":                             makefile,
 	"README.md.tpl":                        readmeMdTpl,
+	"build.yml.tpl":                        buildYmlTpl,
 	"driver/fixtures/fixtures_test.go.tpl": driverFixturesFixtures_testGoTpl,
 	"driver/impl/impl.go":                  driverImplImplGo,
 	"driver/main.go.tpl":                   driverMainGoTpl,
@@ -1439,6 +1463,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"LICENSE":                  &bintree{license, map[string]*bintree{}},
 	"Makefile":                 &bintree{makefile, map[string]*bintree{}},
 	"README.md.tpl":            &bintree{readmeMdTpl, map[string]*bintree{}},
+	"build.yml.tpl":            &bintree{buildYmlTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
 		"fixtures": &bintree{nil, map[string]*bintree{
 			"fixtures_test.go.tpl": &bintree{driverFixturesFixtures_testGoTpl, map[string]*bintree{}},

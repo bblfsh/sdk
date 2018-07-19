@@ -22,20 +22,6 @@ func (c *PrepareBuildCommand) Execute(args []string) error {
 	return assets.RestoreAssets(sdkFolder, "")
 }
 
-const PrepareCommandDescription = "installs locally the build system for a driver"
-
-type PrepareCommand struct {
-	cmd.Command
-}
-
-func (c *PrepareCommand) Execute(args []string) error {
-	d, err := build.NewDriver(c.Root)
-	if err != nil {
-		return err
-	}
-	return d.Prepare()
-}
-
 const BuildCommandDescription = "builds the driver"
 
 type BuildCommand struct {
@@ -70,5 +56,59 @@ func (c *TestCommand) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	return d.Test()
+	image := ""
+	if len(args) != 0 {
+		image = args[0]
+	}
+	return d.Test(image)
+}
+
+const TagCommandDescription = "returns a version tag for the driver"
+
+type TagCommand struct {
+	cmd.Command
+}
+
+func (c *TagCommand) Execute(args []string) error {
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	tag, err := d.VersionTag()
+	if err != nil {
+		return err
+	}
+	fmt.Println(tag)
+	return nil
+}
+
+const ReleaseCommandDescription = "prepare driver for the release"
+
+type ReleaseCommand struct {
+	cmd.Command
+}
+
+func (c *ReleaseCommand) Execute(args []string) error {
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	return d.FillManifest("")
+}
+
+const PushCommandDescription = "push driver image to docker registry (CI only)"
+
+type PushCommand struct {
+	cmd.Command
+}
+
+func (c *PushCommand) Execute(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("image name should be specified")
+	}
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	return d.Push(args[0])
 }

@@ -1,18 +1,21 @@
 language: go
 
 go:
-  - 1.9
+  - '1.10'
 
 services:
   - docker
 
 before_script:
-  - go get -v gopkg.in/bblfsh/sdk.v2/...
-  - bblfsh-sdk prepare-build .
+  - curl https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 > /usr/bin/dep
+  - dep ensure --vendor-only
+  - go install ./vendor/gopkg.in/bblfsh/sdk.v2/cmd/...
+  - bblfsh-sdk
   - go get -v -t ./driver/...
 
 script:
-  - make test integration-test
+  - bblfsh-sdk update --dry-run
+  - bblfsh-sdk test ci-build
 
 after_success:
-  - make push
+  - bblfsh-sdk push ci-build

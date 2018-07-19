@@ -9,7 +9,6 @@ import (
 )
 
 func create(path string) (io.WriteCloser, error) {
-	fmt.Fprintln(os.Stderr, "w", path)
 	return os.Create(path)
 }
 

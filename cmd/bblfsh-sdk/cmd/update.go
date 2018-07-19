@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
+	"gopkg.in/bblfsh/sdk.v2/build"
 	"gopkg.in/bblfsh/sdk.v2/cmd"
 	"gopkg.in/bblfsh/sdk.v2/manifest"
 )
@@ -26,6 +27,7 @@ var overwriteManagedFiles = os.Getenv("BABELFISH_OVERWRITE_MANAGED") == "true"
 // managedFiles are files that always are overwritten
 var managedFiles = map[string]bool{
 	".travis.yml":                     true,
+	"Makefile":                        true,
 	"README.md.tpl":                   true,
 	"LICENSE":                         true,
 	"driver/main.go.tpl":              true,
@@ -60,6 +62,21 @@ func (c *UpdateCommand) Execute(args []string) error {
 		if err := c.processAsset(file); err != nil {
 			return err
 		}
+	}
+	d, err := build.NewDriver(c.Root)
+	if err != nil {
+		return err
+	}
+	var changed bool
+	if c.DryRun {
+		changed, err = d.ScriptChanged()
+	} else {
+		changed, err = d.Prepare()
+	}
+	if err != nil {
+		return err
+	} else if changed {
+		c.notifyChangedFile(build.ScriptName)
 	}
 
 	if c.DryRun && c.changes > 0 {

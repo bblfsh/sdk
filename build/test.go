@@ -20,15 +20,18 @@ const (
 	fixturesDir         = "fixtures"
 )
 
-func (d *Driver) Test() error {
-	id, err := d.Build("")
-	if err != nil {
+func (d *Driver) Test(image string) error {
+	if image == "" {
+		id, err := d.Build("")
+		if err != nil {
+			return err
+		}
+		image = id
+	}
+	if err := d.testFixtures(image); err != nil {
 		return err
 	}
-	if err := d.testFixtures(id); err != nil {
-		return err
-	}
-	if err := d.testIntegration(id); err != nil {
+	if err := d.testIntegration(image); err != nil {
 		return err
 	}
 	return nil
