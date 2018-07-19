@@ -1,5 +1,6 @@
 # Prerequisites:
 #   dep ensure --vendor-only
+#   bblfsh-sdk release
 
 #==============================
 # Stage 1: Native Driver Build

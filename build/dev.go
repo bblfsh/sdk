@@ -25,6 +25,9 @@ type ServerInstance struct {
 }
 
 func (d *ServerInstance) installFromDocker(ctx context.Context, lang, id string) error {
+	if !strings.Contains(id, ":") {
+		id += ":latest"
+	}
 	cmd := []string{"bblfshctl", "driver", "install", lang, dockerSchema + id}
 	printCommand("docker", append([]string{"exec", id}, cmd...)...)
 	e, err := d.cli.CreateExec(docker.CreateExecOptions{

@@ -55,6 +55,7 @@ func (fi bindataFileInfo) Sys() interface{} {
 
 var _dockerfileTpl = []byte(`# Prerequisites:
 #   dep ensure --vendor-only
+#   bblfsh-sdk release
 
 #==============================
 # Stage 1: Native Driver Build
@@ -184,7 +185,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2769, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2792, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
