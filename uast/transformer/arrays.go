@@ -160,7 +160,7 @@ func (op prependOne) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 		return nil, err
 	}
 	arr, ok := tail.(nodes.Array)
-	if !ok {
+	if !ok && tail != nil {
 		return nil, ErrExpectedList.New(tail)
 	}
 	out := make(nodes.Array, 0, len(arr)+1)
