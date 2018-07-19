@@ -67,10 +67,15 @@ func (s *Server) initialize() error {
 		return err
 	}
 
+	m := s.d.m
+	build := "unknown"
+	if m.Build != nil {
+		build = m.Build.Format("2006-01-02T15:04:05Z")
+	}
 	s.Logger.Infof("%s-driver version: %s (build: %s)",
-		s.d.m.Language,
-		s.d.m.Version,
-		s.d.m.Build.Format("2006-01-02T15:04:05Z"),
+		m.Language,
+		m.Version,
+		build,
 	)
 
 	return nil
