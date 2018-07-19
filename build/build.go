@@ -3,6 +3,7 @@ package build
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -183,18 +184,29 @@ func (d *Driver) Build(imageName string) (string, error) {
 	printCommand("docker", args...)
 
 	buf := bytes.NewBuffer(nil)
+	var out io.Writer = buf
+	if Verbose() {
+		out = io.MultiWriter(buf, os.Stderr)
+	}
 	err = cli.BuildImage(docker.BuildImageOptions{
 		Name:           imageName,
 		ContextDir:     d.root,
 		Dockerfile:     docker.FileName,
 		SuppressOutput: true,
-		OutputStream:   buf,
+		OutputStream:   out,
 		ErrorStream:    os.Stderr,
 	})
 	if err != nil {
+		if !Verbose() {
+			buf.WriteTo(os.Stderr)
+		}
 		return "", err
 	}
-	return strings.TrimSpace(buf.String()), nil
+	id := string(bytes.TrimSpace(buf.Bytes()))
+	if strings.Contains(id, " ") {
+		return "", fmt.Errorf("cannot parse container id: %q", id)
+	}
+	return id, nil
 }
 
 func (d *Driver) VersionTag() (string, error) {

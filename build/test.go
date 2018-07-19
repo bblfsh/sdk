@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -62,7 +63,12 @@ func (d *Driver) testFixtures(image string) error {
 		"--entrypoint", bin,
 		image,
 	)
-	return docker.RunAndWait(cli, os.Stdout, os.Stderr, docker.CreateContainerOptions{
+	buf := bytes.NewBuffer(nil)
+	var out io.Writer = buf
+	if Verbose() {
+		out = io.MultiWriter(buf, os.Stderr)
+	}
+	err = docker.RunAndWait(cli, out, out, docker.CreateContainerOptions{
 		Config: &docker.Config{
 			User:         usr,
 			Image:        image,
@@ -79,6 +85,16 @@ func (d *Driver) testFixtures(image string) error {
 			Binds:      []string{mnt},
 		},
 	})
+	if err != nil {
+		if !Verbose() {
+			buf.WriteTo(os.Stderr)
+		}
+		return err
+	} else if bytes.Contains(buf.Bytes(), []byte("FAIL")) {
+		buf.WriteTo(os.Stderr)
+		return fmt.Errorf("tests failed")
+	}
+	return nil
 }
 
 func (d *Driver) testIntegration(image string) error {
