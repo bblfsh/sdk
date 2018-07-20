@@ -148,10 +148,11 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 				Content:  string(code),
 				Encoding: driver.Encoding(protocol.UTF8),
 			})
-			if err != nil {
+			if err != nil || len(resp.Errors) != 0 {
 				atomic.AddUint32(&parseErrors, 1)
 			}
 			require.NoError(t, err)
+			require.Empty(t, resp.Errors)
 
 			js, err := marshalNative(resp)
 			require.NoError(t, err)
@@ -218,10 +219,11 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			}
 
 			resp, err := dr.Parse(req)
-			if err != nil {
+			if err != nil || len(resp.Errors) != 0 {
 				atomic.AddUint32(&parseErrors, 1)
 			}
 			require.NoError(t, err)
+			require.Empty(t, resp.Errors)
 
 			ast, err := uast.ToNode(resp.AST)
 			require.NoError(t, err)
