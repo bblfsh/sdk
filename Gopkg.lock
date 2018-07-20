@@ -29,10 +29,10 @@
   revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
 
 [[projects]]
-  name = "github.com/cenkalti/backoff"
+  branch = "master"
+  name = "github.com/antchfx/xpath"
   packages = ["."]
-  revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
-  version = "v2.0.0"
+  revision = "077bca4d2caaf391ee780136adae00f59153dcd2"
 
 [[projects]]
   branch = "master"
@@ -154,7 +154,6 @@
 [[projects]]
   name = "github.com/ory/dockertest"
   packages = [
-    ".",
     "docker",
     "docker/opts",
     "docker/pkg/archive",
@@ -318,6 +317,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2d1ad9ca23788fa103013545b6a49b342fc37329ee16b2511c2b2f89ab64eb50"
+  inputs-digest = "825c394946aa1a0570836d149829f3a85456d300e0ee27cfd531172918b99480"
   solver-name = "gps-cdcl"
   solver-version = 1
