@@ -88,6 +88,10 @@ RUN go build -o /tmp/driver ./driver/main.go
 #=======================
 FROM {{ .Native.Image }}
 
+{{range .Native.Deps -}}
+RUN {{ . }}
+{{end}}
+
 LABEL maintainer="source{d}" \
       bblfsh.language="{{ .Language }}"
 

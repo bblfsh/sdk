@@ -143,6 +143,10 @@ RUN go build -o /tmp/driver ./driver/main.go
 #=======================
 FROM {{ .Native.Image }}
 
+{{range .Native.Deps -}}
+RUN {{ . }}
+{{end}}
+
 LABEL maintainer="source{d}" \
       bblfsh.language="{{ .Language }}"
 
@@ -185,7 +189,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2792, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2838, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
