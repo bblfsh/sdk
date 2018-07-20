@@ -78,10 +78,10 @@ ADD driver $DRIVER_REPO_PATH/driver
 
 WORKDIR $DRIVER_REPO_PATH/
 
-# build tests
-RUN go test -c -o /tmp/fixtures.test ./driver/fixtures/
 # build server binary
 RUN go build -o /tmp/driver ./driver/main.go
+# build tests
+RUN go test -c -o /tmp/fixtures.test ./driver/fixtures/
 
 #=======================
 # Stage 3: Driver Build
@@ -92,9 +92,6 @@ LABEL maintainer="source{d}" \
       bblfsh.language="{{ .Language }}"
 
 WORKDIR /opt/driver
-
-# copy driver manifest and static files
-ADD .manifest.release.toml ./etc/manifest.toml
 
 {{- if ne (len .Native.Static) 0}}
 
@@ -109,13 +106,16 @@ ADD ./native/{{ .Path }} ./bin/{{ .Dest }}
 COPY --from=native {{ .Path }} ./bin/{{ .Dest }}
 {{end}}
 
+# copy driver server binary
+COPY --from=driver /tmp/driver ./bin/
+
 # copy tests binary
 COPY --from=driver /tmp/fixtures.test ./bin/
 # move stuff to make tests work
 RUN ln -s /opt/driver ../build
 VOLUME /opt/fixtures
 
-# copy driver server binary
-COPY --from=driver /tmp/driver ./bin/
+# copy driver manifest and static files
+ADD .manifest.release.toml ./etc/manifest.toml
 
 ENTRYPOINT ["/opt/driver/bin/driver"]
