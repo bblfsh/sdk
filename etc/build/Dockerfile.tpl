@@ -88,6 +88,10 @@ RUN go test -c -o /tmp/fixtures.test ./driver/fixtures/
 #=======================
 FROM {{ .Native.Image }}
 
+{{range .Native.Deps -}}
+RUN {{ . }}
+{{end}}
+
 LABEL maintainer="source{d}" \
       bblfsh.language="{{ .Language }}"
 

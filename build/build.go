@@ -62,6 +62,7 @@ type buildManifest struct {
 	Native   struct {
 		Image  string     `yaml:"image"`
 		Static []artifact `yaml:"static"`
+		Deps   []string   `yaml:"deps"` // only apt/apk
 		Build  struct {
 			Gopath    string     `yaml:"gopath"`
 			Image     string     `yaml:"image"`
@@ -96,8 +97,46 @@ func (d *Driver) readBuildManifest() (*buildManifest, error) {
 		// if it's not a go build and build image is not specified - use native runtime image
 		m.Native.Build.Image = m.Native.Image
 	}
+	for _, s := range m.Native.Deps {
+		if !isApkOrApt(s) {
+			return nil, fmt.Errorf("only apt/apk commands allowed in deps for final image")
+		}
+	}
 	return &m, nil
 }
+
+func isApkOrApt(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return true
+	}
+	ok := false
+	for _, p := range []string{
+		"apt", "apt-get", "apk",
+	} {
+		if strings.HasPrefix(s, p+" ") {
+			ok = true
+		}
+	}
+	if !ok {
+		return false
+	}
+	for _, sep := range []string{
+		"&&", "&", "||", ";", "\n",
+	} {
+		sub := strings.Split(s, sep)
+		if len(sub) == 1 {
+			continue
+		}
+		for _, s := range sub {
+			if !isApkOrApt(s) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (d *Driver) generateBuildScript() ([]byte, error) {
 	m, err := d.readBuildManifest()
 	if err != nil {
