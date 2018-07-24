@@ -255,7 +255,7 @@ func (m *mappings) index() {
 		mp = precompile(mp)
 
 		oop, _ := mp.Mapping()
-		if chk, ok := oop.(opCheck); ok {
+		if chk, ok := oop.(*opCheck); ok {
 			oop = chk.op
 		}
 		// switch by operation type and make a separate list
