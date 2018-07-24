@@ -352,7 +352,7 @@ func Part(vr string, o ObjectOp) ObjectOp {
 	if !ok {
 		panic("partial transform on an object with unknown fields")
 	}
-	return opPartialObj{vr: vr, used: used, op: o}
+	return &opPartialObj{vr: vr, used: used, op: o}
 }
 
 type opPartialObj struct {
@@ -361,20 +361,20 @@ type opPartialObj struct {
 	op   ObjectOp
 }
 
-func (op opPartialObj) Kinds() nodes.Kind {
+func (op *opPartialObj) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-func (op opPartialObj) Fields() (FieldDescs, bool) {
+func (op *opPartialObj) Fields() (FieldDescs, bool) {
 	return op.used, false
 }
 
-func (op opPartialObj) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opPartialObj) Check(st *State, n nodes.Node) (bool, error) {
 	return checkObj(op, st, n)
 }
 
 // CheckObj will save all unknown fields and restore them to a new object on ConstructObj.
-func (op opPartialObj) CheckObj(st *State, n nodes.Object) (bool, error) {
+func (op *opPartialObj) CheckObj(st *State, n nodes.Object) (bool, error) {
 	if !op.used.CheckObj(n) {
 		return false, nil
 	}
@@ -393,12 +393,12 @@ func (op opPartialObj) CheckObj(st *State, n nodes.Object) (bool, error) {
 	return op.op.CheckObj(st, n)
 }
 
-func (op opPartialObj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opPartialObj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return constructObj(op, st, n)
 }
 
 // ConstructObj it will run a child operation and will also restore all unhandled fields.
-func (op opPartialObj) ConstructObj(st *State, obj nodes.Object) (nodes.Object, error) {
+func (op *opPartialObj) ConstructObj(st *State, obj nodes.Object) (nodes.Object, error) {
 	if obj == nil {
 		obj = make(nodes.Object)
 	}
@@ -438,7 +438,7 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 	)
 	required := make(FieldDescs)
 	for _, s := range ops {
-		if j, ok := s.(opObjJoin); ok {
+		if j, ok := s.(*opObjJoin); ok {
 			if j.partial != nil {
 				if partial != nil {
 					panic("only one partial transform is allowed")
@@ -486,7 +486,7 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 			i--
 		}
 	}
-	return opObjJoin{ops: out, partial: partial, allFields: required}
+	return &opObjJoin{ops: out, partial: partial, allFields: required}
 }
 
 type processedOp struct {
@@ -500,23 +500,23 @@ type opObjJoin struct {
 	allFields FieldDescs
 }
 
-func (op opObjJoin) Kinds() nodes.Kind {
+func (op *opObjJoin) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-func (op opObjJoin) Fields() (FieldDescs, bool) {
+func (op *opObjJoin) Fields() (FieldDescs, bool) {
 	return op.allFields.Clone(), op.partial == nil
 }
 
-func (op opObjJoin) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opObjJoin) Check(st *State, n nodes.Node) (bool, error) {
 	return checkObj(op, st, n)
 }
 
-func (op opObjJoin) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opObjJoin) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return constructObj(op, st, n)
 }
 
-func (op opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
+func (op *opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
 	if !op.allFields.CheckObj(n) {
 		return false, nil
 	}
@@ -542,7 +542,7 @@ func (op opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
 	return true, nil
 }
 
-func (op opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+func (op *opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
 	if n == nil {
 		n = make(nodes.Object)
 	}
@@ -877,7 +877,7 @@ func Lookup(op Op, m map[nodes.Value]nodes.Value) Op {
 		}
 		rev[v] = k
 	}
-	return opLookup{op: op, fwd: m, rev: rev}
+	return &opLookup{op: op, fwd: m, rev: rev}
 }
 
 type opLookup struct {
@@ -885,11 +885,11 @@ type opLookup struct {
 	fwd, rev map[nodes.Value]nodes.Value
 }
 
-func (opLookup) Kinds() nodes.Kind {
+func (*opLookup) Kinds() nodes.Kind {
 	return nodes.KindsValues
 }
 
-func (op opLookup) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opLookup) Check(st *State, n nodes.Node) (bool, error) {
 	v, ok := n.(nodes.Value)
 	if !ok {
 		return false, nil
@@ -901,7 +901,7 @@ func (op opLookup) Check(st *State, n nodes.Node) (bool, error) {
 	return op.op.Check(st, vn)
 }
 
-func (op opLookup) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opLookup) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	if err := noNode(n); err != nil {
 		return nil, err
 	}
@@ -932,7 +932,7 @@ func LookupVar(vr string, m map[nodes.Value]nodes.Value) Op {
 func LookupOpVar(vr string, cases map[nodes.Value]Op) Op {
 	def := cases[nil]
 	delete(cases, nil)
-	return opLookupOp{vr: vr, cases: cases, def: def}
+	return &opLookupOp{vr: vr, cases: cases, def: def}
 }
 
 type opLookupOp struct {
@@ -941,11 +941,11 @@ type opLookupOp struct {
 	cases map[nodes.Value]Op
 }
 
-func (opLookupOp) Kinds() nodes.Kind {
+func (*opLookupOp) Kinds() nodes.Kind {
 	return nodes.KindsAny
 }
 
-func (op opLookupOp) eval(st *State) (Op, error) {
+func (op *opLookupOp) eval(st *State) (Op, error) {
 	vn, err := st.MustGetVar(op.vr)
 	if err != nil {
 		return nil, err
@@ -989,7 +989,7 @@ func ValueConv(on Op, conv, rev ValueFunc) Op {
 }
 
 func valueConvKind(on Op, kinds nodes.Kind, conv, rev ValueFunc) Op {
-	return opValueConv{op: on, kinds: kinds & nodes.KindsValues, conv: conv, rev: rev}
+	return &opValueConv{op: on, kinds: kinds & nodes.KindsValues, conv: conv, rev: rev}
 }
 
 // StringFunc is a function that transforms string values.
@@ -1019,11 +1019,11 @@ type opValueConv struct {
 	conv, rev ValueFunc
 }
 
-func (op opValueConv) Kinds() nodes.Kind {
+func (op *opValueConv) Kinds() nodes.Kind {
 	return op.kinds
 }
 
-func (op opValueConv) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opValueConv) Check(st *State, n nodes.Node) (bool, error) {
 	v, ok := n.(nodes.Value)
 	if !ok {
 		return false, nil
@@ -1055,7 +1055,7 @@ func (op opValueConv) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 
 // If checks if a named variable value is true and executes one of sub-operations.
 func If(cond string, then, els Op) Op {
-	return opIf{cond: cond, then: then, els: els}
+	return &opIf{cond: cond, then: then, els: els}
 }
 
 type opIf struct {
@@ -1063,11 +1063,11 @@ type opIf struct {
 	then, els Op
 }
 
-func (op opIf) Kinds() nodes.Kind {
+func (op *opIf) Kinds() nodes.Kind {
 	return op.then.Kinds() | op.els.Kinds()
 }
 
-func (op opIf) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opIf) Check(st *State, n nodes.Node) (bool, error) {
 	st1 := st.Clone()
 	ok1, err1 := op.then.Check(st1, n)
 	if ok1 && err1 == nil {
@@ -1089,7 +1089,7 @@ func (op opIf) Check(st *State, n nodes.Node) (bool, error) {
 	return false, err
 }
 
-func (op opIf) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opIf) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	vn, err := st.MustGetVar(op.cond)
 	if err != nil {
 		return nil, err
@@ -1106,18 +1106,18 @@ func (op opIf) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 
 // NotEmpty checks that node is not nil and contains one or more fields or elements.
 func NotEmpty(op Op) Op {
-	return opNotEmpty{op: op}
+	return &opNotEmpty{op: op}
 }
 
 type opNotEmpty struct {
 	op Op
 }
 
-func (opNotEmpty) Kinds() nodes.Kind {
+func (*opNotEmpty) Kinds() nodes.Kind {
 	return nodes.KindsNotNil
 }
 
-func (op opNotEmpty) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opNotEmpty) Check(st *State, n nodes.Node) (bool, error) {
 	switch n := n.(type) {
 	case nil:
 		return filtered("empty value %T for %v", n, op)
@@ -1133,7 +1133,7 @@ func (op opNotEmpty) Check(st *State, n nodes.Node) (bool, error) {
 	return op.op.Check(st, n)
 }
 
-func (op opNotEmpty) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opNotEmpty) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	n, err := op.op.Construct(st, n)
 	if err != nil {
 		return nil, err
@@ -1155,7 +1155,7 @@ func (op opNotEmpty) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 
 // Opt is an optional operation that uses a named variable to store the state.
 func Opt(exists string, op Op) Op {
-	return opOptional{vr: exists, op: op}
+	return &opOptional{vr: exists, op: op}
 }
 
 type opOptional struct {
@@ -1163,11 +1163,11 @@ type opOptional struct {
 	op Op
 }
 
-func (op opOptional) Kinds() nodes.Kind {
+func (op *opOptional) Kinds() nodes.Kind {
 	return nodes.KindNil | op.op.Kinds()
 }
 
-func (op opOptional) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opOptional) Check(st *State, n nodes.Node) (bool, error) {
 	if err := st.SetVar(op.vr, nodes.Bool(n != nil)); err != nil {
 		return false, err
 	}
@@ -1177,7 +1177,7 @@ func (op opOptional) Check(st *State, n nodes.Node) (bool, error) {
 	return op.op.Check(st, n)
 }
 
-func (op opOptional) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opOptional) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	vn, err := st.MustGetVar(op.vr)
 	if err != nil {
 		return nil, err
@@ -1195,7 +1195,7 @@ func (op opOptional) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 // Check tests first check-only operation before applying the main op. It won't use the check-only argument for Construct.
 // The check-only operation will not be able to set any variables or change state by other means.
 func Check(s Sel, op Op) Op {
-	return opCheck{sel: s, op: op}
+	return &opCheck{sel: s, op: op}
 }
 
 type opCheck struct {
@@ -1203,35 +1203,35 @@ type opCheck struct {
 	op  Op
 }
 
-func (op opCheck) Kinds() nodes.Kind {
+func (op *opCheck) Kinds() nodes.Kind {
 	return op.sel.Kinds() & op.op.Kinds()
 }
 
-func (op opCheck) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opCheck) Check(st *State, n nodes.Node) (bool, error) {
 	if ok, err := op.sel.Check(st.Clone(), n); err != nil || !ok {
 		return ok, err
 	}
 	return op.op.Check(st, n)
 }
 
-func (op opCheck) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opCheck) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return op.op.Construct(st, n)
 }
 
 // Not negates the check.
 func Not(s Sel) Sel {
-	return opNot{sel: s}
+	return &opNot{sel: s}
 }
 
 type opNot struct {
 	sel Sel
 }
 
-func (opNot) Kinds() nodes.Kind {
+func (*opNot) Kinds() nodes.Kind {
 	return nodes.KindsAny // can't be sure
 }
 
-func (op opNot) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opNot) Check(st *State, n nodes.Node) (bool, error) {
 	ok, err := op.sel.Check(st.Clone(), n)
 	if err != nil {
 		return false, err
@@ -1275,18 +1275,18 @@ func Any(s Sel) Sel {
 	if s == nil {
 		s = Is(nil)
 	}
-	return opAny{sel: s}
+	return &opAny{sel: s}
 }
 
 type opAny struct {
 	sel Sel
 }
 
-func (opAny) Kinds() nodes.Kind {
+func (*opAny) Kinds() nodes.Kind {
 	return nodes.KindArray
 }
 
-func (op opAny) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opAny) Check(st *State, n nodes.Node) (bool, error) {
 	l, ok := n.(nodes.Array)
 	if !ok {
 		return false, nil
@@ -1303,18 +1303,18 @@ func (op opAny) Check(st *State, n nodes.Node) (bool, error) {
 
 // All check matches if all list elements matches sub-check.
 func All(s Sel) Sel {
-	return opAll{sel: s}
+	return &opAll{sel: s}
 }
 
 type opAll struct {
 	sel Sel
 }
 
-func (opAll) Kinds() nodes.Kind {
+func (*opAll) Kinds() nodes.Kind {
 	return nodes.KindArray
 }
 
-func (op opAll) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opAll) Check(st *State, n nodes.Node) (bool, error) {
 	l, ok := n.(nodes.Array)
 	if !ok {
 		return false, nil
@@ -1370,14 +1370,14 @@ func In(vals ...nodes.Value) Sel {
 	for _, v := range vals {
 		m[v] = struct{}{}
 	}
-	return opIn{m: m}
+	return &opIn{m: m}
 }
 
 type opIn struct {
 	m map[nodes.Value]struct{}
 }
 
-func (op opIn) Kinds() nodes.Kind {
+func (op *opIn) Kinds() nodes.Kind {
 	var k nodes.Kind
 	for v := range op.m {
 		k |= nodes.KindOf(v)
@@ -1385,7 +1385,7 @@ func (op opIn) Kinds() nodes.Kind {
 	return k
 }
 
-func (op opIn) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opIn) Check(st *State, n nodes.Node) (bool, error) {
 	v, ok := n.(nodes.Value)
 	if !ok && n != nil {
 		return false, nil
@@ -1395,7 +1395,7 @@ func (op opIn) Check(st *State, n nodes.Node) (bool, error) {
 }
 
 func Cases(vr string, cases ...Op) Op {
-	return opCases{vr: vr, cases: cases}
+	return &opCases{vr: vr, cases: cases}
 }
 
 func CasesObj(vr string, common ObjectOp, cases ObjectOps) ObjectOp {
@@ -1433,7 +1433,7 @@ func CasesObj(vr string, common ObjectOp, cases ObjectOps) ObjectOp {
 			}
 		}
 	}
-	var op ObjectOp = opObjCases{vr: vr, cases: list, fields: fields}
+	var op ObjectOp = &opObjCases{vr: vr, cases: list, fields: fields}
 	if common != nil {
 		op = JoinObj(common, op)
 	}
@@ -1445,7 +1445,7 @@ type opCases struct {
 	cases []Op
 }
 
-func (op opCases) Kinds() nodes.Kind {
+func (op *opCases) Kinds() nodes.Kind {
 	var k nodes.Kind
 	for _, s := range op.cases {
 		k |= s.Kinds()
@@ -1453,7 +1453,7 @@ func (op opCases) Kinds() nodes.Kind {
 	return k
 }
 
-func (op opCases) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opCases) Check(st *State, n nodes.Node) (bool, error) {
 	// find the first cases that matches and write an index to a variable
 	for i, s := range op.cases {
 		ls := st.Clone()
@@ -1470,7 +1470,7 @@ func (op opCases) Check(st *State, n nodes.Node) (bool, error) {
 	return false, nil
 }
 
-func (op opCases) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opCases) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	// use the variable to decide what branch to take
 	v, err := st.MustGetVar(op.vr)
 	if err != nil {
@@ -1489,11 +1489,11 @@ type opObjCases struct {
 	cases  []ObjectOp
 }
 
-func (op opObjCases) Fields() (FieldDescs, bool) {
+func (op *opObjCases) Fields() (FieldDescs, bool) {
 	return op.fields.Clone(), true
 }
 
-func (op opObjCases) Kinds() nodes.Kind {
+func (op *opObjCases) Kinds() nodes.Kind {
 	var k nodes.Kind
 	for _, s := range op.cases {
 		k |= s.Kinds()
@@ -1501,15 +1501,15 @@ func (op opObjCases) Kinds() nodes.Kind {
 	return k
 }
 
-func (op opObjCases) Check(st *State, n nodes.Node) (bool, error) {
+func (op *opObjCases) Check(st *State, n nodes.Node) (bool, error) {
 	return checkObj(op, st, n)
 }
 
-func (op opObjCases) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *opObjCases) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return constructObj(op, st, n)
 }
 
-func (op opObjCases) CheckObj(st *State, n nodes.Object) (bool, error) {
+func (op *opObjCases) CheckObj(st *State, n nodes.Object) (bool, error) {
 	// find the first cases that matches and write an index to a variable
 	for i, s := range op.cases {
 		ls := st.Clone()
@@ -1526,7 +1526,7 @@ func (op opObjCases) CheckObj(st *State, n nodes.Object) (bool, error) {
 	return false, nil
 }
 
-func (op opObjCases) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+func (op *opObjCases) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
 	// use the variable to decide what branch to take
 	v, err := st.MustGetVar(op.vr)
 	if err != nil {
