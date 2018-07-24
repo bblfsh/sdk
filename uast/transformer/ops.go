@@ -264,11 +264,14 @@ func (o Obj) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
 
 type FieldDesc struct {
 	Optional bool        // field might not exists in the object
-	Fixed    *nodes.Node // field is require to have a fixed value
+	Fixed    *nodes.Node // field is required to have a fixed value; the value may be nil
 }
 
+// FieldDescs is a descriptions of static fields of an object.
+// Transformation operation may return this struct to indicate what fields they will require.
 type FieldDescs map[string]FieldDesc
 
+// Clone makes a copy of field description, without cloning each field values.
 func (f FieldDescs) Clone() FieldDescs {
 	if f == nil {
 		return nil
@@ -279,6 +282,9 @@ func (f FieldDescs) Clone() FieldDescs {
 	}
 	return fields
 }
+
+// CheckObj verifies that an object matches field descriptions.
+// It ignores all fields in the object that are not described.
 func (f FieldDescs) CheckObj(n nodes.Object) bool {
 	for k, d := range f {
 		if d.Optional {
