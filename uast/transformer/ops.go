@@ -279,6 +279,21 @@ func (f FieldDescs) Clone() FieldDescs {
 	}
 	return fields
 }
+func (f FieldDescs) CheckObj(n nodes.Object) bool {
+	for k, d := range f {
+		if d.Optional {
+			continue
+		}
+		v, ok := n[k]
+		if !ok {
+			return false
+		}
+		if d.Fixed != nil && !nodes.Equal(*d.Fixed, v) {
+			return false
+		}
+	}
+	return true
+}
 
 // ObjectOp is an operation that is executed on an object. See Object.
 type ObjectOp interface {
@@ -360,6 +375,9 @@ func (op opPartialObj) Check(st *State, n nodes.Node) (bool, error) {
 
 // CheckObj will save all unknown fields and restore them to a new object on ConstructObj.
 func (op opPartialObj) CheckObj(st *State, n nodes.Object) (bool, error) {
+	if !op.used.CheckObj(n) {
+		return false, nil
+	}
 	// TODO: consider throwing an error if a transform is defined as partial, but in fact it's not
 	other := n.CloneObject()
 	n = make(nodes.Object)
@@ -458,6 +476,16 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 	if partial != nil {
 		required = nil
 	}
+	for i := 0; i < len(out); i++ {
+		op := out[i]
+		if len(op.fields) != 0 {
+			continue
+		}
+		if o, ok := op.op.(Obj); ok && len(o) == 0 && len(out) > 1 {
+			out = append(out[:i], out[i+1:]...)
+			i--
+		}
+	}
 	return opObjJoin{ops: out, partial: partial, allFields: required}
 }
 
@@ -489,6 +517,9 @@ func (op opObjJoin) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 }
 
 func (op opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
+	if !op.allFields.CheckObj(n) {
+		return false, nil
+	}
 	src := n
 	n = n.CloneObject()
 	for _, s := range op.ops {
