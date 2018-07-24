@@ -96,8 +96,13 @@ func (s *Suite) RunTests(t *testing.T) {
 	})
 }
 
-func (s *Suite) RunBenchmarks(t *testing.B) {
-	t.Run("transform", s.benchmarkTransform)
+func (s *Suite) RunBenchmarks(b *testing.B) {
+	b.Run("transform", func(b *testing.B) {
+		s.benchmarkTransform(b, false)
+	})
+	b.Run("transform-legacy", func(b *testing.B) {
+		s.benchmarkTransform(b, true)
+	})
 }
 
 const (
@@ -318,7 +323,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 	}
 }
 
-func (s *Suite) benchmarkTransform(b *testing.B) {
+func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
 	if s.BenchName == "" {
 		b.SkipNow()
 	}
@@ -357,10 +362,12 @@ func (s *Suite) benchmarkTransform(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		un, err := protocol.ToNode(ua)
-		if err != nil {
-			b.Fatal(err)
+		if legacy {
+			un, err := protocol.ToNode(ua)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = un
 		}
-		_ = un
 	}
 }
