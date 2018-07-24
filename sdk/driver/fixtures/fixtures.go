@@ -352,7 +352,7 @@ func (s *Suite) benchmarkTransform(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ast := rast.Clone()
 
-		ua, err := tr.Do(driver.ModeAnnotated, code, ast)
+		ua, err := tr.Do(driver.ModeSemantic, code, ast)
 		if err != nil {
 			b.Fatal(err)
 		}
