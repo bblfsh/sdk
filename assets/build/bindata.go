@@ -108,10 +108,10 @@ ENV GOROOT=""
 
 ENV GOLANG_SRC_URL https://golang.org/dl/go${RUNTIME_GO_VERSION}.src.tar.gz
 
-# from https://github.com/docker-library/golang/blob/master/1.8/alpine3.6/Dockerfile
+# from https://github.com/docker-library/golang/blob/master/1.9/alpine3.7/Dockerfile
 
 RUN apk add --update --no-cache ca-certificates openssl && update-ca-certificates
-RUN wget https://raw.githubusercontent.com/docker-library/golang/e63ba9c5efb040b35b71e16722b71b2931f29eb8/${RUNTIME_GO_VERSION}/alpine3.6/no-pic.patch -O /no-pic.patch -O /no-pic.patch
+RUN wget https://raw.githubusercontent.com/docker-library/golang/e63ba9c5efb040b35b71e16722b71b2931f29eb8/${RUNTIME_GO_VERSION}/alpine3.7/no-pic.patch -O /no-pic.patch -O /no-pic.patch
 
 RUN set -ex \
 	&& apk add --no-cache --virtual .build-deps \
@@ -136,7 +136,8 @@ RUN set -ex \
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
-RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"`)
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
+`)
 
 func etcBuildDockerfileBuildAlpineTplBytes() ([]byte, error) {
 	return _etcBuildDockerfileBuildAlpineTpl, nil
@@ -148,7 +149,7 @@ func etcBuildDockerfileBuildAlpineTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etc/build/Dockerfile.build.alpine.tpl", size: 1155, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "etc/build/Dockerfile.build.alpine.tpl", size: 1156, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -227,7 +228,7 @@ RUNTIME_GO_VERSION ?=
 
 # get the git commit
 GIT_COMMIT=$(shell git rev-parse HEAD | cut -c1-7)
-GIT_DIRTY=$(shell test -n "` + "`" + `git status --porcelain` + "`" + `" && echo "-dirty" || true)
+GIT_DIRTY=$(shell test -n "` + "`" + `git status --porcelain -uno` + "`" + `" && echo "-dirty" || true)
 
 # optional variables
 DRIVER_DEV_PREFIX := dev
@@ -272,7 +273,7 @@ func makeBootstrapMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1260, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/bootstrap.mk", size: 1265, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
