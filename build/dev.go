@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/internal/docker"
 	"gopkg.in/bblfsh/sdk.v2/protocol"
 )
@@ -51,7 +53,7 @@ func (d *ServerInstance) installFromDocker(ctx context.Context, lang, id string)
 	}
 	return nil
 }
-func (d *ServerInstance) ClientV1(ctx context.Context) (protocol.ProtocolServiceClient, error) {
+func (d *ServerInstance) ClientV1(ctx context.Context) (protocol1.ProtocolServiceClient, error) {
 	if d.user == nil {
 		addr := d.bblfshd.NetworkSettings.IPAddress
 		conn, err := grpc.DialContext(ctx, addr+":"+cliPort, grpc.WithInsecure(), grpc.WithBlock())
@@ -60,7 +62,18 @@ func (d *ServerInstance) ClientV1(ctx context.Context) (protocol.ProtocolService
 		}
 		d.user = conn
 	}
-	return protocol.NewProtocolServiceClient(d.user), nil
+	return protocol1.NewProtocolServiceClient(d.user), nil
+}
+func (d *ServerInstance) ClientV2(ctx context.Context, lang string) (driver.Driver, error) {
+	if d.user == nil {
+		addr := d.bblfshd.NetworkSettings.IPAddress
+		conn, err := grpc.DialContext(ctx, addr+":"+cliPort, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			return nil, err
+		}
+		d.user = conn
+	}
+	return protocol.AsDriver(d.user, lang), nil
 }
 func (s *ServerInstance) DumpLogs(w io.Writer) error {
 	return getLogs(s.cli, s.bblfshd.ID, w)

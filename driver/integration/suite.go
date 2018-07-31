@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v2/driver/integration/consts"
 	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ type suite struct {
 	// Fixture to use against the driver
 	Fixtures string
 
-	c protocol.ProtocolServiceClient
+	c protocol1.ProtocolServiceClient
 }
 
 func (s *suite) SetUpTest(t *testing.T) {
@@ -80,7 +80,7 @@ func (s *suite) SetUpTest(t *testing.T) {
 	conn, err := grpc.Dial(s.Endpoint, grpc.WithTimeout(time.Second*2), grpc.WithInsecure(), grpc.WithBlock())
 	r.Nil(err)
 
-	s.c = protocol.NewProtocolServiceClient(conn)
+	s.c = protocol1.NewProtocolServiceClient(conn)
 }
 
 func (s *suite) TestParse(t *testing.T) {
@@ -121,7 +121,7 @@ func (s *suite) doTestParse(t *testing.T, filename string) {
 	r := require.New(t)
 
 	source := getSourceCode(r, filename)
-	req := &protocol.ParseRequest{
+	req := &protocol1.ParseRequest{
 		Language: s.Language,
 		Content:  source,
 	}
@@ -137,7 +137,7 @@ func (s *suite) doTestNativeParse(t *testing.T, filename string) {
 	r := require.New(t)
 
 	source := getSourceCode(r, filename)
-	req := &protocol.NativeParseRequest{
+	req := &protocol1.NativeParseRequest{
 		Language: s.Language,
 		Content:  source,
 	}

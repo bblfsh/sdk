@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v2/protocol"
+	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/bblfsh/sdk.v2/driver"
@@ -37,10 +37,10 @@ func TestDriverParserParse(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(d)
 
-	err = d.Start()
+	err = d.d.Start()
 	require.NoError(err)
 
-	r := d.Parse(&protocol.ParseRequest{
+	r := d.Parse(&protocol1.ParseRequest{
 		Language: "fixture",
 		Filename: "foo.f",
 		Content:  "foo",
@@ -48,7 +48,7 @@ func TestDriverParserParse(t *testing.T) {
 
 	require.NotNil(r)
 	require.Empty(r.Errors, "%v", r.Errors)
-	require.Equal(protocol.Ok, r.Status)
+	require.Equal(protocol1.Ok, r.Status)
 	require.Equal("fixture", r.Language)
 	require.Equal("foo.f", r.Filename)
 	require.True(r.Elapsed.Nanoseconds() > 0)
@@ -64,7 +64,7 @@ func TestDriverParserParse(t *testing.T) {
 }
 `, r.UAST.String())
 
-	err = d.Stop()
+	err = d.d.Close()
 	require.NoError(err)
 }
 
@@ -75,20 +75,20 @@ func TestDriverParserParse_MissingLanguage(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(d)
 
-	err = d.Start()
+	err = d.d.Start()
 	require.NoError(err)
 
-	r := d.Parse(&protocol.ParseRequest{
+	r := d.Parse(&protocol1.ParseRequest{
 		Content: "foo",
 	})
 
 	require.NotNil(r)
 	require.Equal(len(r.Errors), 1)
-	require.Equal(r.Status, protocol.Fatal)
+	require.Equal(r.Status, protocol1.Fatal)
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
 	require.Nil(r.UAST)
 
-	err = d.Stop()
+	err = d.d.Close()
 	require.NoError(err)
 }
 func TestDriverParserParse_Malfunctioning(t *testing.T) {
@@ -98,22 +98,22 @@ func TestDriverParserParse_Malfunctioning(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(d)
 
-	err = d.Start()
+	err = d.d.Start()
 	require.NoError(err)
 
-	r := d.Parse(&protocol.ParseRequest{
+	r := d.Parse(&protocol1.ParseRequest{
 		Language: "fixture",
 		Content:  "foo",
 	})
 
 	require.NotNil(r)
 
-	require.Equal(r.Status, protocol.Fatal)
+	require.Equal(r.Status, protocol1.Fatal)
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
 	require.Equal(len(r.Errors), 1)
 	require.Nil(r.UAST)
 
-	err = d.Stop()
+	err = d.d.Close()
 	require.NoError(err)
 }
 
@@ -124,22 +124,22 @@ func TestDriverParserNativeParse(t *testing.T) {
 	require.NoError(err)
 	require.NotNil(d)
 
-	err = d.Start()
+	err = d.d.Start()
 	require.NoError(err)
 
-	r := d.NativeParse(&protocol.NativeParseRequest{
+	r := d.NativeParse(&protocol1.NativeParseRequest{
 		Language: "fixture",
 		Content:  "foo",
 	})
 
 	require.NotNil(r)
 	require.Equal(len(r.Errors), 0)
-	require.Equal(r.Status, protocol.Ok)
+	require.Equal(r.Status, protocol1.Ok)
 	require.Equal(r.Language, "fixture")
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
 	require.Equal(r.AST, "{\"root\":{\"key\":\"val\"}}")
 
-	err = d.Stop()
+	err = d.d.Close()
 	require.NoError(err)
 }
 

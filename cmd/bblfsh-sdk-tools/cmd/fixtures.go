@@ -7,10 +7,9 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
-
 	"google.golang.org/grpc"
+	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
+	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 )
 
 const FixturesCommandDescription = "" +
@@ -28,7 +27,7 @@ type FixturesCommand struct {
 	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
 	manifestCommand
-	cli protocol.ProtocolServiceClient
+	cli protocol1.ProtocolServiceClient
 }
 
 func (c *FixturesCommand) Execute(args []string) error {
@@ -47,7 +46,7 @@ func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 		panic(err)
 	}
 
-	c.cli = protocol.NewProtocolServiceClient(conn)
+	c.cli = protocol1.NewProtocolServiceClient(conn)
 
 	for _, f := range c.Args.SourceFiles {
 		if _, err := os.Stat(f); os.IsNotExist(err) {
@@ -108,7 +107,7 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 }
 
 func (c *FixturesCommand) getNative(source string, filename string) (string, error) {
-	req := &protocol.NativeParseRequest{
+	req := &protocol1.NativeParseRequest{
 		Language: c.Language,
 		Content:  source,
 		Filename: filename,
@@ -119,7 +118,7 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 		return "", err
 	}
 
-	if res.Status != protocol.Ok {
+	if res.Status != protocol1.Ok {
 		if !c.Quiet {
 			fmt.Println("Warning: native request for ", filename, "returned errors:")
 			for _, e := range res.Errors {
@@ -131,8 +130,8 @@ func (c *FixturesCommand) getNative(source string, filename string) (string, err
 	return res.String(), nil
 }
 
-func (c *FixturesCommand) getUast(source string, filename string) (*protocol.ParseResponse, error) {
-	req := &protocol.ParseRequest{
+func (c *FixturesCommand) getUast(source string, filename string) (*protocol1.ParseResponse, error) {
+	req := &protocol1.ParseRequest{
 		Language: c.Language,
 		Content:  source,
 		Filename: filename,
@@ -143,7 +142,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (*protocol.Par
 		return nil, err
 	}
 
-	if res.Status != protocol.Ok {
+	if res.Status != protocol1.Ok {
 		if !c.Quiet {
 			fmt.Println("Warning: parse request for ", filename, "returned errors:")
 			for _, e := range res.Errors {

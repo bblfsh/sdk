@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
 	"gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/viewer"
@@ -47,7 +47,7 @@ type Suite struct {
 	WriteViewerJSON   bool // write JSON compatible with uast-viewer
 	WritePreprocessed bool // write a preprocessed UAST for fixtures
 
-	NewDriver  func() driver.BaseDriver
+	NewDriver  func() driver.Native
 	Transforms driver.Transforms
 
 	BenchName string // fixture name to benchmark (with no extension)
@@ -343,7 +343,7 @@ func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
 		}
 
 		if legacy {
-			un, err := protocol.ToNode(ua)
+			un, err := uast1.ToNode(ua)
 			if err != nil {
 				b.Fatal(err)
 			}

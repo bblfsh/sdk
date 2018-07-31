@@ -13,22 +13,11 @@ import (
 
 type Mode int
 
-func (m Mode) Enabled(m2 Mode) bool {
-	return m&m2 != 0
-}
-
 const (
-	ModeNative       = StepNative
-	ModePreprocessed = StepPreprocessed
-	ModeAnnotated    = StepAnnotated | ModePreprocessed
-	ModeSemantic     = StepSemantic | ModePreprocessed | ModeAnnotated
-)
-
-const (
-	StepNative = Mode(1 << iota)
-	StepPreprocessed
-	StepAnnotated
-	StepSemantic
+	ModeNative = Mode(1 << iota)
+	ModePreprocessed
+	ModeAnnotated
+	ModeSemantic
 )
 
 const ModeDefault = ModeSemantic
@@ -71,17 +60,15 @@ func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error
 		}
 		return nil
 	}
-	if mode.Enabled(StepPreprocessed) || mode.Enabled(StepSemantic) || mode.Enabled(StepAnnotated) {
-		if err := runAll(t.Preprocess); err != nil {
-			return nd, err
-		}
+	if err := runAll(t.Preprocess); err != nil {
+		return nd, err
 	}
-	if mode.Enabled(StepSemantic) {
+	if mode >= ModeSemantic {
 		if err := runAll(t.Normalize); err != nil {
 			return nd, err
 		}
 	}
-	if mode.Enabled(StepAnnotated) {
+	if mode >= ModeAnnotated {
 		if err := runAll(t.Annotations); err != nil {
 			return nd, err
 		}
@@ -94,7 +81,7 @@ func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error
 			return nd, err
 		}
 	}
-	if mode.Enabled(StepSemantic) && t.Namespace != "" {
+	if mode >= ModeSemantic && t.Namespace != "" {
 		nd, err = transformer.DefaultNamespace(t.Namespace).Do(nd)
 		if err != nil {
 			return nd, err
@@ -103,11 +90,28 @@ func (t Transforms) Do(mode Mode, code string, nd nodes.Node) (nodes.Node, error
 	return nd, nil
 }
 
-// BaseDriver is a base implementation of a language driver that returns a native AST.
-type BaseDriver interface {
+// Module is an interface for a generic module instance.
+type Module interface {
 	Start() error
-	Parse(ctx context.Context, src string) (nodes.Node, error)
 	Close() error
+}
+
+// Driver is an interface for a language driver that returns UAST.
+type Driver interface {
+	Parse(ctx context.Context, mode Mode, src string) (nodes.Node, error)
+}
+
+// DriverModule is an interface for a driver instance.
+type DriverModule interface {
+	Module
+	Driver
+	Manifest() (manifest.Manifest, error)
+}
+
+// Native is a base interface of a language driver that returns a native AST.
+type Native interface {
+	Module
+	Parse(ctx context.Context, src string) (nodes.Node, error)
 }
 
 // ErrMulti joins multiple errors.
@@ -149,51 +153,35 @@ type ErrPartialParse struct {
 // The `Parse` and `NativeParse` requests block the driver until the request is
 // done, since the communication with the native driver is a single-channel
 // synchronous communication over stdin/stdout.
-type Driver struct {
-	d BaseDriver
+type driverImpl struct {
+	d Native
 
 	m *manifest.Manifest
 	t Transforms
 }
 
 // NewDriver returns a new Driver instance based on the given ObjectToNode and list of transformers.
-func NewDriverFrom(d BaseDriver, m *manifest.Manifest, t Transforms) (*Driver, error) {
+func NewDriverFrom(d Native, m *manifest.Manifest, t Transforms) (DriverModule, error) {
 	if d == nil {
 		return nil, fmt.Errorf("no driver implementation")
 	} else if m == nil {
 		return nil, fmt.Errorf("no manifest")
 	}
-	return &Driver{d: d, m: m, t: t}, nil
+	return &driverImpl{d: d, m: m, t: t}, nil
 }
 
-func (d *Driver) Start() error {
+func (d *driverImpl) Start() error {
 	return d.d.Start()
 }
 
-func (d *Driver) Stop() error {
+func (d *driverImpl) Close() error {
 	return d.d.Close()
-}
-
-// ParseRequest is a request to parse a file and get its UAST.
-type ParseRequest struct {
-	// Content is the source code to be parsed.
-	Content string
-}
-
-// ParseResponse is the reply to ParseRequest.
-type ParseResponse struct {
-	Errors []error
-	// UAST contains the UAST from the parsed code.
-	UAST nodes.Node
-	// Language. The language that was parsed. Usedful if you used language
-	// autodetection for the request.
-	Language string
 }
 
 // Parse process a protocol.ParseRequest, calling to the native driver. It a
 // parser request is done to the internal native driver and the the returned
 // native AST is transform to UAST.
-func (d *Driver) Parse(ctx context.Context, mode Mode, src string) (nodes.Node, error) {
+func (d *driverImpl) Parse(ctx context.Context, mode Mode, src string) (nodes.Node, error) {
 	ast, err := d.d.Parse(ctx, src)
 	if err != nil {
 		return nil, err
@@ -202,6 +190,6 @@ func (d *Driver) Parse(ctx context.Context, mode Mode, src string) (nodes.Node, 
 }
 
 // Manifest returns a driver manifest.
-func (d *Driver) Manifest() manifest.Manifest {
-	return *d.m // TODO: clone
+func (d *driverImpl) Manifest() (manifest.Manifest, error) {
+	return *d.m, nil // TODO: clone
 }

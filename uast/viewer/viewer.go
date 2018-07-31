@@ -3,14 +3,14 @@ package viewer
 import (
 	"encoding/json"
 
-	"gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 // MarshalUAST writes a UAST file compatible with uast-viewer.
 func MarshalUAST(lang, code string, ast nodes.Node) ([]byte, error) {
-	nd, err := protocol.ToNode(ast)
+	nd, err := uast1.ToNode(ast)
 	if err != nil {
 		return nil, err
 	}

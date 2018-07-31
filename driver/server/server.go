@@ -31,11 +31,11 @@ type Server struct {
 	// Logger a logger to be used by the server.
 	Logger Logger
 
-	d *driver.Driver
+	d driver.DriverModule
 }
 
 // NewServer returns a new server for a given Driver.
-func NewServer(d *driver.Driver) *Server {
+func NewServer(d driver.DriverModule) *Server {
 	return &Server{d: d, GRPCServer: NewGRPCServer(d)}
 }
 
@@ -66,7 +66,10 @@ func (s *Server) initialize() error {
 	if err := s.initializeLogger(); err != nil {
 		return err
 	}
-	m := s.d.Manifest()
+	m, err := s.d.Manifest()
+	if err != nil {
+		return err
+	}
 
 	build := "unknown"
 	if m.Build != nil {
