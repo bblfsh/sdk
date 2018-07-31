@@ -6,7 +6,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/driver/native"
 )
 
-var DefaultDriver driver.BaseDriver = native.NewDriver("")
+var DefaultDriver driver.Native = native.NewDriver("")
 
 var (
 	// ManifestLocation location of the manifest file. Should not override
@@ -21,7 +21,7 @@ func Run(t driver.Transforms) {
 }
 
 // RunNative is like Run but allows to provide a custom driver native driver implementation.
-func RunNative(d driver.BaseDriver, t driver.Transforms) {
+func RunNative(d driver.Native, t driver.Transforms) {
 	m, err := manifest.Load(ManifestLocation)
 	if err != nil {
 		panic(err)

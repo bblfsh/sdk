@@ -8,14 +8,16 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
-	protocol2 "gopkg.in/bblfsh/sdk.v2/protocol/v2"
+	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
+	protocol2 "gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 // NewGRPCServer creates a gRPC server.
-func NewGRPCServer(drv *driver.Driver, opts ...grpc.ServerOption) *GRPCServer {
+func NewGRPCServer(drv driver.DriverModule, opts ...grpc.ServerOption) *GRPCServer {
 	return &GRPCServer{drv: drv, Options: opts}
 }
 
@@ -24,7 +26,7 @@ type GRPCServer struct {
 	// Options list of grpc.ServerOption's.
 	Options []grpc.ServerOption
 
-	drv *driver.Driver
+	drv driver.DriverModule
 	*grpc.Server
 }
 
@@ -47,10 +49,10 @@ func (s *GRPCServer) initialize() error {
 
 	logrus.Debugf("registering grpc service")
 
-	protocol.DefaultService = service{s.drv}
-	protocol.RegisterProtocolServiceServer(
+	protocol1.DefaultService = service{s.drv}
+	protocol1.RegisterProtocolServiceServer(
 		s.Server,
-		protocol.NewProtocolServiceServer(),
+		protocol1.NewProtocolServiceServer(),
 	)
 	protocol2.RegisterDriver(s.Server, s.drv)
 
@@ -58,24 +60,42 @@ func (s *GRPCServer) initialize() error {
 }
 
 type service struct {
-	d *driver.Driver
+	d driver.DriverModule
 }
 
-func (s service) Start() error {
-	return s.d.Start()
+func errResp(err error) protocol1.Response {
+	return protocol1.Response{Status: protocol1.Fatal, Errors: []string{err.Error()}}
 }
 
-func (s service) Stop() error {
-	return s.d.Stop()
+func newDriverManifest(manifest *manifest.Manifest) protocol1.DriverManifest {
+	features := make([]string, len(manifest.Features))
+	for i, feature := range manifest.Features {
+		features[i] = string(feature)
+	}
+	return protocol1.DriverManifest{
+		Name:     manifest.Name,
+		Language: manifest.Language,
+		Version:  manifest.Version,
+		Status:   string(manifest.Status),
+		Features: features,
+	}
 }
 
-func errResp(err error) protocol.Response {
-	return protocol.Response{Status: protocol.Fatal, Errors: []string{err.Error()}}
+func (s service) SupportedLanguages(_ *protocol1.SupportedLanguagesRequest) *protocol1.SupportedLanguagesResponse {
+	m, _ := s.d.Manifest()
+	return &protocol1.SupportedLanguagesResponse{Languages: []protocol1.DriverManifest{
+		newDriverManifest(&m),
+	}}
 }
 
-func (s service) parse(mode driver.Mode, req *protocol.ParseRequest) (nodes.Node, protocol.Response) {
+func (s service) parse(mode driver.Mode, req *protocol1.ParseRequest) (nodes.Node, protocol1.Response) {
 	start := time.Now()
-	m := s.d.Manifest()
+	m, err := s.d.Manifest()
+	if err != nil {
+		r := errResp(err)
+		r.Elapsed = time.Since(start)
+		return nil, r
+	}
 	if req.Language != m.Language {
 		r := errResp(ErrUnsupportedLanguage.New(req.Language))
 		r.Elapsed = time.Since(start)
@@ -89,28 +109,28 @@ func (s service) parse(mode driver.Mode, req *protocol.ParseRequest) (nodes.Node
 	}
 	ast, err := s.d.Parse(ctx, mode, req.Content)
 	dt := time.Since(start)
-	var r protocol.Response
+	var r protocol1.Response
 	if err != nil {
 		r = errResp(err)
 	} else {
-		r = protocol.Response{Status: protocol.Ok}
+		r = protocol1.Response{Status: protocol1.Ok}
 	}
 	r.Elapsed = dt
 	return ast, r
 }
 
-func (s service) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
+func (s service) Parse(req *protocol1.ParseRequest) *protocol1.ParseResponse {
 	ast, resp := s.parse(driver.ModeSemantic, req)
-	if resp.Status != protocol.Ok {
-		return &protocol.ParseResponse{Response: resp}
+	if resp.Status != protocol1.Ok {
+		return &protocol1.ParseResponse{Response: resp}
 	}
-	nd, err := protocol.ToNode(ast)
+	nd, err := uast1.ToNode(ast)
 	if err != nil {
 		r := errResp(err)
 		r.Elapsed = resp.Elapsed
-		return &protocol.ParseResponse{Response: r}
+		return &protocol1.ParseResponse{Response: r}
 	}
-	return &protocol.ParseResponse{
+	return &protocol1.ParseResponse{
 		Response: resp,
 		Language: req.Language,
 		Filename: req.Filename,
@@ -118,28 +138,28 @@ func (s service) Parse(req *protocol.ParseRequest) *protocol.ParseResponse {
 	}
 }
 
-func (s service) NativeParse(req *protocol.NativeParseRequest) *protocol.NativeParseResponse {
-	ast, resp := s.parse(driver.ModeNative, (*protocol.ParseRequest)(req))
-	if resp.Status != protocol.Ok {
-		return &protocol.NativeParseResponse{Response: resp}
+func (s service) NativeParse(req *protocol1.NativeParseRequest) *protocol1.NativeParseResponse {
+	ast, resp := s.parse(driver.ModeNative, (*protocol1.ParseRequest)(req))
+	if resp.Status != protocol1.Ok {
+		return &protocol1.NativeParseResponse{Response: resp}
 	}
 	data, err := json.Marshal(ast)
 	if err != nil {
 		r := errResp(err)
 		r.Elapsed = resp.Elapsed
-		return &protocol.NativeParseResponse{Response: r}
+		return &protocol1.NativeParseResponse{Response: r}
 	}
-	return &protocol.NativeParseResponse{
+	return &protocol1.NativeParseResponse{
 		Response: resp,
 		Language: req.Language,
 		AST:      string(data),
 	}
 }
 
-func (s service) Version(req *protocol.VersionRequest) *protocol.VersionResponse {
-	m := s.d.Manifest()
+func (s service) Version(req *protocol1.VersionRequest) *protocol1.VersionResponse {
+	m, _ := s.d.Manifest()
 
-	r := &protocol.VersionResponse{
+	r := &protocol1.VersionResponse{
 		Version: m.Version,
 	}
 	if m.Build != nil {

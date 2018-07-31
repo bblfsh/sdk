@@ -28,11 +28,11 @@ var (
 	ErrNotRunning = errors.NewKind("native driver is not running")
 )
 
-func NewDriver(enc Encoding) driver.BaseDriver {
+func NewDriver(enc Encoding) driver.Native {
 	return NewDriverAt("", enc)
 }
 
-func NewDriverAt(bin string, enc Encoding) driver.BaseDriver {
+func NewDriverAt(bin string, enc Encoding) driver.Native {
 	if bin == "" {
 		bin = Binary
 	}

@@ -12,8 +12,11 @@ import (
 	"strings"
 	"time"
 
+	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
+	uast1 "gopkg.in/bblfsh/sdk.v1/uast"
+	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/internal/docker"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const (
@@ -132,7 +135,11 @@ func (d *Driver) testIntegration(image string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	cli, err := srv.ClientV1(ctx)
+	cli1, err := srv.ClientV1(ctx)
+	if err != nil {
+		return err
+	}
+	cli2, err := srv.ClientV2(ctx, lang)
 	if err != nil {
 		return err
 	}
@@ -142,19 +149,22 @@ func (d *Driver) testIntegration(image string) error {
 		if err != nil {
 			return err
 		}
-		resp, err := cli.Parse(ctx, &protocol.ParseRequest{
+		content := string(data)
+
+		// test v1 protocol
+		resp, err := cli1.Parse(ctx, &protocol1.ParseRequest{
 			Language: lang,
-			Content:  string(data),
+			Content:  content,
 		})
 		if err != nil {
 			srv.DumpLogs(os.Stderr)
 			return err
-		} else if resp.Status != protocol.Ok {
+		} else if resp.Status != protocol1.Ok {
 			srv.DumpLogs(os.Stderr)
 			return fmt.Errorf("parse error: %v", resp.Errors)
 		}
 		buf := bytes.NewBuffer(nil)
-		err = protocol.Pretty(resp.UAST, buf, protocol.IncludeAll)
+		err = uast1.Pretty(resp.UAST, buf, uast1.IncludeAll)
 		if err != nil {
 			return err
 		}
@@ -163,12 +173,32 @@ func (d *Driver) testIntegration(image string) error {
 		if err == nil {
 			if !bytes.Equal(data, buf.Bytes()) {
 				ioutil.WriteFile(expName+"_got", buf.Bytes(), 0644)
-				return fmt.Errorf("test %q failed", name)
+				return fmt.Errorf("v1 test %q failed", name)
 			}
 		} else if os.IsNotExist(err) {
 			ioutil.WriteFile(expName, buf.Bytes(), 0644)
 		} else if err != nil {
 			return err
+		}
+
+		// test v2 protocol
+		ast, err := cli2.Parse(ctx, driver.ModeSemantic, content)
+		if err != nil {
+			srv.DumpLogs(os.Stderr)
+			return err
+		}
+		buf.Reset()
+		exp, err := uastyml.Marshal(ast)
+		if err != nil {
+			return err
+		}
+		expName = name + ".sem.uast"
+		got, err := ioutil.ReadFile(expName)
+		if err != nil {
+			return err
+		} else if !bytes.Equal(exp, got) {
+			ioutil.WriteFile(expName+"_got", buf.Bytes(), 0644)
+			return fmt.Errorf("v2 test %q failed", name)
 		}
 	}
 

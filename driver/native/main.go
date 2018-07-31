@@ -11,7 +11,7 @@ import (
 )
 
 // Main is a main function for running a native Go driver as an Exec-based module that uses internal json protocol.
-func Main(d driver.BaseDriver) {
+func Main(d driver.Native) {
 	if err := d.Start(); err != nil {
 		panic(err)
 	}
@@ -30,7 +30,7 @@ func Main(d driver.BaseDriver) {
 }
 
 type nativeServer struct {
-	d driver.BaseDriver
+	d driver.Native
 }
 
 func errResp(err error) *parseResponse {
