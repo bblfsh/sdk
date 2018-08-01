@@ -46,12 +46,15 @@ type Native interface {
 
 // ErrMulti joins multiple errors.
 type ErrMulti struct {
+	Header string
 	Errors []string
 }
 
 func (e ErrMulti) Error() string {
 	buf := bytes.NewBuffer(nil)
-	buf.WriteString("partial parse:\n")
+	if e.Header != "" {
+		buf.WriteString(e.Header + ":\n")
+	}
 	for _, s := range e.Errors {
 		buf.WriteString(s)
 		buf.WriteString("\n")
@@ -65,7 +68,7 @@ func MultiError(errs []string) error {
 
 func PartialParse(ast nodes.Node, errs []string) error {
 	return &ErrPartialParse{
-		ErrMulti: ErrMulti{Errors: errs},
+		ErrMulti: ErrMulti{Header: "partial parse", Errors: errs},
 		AST:      ast,
 	}
 }
