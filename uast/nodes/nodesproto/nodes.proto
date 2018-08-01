@@ -59,14 +59,14 @@ message Node {
         double float  = 5;
         bool   bool   = 6;
     }
-    // Keys is an ordered set of Object keys. Coresponding values are stored in Values field.
+    // Keys is an ordered set of Object keys. Corresponding values are stored in Values field.
     repeated uint64 keys = 7;
     // KeysFrom can refer to a node ID previously seen on the wire. In this case, Keys from that node
-    // are copied to Keys field of the current node. Thus, full list of Keys can be omited.
+    // are copied to Keys field of the current node. Thus, full list of Keys can be omitted.
     uint64 keys_from = 10;
     // Values stores an ordered list of node IDs. Zero ID represents a null node.
     // For Array node this field represent an array itself, and for Object nodes
-    // this field is a set of values that coresponds to keys defined by Keys or KeysFrom.
+    // this field is a set of values that corresponds to keys defined by Keys or KeysFrom.
     repeated uint64 values = 8;
     // IsObject is a helper field to distinguish between empty arrays and empty objects.
     bool is_object = 9;
