@@ -55,13 +55,17 @@ func (c *client) Parse(ctx context.Context, mode driver.Mode, src string) (nodes
 	if err != nil {
 		return nil, err
 	}
-	ast, err := nodesproto.ReadTree(bytes.NewReader(resp.Uast))
+	return resp.Nodes()
+}
+
+func (m *ParseResponse) Nodes() (nodes.Node, error) {
+	ast, err := nodesproto.ReadTree(bytes.NewReader(m.Uast))
 	if err != nil {
 		return nil, err
 	}
-	if len(resp.Errors) != 0 {
+	if len(m.Errors) != 0 {
 		var errs []string
-		for _, e := range resp.Errors {
+		for _, e := range m.Errors {
 			errs = append(errs, e.Text)
 		}
 		return nil, &driver.ErrPartialParse{AST: ast, ErrMulti: driver.ErrMulti{Errors: errs}}
