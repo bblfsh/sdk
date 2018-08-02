@@ -175,6 +175,7 @@ func (d *Driver) testIntegration(image string) error {
 				ioutil.WriteFile(expName+"_got", buf.Bytes(), 0644)
 				return fmt.Errorf("v1 test %q failed", name)
 			}
+			_ = os.Remove(expName + "_got")
 		} else if os.IsNotExist(err) {
 			ioutil.WriteFile(expName, buf.Bytes(), 0644)
 		} else if err != nil {
