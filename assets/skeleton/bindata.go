@@ -84,18 +84,21 @@ go:
 services:
   - docker
 
+env:
+  - BBLFSHD_VERSION=v2.6.1
+
 before_script:
   - curl -L https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 > $GOPATH/bin/dep
   - chmod +x $GOPATH/bin/dep
   - dep ensure --vendor-only
   - go get ./vendor/gopkg.in/bblfsh/sdk.v2/cmd/...
   - go install ./vendor/gopkg.in/bblfsh/sdk.v2/cmd/...
-  - docker pull bblfsh/bblfshd
+  - docker pull bblfsh/bblfshd:$BBLFSHD_VERSION
 
 script:
   - bblfsh-sdk update --dry-run
   - bblfsh-sdk build ci-build
-  - bblfsh-sdk test ci-build
+  - bblfsh-sdk test --bblfshd $BBLFSHD_VERSION ci-build
 
 after_success:
   - bblfsh-sdk push ci-build
@@ -111,7 +114,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 508, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 585, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

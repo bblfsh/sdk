@@ -88,7 +88,7 @@ func (d *ServerInstance) Close() error {
 }
 
 // RunWithDriver starts a bblfshd server and installs a specified driver to it.
-func RunWithDriver(lang, id string) (*ServerInstance, error) {
+func RunWithDriver(bblfshdVers, lang, id string) (*ServerInstance, error) {
 	cli, err := docker.Dial()
 	if err != nil {
 		return nil, err
@@ -98,11 +98,15 @@ func RunWithDriver(lang, id string) (*ServerInstance, error) {
 		// needed to install driver from Docker instance
 		sock = docker.Socket + ":" + docker.Socket
 	)
+	image := bblfshd
+	if bblfshdVers != "" {
+		image += ":" + bblfshdVers
+	}
 
-	printCommand("docker", "run", "--rm", "--privileged", "-v", sock, bblfshd)
+	printCommand("docker", "run", "--rm", "--privileged", "-v", sock, image)
 	c, err := docker.Run(cli, docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Image: bblfshd,
+			Image: image,
 		},
 		HostConfig: &docker.HostConfig{
 			AutoRemove: true,

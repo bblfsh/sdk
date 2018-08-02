@@ -34,6 +34,7 @@ const TestCommandDescription = "tests the driver using fixtures"
 
 type TestCommand struct {
 	cmd.Command
+	Bblfshd string `long:"bblfshd" description:"bblfshd version to test with"`
 }
 
 func (c *TestCommand) Execute(args []string) error {
@@ -45,7 +46,7 @@ func (c *TestCommand) Execute(args []string) error {
 	if len(args) != 0 {
 		image = args[0]
 	}
-	return d.Test(image)
+	return d.Test(c.Bblfshd, image)
 }
 
 const TagCommandDescription = "returns a version tag for the driver"

@@ -24,7 +24,7 @@ const (
 	fixturesDir         = "fixtures"
 )
 
-func (d *Driver) Test(image string) error {
+func (d *Driver) Test(bblfshdVers, image string) error {
 	if image == "" {
 		id, err := d.Build("")
 		if err != nil {
@@ -35,7 +35,7 @@ func (d *Driver) Test(image string) error {
 	if err := d.testFixtures(image); err != nil {
 		return err
 	}
-	if err := d.testIntegration(image); err != nil {
+	if err := d.testIntegration(bblfshdVers, image); err != nil {
 		return err
 	}
 	return nil
@@ -100,7 +100,7 @@ func (d *Driver) testFixtures(image string) error {
 	return nil
 }
 
-func (d *Driver) testIntegration(image string) error {
+func (d *Driver) testIntegration(bblfshdVers, image string) error {
 	m, err := d.readBuildManifest()
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (d *Driver) testIntegration(image string) error {
 		return fmt.Errorf("expected at least one test called './%s/%s.xxx'", fixturesDir, integrationTestName)
 	}
 
-	srv, err := RunWithDriver(lang, image)
+	srv, err := RunWithDriver(bblfshdVers, lang, image)
 	if err != nil {
 		return err
 	}
