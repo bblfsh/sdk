@@ -35,8 +35,8 @@ import (
 	"testing"
 	"time"
 
-	io "github.com/cayleygraph/cayley/quad/pquads/pio"
 	"github.com/gogo/protobuf/test"
+	io "gopkg.in/bblfsh/sdk.v2/uast/nodes/nodesproto/pio"
 )
 
 func iotest(writer io.Writer, reader io.Reader) error {

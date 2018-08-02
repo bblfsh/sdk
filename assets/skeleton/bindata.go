@@ -2,10 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore
 // etc/skeleton/.travis.yml
-// etc/skeleton/Dockerfile.build.tpl.tpl
-// etc/skeleton/Dockerfile.tpl.tpl
 // etc/skeleton/LICENSE
-// etc/skeleton/Makefile
 // etc/skeleton/README.md.tpl
 // etc/skeleton/build.yml.tpl
 // etc/skeleton/driver/fixtures/fixtures_test.go.tpl
@@ -115,85 +112,6 @@ func TravisYml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: ".travis.yml", size: 508, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _dockerfileBuildTplTpl = []byte(`# Dockerfile.build represents the build environment of the driver, used during
-# the development phase to test and in CI to build and test.
-
-# The prefered base image is the lastest stable Alpine image, if alpine doesn't
-# meet the requirements you can switch the from to the latest stable slim
-# version of Debian (eg.: ` + "`" + `debian:jessie-slim` + "`" + `).
-FROM {{.Manifest.Runtime.OS.AsImage}}
-
-# To avoid files written in the volume by root or foreign users, we create a
-# container local user with the same UID of the user executing the build.
-# The following commands are defined to use in busybox based distributions,
-# if you are using a standard distributions, replace the ` + "`" + `adduser` + "`" + ` command with:
-#   ` + "`" + `useradd --uid ${BUILD_UID} --home /opt/driver ${BUILD_USER}` + "`" + `
-{{if eq .Manifest.Runtime.OS "alpine" -}}
-RUN mkdir -p /opt/driver/src && \
-    adduser ${BUILD_USER} -u ${BUILD_UID} -D -h /opt/driver/src
-{{else -}}
-RUN mkdir -p /opt/driver/src && \
-    useradd --uid ${BUILD_UID} --home /opt/driver ${BUILD_USER}
-{{end}}
-
-# As minimal build tools you need: make, curl and git, install using the same
-# command the specific tools required to build the driver.
-{{if eq .Manifest.Runtime.OS "alpine" -}}
-RUN apk add --no-cache make git curl ca-certificates
-{{else -}}
-RUN apt update && \
-    apt install -y --no-install-recommends make git curl ca-certificates
-{{end}}
-
-# The volume with the full source code is mounted at ` + "`" + `/opt/driver/src` + "`" + ` so, we
-# set the workdir to this path.
-WORKDIR /opt/driver/src`)
-
-func dockerfileBuildTplTplBytes() ([]byte, error) {
-	return _dockerfileBuildTplTpl, nil
-}
-
-func dockerfileBuildTplTpl() (*asset, error) {
-	bytes, err := dockerfileBuildTplTplBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "Dockerfile.build.tpl.tpl", size: 1493, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _dockerfileTplTpl = []byte(`# Dockerfile represents the container being use to run the driver, should be
-# small as possible containing strictly only the tools required to run the
-# driver.
-
-# The prefered base image is the lastest stable Alpine image, if alpine doesn't
-# meet the requirements you can switch the from to the latest stable slim
-# version of Debian (eg.: ` + "`" + `debian:jessie-slim` + "`" + `). If the excution environment
-# is equals to the build environment the build image can be use as FROM:
-#   bblfsh/<language>-driver-build
-FROM {{.Manifest.Runtime.OS.AsImage}}
-
-ADD build /opt/driver
-ENTRYPOINT /opt/driver/bin/driver
-`)
-
-func dockerfileTplTplBytes() ([]byte, error) {
-	return _dockerfileTplTpl, nil
-}
-
-func dockerfileTplTpl() (*asset, error) {
-	bytes, err := dockerfileTplTplBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "Dockerfile.tpl.tpl", size: 597, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -889,23 +807,6 @@ func license() (*asset, error) {
 	return a, nil
 }
 
-var _makefile = []byte(`# DEPRECATED, see build.yml`)
-
-func makefileBytes() ([]byte, error) {
-	return _makefile, nil
-}
-
-func makefile() (*asset, error) {
-	bytes, err := makefileBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "Makefile", size: 27, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _readmeMdTpl = []byte(`# {{.Manifest.Language}}-driver  ![Driver Status](https://img.shields.io/badge/status-{{.Manifest.Status | escape_shield}}-{{template "color-status" .}}.svg) [![Build Status](https://travis-ci.org/bblfsh/{{.Manifest.Language}}-driver.svg?branch=master)](https://travis-ci.org/bblfsh/{{.Manifest.Language | escape_shield }}-driver) ![Native Version](https://img.shields.io/badge/{{.Manifest.Language}}%20version-{{.Manifest.Runtime.NativeVersion | escape_shield}}-aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-{{.Manifest.Runtime.GoVersion | escape_shield}}-63afbf.svg)
 
 {{.Manifest.Documentation.Description}}
@@ -1403,10 +1304,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	".gitignore":                           Gitignore,
 	".travis.yml":                          TravisYml,
-	"Dockerfile.build.tpl.tpl":             dockerfileBuildTplTpl,
-	"Dockerfile.tpl.tpl":                   dockerfileTplTpl,
 	"LICENSE":                              license,
-	"Makefile":                             makefile,
 	"README.md.tpl":                        readmeMdTpl,
 	"build.yml.tpl":                        buildYmlTpl,
 	"driver/fixtures/fixtures_test.go.tpl": driverFixturesFixtures_testGoTpl,
@@ -1461,14 +1359,11 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	".gitignore":               &bintree{Gitignore, map[string]*bintree{}},
-	".travis.yml":              &bintree{TravisYml, map[string]*bintree{}},
-	"Dockerfile.build.tpl.tpl": &bintree{dockerfileBuildTplTpl, map[string]*bintree{}},
-	"Dockerfile.tpl.tpl":       &bintree{dockerfileTplTpl, map[string]*bintree{}},
-	"LICENSE":                  &bintree{license, map[string]*bintree{}},
-	"Makefile":                 &bintree{makefile, map[string]*bintree{}},
-	"README.md.tpl":            &bintree{readmeMdTpl, map[string]*bintree{}},
-	"build.yml.tpl":            &bintree{buildYmlTpl, map[string]*bintree{}},
+	".gitignore":    &bintree{Gitignore, map[string]*bintree{}},
+	".travis.yml":   &bintree{TravisYml, map[string]*bintree{}},
+	"LICENSE":       &bintree{license, map[string]*bintree{}},
+	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
+	"build.yml.tpl": &bintree{buildYmlTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
 		"fixtures": &bintree{nil, map[string]*bintree{
 			"fixtures_test.go.tpl": &bintree{driverFixturesFixtures_testGoTpl, map[string]*bintree{}},

@@ -71,7 +71,7 @@ type suite struct {
 
 func (s *suite) SetUpTest(t *testing.T) {
 	if s.Endpoint == "" || s.Language == "" {
-		t.Skip("please use `bblfsh-sdk-tools test`")
+		t.SkipNow()
 	}
 	t.Logf("dialing %v", s.Endpoint)
 
