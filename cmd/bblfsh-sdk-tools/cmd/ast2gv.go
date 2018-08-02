@@ -25,6 +25,8 @@ type Ast2GraphvizCommand struct {
 	Output   string `long:"out" short:"o" default:"dot" description:"Output format (dot, svg, png)"`
 	TypePred string `long:"type" short:"t" default:"@type" description:"Node type field in native AST"`
 	Colors   string `long:"colors" short:"c" default:"colors.yml" description:"File with node color definitions"`
+	NoPos    bool   `long:"no-pos" description:"Omit position info"`
+	NoNils   bool   `long:"no-nils" description:"Omit nil fields"`
 
 	nodeColors map[string]string
 }
@@ -163,10 +165,16 @@ func (c *Ast2GraphvizCommand) writeGraphviz(w io.Writer, n nodes.Node) error {
 			n = n.CloneObject()
 			tp, _ := n[c.TypePred].(nodes.String)
 			delete(n, c.TypePred)
+			if c.NoPos {
+				delete(n, "@pos")
+			}
 			writeNode(id, string(tp), circle, c.nodeColors[string(tp)], tp == "")
 			keys := n.Keys()
 			for _, k := range keys {
 				v := n[k]
+				if c.NoNils && v == nil {
+					continue
+				}
 				sid := proc(v)
 				writePred(id, k, sid)
 			}
