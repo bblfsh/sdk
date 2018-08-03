@@ -2,6 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore
 // etc/skeleton/.travis.yml
+// etc/skeleton/Gopkg.toml
 // etc/skeleton/LICENSE
 // etc/skeleton/README.md.tpl
 // etc/skeleton/build.yml.tpl
@@ -115,6 +116,37 @@ func TravisYml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: ".travis.yml", size: 585, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _gopkgToml = []byte(`# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
+# for detailed Gopkg.toml documentation.
+
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/bblfsh/sdk.v2"
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  [[prune.project]]
+    name = "gopkg.in/bblfsh/sdk.v2"
+    unused-packages = false
+
+`)
+
+func gopkgTomlBytes() ([]byte, error) {
+	return _gopkgToml, nil
+}
+
+func gopkgToml() (*asset, error) {
+	bytes, err := gopkgTomlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "Gopkg.toml", size: 305, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -927,8 +959,8 @@ var Suite = &fixtures.Suite{
 	Lang: "{{.Manifest.Language}}",
 	Ext:  ".ext", // TODO: specify correct file extension for source files in ./fixtures
 	Path: filepath.Join(projectRoot, fixtures.Dir),
-	NewDriver: func() driver.BaseDriver {
-		return driver.NewExecDriverAt(filepath.Join(projectRoot, "build/bin/native"))
+	NewDriver: func() driver.Native {
+		return native.NewDriverAt(filepath.Join(projectRoot, "build/bin/native"), native.UTF8)
 	},
 	Transforms: normalizer.Transforms,
 	//BenchName: "fixture-name", // TODO: specify a largest file
@@ -961,7 +993,7 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1088, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1093, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1307,6 +1339,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	".gitignore":                           Gitignore,
 	".travis.yml":                          TravisYml,
+	"Gopkg.toml":                           gopkgToml,
 	"LICENSE":                              license,
 	"README.md.tpl":                        readmeMdTpl,
 	"build.yml.tpl":                        buildYmlTpl,
@@ -1364,6 +1397,7 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	".gitignore":    &bintree{Gitignore, map[string]*bintree{}},
 	".travis.yml":   &bintree{TravisYml, map[string]*bintree{}},
+	"Gopkg.toml":    &bintree{gopkgToml, map[string]*bintree{}},
 	"LICENSE":       &bintree{license, map[string]*bintree{}},
 	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
 	"build.yml.tpl": &bintree{buildYmlTpl, map[string]*bintree{}},

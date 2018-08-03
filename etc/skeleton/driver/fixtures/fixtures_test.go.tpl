@@ -15,8 +15,8 @@ var Suite = &fixtures.Suite{
 	Lang: "{{.Manifest.Language}}",
 	Ext:  ".ext", // TODO: specify correct file extension for source files in ./fixtures
 	Path: filepath.Join(projectRoot, fixtures.Dir),
-	NewDriver: func() driver.BaseDriver {
-		return driver.NewExecDriverAt(filepath.Join(projectRoot, "build/bin/native"))
+	NewDriver: func() driver.Native {
+		return native.NewDriverAt(filepath.Join(projectRoot, "build/bin/native"), native.UTF8)
 	},
 	Transforms: normalizer.Transforms,
 	//BenchName: "fixture-name", // TODO: specify a largest file
