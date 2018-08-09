@@ -63,6 +63,7 @@ func (k Kind) Split() []Kind {
 		KindArray,
 		KindString,
 		KindInt,
+		KindUint,
 		KindFloat,
 		KindBool,
 	} {
@@ -94,6 +95,8 @@ func (k Kind) String() string {
 			s = "String"
 		case KindInt:
 			s = "Int"
+		case KindUint:
+			s = "Uint"
 		case KindFloat:
 			s = "Float"
 		case KindBool:
