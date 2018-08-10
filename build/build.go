@@ -260,7 +260,12 @@ func (d *Driver) VersionTag() (string, error) {
 	if err != nil {
 		return tag, err
 	}
-	tag += "-" + rev[:8]
+	if len(rev) >= 8 {
+		rev = rev[:8]
+	} else if rev == "" {
+		rev = "unknown"
+	}
+	tag += "-" + rev
 	dirty, err := gitHasChanges(d.root)
 	if err != nil {
 		return tag, err
