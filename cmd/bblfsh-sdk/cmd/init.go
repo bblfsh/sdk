@@ -14,7 +14,6 @@ const InitCommandDescription = "initializes a driver for a given language and OS
 type InitCommand struct {
 	Args struct {
 		Language string `positional-arg-name:"language"  description:"target language of the driver"`
-		OS       string `positional-arg-name:"os" description:"distribution used to run the runtime. (Values: alpine or debian)"`
 	} `positional-args:"yes"`
 
 	UpdateCommand
@@ -29,8 +28,8 @@ func (c *InitCommand) Execute(args []string) error {
 }
 
 func (c *InitCommand) processManifest() error {
-	if c.Args.Language == "" || c.Args.OS == "" {
-		return fmt.Errorf("`language` and `os` arguments are mandatory")
+	if c.Args.Language == "" {
+		return fmt.Errorf("`language` argument is mandatory")
 	}
 
 	cmd.Notice.Printf("initializing driver %q, creating new manifest\n", c.Args.Language)
