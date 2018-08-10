@@ -15,6 +15,7 @@
 // etc/skeleton/git/hooks/pre-commit
 // etc/skeleton/manifest.toml.tpl
 // etc/skeleton/native/README.md.tpl
+// etc/skeleton/native/native.sh
 // DO NOT EDIT!
 
 package skeleton
@@ -1286,6 +1287,25 @@ func nativeReadmeMdTpl() (*asset, error) {
 	return a, nil
 }
 
+var _nativeNativeSh = []byte(`#!/usr/bin/env sh
+echo "TODO: native driver"
+exit 1`)
+
+func nativeNativeShBytes() ([]byte, error) {
+	return _nativeNativeSh, nil
+}
+
+func nativeNativeSh() (*asset, error) {
+	bytes, err := nativeNativeShBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "native/native.sh", size: 51, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1353,6 +1373,7 @@ var _bindata = map[string]func() (*asset, error){
 	"git/hooks/pre-commit":                 gitHooksPreCommit,
 	"manifest.toml.tpl":                    manifestTomlTpl,
 	"native/README.md.tpl":                 nativeReadmeMdTpl,
+	"native/native.sh":                     nativeNativeSh,
 }
 
 // AssetDir returns the file names below a certain
@@ -1424,6 +1445,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"manifest.toml.tpl": &bintree{manifestTomlTpl, map[string]*bintree{}},
 	"native": &bintree{nil, map[string]*bintree{
 		"README.md.tpl": &bintree{nativeReadmeMdTpl, map[string]*bintree{}},
+		"native.sh":     &bintree{nativeNativeSh, map[string]*bintree{}},
 	}},
 }}
 
