@@ -915,15 +915,19 @@ var _buildYmlTpl = []byte(`sdk: '2'
 go-runtime:
   version: '1.10'
 native:
-  image: '{{.Language}}:latest'
+  image: 'debian:latest'
+  static:
+  - path: 'native.sh'
+    dest: 'native'
   build:
+    image: 'debian:latest'
     deps:
       - 'echo dependencies'
     run:
       - 'echo build'
     artifacts:
       - path: '/native/native-binary'
-        dest: 'native'
+        dest: 'native-binary'
   test:
     run:
       - 'echo tests'`)
@@ -938,7 +942,7 @@ func buildYmlTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "build.yml.tpl", size: 269, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "build.yml.tpl", size: 347, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
