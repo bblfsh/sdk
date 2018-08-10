@@ -24,7 +24,20 @@ func (c *InitCommand) Execute(args []string) error {
 		return err
 	}
 
-	return c.UpdateCommand.Execute(args)
+	if err := c.UpdateCommand.Execute(args); err != nil {
+		return err
+	}
+	for _, file := range []string{
+		"Dockerfile",
+		"Gopkg.lock",
+	} {
+		git := exec.Command("git", "add", file)
+		git.Dir = c.Root
+		if out, err := git.CombinedOutput(); err != nil {
+			cmd.Warning.Println("cannot add a file to git:", err, "\n"+string(out))
+		}
+	}
+	return nil
 }
 
 func (c *InitCommand) processManifest() error {
