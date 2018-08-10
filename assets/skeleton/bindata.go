@@ -951,6 +951,7 @@ import (
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/driver/fixtures"
+	"gopkg.in/bblfsh/sdk.v2/driver/native"
 )
 
 const projectRoot = "../../"
@@ -993,7 +994,7 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1093, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1133, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
