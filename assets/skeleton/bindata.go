@@ -124,7 +124,7 @@ var _gopkgToml = []byte(`# Refer to https://golang.github.io/dep/docs/Gopkg.toml
 # for detailed Gopkg.toml documentation.
 
 [[constraint]]
-  branch = "v2"
+  version = "v2.0.x"
   name = "gopkg.in/bblfsh/sdk.v2"
 
 [prune]
@@ -146,7 +146,7 @@ func gopkgToml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Gopkg.toml", size: 305, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Gopkg.toml", size: 310, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
