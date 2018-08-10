@@ -843,7 +843,7 @@ func license() (*asset, error) {
 	return a, nil
 }
 
-var _readmeMdTpl = []byte(`# {{.Manifest.Language}}-driver  ![Driver Status](https://img.shields.io/badge/status-{{.Manifest.Status | escape_shield}}-{{template "color-status" .}}.svg) [![Build Status](https://travis-ci.org/bblfsh/{{.Manifest.Language}}-driver.svg?branch=master)](https://travis-ci.org/bblfsh/{{.Manifest.Language | escape_shield }}-driver) ![Native Version](https://img.shields.io/badge/{{.Manifest.Language}}%20version-{{.Manifest.Runtime.NativeVersion | escape_shield}}-aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-{{.Manifest.Runtime.GoVersion | escape_shield}}-63afbf.svg)
+var _readmeMdTpl = []byte(`# {{.Manifest.Name}} driver for [Babelfish](https://github.com/bblfsh/bblfshd) ![Driver Status](https://img.shields.io/badge/status-{{.Manifest.Status | escape_shield}}-{{template "color-status" .}}.svg) [![Build Status](https://travis-ci.org/bblfsh/{{.Manifest.Language}}-driver.svg?branch=master)](https://travis-ci.org/bblfsh/{{.Manifest.Language | escape_shield }}-driver) ![Native Version](https://img.shields.io/badge/{{.Manifest.Language}}%20version-{{.Manifest.Runtime.NativeVersion | escape_shield}}-aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-{{.Manifest.Runtime.GoVersion | escape_shield}}-63afbf.svg)
 
 {{.Manifest.Documentation.Description}}
 
@@ -861,14 +861,14 @@ Development Environment
 Requirements:
 - ` + "`" + `docker` + "`" + `
 - [` + "`" + `bblfsh-sdk` + "`" + `](https://github.com/bblfsh/sdk) _(go get -u gopkg.in/bblfsh/sdk.v2/...)_
-- UAST converter dependencies _(go get -t -v ./...)_
+- UAST converter dependencies _(dep ensure --vendor-only)_
 
-To initialize the build system execute: ` + "`" + `bblfsh-sdk prepare-build` + "`" + `, at the root of the project. This will install the SDK at ` + "`" + `.sdk` + "`" + ` for this driver.
+To initialize the build system execute: ` + "`" + `bblfsh-sdk update` + "`" + `, at the root of the project. This will generate the ` + "`" + `Dockerfile` + "`" + ` for this driver.
 
-To execute the tests just execute ` + "`" + `make test` + "`" + `, this will execute the test over the native and the go components of the driver. Use ` + "`" + `make test-native` + "`" + ` to run the test only over the native component or ` + "`" + `make test-driver` + "`" + ` to run the test just over the go component.
+To execute the tests just execute ` + "`" + `bblfsh-sdk test` + "`" + `, this will execute the test over the native and the go components of the driver using Docker.
 
-The build is done executing ` + "`" + `make build` + "`" + `. To evaluate the result using a docker container, execute:
-` + "`" + `docker run -it bblfsh/{{.Manifest.Language}}-driver:dev-<commit[:7]>-dirty` + "`" + `
+The build is done executing ` + "`" + `bblfsh-sdk build` + "`" + `. To evaluate the result using a docker container, execute:
+` + "`" + `bblfsh-sdk build test-driver && docker run -it test-driver` + "`" + `.
 
 
 License
@@ -906,7 +906,7 @@ func readmeMdTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "README.md.tpl", size: 1973, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "README.md.tpl", size: 1892, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1224,30 +1224,27 @@ func gitHooksPreCommit() (*asset, error) {
 
 var _manifestTomlTpl = []byte(`# Manifest contains metadata about the driver. To learn about the different
 # values in this manifest refer to:
-#   https://github.com/bblfsh/sdk/blob/master/manifest/manifest.go
+#   https://github.com/bblfsh/sdk/blob/master/driver/manifest/manifest.go
 
+# human-readable language name
+name = "{{.Language}}"
+# language identifier
 language = "{{.Language}}"
 
 # status describes the current development status of the driver, the valid
 # values for status are: ` + "`" + `planning` + "`" + `, ` + "`" + `pre-alpha` + "`" + `, ` + "`" + `alpha` + "`" + `, ` + "`" + `beta` + "`" + `, ` + "`" + `stable` + "`" + `,
 # ` + "`" + `mature` + "`" + ` or ` + "`" + `inactive` + "`" + `.
 status = "planning"
+features = ["ast"]
 
 # documentation block is use to render the README.md file.
 [documentation]
 description  = """
-{{.Language}} driver for [babelfish](https://github.com/bblfsh/server).
 """
 
 [runtime]
-# os defines in with distribution the runtime is executed (and the build
-# system). The valid values are ` + "`" + `alpine` + "`" + ` and ` + "`" + `debian` + "`" + `. Alpine is preferred
-# since is a micro-distribution, but sometimes is hard or impossible to use
-# due to be based on musl and not it libc.
-os = "{{.OS}}"
-
 # go_version describes the version being use to build the driver Go code.
-go_version = "1.9"
+go_version = "1.10"
 
 # native_version describes the version or versions being use to build and
 # execute the native code, you should define at least one. (eg.: "1.8").
@@ -1264,7 +1261,7 @@ func manifestTomlTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "manifest.toml.tpl", size: 1132, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "manifest.toml.tpl", size: 880, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1293,7 +1290,8 @@ func nativeReadmeMdTpl() (*asset, error) {
 
 var _nativeNativeSh = []byte(`#!/usr/bin/env sh
 echo "TODO: native driver"
-exit 1`)
+exit 1
+`)
 
 func nativeNativeShBytes() ([]byte, error) {
 	return _nativeNativeSh, nil
@@ -1305,7 +1303,7 @@ func nativeNativeSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "native/native.sh", size: 51, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "native/native.sh", size: 52, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
