@@ -70,4 +70,6 @@ typedef struct UastIterator {
   uintptr_t handle;
 } UastIterator;
 
+typedef enum { UAST_BINARY, UAST_YAML } UastFormat;
+
 #endif // UAST_H_

@@ -8,9 +8,12 @@ import "C"
 
 import (
 	"bytes"
+	"fmt"
 	"unsafe"
 
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes/nodesproto"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 func main() {}
@@ -47,7 +50,10 @@ func UastNew(iface C.NodeIface, ctx C.UastHandle) *C.Uast {
 }
 
 //export UastDecode
-func UastDecode(p unsafe.Pointer, sz C.size_t) *C.Uast {
+func UastDecode(p unsafe.Pointer, sz C.size_t, format C.UastFormat) *C.Uast {
+	if format == 0 {
+		format = C.UAST_BINARY
+	}
 	data := C.GoBytes(p, C.int(sz))
 
 	nd := &goNodes{}
@@ -55,7 +61,18 @@ func UastDecode(p unsafe.Pointer, sz C.size_t) *C.Uast {
 	c := newContext(nd)
 	u := newUast(goImpl, c.Handle())
 
-	n, err := nodesproto.ReadTree(bytes.NewReader(data))
+	var (
+		n   nodes.Node
+		err error
+	)
+	switch format {
+	case C.UAST_BINARY:
+		n, err = nodesproto.ReadTree(bytes.NewReader(data))
+	case C.UAST_YAML:
+		n, err = uastyml.Unmarshal(data)
+	default:
+		err = fmt.Errorf("unknown format: %v", format)
+	}
 	if err != nil {
 		c.last = err
 		return u
@@ -65,6 +82,44 @@ func UastDecode(p unsafe.Pointer, sz C.size_t) *C.Uast {
 	}
 	u.ctx = C.UastHandle(c.Handle())
 	return u
+}
+
+//export UastEncode
+func UastEncode(ctx *C.Uast, node C.NodeHandle, size *C.size_t, format C.UastFormat) unsafe.Pointer {
+	if format == 0 {
+		format = C.UAST_BINARY
+	}
+	c := getContextFrom(ctx)
+	if c == nil {
+		return nil
+	}
+	if node == 0 {
+		node = ctx.root
+	}
+
+	h := Handle(node)
+	root := c.impl.AsNode(h)
+	n := loadNode(root)
+
+	buf := bytes.NewBuffer(nil)
+	var err error
+	switch format {
+	case C.UAST_BINARY:
+		err = nodesproto.WriteTo(buf, n)
+	case C.UAST_YAML:
+		err = uastyml.NewEncoder(buf).Encode(n)
+	default:
+		err = fmt.Errorf("unknown format: %v", format)
+	}
+	if err != nil {
+		c.setError(err)
+		return nil
+	}
+	sz := buf.Len()
+	if size != nil {
+		*size = C.size_t(sz)
+	}
+	return C.CBytes(buf.Bytes())
 }
 
 //export UastFree
