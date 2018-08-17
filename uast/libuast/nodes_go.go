@@ -62,7 +62,7 @@ func uastAsString(ctx C.UastHandle, node C.NodeHandle) *C.char {
 	if nd == nil {
 		return nil
 	}
-	v := nd.AsString()
+	v, _ := nd.AsValue().(nodes.String)
 	return C.CString(string(v))
 }
 
@@ -72,7 +72,7 @@ func uastAsInt(ctx C.UastHandle, node C.NodeHandle) C.int64_t {
 	if nd == nil {
 		return 0
 	}
-	v := nd.AsInt()
+	v, _ := nd.AsValue().(nodes.Int)
 	return C.int64_t(v)
 }
 
@@ -82,7 +82,7 @@ func uastAsUint(ctx C.UastHandle, node C.NodeHandle) C.uint64_t {
 	if nd == nil {
 		return 0
 	}
-	v := nd.AsUint()
+	v, _ := nd.AsValue().(nodes.Uint)
 	return C.uint64_t(v)
 }
 
@@ -92,7 +92,7 @@ func uastAsFloat(ctx C.UastHandle, node C.NodeHandle) C.double {
 	if nd == nil {
 		return 0
 	}
-	v := nd.AsFloat()
+	v, _ := nd.AsValue().(nodes.Float)
 	return C.double(v)
 }
 
@@ -102,7 +102,7 @@ func uastAsBool(ctx C.UastHandle, node C.NodeHandle) C.bool {
 	if nd == nil {
 		return false
 	}
-	v := nd.AsBool()
+	v, _ := nd.AsValue().(nodes.Bool)
 	return C.bool(v)
 }
 
@@ -165,7 +165,8 @@ func uastNewString(ctx C.UastHandle, v *C.char) C.NodeHandle {
 	if c == nil {
 		return 0
 	}
-	h := c.impl.NewString(C.GoString(v))
+	s := C.GoString(v)
+	h := c.impl.NewValue(nodes.String(s))
 	return C.NodeHandle(h.Handle())
 }
 
@@ -175,7 +176,7 @@ func uastNewInt(ctx C.UastHandle, v C.int64_t) C.NodeHandle {
 	if c == nil {
 		return 0
 	}
-	h := c.impl.NewInt(int64(v))
+	h := c.impl.NewValue(nodes.Int(v))
 	return C.NodeHandle(h.Handle())
 }
 
@@ -185,7 +186,7 @@ func uastNewUint(ctx C.UastHandle, v C.uint64_t) C.NodeHandle {
 	if c == nil {
 		return 0
 	}
-	h := c.impl.NewUint(uint64(v))
+	h := c.impl.NewValue(nodes.Uint(v))
 	return C.NodeHandle(h.Handle())
 }
 
@@ -195,7 +196,7 @@ func uastNewFloat(ctx C.UastHandle, v C.double) C.NodeHandle {
 	if c == nil {
 		return 0
 	}
-	h := c.impl.NewFloat(float64(v))
+	h := c.impl.NewValue(nodes.Float(v))
 	return C.NodeHandle(h.Handle())
 }
 
@@ -205,7 +206,7 @@ func uastNewBool(ctx C.UastHandle, v C.bool) C.NodeHandle {
 	if c == nil {
 		return 0
 	}
-	h := c.impl.NewBool(bool(v))
+	h := c.impl.NewValue(nodes.Bool(v))
 	return C.NodeHandle(h.Handle())
 }
 
@@ -307,24 +308,11 @@ func (m *goNodes) NewArray(sz int) Handle {
 	return m.newTmp(&goTmpNode{arr: make(nodes.Array, sz)})
 }
 
-func (m *goNodes) NewString(v string) Node {
-	return m.toNode(nodes.String(v))
-}
-
-func (m *goNodes) NewInt(v int64) Node {
-	return m.toNode(nodes.Int(v))
-}
-
-func (m *goNodes) NewUint(v uint64) Node {
-	return m.toNode(nodes.Uint(v))
-}
-
-func (m *goNodes) NewFloat(v float64) Node {
-	return m.toNode(nodes.Float(v))
-}
-
-func (m *goNodes) NewBool(v bool) Node {
-	return m.toNode(nodes.Bool(v))
+func (m *goNodes) NewValue(v nodes.Value) Node {
+	if v == nil {
+		return nil
+	}
+	return m.toNode(v)
 }
 
 var _ Node = (*goNode)(nil)
@@ -350,24 +338,8 @@ func (n *goNode) Kind() nodes.Kind {
 	return nodes.KindOf(n.n)
 }
 
-func (n *goNode) AsString() nodes.String {
-	return n.n.(nodes.String)
-}
-
-func (n *goNode) AsInt() nodes.Int {
-	return n.n.(nodes.Int)
-}
-
-func (n *goNode) AsUint() nodes.Uint {
-	return n.n.(nodes.Uint)
-}
-
-func (n *goNode) AsFloat() nodes.Float {
-	return n.n.(nodes.Float)
-}
-
-func (n *goNode) AsBool() nodes.Bool {
-	return n.n.(nodes.Bool)
+func (n *goNode) AsValue() nodes.Value {
+	return n.n.(nodes.Value)
 }
 
 func (n *goNode) Size() int {

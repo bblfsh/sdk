@@ -5,17 +5,20 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
+func isValue(n Node) bool {
+	if n == nil {
+		return false
+	}
+	k := n.Kind()
+	return k.In(nodes.KindsValues)
+}
+
 type Node interface {
 	Kind() nodes.Kind
 
-	AsString() nodes.String
-	AsInt() nodes.Int
-	AsUint() nodes.Uint
-	AsFloat() nodes.Float
-	AsBool() nodes.Bool
+	AsValue() nodes.Value
 
 	Size() int
-
 	KeyAt(i int) string
 	ValueAt(i int) Node
 }

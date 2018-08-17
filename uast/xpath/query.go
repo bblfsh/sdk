@@ -2,7 +2,6 @@ package xpath
 
 import (
 	"fmt"
-
 	"strings"
 
 	"github.com/antchfx/xpath"

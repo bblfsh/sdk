@@ -32,6 +32,8 @@ void callSetKeyValue(const NodeIface* iface, UastHandle ctx, NodeHandle node, co
 import "C"
 
 import (
+	"fmt"
+
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
@@ -72,28 +74,25 @@ func (c *cNodes) NewArray(sz int) Handle {
 	return Handle(h)
 }
 
-func (c *cNodes) NewString(v string) Node {
-	n := C.callNewString(c.impl, c.ctx, C.CString(v))
-	return c.asNode(n)
-}
-
-func (c *cNodes) NewInt(v int64) Node {
-	n := C.callNewInt(c.impl, c.ctx, C.int64_t(v))
-	return c.asNode(n)
-}
-
-func (c *cNodes) NewUint(v uint64) Node {
-	n := C.callNewUint(c.impl, c.ctx, C.uint64_t(v))
-	return c.asNode(n)
-}
-
-func (c *cNodes) NewFloat(v float64) Node {
-	n := C.callNewFloat(c.impl, c.ctx, C.double(v))
-	return c.asNode(n)
-}
-
-func (c *cNodes) NewBool(v bool) Node {
-	n := C.callNewBool(c.impl, c.ctx, C.bool(v))
+func (c *cNodes) NewValue(v nodes.Value) Node {
+	if v == nil {
+		return nil
+	}
+	var n C.NodeHandle
+	switch v := v.(type) {
+	case nodes.String:
+		n = C.callNewString(c.impl, c.ctx, C.CString(string(v)))
+	case nodes.Int:
+		n = C.callNewInt(c.impl, c.ctx, C.int64_t(v))
+	case nodes.Uint:
+		n = C.callNewUint(c.impl, c.ctx, C.uint64_t(v))
+	case nodes.Float:
+		n = C.callNewFloat(c.impl, c.ctx, C.double(v))
+	case nodes.Bool:
+		n = C.callNewBool(c.impl, c.ctx, C.bool(v))
+	default:
+		panic(fmt.Errorf("unknown value type: %T", v))
+	}
 	return c.asNode(n)
 }
 
@@ -108,9 +107,11 @@ func (n *cNode) Handle() Handle {
 	return Handle(n.h)
 }
 
+func (n *cNode) kind() C.NodeKind {
+	return C.callKind(n.c.impl, n.c.ctx, n.h)
+}
 func (n *cNode) Kind() nodes.Kind {
-	kind := C.callKind(n.c.impl, n.c.ctx, n.h)
-	switch kind {
+	switch n.kind() {
 	case C.NODE_NULL:
 		return nodes.KindNil
 	case C.NODE_OBJECT:
@@ -132,31 +133,28 @@ func (n *cNode) Kind() nodes.Kind {
 	}
 }
 
-func (n *cNode) AsString() nodes.String {
-	cstr := C.callAsString(n.c.impl, n.c.ctx, n.h)
-	s := C.GoString(cstr)
-	//C.free(unsafe.Pointer(cstr))
-	return nodes.String(s)
-}
-
-func (n *cNode) AsInt() nodes.Int {
-	v := C.callAsInt(n.c.impl, n.c.ctx, n.h)
-	return nodes.Int(v)
-}
-
-func (n *cNode) AsUint() nodes.Uint {
-	v := C.callAsUint(n.c.impl, n.c.ctx, n.h)
-	return nodes.Uint(v)
-}
-
-func (n *cNode) AsFloat() nodes.Float {
-	v := C.callAsFloat(n.c.impl, n.c.ctx, n.h)
-	return nodes.Float(v)
-}
-
-func (n *cNode) AsBool() nodes.Bool {
-	v := C.callAsBool(n.c.impl, n.c.ctx, n.h)
-	return nodes.Bool(v)
+func (n *cNode) AsValue() nodes.Value {
+	switch n.kind() {
+	case C.NODE_STRING:
+		cstr := C.callAsString(n.c.impl, n.c.ctx, n.h)
+		s := C.GoString(cstr)
+		//C.free(unsafe.Pointer(cstr))
+		return nodes.String(s)
+	case C.NODE_INT:
+		v := C.callAsInt(n.c.impl, n.c.ctx, n.h)
+		return nodes.Int(v)
+	case C.NODE_UINT:
+		v := C.callAsUint(n.c.impl, n.c.ctx, n.h)
+		return nodes.Uint(v)
+	case C.NODE_FLOAT:
+		v := C.callAsFloat(n.c.impl, n.c.ctx, n.h)
+		return nodes.Float(v)
+	case C.NODE_BOOL:
+		v := C.callAsBool(n.c.impl, n.c.ctx, n.h)
+		return nodes.Bool(v)
+	default:
+		return nil
+	}
 }
 
 func (n *cNode) Size() int {

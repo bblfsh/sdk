@@ -10,18 +10,21 @@ import (
 
 type Handle uintptr
 
+func IsValue(n Node) bool {
+	if n == nil {
+		return false
+	}
+	k := n.Kind()
+	return k.In(nodes.KindsValues)
+}
+
 type Node interface {
 	Handle() Handle
 	Kind() nodes.Kind
 
-	AsString() nodes.String
-	AsInt() nodes.Int
-	AsUint() nodes.Uint
-	AsFloat() nodes.Float
-	AsBool() nodes.Bool
+	AsValue() nodes.Value
 
 	Size() int
-
 	KeyAt(i int) string
 	ValueAt(i int) Node
 }
@@ -33,12 +36,7 @@ type NodeIface interface {
 
 	NewObject(sz int) Handle
 	NewArray(sz int) Handle
-
-	NewString(v string) Node
-	NewInt(v int64) Node
-	NewUint(v uint64) Node
-	NewFloat(v float64) Node
-	NewBool(v bool) Node
+	NewValue(v nodes.Value) Node
 }
 
 type TmpNode interface {
@@ -141,4 +139,38 @@ func (c *Context) Filter(root Node, query string) (Node, error) {
 		tmp.SetValue(i, v)
 	}
 	return tmp.Build(), nil
+}
+
+func loadNode(n Node) nodes.Node {
+	if n == nil {
+		return nil
+	}
+	if nd, ok := n.(*goNode); ok {
+		return nd.n
+	}
+	switch kind := n.Kind(); kind {
+	case nodes.KindNil:
+		return nil
+	case nodes.KindObject:
+		sz := n.Size()
+		m := make(nodes.Object, sz)
+		for i := 0; i < sz; i++ {
+			k, v := n.KeyAt(i), n.ValueAt(i)
+			m[k] = loadNode(v)
+		}
+		return m
+	case nodes.KindArray:
+		sz := n.Size()
+		arr := make(nodes.Array, 0, sz)
+		for i := 0; i < sz; i++ {
+			v := n.ValueAt(i)
+			arr = append(arr, loadNode(v))
+		}
+		return arr
+	default:
+		if IsValue(n) {
+			return n.AsValue()
+		}
+		panic(fmt.Errorf("unknown kind: %v", kind))
+	}
 }

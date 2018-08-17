@@ -113,25 +113,12 @@ func parseValue(x Node, top *node, level int) {
 			addNode(n)
 			parseValue(vv, n, level+1)
 		}
-	case nodes.KindString:
-		n := &node{Data: string(x.AsString()), Type: textNode, level: level, Node: x}
-		addNode(n)
-	case nodes.KindInt:
-		s := fmt.Sprint(x.AsInt())
-		n := &node{Data: s, Type: textNode, level: level, Node: x}
-		addNode(n)
-	case nodes.KindUint:
-		s := fmt.Sprint(x.AsUint())
-		n := &node{Data: s, Type: textNode, level: level, Node: x}
-		addNode(n)
-	case nodes.KindFloat:
-		s := fmt.Sprint(x.AsFloat())
-		n := &node{Data: s, Type: textNode, level: level, Node: x}
-		addNode(n)
-	case nodes.KindBool:
-		s := fmt.Sprint(x.AsBool())
-		n := &node{Data: s, Type: textNode, level: level, Node: x}
-		addNode(n)
+	default:
+		if isValue(x) {
+			s := fmt.Sprint(x.AsValue())
+			n := &node{Data: s, Type: textNode, level: level, Node: x}
+			addNode(n)
+		}
 	}
 }
 
