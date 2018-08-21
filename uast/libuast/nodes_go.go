@@ -5,7 +5,11 @@ package main
 */
 import "C"
 
-import "gopkg.in/bblfsh/sdk.v2/uast/nodes"
+import (
+	"fmt"
+
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+)
 
 var goImpl C.NodeIface
 
@@ -18,6 +22,14 @@ func getContextGo(h C.UastHandle) *Context {
 		return nil
 	}
 	return getContext(Handle(h))
+}
+
+func setContextErrorGo(h C.UastHandle, err error) {
+	c := getContextGo(h)
+	if c == nil {
+		panic(err)
+	}
+	c.setError(err)
 }
 
 func getNodeGo(ctx C.UastHandle, node C.NodeHandle) Node {
@@ -62,7 +74,7 @@ func uastAsString(ctx C.UastHandle, node C.NodeHandle) *C.char {
 	if nd == nil {
 		return nil
 	}
-	v, _ := nd.AsValue().(nodes.String)
+	v, _ := nd.Value().(nodes.String)
 	return C.CString(string(v))
 }
 
@@ -72,7 +84,7 @@ func uastAsInt(ctx C.UastHandle, node C.NodeHandle) C.int64_t {
 	if nd == nil {
 		return 0
 	}
-	v, _ := nd.AsValue().(nodes.Int)
+	v, _ := nd.Value().(nodes.Int)
 	return C.int64_t(v)
 }
 
@@ -82,7 +94,7 @@ func uastAsUint(ctx C.UastHandle, node C.NodeHandle) C.uint64_t {
 	if nd == nil {
 		return 0
 	}
-	v, _ := nd.AsValue().(nodes.Uint)
+	v, _ := nd.Value().(nodes.Uint)
 	return C.uint64_t(v)
 }
 
@@ -92,7 +104,7 @@ func uastAsFloat(ctx C.UastHandle, node C.NodeHandle) C.double {
 	if nd == nil {
 		return 0
 	}
-	v, _ := nd.AsValue().(nodes.Float)
+	v, _ := nd.Value().(nodes.Float)
 	return C.double(v)
 }
 
@@ -102,7 +114,7 @@ func uastAsBool(ctx C.UastHandle, node C.NodeHandle) C.bool {
 	if nd == nil {
 		return false
 	}
-	v, _ := nd.AsValue().(nodes.Bool)
+	v, _ := nd.Value().(nodes.Bool)
 	return C.bool(v)
 }
 
@@ -112,8 +124,18 @@ func uastSize(ctx C.UastHandle, node C.NodeHandle) C.size_t {
 	if nd == nil {
 		return 0
 	}
-	v := nd.Size()
-	return C.size_t(v)
+	var sz int
+	switch nd.Kind() {
+	case nodes.KindObject:
+		if o, ok := nd.(Object); ok {
+			sz = o.Size()
+		}
+	case nodes.KindArray:
+		if o, ok := nd.(Array); ok {
+			sz = o.Size()
+		}
+	}
+	return C.size_t(sz)
 }
 
 //export uastKeyAt
@@ -122,7 +144,20 @@ func uastKeyAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) *C.char {
 	if nd == nil {
 		return nil
 	}
-	v := nd.KeyAt(int(i))
+	o, ok := nd.(Object)
+	if !ok {
+		err := fmt.Errorf("expected object, got: %T", nd)
+		setContextErrorGo(ctx, err)
+		return nil
+	}
+	keys := o.Keys()
+	ind := int(i)
+	if ind < 0 || ind >= len(keys) {
+		err := fmt.Errorf("index out of bounds: %d, %d", ind, len(keys))
+		setContextErrorGo(ctx, err)
+		return nil
+	}
+	v := keys[ind]
 	return C.CString(v)
 }
 
@@ -132,7 +167,38 @@ func uastValueAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) C.NodeHandle {
 	if nd == nil {
 		return 0
 	}
-	v := nd.ValueAt(int(i))
+	var (
+		ind = int(i)
+		v   Node
+	)
+	switch nd := nd.(type) {
+	case Object:
+		c := getContextGo(ctx)
+
+		keys := nd.Keys()
+		if ind < 0 || ind >= len(keys) {
+			return 0
+		}
+		key := keys[ind]
+		val, ok := nd.ValueAt(key)
+		if !ok {
+			err := fmt.Errorf("cannot fetch key: %q", key)
+			c.setError(err)
+			return 0
+		}
+		v = c.toNode(val)
+	case Array:
+		c := getContextGo(ctx)
+
+		sz := nd.Size()
+		if ind < 0 || ind >= sz {
+			err := fmt.Errorf("index out of bounds: %d, %d", ind, sz)
+			c.setError(err)
+			return 0
+		}
+		val := nd.ValueAt(ind)
+		v = c.toNode(val)
+	}
 	if v == nil {
 		return 0
 	}
@@ -239,6 +305,11 @@ func uastSetKeyValue(ctx C.UastHandle, node C.NodeHandle, key *C.char, val C.Nod
 	n.SetKeyValue(k, v)
 }
 
+type Native interface {
+	Node
+	Native() nodes.Node
+}
+
 var _ NodeIface = (*goNodes)(nil)
 
 type goNodes struct {
@@ -268,19 +339,30 @@ func (m *goNodes) toHandle(n nodes.Node) Handle {
 	m.nodes[h] = n
 	return h
 }
+func (m *goNodes) newNode(h Handle, n nodes.Node) Node {
+	switch n := n.(type) {
+	case nil:
+		return nil
+	case nodes.Object:
+		return &goObject{c: m, h: h, obj: n}
+	case nodes.Array:
+		return &goArray{c: m, h: h, arr: n}
+	}
+	return &goValue{c: m, h: h, val: n.(nodes.Value)}
+}
 func (m *goNodes) toNode(n nodes.Node) Node {
 	if n == nil {
 		return nil
 	}
 	h := m.toHandle(n)
-	return &goNode{c: m, h: h, n: n}
+	return m.newNode(h, n)
 }
 func (m *goNodes) AsNode(h Handle) Node {
 	n := m.nodes[h]
 	if n == nil {
 		return nil
 	}
-	return &goNode{c: m, h: h, n: n}
+	return m.newNode(h, n)
 }
 func (m *goNodes) AsTmpNode(h Handle) TmpNode {
 	n := m.tmp[h]
@@ -315,73 +397,112 @@ func (m *goNodes) NewValue(v nodes.Value) Node {
 	return m.toNode(v)
 }
 
-var _ Node = (*goNode)(nil)
+var (
+	_ Native = (*goObject)(nil)
+	_ Object = (*goObject)(nil)
+)
 
-type goNode struct {
+type goObject struct {
 	c    *goNodes
 	h    Handle
-	n    nodes.Node
+	obj  nodes.Object
 	keys []string
 }
 
-func (n *goNode) Handle() Handle {
+func (n *goObject) Native() nodes.Node {
+	return n.obj
+}
+
+func (n *goObject) Handle() Handle {
+	return n.h
+}
+
+func (n *goObject) Kind() nodes.Kind {
+	return nodes.KindObject
+}
+
+func (n *goObject) Value() nodes.Value {
+	return nil
+}
+
+func (n *goObject) Size() int {
+	return n.obj.Size()
+}
+
+func (n *goObject) Keys() []string {
+	if n.keys == nil {
+		n.keys = n.obj.Keys()
+	}
+	return n.keys
+}
+
+func (n *goObject) ValueAt(key string) (nodes.External, bool) {
+	return n.obj.ValueAt(key)
+}
+
+var (
+	_ Native = (*goArray)(nil)
+	_ Array  = (*goArray)(nil)
+)
+
+type goArray struct {
+	c   *goNodes
+	h   Handle
+	arr nodes.Array
+}
+
+func (n *goArray) Native() nodes.Node {
+	return n.arr
+}
+
+func (n *goArray) Handle() Handle {
+	return n.h
+}
+
+func (n *goArray) Kind() nodes.Kind {
+	return nodes.KindArray
+}
+
+func (n *goArray) Value() nodes.Value {
+	return nil
+}
+
+func (n *goArray) Size() int {
+	return n.arr.Size()
+}
+
+func (n *goArray) ValueAt(i int) nodes.External {
+	return n.arr.ValueAt(i)
+}
+
+var _ Native = (*goValue)(nil)
+
+type goValue struct {
+	c   *goNodes
+	h   Handle
+	val nodes.Value
+}
+
+func (n *goValue) Native() nodes.Node {
+	return n.val
+}
+
+func (n *goValue) Handle() Handle {
 	if n == nil {
 		return 0
 	}
 	return n.h
 }
 
-func (n *goNode) Kind() nodes.Kind {
+func (n *goValue) Kind() nodes.Kind {
 	if n == nil {
 		return nodes.KindNil
 	}
-	return nodes.KindOf(n.n)
+	return nodes.KindOf(n.val)
 }
 
-func (n *goNode) AsValue() nodes.Value {
-	return n.n.(nodes.Value)
-}
-
-func (n *goNode) Size() int {
-	switch v := n.n.(type) {
-	case nodes.Object:
-		return len(v)
-	case nodes.Array:
-		return len(v)
-	}
-	return 0
-}
-
-func (n *goNode) cacheKeys() {
-	if n.keys != nil {
-		return
-	}
-	obj := n.n.(nodes.Object)
-	n.keys = obj.Keys()
-}
-
-func (n *goNode) KeyAt(i int) string {
-	n.cacheKeys()
-	if i < 0 || i >= len(n.keys) {
-		return ""
-	}
-	return n.keys[i]
-}
-
-func (n *goNode) ValueAt(i int) Node {
-	if arr, ok := n.n.(nodes.Array); ok {
-		if i < 0 || i >= len(arr) {
-			return nil
-		}
-		return n.c.toNode(arr[i])
-	}
-	n.cacheKeys()
-	if i < 0 || i >= len(n.keys) {
-		return nil
-	}
-	obj := n.n.(nodes.Object)
-	v := obj[n.keys[i]]
-	return n.c.toNode(v)
+func (n *goValue) Value() nodes.Value {
+	return n.val
 }
 
 var _ TmpNode = (*goTmpNode)(nil)
@@ -398,7 +519,7 @@ func (n *goTmpNode) SetValue(i int, v Node) {
 		panic("not an array")
 	}
 	if v != nil {
-		n.arr[i] = v.(*goNode).n
+		n.arr[i] = v.(Native).Native()
 	}
 }
 
@@ -409,7 +530,7 @@ func (n *goTmpNode) SetKeyValue(k string, v Node) {
 	if v == nil {
 		n.obj[k] = nil
 	} else {
-		n.obj[k] = v.(*goNode).n
+		n.obj[k] = v.(Native).Native()
 	}
 }
 

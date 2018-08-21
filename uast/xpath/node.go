@@ -27,7 +27,7 @@ type node struct {
 
 	Type nodeType
 	Data string
-	Node Node
+	Node nodes.External
 
 	level int
 }
@@ -69,7 +69,7 @@ func (n *node) SelectElement(name string) *node {
 	return nil
 }
 
-func parseValue(x Node, top *node, level int) {
+func parseValue(x nodes.External, top *node, level int) {
 	top.Node = x
 	addNode := func(n *node) {
 		if n.level == top.level {
@@ -97,32 +97,34 @@ func parseValue(x Node, top *node, level int) {
 	}
 	switch kind := x.Kind(); kind {
 	case nodes.KindArray:
-		sz := x.Size()
-		for i := 0; i < sz; i++ {
-			vv := x.ValueAt(i)
-			n := &node{Type: elementNode, level: level, Node: vv}
-			addNode(n)
-			parseValue(vv, n, level+1)
+		if x, ok := x.(nodes.ExternalArray); ok {
+			sz := x.Size()
+			for i := 0; i < sz; i++ {
+				vv := x.ValueAt(i)
+				n := &node{Type: elementNode, level: level, Node: vv}
+				addNode(n)
+				parseValue(vv, n, level+1)
+			}
 		}
 	case nodes.KindObject:
-		sz := x.Size()
-		for i := 0; i < sz; i++ {
-			key := x.KeyAt(i)
-			vv := x.ValueAt(i)
-			n := &node{Data: key, Type: elementNode, level: level, Node: vv}
-			addNode(n)
-			parseValue(vv, n, level+1)
+		if x, ok := x.(nodes.ExternalObject); ok {
+			for _, key := range x.Keys() {
+				vv, _ := x.ValueAt(key)
+				n := &node{Data: key, Type: elementNode, level: level, Node: vv}
+				addNode(n)
+				parseValue(vv, n, level+1)
+			}
 		}
 	default:
 		if isValue(x) {
-			s := fmt.Sprint(x.AsValue())
+			s := fmt.Sprint(x.Value())
 			n := &node{Data: s, Type: textNode, level: level, Node: x}
 			addNode(n)
 		}
 	}
 }
 
-func conv(v Node) *node {
+func conv(v nodes.External) *node {
 	doc := &node{Type: documentNode, Node: v}
 	parseValue(v, doc, 1)
 	return doc

@@ -34,6 +34,8 @@ import "C"
 import (
 	"fmt"
 
+	"sort"
+
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
@@ -48,11 +50,33 @@ func (c *cNodes) Free() {
 	// noting to do - nodes are managed by client code
 }
 
+var kindToGo = map[C.NodeKind]nodes.Kind{
+	C.NODE_NULL:   nodes.KindNil,
+	C.NODE_OBJECT: nodes.KindObject,
+	C.NODE_ARRAY:  nodes.KindArray,
+	C.NODE_STRING: nodes.KindString,
+	C.NODE_INT:    nodes.KindInt,
+	C.NODE_UINT:   nodes.KindUint,
+	C.NODE_FLOAT:  nodes.KindFloat,
+	C.NODE_BOOL:   nodes.KindBool,
+}
+
 func (c *cNodes) asNode(h C.NodeHandle) Node {
 	if h == 0 {
 		return nil
 	}
-	return &cNode{c: c, h: h}
+	ckind := C.callKind(c.impl, c.ctx, h)
+	kind, ok := kindToGo[ckind]
+	if !ok || kind == nodes.KindNil {
+		return nil
+	}
+	switch kind {
+	case nodes.KindObject:
+		return &cObject{c: c, h: h}
+	case nodes.KindArray:
+		return &cArray{c: c, h: h, sz: -1}
+	}
+	return &cValue{c: c, h: h, kind: kind}
 }
 func (c *cNodes) AsNode(h Handle) Node {
 	return c.asNode(C.NodeHandle(h))
@@ -96,82 +120,186 @@ func (c *cNodes) NewValue(v nodes.Value) Node {
 	return c.asNode(n)
 }
 
-var _ Node = (*cNode)(nil)
+var _ Object = (*cObject)(nil)
 
-type cNode struct {
-	c *cNodes
-	h C.NodeHandle
+type offsSort struct {
+	keys []string // sorted keys
+	ind  []int    // original indexes
 }
 
-func (n *cNode) Handle() Handle {
+func (arr offsSort) Len() int {
+	return len(arr.keys)
+}
+
+func (arr offsSort) Less(i, j int) bool {
+	return arr.keys[i] < arr.keys[j]
+}
+
+func (arr offsSort) Swap(i, j int) {
+	arr.keys[i], arr.keys[j] = arr.keys[j], arr.keys[i]
+	arr.ind[i], arr.ind[j] = arr.ind[j], arr.ind[i]
+}
+
+type cObject struct {
+	c    *cNodes
+	h    C.NodeHandle
+	keys []string // sorted keys
+	ind  []int    // original indexes
+}
+
+func (n *cObject) Handle() Handle {
 	return Handle(n.h)
 }
 
-func (n *cNode) kind() C.NodeKind {
-	return C.callKind(n.c.impl, n.c.ctx, n.h)
-}
-func (n *cNode) Kind() nodes.Kind {
-	switch n.kind() {
-	case C.NODE_NULL:
-		return nodes.KindNil
-	case C.NODE_OBJECT:
-		return nodes.KindObject
-	case C.NODE_ARRAY:
-		return nodes.KindArray
-	case C.NODE_STRING:
-		return nodes.KindString
-	case C.NODE_INT:
-		return nodes.KindInt
-	case C.NODE_UINT:
-		return nodes.KindUint
-	case C.NODE_FLOAT:
-		return nodes.KindFloat
-	case C.NODE_BOOL:
-		return nodes.KindBool
-	default:
-		return nodes.KindNil
-	}
+func (n *cObject) Kind() nodes.Kind {
+	return nodes.KindObject
 }
 
-func (n *cNode) AsValue() nodes.Value {
-	switch n.kind() {
-	case C.NODE_STRING:
-		cstr := C.callAsString(n.c.impl, n.c.ctx, n.h)
-		s := C.GoString(cstr)
-		//C.free(unsafe.Pointer(cstr))
-		return nodes.String(s)
-	case C.NODE_INT:
-		v := C.callAsInt(n.c.impl, n.c.ctx, n.h)
-		return nodes.Int(v)
-	case C.NODE_UINT:
-		v := C.callAsUint(n.c.impl, n.c.ctx, n.h)
-		return nodes.Uint(v)
-	case C.NODE_FLOAT:
-		v := C.callAsFloat(n.c.impl, n.c.ctx, n.h)
-		return nodes.Float(v)
-	case C.NODE_BOOL:
-		v := C.callAsBool(n.c.impl, n.c.ctx, n.h)
-		return nodes.Bool(v)
-	default:
-		return nil
-	}
+func (n *cObject) Value() nodes.Value {
+	return nil
 }
 
-func (n *cNode) Size() int {
+func (n *cObject) size() int {
 	v := C.callSize(n.c.impl, n.c.ctx, n.h)
 	return int(v)
 }
+func (n *cObject) Size() int {
+	if n.keys != nil {
+		return len(n.keys)
+	}
+	return n.size()
+}
 
-func (n *cNode) KeyAt(i int) string {
+func (n *cObject) keyAt(i int) string {
 	cstr := C.callKeyAt(n.c.impl, n.c.ctx, n.h, C.size_t(i))
 	s := C.GoString(cstr)
 	//C.free(unsafe.Pointer(cstr))
 	return s
 }
 
-func (n *cNode) ValueAt(i int) Node {
+func (n *cObject) Keys() []string {
+	if n.keys != nil {
+		return n.keys
+	}
+	sz := n.size()
+	n.keys = make([]string, sz)
+	for i := 0; i < sz; i++ {
+		k := n.keyAt(i)
+		n.keys[i] = k
+	}
+	if !sort.StringsAreSorted(n.keys) {
+		n.ind = make([]int, len(n.keys))
+		for i := range n.ind {
+			n.ind[i] = i
+		}
+		sort.Sort(offsSort{
+			keys: n.keys, ind: n.ind,
+		})
+	}
+	return n.keys
+}
+
+func (n *cObject) valueAt(i int) Node {
+	if i < 0 || i >= len(n.keys) {
+		return nil
+	}
+	if n.ind != nil {
+		i = n.ind[i]
+	}
 	v := C.callValueAt(n.c.impl, n.c.ctx, n.h, C.size_t(i))
 	return n.c.asNode(v)
+}
+
+func (n *cObject) ValueAt(key string) (nodes.External, bool) {
+	for i, k := range n.Keys() {
+		if k == key {
+			v := n.valueAt(i)
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+var _ Array = (*cArray)(nil)
+
+type cArray struct {
+	c  *cNodes
+	h  C.NodeHandle
+	sz int
+}
+
+func (n *cArray) Handle() Handle {
+	return Handle(n.h)
+}
+
+func (n *cArray) Kind() nodes.Kind {
+	return nodes.KindArray
+}
+
+func (n *cArray) Value() nodes.Value {
+	return nil
+}
+
+func (n *cArray) Size() int {
+	if n.sz < 0 {
+		sz := C.callSize(n.c.impl, n.c.ctx, n.h)
+		n.sz = int(sz)
+	}
+	return n.sz
+}
+
+func (n *cArray) valueAt(i int) Node {
+	v := C.callValueAt(n.c.impl, n.c.ctx, n.h, C.size_t(i))
+	return n.c.asNode(v)
+}
+
+func (n *cArray) ValueAt(i int) nodes.External {
+	return n.valueAt(i)
+}
+
+var _ Node = (*cValue)(nil)
+
+type cValue struct {
+	c    *cNodes
+	h    C.NodeHandle
+	kind nodes.Kind
+	val  nodes.Value
+}
+
+func (n *cValue) Handle() Handle {
+	return Handle(n.h)
+}
+
+func (n *cValue) Kind() nodes.Kind {
+	return n.kind
+}
+
+func (n *cValue) Value() nodes.Value {
+	if n.val != nil {
+		return n.val
+	}
+	switch n.kind {
+	case nodes.KindString:
+		cstr := C.callAsString(n.c.impl, n.c.ctx, n.h)
+		s := C.GoString(cstr)
+		//C.free(unsafe.Pointer(cstr))
+		n.val = nodes.String(s)
+	case nodes.KindInt:
+		v := C.callAsInt(n.c.impl, n.c.ctx, n.h)
+		n.val = nodes.Int(v)
+	case nodes.KindUint:
+		v := C.callAsUint(n.c.impl, n.c.ctx, n.h)
+		n.val = nodes.Uint(v)
+	case nodes.KindFloat:
+		v := C.callAsFloat(n.c.impl, n.c.ctx, n.h)
+		n.val = nodes.Float(v)
+	case nodes.KindBool:
+		v := C.callAsBool(n.c.impl, n.c.ctx, n.h)
+		n.val = nodes.Bool(v)
+	default:
+		return nil
+	}
+	return n.val
 }
 
 type cTmpNode struct {

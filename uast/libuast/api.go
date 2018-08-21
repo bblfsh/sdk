@@ -99,10 +99,13 @@ func UastEncode(ctx *C.Uast, node C.NodeHandle, size *C.size_t, format C.UastFor
 
 	h := Handle(node)
 	root := c.impl.AsNode(h)
-	n := loadNode(root)
+	n, err := loadNode(root)
+	if err != nil {
+		c.setError(err)
+		return nil
+	}
 
 	buf := bytes.NewBuffer(nil)
-	var err error
 	switch format {
 	case C.UAST_BINARY:
 		err = nodesproto.WriteTo(buf, n)

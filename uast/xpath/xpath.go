@@ -5,7 +5,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
-func isValue(n Node) bool {
+func isValue(n nodes.External) bool {
 	if n == nil {
 		return false
 	}
@@ -13,17 +13,7 @@ func isValue(n Node) bool {
 	return k.In(nodes.KindsValues)
 }
 
-type Node interface {
-	Kind() nodes.Kind
-
-	AsValue() nodes.Value
-
-	Size() int
-	KeyAt(i int) string
-	ValueAt(i int) Node
-}
-
-func Index(n Node) *Tree {
+func Index(n nodes.External) *Tree {
 	return &Tree{doc: conv(n)}
 }
 
@@ -47,7 +37,7 @@ type Iterator struct {
 func (it *Iterator) Next() bool {
 	return it.it.MoveNext()
 }
-func (it *Iterator) Node() Node {
+func (it *Iterator) Node() nodes.External {
 	c := it.it.Current()
 	if c == nil {
 		return nil

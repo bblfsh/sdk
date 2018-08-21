@@ -18,15 +18,23 @@ func IsValue(n Node) bool {
 	return k.In(nodes.KindsValues)
 }
 
-type Node interface {
+type Base interface {
 	Handle() Handle
-	Kind() nodes.Kind
+}
 
-	AsValue() nodes.Value
+type Node interface {
+	Base
+	nodes.External
+}
 
-	Size() int
-	KeyAt(i int) string
-	ValueAt(i int) Node
+type Object interface {
+	Base
+	nodes.ExternalObject
+}
+
+type Array interface {
+	Base
+	nodes.ExternalArray
 }
 
 type NodeIface interface {
@@ -94,25 +102,22 @@ func (c *Context) free() {
 	c.impl.Free()
 }
 
-type xpathNode struct {
-	Node
-}
-
-func (n xpathNode) ValueAt(i int) xpath.Node {
-	v := n.Node.ValueAt(i)
-	if v == nil {
-		return nil
-	}
-	return xpathNode{v}
-}
-
 func (c *Context) setError(err error) {
 	if c.last == nil {
 		c.last = err
 	}
 }
+func (c *Context) toNode(n nodes.External) Node {
+	if n == nil {
+		return nil
+	} else if nd, ok := n.(Node); ok {
+		return nd
+	}
+	// TODO: find a better way to convert these nodes
+	return c.impl.(*goNodes).toNode(n.(nodes.Node))
+}
 func (c *Context) Filter(root Node, query string) (Node, error) {
-	ind := xpath.Index(xpathNode{root})
+	ind := xpath.Index(root)
 	it, err := ind.Filter(query)
 	if err != nil {
 		c.setError(err)
@@ -124,7 +129,7 @@ func (c *Context) Filter(root Node, query string) (Node, error) {
 		if n == nil {
 			nodes = append(nodes, nil)
 		} else {
-			nodes = append(nodes, n.(xpathNode).Node)
+			nodes = append(nodes, n.(Node))
 		}
 	}
 	// TODO: it can be a single Bool node, for example
@@ -141,36 +146,12 @@ func (c *Context) Filter(root Node, query string) (Node, error) {
 	return tmp.Build(), nil
 }
 
-func loadNode(n Node) nodes.Node {
+func loadNode(n Node) (nodes.Node, error) {
 	if n == nil {
-		return nil
+		return nil, nil
 	}
-	if nd, ok := n.(*goNode); ok {
-		return nd.n
+	if nd, ok := n.(Native); ok {
+		return nd.Native(), nil
 	}
-	switch kind := n.Kind(); kind {
-	case nodes.KindNil:
-		return nil
-	case nodes.KindObject:
-		sz := n.Size()
-		m := make(nodes.Object, sz)
-		for i := 0; i < sz; i++ {
-			k, v := n.KeyAt(i), n.ValueAt(i)
-			m[k] = loadNode(v)
-		}
-		return m
-	case nodes.KindArray:
-		sz := n.Size()
-		arr := make(nodes.Array, 0, sz)
-		for i := 0; i < sz; i++ {
-			v := n.ValueAt(i)
-			arr = append(arr, loadNode(v))
-		}
-		return arr
-	default:
-		if IsValue(n) {
-			return n.AsValue()
-		}
-		panic(fmt.Errorf("unknown kind: %v", kind))
-	}
+	return nodes.ToNode(n, nil)
 }
