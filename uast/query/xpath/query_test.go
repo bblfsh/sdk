@@ -23,11 +23,11 @@ func TestFilter(t *testing.T) {
 	}
 
 	idx := New()
-	it, err := idx.Filter(root, "//uast:Identifier[Name='Foo']")
+	it, err := idx.Execute(root, "//uast:Identifier[Name='Foo']")
 	require.NoError(t, err)
 	expect(t, it, root[0])
 
-	it, err = tree.Filter("//Identifier")
+	it, err = idx.Execute(root, "//Identifier")
 	require.NoError(t, err)
 	expect(t, it)
 }
