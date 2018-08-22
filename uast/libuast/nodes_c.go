@@ -5,28 +5,28 @@ package main
 #include <stdlib.h>
 
 // Start of Go helpers
-NodeKind callKind(NodeIface* iface, UastHandle ctx, NodeHandle node);
+NodeKind callKind(NodeIface* iface, Uast* ctx, NodeHandle node);
 
-const char * callAsString(const NodeIface* iface, UastHandle ctx, NodeHandle node);
-int64_t      callAsInt(const NodeIface* iface, UastHandle ctx, NodeHandle node);
-uint64_t     callAsUint(const NodeIface* iface, UastHandle ctx, NodeHandle node);
-double       callAsFloat(const NodeIface* iface, UastHandle ctx, NodeHandle node);
-bool         callAsBool(const NodeIface* iface, UastHandle ctx, NodeHandle node);
+const char * callAsString(const NodeIface* iface, Uast* ctx, NodeHandle node);
+int64_t      callAsInt(const NodeIface* iface, Uast* ctx, NodeHandle node);
+uint64_t     callAsUint(const NodeIface* iface, Uast* ctx, NodeHandle node);
+double       callAsFloat(const NodeIface* iface, Uast* ctx, NodeHandle node);
+bool         callAsBool(const NodeIface* iface, Uast* ctx, NodeHandle node);
 
-size_t       callSize(const NodeIface* iface, UastHandle ctx, NodeHandle node);
-const char * callKeyAt(const NodeIface* iface, UastHandle ctx, NodeHandle node, size_t i);
-NodeHandle   callValueAt(const NodeIface* iface, UastHandle ctx, NodeHandle node, size_t i);
+size_t       callSize(const NodeIface* iface, Uast* ctx, NodeHandle node);
+const char * callKeyAt(const NodeIface* iface, Uast* ctx, NodeHandle node, size_t i);
+NodeHandle   callValueAt(const NodeIface* iface, Uast* ctx, NodeHandle node, size_t i);
 
-NodeHandle callNewObject(const NodeIface* iface, UastHandle ctx, size_t size);
-NodeHandle callNewArray(const NodeIface* iface, UastHandle ctx, size_t size);
-NodeHandle callNewString(const NodeIface* iface, UastHandle ctx, const char * v);
-NodeHandle callNewInt(const NodeIface* iface, UastHandle ctx, int64_t v);
-NodeHandle callNewUint(const NodeIface* iface, UastHandle ctx, uint64_t v);
-NodeHandle callNewFloat(const NodeIface* iface, UastHandle ctx, double v);
-NodeHandle callNewBool(const NodeIface* iface, UastHandle ctx, bool v);
+NodeHandle callNewObject(const NodeIface* iface, Uast* ctx, size_t size);
+NodeHandle callNewArray(const NodeIface* iface, Uast* ctx, size_t size);
+NodeHandle callNewString(const NodeIface* iface, Uast* ctx, const char * v);
+NodeHandle callNewInt(const NodeIface* iface, Uast* ctx, int64_t v);
+NodeHandle callNewUint(const NodeIface* iface, Uast* ctx, uint64_t v);
+NodeHandle callNewFloat(const NodeIface* iface, Uast* ctx, double v);
+NodeHandle callNewBool(const NodeIface* iface, Uast* ctx, bool v);
 
-void callSetValue(const NodeIface* iface, UastHandle ctx, NodeHandle node, size_t i, NodeHandle v);
-void callSetKeyValue(const NodeIface* iface, UastHandle ctx, NodeHandle node, const char * k, NodeHandle v);
+void callSetValue(const NodeIface* iface, Uast* ctx, NodeHandle node, size_t i, NodeHandle v);
+void callSetKeyValue(const NodeIface* iface, Uast* ctx, NodeHandle node, const char * k, NodeHandle v);
 // End of Go helpers
 */
 import "C"
@@ -41,8 +41,8 @@ import (
 var _ NodeIface = (*cNodes)(nil)
 
 type cNodes struct {
-	impl *C.NodeIface // allocated by Go
-	ctx  C.UastHandle
+	impl *C.NodeIface
+	ctx  *C.Uast
 }
 
 func (c *cNodes) Free() {

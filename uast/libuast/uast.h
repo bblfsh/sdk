@@ -25,40 +25,42 @@ typedef enum {
     NODE_BOOL,
 } NodeKind;
 
+typedef struct Uast Uast;
+
 // NodeIface is an interface for UAST nodes that client should implement to bind to libuast.
 // Each function of the interface receives a UastHandle that can be used by the client to store
 // all handle-to-node mappings for this particular UAST context. See UastHandle and NodeHandle for more details.
 typedef struct NodeIface {
-    NodeKind (*Kind)(UastHandle, NodeHandle);
+    NodeKind (*Kind)(const Uast*, NodeHandle);
 
-    const char * (*AsString)(UastHandle, NodeHandle);
-    int64_t      (*AsInt)   (UastHandle, NodeHandle);
-    uint64_t     (*AsUint)  (UastHandle, NodeHandle);
-    double       (*AsFloat) (UastHandle, NodeHandle);
-    bool         (*AsBool)  (UastHandle, NodeHandle);
+    const char * (*AsString)(const Uast*, NodeHandle);
+    int64_t      (*AsInt)   (const Uast*, NodeHandle);
+    uint64_t     (*AsUint)  (const Uast*, NodeHandle);
+    double       (*AsFloat) (const Uast*, NodeHandle);
+    bool         (*AsBool)  (const Uast*, NodeHandle);
 
-    size_t (*Size)(UastHandle, NodeHandle);
+    size_t (*Size)(const Uast*, NodeHandle);
 
-    const char * (*KeyAt)  (UastHandle, NodeHandle, size_t);
-    NodeHandle   (*ValueAt)(UastHandle, NodeHandle, size_t);
+    const char * (*KeyAt)  (const Uast*, NodeHandle, size_t);
+    NodeHandle   (*ValueAt)(const Uast*, NodeHandle, size_t);
 
 
-    NodeHandle (*NewObject)(UastHandle, size_t size);
-    NodeHandle (*NewArray) (UastHandle, size_t size);
-    NodeHandle (*NewString)(UastHandle, const char * str);
-    NodeHandle (*NewInt)   (UastHandle, int64_t);
-    NodeHandle (*NewUint)  (UastHandle, uint64_t);
-    NodeHandle (*NewFloat) (UastHandle, double);
-    NodeHandle (*NewBool)  (UastHandle, bool);
+    NodeHandle (*NewObject)(const Uast*, size_t size);
+    NodeHandle (*NewArray) (const Uast*, size_t size);
+    NodeHandle (*NewString)(const Uast*, const char * str);
+    NodeHandle (*NewInt)   (const Uast*, int64_t);
+    NodeHandle (*NewUint)  (const Uast*, uint64_t);
+    NodeHandle (*NewFloat) (const Uast*, double);
+    NodeHandle (*NewBool)  (const Uast*, bool);
 
-    void (*SetValue)(UastHandle, NodeHandle, size_t, NodeHandle);
-    void (*SetKeyValue)(UastHandle, NodeHandle, const char *, NodeHandle);
+    void (*SetValue)(const Uast*, NodeHandle, size_t, NodeHandle);
+    void (*SetKeyValue)(const Uast*, NodeHandle, const char *, NodeHandle);
 
 } NodeIface;
 
 typedef enum { PRE_ORDER, POST_ORDER, LEVEL_ORDER, POSITION_ORDER } TreeOrder;
 
-#define UAST_CALL(u, name, ...) u->iface->name(u->ctx, __VA_ARGS__)
+#define UAST_CALL(u, name, ...) u->iface->name(u, __VA_ARGS__)
 
 // Uast stores the general context required for library functions.
 // It must be initialized with UastNew passing a valid implementation of the NodeIface interface.
@@ -80,7 +82,6 @@ typedef struct Uast {
 // with UastIteratorFree.
 typedef struct UastIterator {
   const Uast *ctx;
-  TreeOrder order;
   uintptr_t handle;
 } UastIterator;
 

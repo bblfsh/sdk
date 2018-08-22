@@ -17,23 +17,8 @@ func init() {
 	goImpl = C.uastImpl()
 }
 
-func getContextGo(h C.UastHandle) *Context {
-	if h == 0 {
-		return nil
-	}
-	return getContext(Handle(h))
-}
-
-func setContextErrorGo(h C.UastHandle, err error) {
-	c := getContextGo(h)
-	if c == nil {
-		panic(err)
-	}
-	c.setError(err)
-}
-
-func getNodeGo(ctx C.UastHandle, node C.NodeHandle) Node {
-	c := getContextGo(ctx)
+func getNodeGo(ctx *C.Uast, node C.NodeHandle) Node {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return nil
 	}
@@ -41,7 +26,7 @@ func getNodeGo(ctx C.UastHandle, node C.NodeHandle) Node {
 }
 
 //export uastKind
-func uastKind(ctx C.UastHandle, node C.NodeHandle) C.NodeKind {
+func uastKind(ctx *C.Uast, node C.NodeHandle) C.NodeKind {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return C.NODE_NULL
@@ -69,7 +54,7 @@ func uastKind(ctx C.UastHandle, node C.NodeHandle) C.NodeKind {
 }
 
 //export uastAsString
-func uastAsString(ctx C.UastHandle, node C.NodeHandle) *C.char {
+func uastAsString(ctx *C.Uast, node C.NodeHandle) *C.char {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return nil
@@ -79,7 +64,7 @@ func uastAsString(ctx C.UastHandle, node C.NodeHandle) *C.char {
 }
 
 //export uastAsInt
-func uastAsInt(ctx C.UastHandle, node C.NodeHandle) C.int64_t {
+func uastAsInt(ctx *C.Uast, node C.NodeHandle) C.int64_t {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return 0
@@ -89,7 +74,7 @@ func uastAsInt(ctx C.UastHandle, node C.NodeHandle) C.int64_t {
 }
 
 //export uastAsUint
-func uastAsUint(ctx C.UastHandle, node C.NodeHandle) C.uint64_t {
+func uastAsUint(ctx *C.Uast, node C.NodeHandle) C.uint64_t {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return 0
@@ -99,7 +84,7 @@ func uastAsUint(ctx C.UastHandle, node C.NodeHandle) C.uint64_t {
 }
 
 //export uastAsFloat
-func uastAsFloat(ctx C.UastHandle, node C.NodeHandle) C.double {
+func uastAsFloat(ctx *C.Uast, node C.NodeHandle) C.double {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return 0
@@ -109,7 +94,7 @@ func uastAsFloat(ctx C.UastHandle, node C.NodeHandle) C.double {
 }
 
 //export uastAsBool
-func uastAsBool(ctx C.UastHandle, node C.NodeHandle) C.bool {
+func uastAsBool(ctx *C.Uast, node C.NodeHandle) C.bool {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return false
@@ -119,7 +104,7 @@ func uastAsBool(ctx C.UastHandle, node C.NodeHandle) C.bool {
 }
 
 //export uastSize
-func uastSize(ctx C.UastHandle, node C.NodeHandle) C.size_t {
+func uastSize(ctx *C.Uast, node C.NodeHandle) C.size_t {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return 0
@@ -139,7 +124,7 @@ func uastSize(ctx C.UastHandle, node C.NodeHandle) C.size_t {
 }
 
 //export uastKeyAt
-func uastKeyAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) *C.char {
+func uastKeyAt(ctx *C.Uast, node C.NodeHandle, i C.size_t) *C.char {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return nil
@@ -147,14 +132,14 @@ func uastKeyAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) *C.char {
 	o, ok := nd.(Object)
 	if !ok {
 		err := fmt.Errorf("expected object, got: %T", nd)
-		setContextErrorGo(ctx, err)
+		setContextError(ctx, err)
 		return nil
 	}
 	keys := o.Keys()
 	ind := int(i)
 	if ind < 0 || ind >= len(keys) {
 		err := fmt.Errorf("index out of bounds: %d, %d", ind, len(keys))
-		setContextErrorGo(ctx, err)
+		setContextError(ctx, err)
 		return nil
 	}
 	v := keys[ind]
@@ -162,7 +147,7 @@ func uastKeyAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) *C.char {
 }
 
 //export uastValueAt
-func uastValueAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) C.NodeHandle {
+func uastValueAt(ctx *C.Uast, node C.NodeHandle, i C.size_t) C.NodeHandle {
 	nd := getNodeGo(ctx, node)
 	if nd == nil {
 		return 0
@@ -173,7 +158,7 @@ func uastValueAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) C.NodeHandle {
 	)
 	switch nd := nd.(type) {
 	case Object:
-		c := getContextGo(ctx)
+		c := getContextFrom(ctx)
 
 		keys := nd.Keys()
 		if ind < 0 || ind >= len(keys) {
@@ -188,7 +173,7 @@ func uastValueAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) C.NodeHandle {
 		}
 		v = c.toNode(val)
 	case Array:
-		c := getContextGo(ctx)
+		c := getContextFrom(ctx)
 
 		sz := nd.Size()
 		if ind < 0 || ind >= sz {
@@ -206,8 +191,8 @@ func uastValueAt(ctx C.UastHandle, node C.NodeHandle, i C.size_t) C.NodeHandle {
 }
 
 //export uastNewObject
-func uastNewObject(ctx C.UastHandle, sz C.size_t) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewObject(ctx *C.Uast, sz C.size_t) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -216,8 +201,8 @@ func uastNewObject(ctx C.UastHandle, sz C.size_t) C.NodeHandle {
 }
 
 //export uastNewArray
-func uastNewArray(ctx C.UastHandle, sz C.size_t) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewArray(ctx *C.Uast, sz C.size_t) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -226,8 +211,8 @@ func uastNewArray(ctx C.UastHandle, sz C.size_t) C.NodeHandle {
 }
 
 //export uastNewString
-func uastNewString(ctx C.UastHandle, v *C.char) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewString(ctx *C.Uast, v *C.char) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -237,8 +222,8 @@ func uastNewString(ctx C.UastHandle, v *C.char) C.NodeHandle {
 }
 
 //export uastNewInt
-func uastNewInt(ctx C.UastHandle, v C.int64_t) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewInt(ctx *C.Uast, v C.int64_t) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -247,8 +232,8 @@ func uastNewInt(ctx C.UastHandle, v C.int64_t) C.NodeHandle {
 }
 
 //export uastNewUint
-func uastNewUint(ctx C.UastHandle, v C.uint64_t) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewUint(ctx *C.Uast, v C.uint64_t) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -257,8 +242,8 @@ func uastNewUint(ctx C.UastHandle, v C.uint64_t) C.NodeHandle {
 }
 
 //export uastNewFloat
-func uastNewFloat(ctx C.UastHandle, v C.double) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewFloat(ctx *C.Uast, v C.double) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -267,8 +252,8 @@ func uastNewFloat(ctx C.UastHandle, v C.double) C.NodeHandle {
 }
 
 //export uastNewBool
-func uastNewBool(ctx C.UastHandle, v C.bool) C.NodeHandle {
-	c := getContextGo(ctx)
+func uastNewBool(ctx *C.Uast, v C.bool) C.NodeHandle {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return 0
 	}
@@ -277,8 +262,8 @@ func uastNewBool(ctx C.UastHandle, v C.bool) C.NodeHandle {
 }
 
 //export uastSetValue
-func uastSetValue(ctx C.UastHandle, node C.NodeHandle, i C.size_t, val C.NodeHandle) {
-	c := getContextGo(ctx)
+func uastSetValue(ctx *C.Uast, node C.NodeHandle, i C.size_t, val C.NodeHandle) {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return
 	}
@@ -291,8 +276,8 @@ func uastSetValue(ctx C.UastHandle, node C.NodeHandle, i C.size_t, val C.NodeHan
 }
 
 //export uastSetKeyValue
-func uastSetKeyValue(ctx C.UastHandle, node C.NodeHandle, key *C.char, val C.NodeHandle) {
-	c := getContextGo(ctx)
+func uastSetKeyValue(ctx *C.Uast, node C.NodeHandle, key *C.char, val C.NodeHandle) {
+	c := getContextFrom(ctx)
 	if c == nil {
 		return
 	}

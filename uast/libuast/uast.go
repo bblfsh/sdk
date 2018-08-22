@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
@@ -82,12 +81,21 @@ func getContext(h Handle) *Context {
 }
 
 type Context struct {
-	h     Handle
-	last  error
-	impl  NodeIface
+	h    Handle
+	last error
+	impl NodeIface
+
 	xpath query.Interface
+
+	lasth Handle
+	iters map[Handle]*Iterator
 }
 
+func (c *Context) next() Handle {
+	c.lasth++
+	h := c.lasth
+	return h
+}
 func (c *Context) Handle() Handle {
 	return c.h
 }
@@ -102,6 +110,39 @@ func (c *Context) free() {
 	delete(ctxes, c.h)
 	mu.Unlock()
 	c.impl.Free()
+	c.iters = nil
+}
+
+type Iterator struct {
+	c  *Context
+	h  Handle
+	it query.Iterator
+}
+
+func (it *Iterator) Handle() Handle {
+	if it == nil {
+		return 0
+	}
+	return it.h
+}
+
+func (it *Iterator) Next() Node {
+	if it == nil || it.it == nil {
+		return nil
+	}
+	if !it.it.Next() {
+		return nil
+	}
+	return it.c.toNode(it.it.Node())
+}
+
+func (it *Iterator) Close() error {
+	if it == nil || it.c == nil {
+		return nil
+	}
+	delete(it.c.iters, it.h)
+	it.it = nil
+	return nil
 }
 
 func (c *Context) setError(err error) {
@@ -109,6 +150,7 @@ func (c *Context) setError(err error) {
 		c.last = err
 	}
 }
+
 func (c *Context) toNode(n nodes.External) Node {
 	if n == nil {
 		return nil
@@ -118,7 +160,27 @@ func (c *Context) toNode(n nodes.External) Node {
 	// TODO: find a better way to convert these nodes
 	return c.impl.(*goNodes).toNode(n.(nodes.Node))
 }
-func (c *Context) Filter(root Node, query string) (Node, error) {
+
+func (c *Context) AsIterator(h Handle) *Iterator {
+	return c.iters[h]
+}
+
+func (c *Context) NewIterator(it query.Iterator) *Iterator {
+	h := c.next()
+	cit := &Iterator{c: c, h: h, it: it}
+	if c.iters == nil {
+		c.iters = make(map[Handle]*Iterator)
+	}
+	c.iters[h] = cit
+	return cit
+}
+
+func (c *Context) Iterate(root Node, order query.IterOrder) *Iterator {
+	it := query.NewIterator(root, order)
+	return c.NewIterator(it)
+}
+
+func (c *Context) Filter(root Node, query string) (*Iterator, error) {
 	if c.xpath == nil {
 		c.xpath = xpath.New()
 	}
@@ -127,27 +189,7 @@ func (c *Context) Filter(root Node, query string) (Node, error) {
 		c.setError(err)
 		return nil, err
 	}
-	var nodes []Node
-	for it.Next() {
-		n := it.Node()
-		if n == nil {
-			nodes = append(nodes, nil)
-		} else {
-			nodes = append(nodes, n.(Node))
-		}
-	}
-	// TODO: it can be a single Bool node, for example
-	res := c.impl.NewArray(len(nodes))
-	tmp := c.impl.AsTmpNode(res)
-	if tmp == nil {
-		err = fmt.Errorf("cannot create a result node")
-		c.setError(err)
-		return nil, err
-	}
-	for i, v := range nodes {
-		tmp.SetValue(i, v)
-	}
-	return tmp.Build(), nil
+	return c.NewIterator(it), nil
 }
 
 func loadNode(n Node) (nodes.Node, error) {

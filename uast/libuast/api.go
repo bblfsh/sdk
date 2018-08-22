@@ -8,11 +8,13 @@ import "C"
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"unsafe"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes/nodesproto"
+	"gopkg.in/bblfsh/sdk.v2/uast/query"
 	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
@@ -37,13 +39,14 @@ func newUast(iface *C.NodeIface, h Handle) *C.Uast {
 // using the context and deallocate it with UastFree in case of an error occurs, or when the context
 // is no longer needed.
 func UastNew(iface *C.NodeIface, ctx C.UastHandle) *C.Uast {
-	c := newContext(&cNodes{
+	cn := &cNodes{
 		impl: iface,
-		ctx:  ctx,
-	})
+	}
+	c := newContext(cn)
 
 	u := newUast(iface, c.Handle())
 	u.ctx = ctx
+	cn.ctx = u
 	return u
 }
 
@@ -150,6 +153,14 @@ func getContextFrom(p *C.Uast) *Context {
 	return getContext(Handle(p.handle))
 }
 
+func setContextError(h *C.Uast, err error) {
+	c := getContextFrom(h)
+	if c == nil {
+		panic(err)
+	}
+	c.setError(err)
+}
+
 //export LastError
 // Return last encountered error, if any.
 func LastError(ctx *C.Uast) *C.char {
@@ -165,10 +176,10 @@ func LastError(ctx *C.Uast) *C.char {
 }
 
 //export UastFilter
-func UastFilter(ctx *C.Uast, node C.NodeHandle, query *C.char) C.NodeHandle {
+func UastFilter(ctx *C.Uast, node C.NodeHandle, query *C.char) *C.UastIterator {
 	c := getContextFrom(ctx)
 	if c == nil {
-		return 0
+		return nil
 	}
 	if node == 0 {
 		node = ctx.root
@@ -178,24 +189,90 @@ func UastFilter(ctx *C.Uast, node C.NodeHandle, query *C.char) C.NodeHandle {
 	root := c.impl.AsNode(h)
 
 	qu := C.GoString(query)
-	res, _ := c.Filter(root, qu)
-	if res == nil {
-		return 0
+	res, err := c.Filter(root, qu)
+	if err != nil {
+		c.setError(err)
+		return nil
+	} else if res == nil {
+		return nil
 	}
-	return C.NodeHandle(res.Handle())
+	return newIterator(ctx, res.Handle())
+}
+
+//export SetError
+func SetError(ctx *C.Uast, str *C.char) {
+	c := getContextFrom(ctx)
+	if c == nil {
+		return
+	}
+	s := C.GoString(str)
+	c.setError(errors.New(s))
+}
+
+//export SetErrorCtx
+func SetErrorCtx(ctx *C.Uast, str *C.char) {
+	c := getContextFrom(ctx)
+	if c == nil {
+		return
+	}
+	c.setError(errors.New(C.GoString(str)))
+}
+
+var toOrder = map[C.TreeOrder]query.IterOrder{
+	C.PRE_ORDER:      query.PreOrder,
+	C.POST_ORDER:     query.PostOrder,
+	C.LEVEL_ORDER:    query.LevelOrder,
+	C.POSITION_ORDER: query.PosOrder,
+}
+
+func newIterator(ctx *C.Uast, h Handle) *C.UastIterator {
+	sz := unsafe.Sizeof(C.UastIterator{})
+	it := (*C.UastIterator)(C.malloc(C.size_t(sz)))
+	it.ctx = ctx
+	it.handle = C.uintptr_t(h)
+	return it
 }
 
 //export UastIteratorNew
 func UastIteratorNew(ctx *C.Uast, node C.NodeHandle, order C.TreeOrder) *C.UastIterator {
-	panic("not implemented") // FIXME
+	ord, ok := toOrder[order]
+	if !ok {
+		ord = -1
+	}
+	c := getContextFrom(ctx)
+	if c == nil {
+		return nil
+	}
+	root := c.impl.AsNode(Handle(node))
+	it := c.Iterate(root, ord)
+	return newIterator(ctx, it.h)
 }
 
 //export UastIteratorFree
 func UastIteratorFree(it *C.UastIterator) {
-	panic("not implemented") // FIXME
+	if it == nil {
+		return
+	}
+	c := getContextFrom(it.ctx)
+	if c != nil {
+		h := Handle(it.handle)
+		c.AsIterator(h).Close()
+	}
+	C.free(unsafe.Pointer(it))
 }
 
 //export UastIteratorNext
 func UastIteratorNext(it *C.UastIterator) C.NodeHandle {
-	panic("not implemented") // FIXME
+	if it == nil {
+		return 0
+	}
+	c := getContextFrom(it.ctx)
+	if c == nil {
+		return 0
+	}
+	n := c.AsIterator(Handle(it.handle)).Next()
+	if n == nil {
+		return 0
+	}
+	return C.NodeHandle(n.Handle())
 }

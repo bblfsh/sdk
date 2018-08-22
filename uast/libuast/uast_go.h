@@ -5,28 +5,28 @@
 
 struct NodeIface* uastImpl();
 
-extern NodeKind uastKind(UastHandle, NodeHandle);
+extern NodeKind uastKind(Uast*, NodeHandle);
 
-extern char * uastAsString(UastHandle, NodeHandle);
-extern int64_t      uastAsInt(UastHandle, NodeHandle);
-extern uint64_t     uastAsUint(UastHandle, NodeHandle);
-extern double       uastAsFloat(UastHandle, NodeHandle);
-extern bool         uastAsBool(UastHandle, NodeHandle);
+extern char * uastAsString(Uast*, NodeHandle);
+extern int64_t      uastAsInt(Uast*, NodeHandle);
+extern uint64_t     uastAsUint(Uast*, NodeHandle);
+extern double       uastAsFloat(Uast*, NodeHandle);
+extern bool         uastAsBool(Uast*, NodeHandle);
 
-extern size_t uastSize(UastHandle, NodeHandle);
-extern char * uastKeyAt(UastHandle, NodeHandle, size_t);
-extern NodeHandle   uastValueAt(UastHandle, NodeHandle, size_t);
+extern size_t uastSize(Uast*, NodeHandle);
+extern char * uastKeyAt(Uast*, NodeHandle, size_t);
+extern NodeHandle   uastValueAt(Uast*, NodeHandle, size_t);
 
-extern NodeHandle uastNewObject(UastHandle, size_t size);
-extern NodeHandle uastNewArray(UastHandle, size_t size);
+extern NodeHandle uastNewObject(Uast*, size_t size);
+extern NodeHandle uastNewArray(Uast*, size_t size);
 
-extern NodeHandle uastNewString(UastHandle, char * str);
-extern NodeHandle uastNewInt(UastHandle, int64_t);
-extern NodeHandle uastNewUint(UastHandle, uint64_t);
-extern NodeHandle uastNewFloat(UastHandle, double);
-extern NodeHandle uastNewBool(UastHandle, bool);
+extern NodeHandle uastNewString(Uast*, char * str);
+extern NodeHandle uastNewInt(Uast*, int64_t);
+extern NodeHandle uastNewUint(Uast*, uint64_t);
+extern NodeHandle uastNewFloat(Uast*, double);
+extern NodeHandle uastNewBool(Uast*, bool);
 
-extern void uastSetValue(UastHandle, NodeHandle, size_t, NodeHandle);
-extern void uastSetKeyValue(UastHandle, NodeHandle, char *, NodeHandle);
+extern void uastSetValue(Uast*, NodeHandle, size_t, NodeHandle);
+extern void uastSetKeyValue(Uast*, NodeHandle, char *, NodeHandle);
 
 #endif // UAST_GO_H_
