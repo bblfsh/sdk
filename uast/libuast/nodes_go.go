@@ -11,7 +11,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
-var goImpl C.NodeIface
+var goImpl *C.NodeIface
 
 func init() {
 	goImpl = C.uastImpl()

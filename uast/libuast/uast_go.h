@@ -3,7 +3,7 @@
 
 #include "uast.h"
 
-struct NodeIface uastImpl();
+struct NodeIface* uastImpl();
 
 extern NodeKind uastKind(UastHandle, NodeHandle);
 

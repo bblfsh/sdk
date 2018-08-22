@@ -18,7 +18,7 @@ import (
 
 func main() {}
 
-func newUast(iface C.NodeIface, h Handle) *C.Uast {
+func newUast(iface *C.NodeIface, h Handle) *C.Uast {
 	sz := unsafe.Sizeof(C.Uast{})
 	u := (*C.Uast)(C.malloc(C.size_t(sz)))
 	u.iface = iface
@@ -29,18 +29,16 @@ func newUast(iface C.NodeIface, h Handle) *C.Uast {
 }
 
 //export UastNew
-// Uast needs a node implementation in order to work. This is needed
-// because the data structure of the node itself is not defined by this
-// library, instead it provides an interface that is expected to be satisfied by
-// the binding providers.
+// UastNew initializes a new UAST context that will use a provided node interface as an implementation.
+// This allows libuast to work with every language's native node data structures. Client can pass
+// an additional UastHandle to distinguish between different UAST context instances.
 //
-// This architecture allows libuast to work with every language's native node
-// data structures.
-//
-// Returns NULL and sets LastError if the Uast couldn't initialize.
-func UastNew(iface C.NodeIface, ctx C.UastHandle) *C.Uast {
+// The returned context pointer is guaranteed to be not NULL. Client should check LastError before
+// using the context and deallocate it with UastFree in case of an error occurs, or when the context
+// is no longer needed.
+func UastNew(iface *C.NodeIface, ctx C.UastHandle) *C.Uast {
 	c := newContext(&cNodes{
-		impl: &iface,
+		impl: iface,
 		ctx:  ctx,
 	})
 
@@ -50,6 +48,15 @@ func UastNew(iface C.NodeIface, ctx C.UastHandle) *C.Uast {
 }
 
 //export UastDecode
+// UastDecode accepts a pointer to a buffer with a specified size and decodes the content into
+// a new UAST structure.
+//
+// The new UAST context will use internal node interface implementation and all the nodes will
+// be managed by libuast.
+//
+// The returned context pointer is guaranteed to be not NULL. Client should check LastError before
+// using the context and deallocate it with UastFree in case of an error occurs, or when the context
+// is no longer needed.
 func UastDecode(p unsafe.Pointer, sz C.size_t, format C.UastFormat) *C.Uast {
 	if format == 0 {
 		format = C.UAST_BINARY

@@ -1,6 +1,8 @@
 #include "uast.h"
 #include "uast_go.h"
 
+#include <stdlib.h>
+
 const char * _uastAsString(UastHandle ctx, NodeHandle node) {
     char* s = uastAsString(ctx, node);
     return (const char*)(s);
@@ -19,26 +21,26 @@ void _uastSetKeyValue(UastHandle ctx, NodeHandle node, const char * k, NodeHandl
     uastSetKeyValue(ctx, node, (char *)(k), v);
 }
 
-struct NodeIface uastImpl(){
-    NodeIface u;
-	u.Kind = uastKind;
-	u.AsString = _uastAsString;
-	u.AsInt = uastAsInt;
-	u.AsUint = uastAsUint;
-	u.AsFloat = uastAsFloat;
-	u.AsBool = uastAsBool;
-	u.Size = uastSize;
-	u.KeyAt = _uastKeyAt;
-	u.ValueAt = uastValueAt;
-	u.NewObject = uastNewObject;
-	u.NewArray = uastNewArray;
-	u.NewString = _uastNewString;
-	u.NewInt = uastNewInt;
-	u.NewUint = uastNewUint;
-	u.NewFloat = uastNewFloat;
-	u.NewBool = uastNewBool;
-	u.SetValue = uastSetValue;
-	u.SetKeyValue = _uastSetKeyValue;
+struct NodeIface* uastImpl(){
+    NodeIface *u = (NodeIface*)(malloc(sizeof(NodeIface)));
+	u->Kind = uastKind;
+	u->AsString = _uastAsString;
+	u->AsInt = uastAsInt;
+	u->AsUint = uastAsUint;
+	u->AsFloat = uastAsFloat;
+	u->AsBool = uastAsBool;
+	u->Size = uastSize;
+	u->KeyAt = _uastKeyAt;
+	u->ValueAt = uastValueAt;
+	u->NewObject = uastNewObject;
+	u->NewArray = uastNewArray;
+	u->NewString = _uastNewString;
+	u->NewInt = uastNewInt;
+	u->NewUint = uastNewUint;
+	u->NewFloat = uastNewFloat;
+	u->NewBool = uastNewBool;
+	u->SetValue = uastSetValue;
+	u->SetKeyValue = _uastSetKeyValue;
     return u;
 }
 
