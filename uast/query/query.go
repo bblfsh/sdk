@@ -31,3 +31,12 @@ func AllNodes(it Iterator) []nodes.External {
 	}
 	return out
 }
+
+// Count counts the nodes in the iterator. Iterator will be exhausted as a result.
+func Count(it Iterator) int {
+	var n int
+	for it.Next() {
+		n++
+	}
+	return n
+}
