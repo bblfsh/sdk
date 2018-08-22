@@ -5,7 +5,8 @@ import (
 	"sync"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/xpath"
+	"gopkg.in/bblfsh/sdk.v2/uast/query"
+	"gopkg.in/bblfsh/sdk.v2/uast/query/xpath"
 )
 
 type Handle uintptr
@@ -81,9 +82,10 @@ func getContext(h Handle) *Context {
 }
 
 type Context struct {
-	h    Handle
-	last error
-	impl NodeIface
+	h     Handle
+	last  error
+	impl  NodeIface
+	xpath query.Interface
 }
 
 func (c *Context) Handle() Handle {
@@ -117,8 +119,10 @@ func (c *Context) toNode(n nodes.External) Node {
 	return c.impl.(*goNodes).toNode(n.(nodes.Node))
 }
 func (c *Context) Filter(root Node, query string) (Node, error) {
-	ind := xpath.Index(root)
-	it, err := ind.Filter(query)
+	if c.xpath == nil {
+		c.xpath = xpath.New()
+	}
+	it, err := c.xpath.Execute(root, query)
 	if err != nil {
 		c.setError(err)
 		return nil, err

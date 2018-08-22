@@ -33,7 +33,6 @@ import "C"
 
 import (
 	"fmt"
-
 	"sort"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
