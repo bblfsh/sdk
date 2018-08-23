@@ -84,11 +84,11 @@ func toNodeExt(n External) (Node, error) {
 // equalExt compares two external nodes.
 func equalExt(n1, n2 External) bool {
 	k1, k2 := n1.Kind(), n2.Kind()
-	if k1 != k2 {
-		return false
-	}
 	switch k1 {
 	case KindObject:
+		if k2 != KindObject {
+			return false
+		}
 		o1, ok := n1.(ExternalObject)
 		if !ok {
 			return false
@@ -106,7 +106,7 @@ func equalExt(n1, n2 External) bool {
 			m[k] = struct{}{}
 		}
 		for _, k := range keys2 {
-			if _, ok := m[k]; ok {
+			if _, ok := m[k]; !ok {
 				return false
 			}
 			v1, _ := o1.ValueAt(k)
@@ -117,6 +117,9 @@ func equalExt(n1, n2 External) bool {
 		}
 		return true
 	case KindArray:
+		if k2 != KindArray {
+			return false
+		}
 		a1, ok := n1.(ExternalArray)
 		if !ok {
 			return false
@@ -138,6 +141,6 @@ func equalExt(n1, n2 External) bool {
 		}
 		return true
 	default:
-		return n1.Value() == n2.Value()
+		return Equal(n1.Value(), n2.Value())
 	}
 }
