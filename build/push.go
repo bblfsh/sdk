@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -22,6 +23,9 @@ func pushLatestEnabled() bool {
 }
 
 func (d *Driver) Push(image string) error {
+	if isCI() {
+		log.Printf("CI variables: branch=%q, tag=%q, pr=%v", ciBranch(), ciTag(), ciIsPR())
+	}
 	if !pushTagEnabled() && !pushLatestEnabled() {
 		return fmt.Errorf("push disabled")
 	} else if image == "" {
