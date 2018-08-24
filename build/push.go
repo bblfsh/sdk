@@ -10,15 +10,15 @@ import (
 var reVers = regexp.MustCompile(`^v\d+`)
 
 func pushEnabled() bool {
-	return ciTag() != "" && !ciIsPR()
+	return !ciIsPR() && (ciBranch() == "master" || ciTag() != "")
 }
 
 func pushTagEnabled() bool {
-	return pushEnabled() && reVers.MatchString(ciBranch())
+	return pushEnabled() && (reVers.MatchString(ciBranch()) || reVers.MatchString(ciTag()))
 }
 
 func pushLatestEnabled() bool {
-	return ciBranch() == "master" && pushEnabled()
+	return pushEnabled() && ciTag() != ""
 }
 
 func (d *Driver) Push(image string) error {
