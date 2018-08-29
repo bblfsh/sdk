@@ -20,7 +20,7 @@ import (
 
 func main() {}
 
-func newUast(iface *C.NodeIface, h Handle) *C.Uast {
+func newUAST(iface *C.NodeIface, h Handle) *C.Uast {
 	sz := unsafe.Sizeof(C.Uast{})
 	u := (*C.Uast)(C.malloc(C.size_t(sz)))
 	u.iface = iface
@@ -44,7 +44,7 @@ func UastNew(iface *C.NodeIface, ctx C.UastHandle) *C.Uast {
 	}
 	c := newContext(cn)
 
-	u := newUast(iface, c.Handle())
+	u := newUAST(iface, c.Handle())
 	u.ctx = ctx
 	cn.ctx = u
 	return u
@@ -69,7 +69,7 @@ func UastDecode(p unsafe.Pointer, sz C.size_t, format C.UastFormat) *C.Uast {
 	nd := &goNodes{}
 
 	c := newContext(nd)
-	u := newUast(goImpl, c.Handle())
+	u := newUAST(goImpl, c.Handle())
 
 	var (
 		n   nodes.Node
@@ -95,6 +95,8 @@ func UastDecode(p unsafe.Pointer, sz C.size_t, format C.UastFormat) *C.Uast {
 }
 
 //export UastEncode
+// UastEncode encodes a given node and all it's children to a specified encoding. It returns a pointer to the bytes buffer
+// and writes the size of the buffer to the size pointer.
 func UastEncode(ctx *C.Uast, node C.NodeHandle, size *C.size_t, format C.UastFormat) unsafe.Pointer {
 	if format == 0 {
 		format = C.UAST_BINARY
@@ -136,7 +138,7 @@ func UastEncode(ctx *C.Uast, node C.NodeHandle, size *C.size_t, format C.UastFor
 }
 
 //export UastFree
-// Releases Uast resources.
+// UastFree releases resources associated with this UAST context.
 func UastFree(ctx *C.Uast) {
 	if ctx == nil {
 		return
@@ -162,7 +164,7 @@ func setContextError(h *C.Uast, err error) {
 }
 
 //export LastError
-// Return last encountered error, if any.
+// LastError return the last encountered error in this context, if any.
 func LastError(ctx *C.Uast) *C.char {
 	c := getContextFrom(ctx)
 	if c == nil {
@@ -176,6 +178,8 @@ func LastError(ctx *C.Uast) *C.char {
 }
 
 //export UastFilter
+// UastFilter filters UAST starting from a given node with XPath query and returns an iterator for results.
+// Caller should free an iterator by calling UastIteratorFree.
 func UastFilter(ctx *C.Uast, node C.NodeHandle, query *C.char) *C.UastIterator {
 	c := getContextFrom(ctx)
 	if c == nil {
@@ -200,6 +204,7 @@ func UastFilter(ctx *C.Uast, node C.NodeHandle, query *C.char) *C.UastIterator {
 }
 
 //export SetError
+// SetError sets an error state for this context. It can be used inside interface functions to indicate an error to the caller.
 func SetError(ctx *C.Uast, str *C.char) {
 	c := getContextFrom(ctx)
 	if c == nil {
@@ -209,20 +214,11 @@ func SetError(ctx *C.Uast, str *C.char) {
 	c.setError(errors.New(s))
 }
 
-//export SetErrorCtx
-func SetErrorCtx(ctx *C.Uast, str *C.char) {
-	c := getContextFrom(ctx)
-	if c == nil {
-		return
-	}
-	c.setError(errors.New(C.GoString(str)))
-}
-
 var toOrder = map[C.TreeOrder]query.IterOrder{
 	C.PRE_ORDER:      query.PreOrder,
 	C.POST_ORDER:     query.PostOrder,
 	C.LEVEL_ORDER:    query.LevelOrder,
-	C.POSITION_ORDER: query.PosOrder,
+	C.POSITION_ORDER: query.PositionOrder,
 }
 
 func newIterator(ctx *C.Uast, h Handle) *C.UastIterator {
@@ -234,6 +230,7 @@ func newIterator(ctx *C.Uast, h Handle) *C.UastIterator {
 }
 
 //export UastIteratorNew
+// UastIteratorNew starts an iterator from a given node in a specified order. Caller should free an iterator by calling UastIteratorFree.
 func UastIteratorNew(ctx *C.Uast, node C.NodeHandle, order C.TreeOrder) *C.UastIterator {
 	ord, ok := toOrder[order]
 	if !ok {
@@ -249,6 +246,7 @@ func UastIteratorNew(ctx *C.Uast, node C.NodeHandle, order C.TreeOrder) *C.UastI
 }
 
 //export UastIteratorFree
+// UastIteratorFree release all resources associated with an iterator.
 func UastIteratorFree(it *C.UastIterator) {
 	if it == nil {
 		return
@@ -262,6 +260,7 @@ func UastIteratorFree(it *C.UastIterator) {
 }
 
 //export UastIteratorNext
+// UastIteratorNext return the next node on this iterator or 0 if iterator is empty.
 func UastIteratorNext(it *C.UastIterator) C.NodeHandle {
 	if it == nil {
 		return 0

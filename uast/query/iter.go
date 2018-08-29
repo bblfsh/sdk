@@ -20,7 +20,7 @@ const (
 	PreOrder
 	PostOrder
 	LevelOrder
-	PosOrder
+	PositionOrder
 )
 
 func NewIterator(root nodes.External, order IterOrder) Iterator {

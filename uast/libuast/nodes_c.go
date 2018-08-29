@@ -40,6 +40,8 @@ import (
 
 var _ NodeIface = (*cNodes)(nil)
 
+// cNodes implements a Go nodes interface for node provided by libuast clients.
+// In this case Go side only passes opaque handles to objects and calls a C interface implementation to access nodes.
 type cNodes struct {
 	impl *C.NodeIface
 	ctx  *C.Uast
@@ -121,6 +123,7 @@ func (c *cNodes) NewValue(v nodes.Value) Node {
 
 var _ Object = (*cObject)(nil)
 
+// offsSort sorts keys while updating an offsets array accordingly.
 type offsSort struct {
 	keys []string // sorted keys
 	ind  []int    // original indexes
@@ -224,7 +227,7 @@ var _ Array = (*cArray)(nil)
 type cArray struct {
 	c  *cNodes
 	h  C.NodeHandle
-	sz int
+	sz int // cached size, -1 means it was not yet cached
 }
 
 func (n *cArray) Handle() Handle {
@@ -241,6 +244,7 @@ func (n *cArray) Value() nodes.Value {
 
 func (n *cArray) Size() int {
 	if n.sz < 0 {
+		// cache the size
 		sz := C.callSize(n.c.impl, n.c.ctx, n.h)
 		n.sz = int(sz)
 	}
@@ -261,8 +265,8 @@ var _ Node = (*cValue)(nil)
 type cValue struct {
 	c    *cNodes
 	h    C.NodeHandle
-	kind nodes.Kind
-	val  nodes.Value
+	kind nodes.Kind  // cached kind
+	val  nodes.Value // cached Go value
 }
 
 func (n *cValue) Handle() Handle {

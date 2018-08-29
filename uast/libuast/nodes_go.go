@@ -7,13 +7,15 @@ import "C"
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
-var goImpl *C.NodeIface
+var goImpl *C.NodeIface // a global pointer with C function pointers to Go implementation of the libuast interface
 
 func init() {
+	// allocate an interface struct on C side to be able to pass its pointer back to C
 	goImpl = C.uastImpl()
 }
 
@@ -24,6 +26,8 @@ func getNodeGo(ctx *C.Uast, node C.NodeHandle) Node {
 	}
 	return c.impl.AsNode(Handle(node))
 }
+
+// Implementations of C libuast interface for nodes allocated by Go:
 
 //export uastKind
 func uastKind(ctx *C.Uast, node C.NodeHandle) C.NodeKind {
@@ -290,6 +294,7 @@ func uastSetKeyValue(ctx *C.Uast, node C.NodeHandle, key *C.char, val C.NodeHand
 	n.SetKeyValue(k, v)
 }
 
+// Native is an optional interface for UAST nodes that were allocated by Go.
 type Native interface {
 	Node
 	Native() nodes.Node
@@ -297,22 +302,29 @@ type Native interface {
 
 var _ NodeIface = (*goNodes)(nil)
 
+// cNodes implements a Go nodes interface for nodes allocated by Go.
+// It tracks Go node pointers via opaque handles, thus Free should be called in order to release resources.
+// This is necessary because handles to Go object will cross C boundary and should be still considered used by the GC.
 type goNodes struct {
-	last  Handle
+	last uint64
+
 	nodes map[Handle]nodes.Node
 	tmp   map[Handle]*goTmpNode
 }
 
+// next allocates a new node handle.
 func (m *goNodes) next() Handle {
-	m.last++
-	h := m.last
-	return h
+	h := atomic.AddUint64(&m.last, 1)
+	return Handle(h)
 }
 
+// Free releases all the nodes associated with this object.
 func (m *goNodes) Free() {
 	m.nodes = nil
+	m.tmp = nil
 }
 
+// toHandle allocates a handle for Go node.
 func (m *goNodes) toHandle(n nodes.Node) Handle {
 	if n == nil {
 		return 0
@@ -324,6 +336,8 @@ func (m *goNodes) toHandle(n nodes.Node) Handle {
 	m.nodes[h] = n
 	return h
 }
+
+// newNode attaches a handle to the Go node and wraps it into a new object that is suitable for libuast.
 func (m *goNodes) newNode(h Handle, n nodes.Node) Node {
 	switch n := n.(type) {
 	case nil:
@@ -335,6 +349,8 @@ func (m *goNodes) newNode(h Handle, n nodes.Node) Node {
 	}
 	return &goValue{c: m, h: h, val: n.(nodes.Value)}
 }
+
+// toNode allocates a handle and wraps a Go node.
 func (m *goNodes) toNode(n nodes.Node) Node {
 	if n == nil {
 		return nil
@@ -342,6 +358,8 @@ func (m *goNodes) toNode(n nodes.Node) Node {
 	h := m.toHandle(n)
 	return m.newNode(h, n)
 }
+
+// AsNode lookups a node handle and returns its implementation.
 func (m *goNodes) AsNode(h Handle) Node {
 	n := m.nodes[h]
 	if n == nil {
@@ -349,6 +367,8 @@ func (m *goNodes) AsNode(h Handle) Node {
 	}
 	return m.newNode(h, n)
 }
+
+// AsTmpNode lookups a temporary node and returns its implementation.
 func (m *goNodes) AsTmpNode(h Handle) TmpNode {
 	n := m.tmp[h]
 	if n == nil {
@@ -357,6 +377,7 @@ func (m *goNodes) AsTmpNode(h Handle) TmpNode {
 	return n
 }
 
+// newTmp allocates a handle for the temporary node.
 func (m *goNodes) newTmp(n *goTmpNode) Handle {
 	h := m.next()
 	n.c, n.h = m, h
@@ -391,7 +412,7 @@ type goObject struct {
 	c    *goNodes
 	h    Handle
 	obj  nodes.Object
-	keys []string
+	keys []string // sorted keys
 }
 
 func (n *goObject) Native() nodes.Node {
