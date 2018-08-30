@@ -1,4 +1,4 @@
-package query
+package nodes_test
 
 import (
 	"testing"
@@ -14,7 +14,7 @@ func TestIterPreOrder(t *testing.T) {
 	b := nodes.String("v")
 	root := nodes.Array{a, b}
 
-	it := NewIterator(root, PreOrder)
+	it := nodes.NewIterator(root, nodes.PreOrder)
 	got := allNodes(it)
 	exp := []nodes.Node{
 		root,
@@ -34,7 +34,7 @@ func TestIterPostOrder(t *testing.T) {
 	b := nodes.String("v")
 	root := nodes.Array{a, b}
 
-	it := NewIterator(root, PostOrder)
+	it := nodes.NewIterator(root, nodes.PostOrder)
 	got := allNodes(it)
 	exp := []nodes.Node{
 		nodes.Int(1), nodes.Int(2), a,
@@ -54,7 +54,7 @@ func TestIterLevelOrder(t *testing.T) {
 	b := nodes.String("v")
 	root := nodes.Array{a, b}
 
-	it := NewIterator(root, LevelOrder)
+	it := nodes.NewIterator(root, nodes.LevelOrder)
 	got := allNodes(it)
 	exp := []nodes.Node{
 		root,
@@ -66,7 +66,7 @@ func TestIterLevelOrder(t *testing.T) {
 	}
 }
 
-func allNodes(it Iterator) []nodes.Node {
+func allNodes(it nodes.Iterator) []nodes.Node {
 	var out []nodes.Node
 	for it.Next() {
 		n, _ := it.Node().(nodes.Node)

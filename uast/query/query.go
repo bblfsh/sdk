@@ -16,12 +16,7 @@ type Query interface {
 	Execute(root nodes.External) (Iterator, error)
 }
 
-type Iterator interface {
-	// Next advances an iterator.
-	Next() bool
-	// Node returns a current node.
-	Node() nodes.External
-}
+type Iterator = nodes.Iterator
 
 // AllNodes iterates over all nodes and returns them as a slice.
 func AllNodes(it Iterator) []nodes.External {
