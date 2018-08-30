@@ -2,17 +2,10 @@ package xpath
 
 import (
 	"github.com/antchfx/xpath"
+
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/query"
 )
-
-func isValue(n nodes.External) bool {
-	if n == nil {
-		return false
-	}
-	k := n.Kind()
-	return k.In(nodes.KindsValues)
-}
 
 func New() query.Interface {
 	return &index{}
@@ -21,9 +14,7 @@ func New() query.Interface {
 type index struct{}
 
 func (t *index) newNavigator(n nodes.External) xpath.NodeNavigator {
-	// TODO: zero copy
-	d := conv(n)
-	return newNavigator(d)
+	return newNavigator(n)
 }
 
 func (t *index) Prepare(query string) (query.Query, error) {
@@ -70,5 +61,5 @@ func (it *iterator) Node() nodes.External {
 	if nav.cur == nil {
 		return nil
 	}
-	return nav.cur.Node
+	return nav.cur.n
 }
