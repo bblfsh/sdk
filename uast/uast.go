@@ -85,6 +85,36 @@ type Position struct {
 	Col uint32 `json:"col"`
 }
 
+func (p Position) HasOffset() bool {
+	return p.Offset != 0 || (p.Line == 1 && p.Col == 1)
+}
+
+func (p Position) HasLineCol() bool {
+	return p.Line != 0 && p.Col != 0
+}
+
+func (p Position) Valid() bool {
+	return p != (Position{})
+}
+
+func (p Position) Less(p2 Position) bool {
+	if !p.Valid() {
+		return false
+	} else if !p2.Valid() {
+		return true
+	}
+	if p.HasOffset() && p2.HasOffset() {
+		return p.Offset < p2.Offset
+	}
+	if p.Line != p2.Line {
+		if p.Line != 0 && p2.Line != 0 {
+			return p.Line < p2.Line
+		}
+		return p.Line != 0
+	}
+	return p.Col != 0 && p.Col < p2.Col
+}
+
 // Positions is a container object that stores all positional information for a node.
 type Positions map[string]Position
 
