@@ -106,9 +106,8 @@ func (x *nodeNavigator) MoveToNextAttribute() bool {
 }
 
 func toNode(n nodes.External, field string) *node {
-	if n == nil {
-		// TODO: what about nil attributes?
-		return nil
+	if n == nil || n.Kind() == nodes.KindNil {
+		n = nodes.String("") // TODO
 	}
 	nd := &node{n: n, kind: n.Kind()}
 
@@ -208,6 +207,9 @@ func (a *nodeNavigator) MoveToChild() bool {
 		a.cur = cur.sub[0]
 		return true
 	case fieldNode:
+		if len(a.cur.sub) == 0 {
+			return false
+		}
 		n := a.cur.sub[0]
 		if n == nil {
 			return false
