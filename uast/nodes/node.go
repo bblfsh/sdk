@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -694,6 +695,29 @@ func ToNode(o interface{}, fallback ToNodeFunc) (Node, error) {
 			return fallback(o)
 		}
 		return nil, fmt.Errorf("unsupported type: %T", o)
+	}
+}
+
+// ToString converts a value to a string.
+func ToString(v Value) string {
+	switch v := v.(type) {
+	case nil:
+		return ""
+	case String:
+		return string(v)
+	case Int:
+		return strconv.FormatInt(int64(v), 10)
+	case Uint:
+		return strconv.FormatUint(uint64(v), 10)
+	case Bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case Float:
+		return strconv.FormatFloat(float64(v), 'g', -1, 64)
+	default:
+		return fmt.Sprint(v)
 	}
 }
 
