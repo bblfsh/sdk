@@ -8,6 +8,7 @@ import (
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 var _ xpath.NodeNavigator = &nodeNavigator{}
@@ -167,18 +168,37 @@ func toNode(n nodes.External, field string) *node {
 			v, _ := nd.obj.ValueAt(k)
 			if v == nil {
 				nd.attrs = append(nd.attrs, attr{k: k})
-			} else if kind := v.Kind(); kind.In(nodes.KindsValues) {
-				nd.attrs = append(nd.attrs, attr{k: k, v: fmt.Sprint(v.Value())})
+				continue
+			}
+			kind := v.Kind()
+			if kind.In(nodes.KindsValues) {
+				val := v.Value()
+				sval := fmt.Sprint(val)
+				nd.attrs = append(nd.attrs, attr{k: k, v: sval})
 			} else if kind == nodes.KindArray {
-				if arr, ok := v.(nodes.ExternalArray); ok {
-					sz := arr.Size()
-					for i := 0; i < sz; i++ {
-						v := arr.ValueAt(i)
-						if v == nil {
-							nd.attrs = append(nd.attrs, attr{k: k})
-						} else if kind := v.Kind(); kind.In(nodes.KindsValues) {
-							nd.attrs = append(nd.attrs, attr{k: k, v: fmt.Sprint(v.Value())})
-						}
+				arr, ok := v.(nodes.ExternalArray)
+				if !ok {
+					continue
+				}
+				isRoles := false
+				if k == uast.KeyRoles {
+					k = "role"
+					isRoles = true
+				}
+				sz := arr.Size()
+				for i := 0; i < sz; i++ {
+					v := arr.ValueAt(i)
+					if v == nil {
+						nd.attrs = append(nd.attrs, attr{k: k})
+						continue
+					}
+					kind := v.Kind()
+					if isRoles && kind == nodes.KindInt {
+						val, _ := v.Value().(nodes.Int)
+						nd.attrs = append(nd.attrs, attr{k: k, v: role.Role(val).String()})
+					} else if kind.In(nodes.KindsValues) {
+						val := v.Value()
+						nd.attrs = append(nd.attrs, attr{k: k, v: fmt.Sprint(val)})
 					}
 				}
 			}
@@ -239,7 +259,13 @@ func (a *nodeNavigator) MoveToChild() bool {
 				if !ok {
 					continue
 				}
-				vn := toNode(v, k)
+				var vn *node
+				switch k {
+				case uast.KeyToken:
+					vn = toNode(v, "")
+				default:
+					vn = toNode(v, k)
+				}
 				vn.par = cur
 				vn.pari = len(cur.sub)
 				cur.sub = append(cur.sub, vn)
