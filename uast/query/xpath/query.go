@@ -74,7 +74,7 @@ func (a *nodeNavigator) NodeType() xpath.NodeType {
 	case objectNode, fieldNode:
 		return xpath.ElementNode
 	default:
-		panic(fmt.Sprintf("unknown node type %v", a.cur.typ))
+		panic(fmt.Errorf("unknown node type %v", a.cur.typ))
 	}
 }
 
@@ -98,7 +98,7 @@ func (a *nodeNavigator) Value() string {
 	}
 	switch a.cur.typ {
 	case valueNode:
-		return fmt.Sprint(a.cur.n.Value())
+		return nodes.ToString(a.cur.n.Value())
 	}
 	return ""
 }
@@ -173,7 +173,7 @@ func toNode(n nodes.External, field string) *node {
 			kind := v.Kind()
 			if kind.In(nodes.KindsValues) {
 				val := v.Value()
-				sval := fmt.Sprint(val)
+				sval := nodes.ToString(val)
 				nd.attrs = append(nd.attrs, attr{k: k, v: sval})
 			} else if kind == nodes.KindArray {
 				arr, ok := v.(nodes.ExternalArray)
@@ -198,7 +198,7 @@ func toNode(n nodes.External, field string) *node {
 						nd.attrs = append(nd.attrs, attr{k: k, v: role.Role(val).String()})
 					} else if kind.In(nodes.KindsValues) {
 						val := v.Value()
-						nd.attrs = append(nd.attrs, attr{k: k, v: fmt.Sprint(val)})
+						nd.attrs = append(nd.attrs, attr{k: k, v: nodes.ToString(val)})
 					}
 				}
 			}
