@@ -24,7 +24,12 @@ func TestFilter(t *testing.T) {
 	}
 
 	idx := New()
-	it, err := idx.Execute(root, "//uast:Identifier/Name[text() = 'Foo']/..")
+
+	it, err := idx.Execute(root, "//uast:Identifier[@Name='Foo']")
+	require.NoError(t, err)
+	expect(t, it, root[0])
+
+	it, err = idx.Execute(root, "//uast:Identifier/Name[text() = 'Foo']/..")
 	require.NoError(t, err)
 	expect(t, it, root[0])
 
@@ -60,7 +65,7 @@ func TestFilterObject(t *testing.T) {
 		},
 	}
 	/*
-		<A>
+		<A key='val' keys='a' keys='b'>
 			<key>val</key>
 			<keys>a</keys>
 			<keys>b</keys>
@@ -69,6 +74,7 @@ func TestFilterObject(t *testing.T) {
 			</one>
 			<sub>
 				<C></C>
+				<d:X></d:X>
 			</sub>
 		</A>
 	*/
@@ -135,6 +141,14 @@ func TestFilterObject(t *testing.T) {
 		{
 			name: "text", qu: "//*[text() = 'a']",
 			exp: []nodes.Node{varr},
+		},
+		{
+			name: "attr value", qu: "//A[@key='val']",
+			exp: []nodes.Node{root},
+		},
+		{
+			name: "attr value arr", qu: "//A[@keys='a']",
+			exp: []nodes.Node{root},
 		},
 		// TODO: fix in xpath library
 		//{

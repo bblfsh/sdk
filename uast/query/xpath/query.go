@@ -15,7 +15,7 @@ var _ xpath.NodeNavigator = &nodeNavigator{}
 // newNavigator creates a new xpath.nodeNavigator for the specified html.node.
 func newNavigator(root nodes.External) *nodeNavigator {
 	n := &node{n: root, typ: rootNode}
-	return &nodeNavigator{root: n, cur: n}
+	return &nodeNavigator{root: n, cur: n, attri: -1}
 }
 
 // A nodeType is the type of a node.
@@ -32,6 +32,11 @@ const (
 	valueNode
 )
 
+type attr struct {
+	k string
+	v string
+}
+
 type node struct {
 	typ nodeType
 
@@ -39,15 +44,17 @@ type node struct {
 	kind nodes.Kind
 	obj  nodes.ExternalObject
 
-	tag  [2]string
-	sub  []*node
-	par  *node
-	pari int // index in parent's sub array
+	tag   [2]string
+	attrs []attr
+	sub   []*node
+	par   *node
+	pari  int // index in parent's sub array
 }
 
 // nodeNavigator is for navigating JSON document.
 type nodeNavigator struct {
 	root, cur *node
+	attri     int
 }
 
 func (a *nodeNavigator) Current() nodes.External {
@@ -55,6 +62,9 @@ func (a *nodeNavigator) Current() nodes.External {
 }
 
 func (a *nodeNavigator) NodeType() xpath.NodeType {
+	if a.attri >= 0 {
+		return xpath.AttributeNode
+	}
 	switch a.cur.typ {
 	case valueNode:
 		return xpath.TextNode
@@ -68,14 +78,23 @@ func (a *nodeNavigator) NodeType() xpath.NodeType {
 }
 
 func (a *nodeNavigator) LocalName() string {
+	if a.attri >= 0 {
+		return a.cur.attrs[a.attri].k
+	}
 	return a.cur.tag[1]
 }
 
 func (a *nodeNavigator) Prefix() string {
+	if a.attri >= 0 {
+		return ""
+	}
 	return a.cur.tag[0]
 }
 
 func (a *nodeNavigator) Value() string {
+	if a.attri >= 0 {
+		return a.cur.attrs[a.attri].v
+	}
 	switch a.cur.typ {
 	case valueNode:
 		return fmt.Sprint(a.cur.n.Value())
@@ -90,6 +109,7 @@ func (a *nodeNavigator) Copy() xpath.NodeNavigator {
 
 func (a *nodeNavigator) MoveToRoot() {
 	a.cur = a.root
+	a.attri = -1
 }
 
 func (a *nodeNavigator) MoveToParent() bool {
@@ -102,6 +122,10 @@ func (a *nodeNavigator) MoveToParent() bool {
 }
 
 func (x *nodeNavigator) MoveToNextAttribute() bool {
+	if x.attri+1 < len(x.cur.attrs) {
+		x.attri++
+		return true
+	}
 	return false
 }
 
@@ -139,6 +163,26 @@ func toNode(n nodes.External, field string) *node {
 		}
 		nd.obj, _ = nd.n.(nodes.ExternalObject)
 		nd.typ = objectNode
+		for _, k := range nd.obj.Keys() {
+			v, _ := nd.obj.ValueAt(k)
+			if v == nil {
+				nd.attrs = append(nd.attrs, attr{k: k})
+			} else if kind := v.Kind(); kind.In(nodes.KindsValues) {
+				nd.attrs = append(nd.attrs, attr{k: k, v: fmt.Sprint(v.Value())})
+			} else if kind == nodes.KindArray {
+				if arr, ok := v.(nodes.ExternalArray); ok {
+					sz := arr.Size()
+					for i := 0; i < sz; i++ {
+						v := arr.ValueAt(i)
+						if v == nil {
+							nd.attrs = append(nd.attrs, attr{k: k})
+						} else if kind := v.Kind(); kind.In(nodes.KindsValues) {
+							nd.attrs = append(nd.attrs, attr{k: k, v: fmt.Sprint(v.Value())})
+						}
+					}
+				}
+			}
+		}
 		return wrap(nd)
 	case nodes.KindArray:
 		arr, _ := nd.n.(nodes.ExternalArray)
@@ -190,14 +234,14 @@ func (a *nodeNavigator) MoveToChild() bool {
 			obj := cur.obj
 			keys := obj.Keys()
 			cur.sub = make([]*node, 0, len(keys))
-			for i, k := range keys {
+			for _, k := range keys {
 				v, ok := obj.ValueAt(k)
 				if !ok {
 					continue
 				}
 				vn := toNode(v, k)
 				vn.par = cur
-				vn.pari = i
+				vn.pari = len(cur.sub)
 				cur.sub = append(cur.sub, vn)
 			}
 		}
@@ -261,5 +305,6 @@ func (a *nodeNavigator) MoveTo(other xpath.NodeNavigator) bool {
 		return false
 	}
 	a.cur = node.cur
+	a.attri = node.attri
 	return true
 }
