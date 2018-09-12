@@ -3,6 +3,8 @@ package xpath
 import (
 	"testing"
 
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
+
 	"github.com/stretchr/testify/require"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
@@ -21,6 +23,14 @@ func mustNode(o interface{}) nodes.Node {
 func TestFilter(t *testing.T) {
 	var root = nodes.Array{
 		mustNode(uast.Identifier{Name: "Foo"}),
+		nodes.Object{
+			uast.KeyType:  nodes.String("Ident"),
+			uast.KeyToken: nodes.String("A"),
+			uast.KeyRoles: nodes.Array{
+				nodes.Int(role.Identifier),
+				nodes.Int(role.Name),
+			},
+		},
 	}
 
 	idx := New()
@@ -34,6 +44,22 @@ func TestFilter(t *testing.T) {
 	expect(t, it, root[0])
 
 	it, err = idx.Execute(root, "//Identifier")
+	require.NoError(t, err)
+	expect(t, it)
+
+	it, err = idx.Execute(root, "//Ident")
+	require.NoError(t, err)
+	expect(t, it, root[1])
+
+	it, err = idx.Execute(root, "//Ident[text() = 'A']")
+	require.NoError(t, err)
+	expect(t, it, root[1])
+
+	it, err = idx.Execute(root, "//Ident[@role = 'Name']")
+	require.NoError(t, err)
+	expect(t, it, root[1])
+
+	it, err = idx.Execute(root, "//Ident[@role = 'Invalid']")
 	require.NoError(t, err)
 	expect(t, it)
 }
