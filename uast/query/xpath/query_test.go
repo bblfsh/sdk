@@ -22,7 +22,15 @@ func mustNode(o interface{}) nodes.Node {
 
 func TestFilter(t *testing.T) {
 	var root = nodes.Array{
-		mustNode(uast.Identifier{Name: "Foo"}),
+		mustNode(uast.Identifier{
+			GenNode: uast.GenNode{
+				Positions: uast.Positions{
+					uast.KeyStart: {Offset: 7, Line: 1, Col: 3},
+					uast.KeyEnd:   {Offset: 11, Line: 4, Col: 1},
+				},
+			},
+			Name: "Foo",
+		}),
 		nodes.Object{
 			uast.KeyType:  nodes.String("Ident"),
 			uast.KeyToken: nodes.String("A"),
@@ -40,6 +48,10 @@ func TestFilter(t *testing.T) {
 	expect(t, it, root[0])
 
 	it, err = idx.Execute(root, "//uast:Identifier/Name[text() = 'Foo']/..")
+	require.NoError(t, err)
+	expect(t, it, root[0])
+
+	it, err = idx.Execute(root, "//*[@start-col=3]")
 	require.NoError(t, err)
 	expect(t, it, root[0])
 
