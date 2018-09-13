@@ -2,6 +2,7 @@ package xpath
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/antchfx/xpath"
@@ -123,11 +124,108 @@ func (a *nodeNavigator) MoveToParent() bool {
 }
 
 func (x *nodeNavigator) MoveToNextAttribute() bool {
+	if x.cur.attrs == nil && x.cur.obj != nil {
+		x.cur.loadAttributes()
+	}
 	if x.attri+1 < len(x.cur.attrs) {
 		x.attri++
 		return true
 	}
 	return false
+}
+
+func (nd *node) loadAttributes() {
+	nd.attrs = []attr{} // indicate that attributes are loaded even if node has none
+	add := func(k, v string) {
+		nd.attrs = append(nd.attrs, attr{k: k, v: v})
+	}
+	for _, k := range nd.obj.Keys() {
+		v, _ := nd.obj.ValueAt(k)
+		switch sub := v.(type) {
+		case nil:
+			add(k, "")
+			continue
+		case nodes.ExternalArray:
+			// project all array elements that are value to attributes
+
+			isRoles := false
+			if k == uast.KeyRoles {
+				// special case for roles
+				k = "role"
+				isRoles = true
+			}
+
+			sz := sub.Size()
+			for i := 0; i < sz; i++ {
+				vn := sub.ValueAt(i)
+				if vn == nil {
+					add(k, "")
+					continue
+				}
+				kind := vn.Kind()
+				if kind.In(nodes.KindsValues) {
+					v := vn.Value()
+					var av string
+					if isRoles && kind == nodes.KindInt {
+						// role id - convert to string
+						id, _ := v.(nodes.Int)
+						av = role.Role(id).String()
+					} else {
+						av = nodes.ToString(v)
+					}
+					add(k, av)
+				}
+			}
+		case nodes.ExternalObject:
+			if k != uast.KeyPos {
+				continue
+			}
+			// check for position nodes, expand to attributes
+			var pos uast.Positions
+			err := uast.NodeAs(sub, &pos)
+			if err != nil {
+				continue
+			}
+			for _, k := range pos.Keys() {
+				p := pos[k]
+				add(k+"-offset", strconv.FormatUint(uint64(p.Offset), 10))
+				add(k+"-line", strconv.FormatUint(uint64(p.Line), 10))
+				add(k+"-col", strconv.FormatUint(uint64(p.Col), 10))
+			}
+		default:
+			if kind := v.Kind(); kind.In(nodes.KindsValues) {
+				val := v.Value()
+				if k == uast.KeyToken {
+					k = "token"
+				}
+				add(k, nodes.ToString(val))
+				continue
+			}
+		}
+	}
+}
+
+func (nd *node) loadChildren() {
+	// project fields
+	obj := nd.obj
+	keys := obj.Keys()
+	nd.sub = make([]*node, 0, len(keys))
+	for _, k := range keys {
+		v, ok := obj.ValueAt(k)
+		if !ok {
+			continue
+		}
+		var vn *node
+		switch k {
+		case uast.KeyToken:
+			vn = toNode(v, "")
+		default:
+			vn = toNode(v, k)
+		}
+		vn.par = nd
+		vn.pari = len(nd.sub)
+		nd.sub = append(nd.sub, vn)
+	}
 }
 
 func toNode(n nodes.External, field string) *node {
@@ -164,45 +262,6 @@ func toNode(n nodes.External, field string) *node {
 		}
 		nd.obj, _ = nd.n.(nodes.ExternalObject)
 		nd.typ = objectNode
-		for _, k := range nd.obj.Keys() {
-			v, _ := nd.obj.ValueAt(k)
-			if v == nil {
-				nd.attrs = append(nd.attrs, attr{k: k})
-				continue
-			}
-			kind := v.Kind()
-			if kind.In(nodes.KindsValues) {
-				val := v.Value()
-				sval := nodes.ToString(val)
-				nd.attrs = append(nd.attrs, attr{k: k, v: sval})
-			} else if kind == nodes.KindArray {
-				arr, ok := v.(nodes.ExternalArray)
-				if !ok {
-					continue
-				}
-				isRoles := false
-				if k == uast.KeyRoles {
-					k = "role"
-					isRoles = true
-				}
-				sz := arr.Size()
-				for i := 0; i < sz; i++ {
-					v := arr.ValueAt(i)
-					if v == nil {
-						nd.attrs = append(nd.attrs, attr{k: k})
-						continue
-					}
-					kind := v.Kind()
-					if isRoles && kind == nodes.KindInt {
-						val, _ := v.Value().(nodes.Int)
-						nd.attrs = append(nd.attrs, attr{k: k, v: role.Role(val).String()})
-					} else if kind.In(nodes.KindsValues) {
-						val := v.Value()
-						nd.attrs = append(nd.attrs, attr{k: k, v: nodes.ToString(val)})
-					}
-				}
-			}
-		}
 		return wrap(nd)
 	case nodes.KindArray:
 		arr, _ := nd.n.(nodes.ExternalArray)
@@ -250,26 +309,7 @@ func (a *nodeNavigator) MoveToChild() bool {
 		}
 		cur := a.cur
 		if cur.sub == nil {
-			// project fields
-			obj := cur.obj
-			keys := obj.Keys()
-			cur.sub = make([]*node, 0, len(keys))
-			for _, k := range keys {
-				v, ok := obj.ValueAt(k)
-				if !ok {
-					continue
-				}
-				var vn *node
-				switch k {
-				case uast.KeyToken:
-					vn = toNode(v, "")
-				default:
-					vn = toNode(v, k)
-				}
-				vn.par = cur
-				vn.pari = len(cur.sub)
-				cur.sub = append(cur.sub, vn)
-			}
+			cur.loadChildren()
 		}
 		if len(cur.sub) == 0 {
 			return false
