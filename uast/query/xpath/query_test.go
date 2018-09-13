@@ -59,6 +59,14 @@ func TestFilter(t *testing.T) {
 	require.NoError(t, err)
 	expect(t, it)
 
+	it, err = idx.Execute(root, "//*[name() = 'uast:Identifier']")
+	require.NoError(t, err)
+	expect(t, it, root[0])
+
+	it, err = idx.Execute(root, "//*[local-name() = 'Identifier']")
+	require.NoError(t, err)
+	expect(t, it, root[0])
+
 	it, err = idx.Execute(root, "//Ident")
 	require.NoError(t, err)
 	expect(t, it, root[1])
@@ -187,6 +195,22 @@ func TestFilterObject(t *testing.T) {
 		{
 			name: "attr value arr", qu: "//A[@keys='a']",
 			exp: []nodes.Node{root},
+		},
+		{
+			name: "attr or", qu: "//A[@keys or @key]",
+			exp: []nodes.Node{root},
+		},
+		{
+			name: "boolean empty set", qu: "boolean(//*[@blah])",
+			exp: []nodes.Node{nodes.Bool(false)},
+		},
+		{
+			name: "boolean node set", qu: "boolean(/A)",
+			exp: []nodes.Node{nodes.Bool(true)},
+		},
+		{
+			name: "node name", qu: "name(//A)",
+			exp: []nodes.Node{nodes.String("A")},
 		},
 		// TODO: fix in xpath library
 		//{
