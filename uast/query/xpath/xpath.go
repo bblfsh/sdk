@@ -1,6 +1,8 @@
 package xpath
 
 import (
+	"fmt"
+
 	"github.com/antchfx/xpath"
 
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
@@ -40,8 +42,49 @@ type xQuery struct {
 
 func (q *xQuery) Execute(root nodes.External) (query.Iterator, error) {
 	nav := q.idx.newNavigator(root)
-	it := q.exp.Select(nav)
-	return &iterator{it: it}, nil
+	val := q.exp.Evaluate(nav)
+	if it, ok := val.(*xpath.NodeIterator); ok {
+		return &iterator{it: it}, nil
+	}
+	var v nodes.Value
+	switch val := val.(type) {
+	case bool:
+		v = nodes.Bool(val)
+	case float64:
+		if float64(int64(val)) == val {
+			v = nodes.Int(val)
+		} else {
+			v = nodes.Float(val)
+		}
+	case string:
+		v = nodes.String(val)
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", val)
+	}
+	return &valIterator{val: v}, nil
+}
+
+type valIterator struct {
+	state int
+	val   nodes.Value
+}
+
+func (it *valIterator) Next() bool {
+	switch it.state {
+	case 0:
+		it.state++
+		return true
+	case 1:
+		it.state++
+	}
+	return false
+}
+
+func (it *valIterator) Node() nodes.External {
+	if it.state == 1 {
+		return it.val
+	}
+	return nil
 }
 
 type iterator struct {

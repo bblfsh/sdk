@@ -65,6 +65,11 @@
   name = "gopkg.in/yaml.v2"
   version = "2.2.x"
 
+[[constraint]]
+  name = "github.com/antchfx/xpath"
+  source = "github.com/dennwc/xpath"
+  branch = "dev"
+
 [prune]
   go-tests = true
   unused-packages = true
