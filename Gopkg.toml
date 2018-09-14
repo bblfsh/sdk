@@ -68,7 +68,7 @@
 [[constraint]]
   name = "github.com/antchfx/xpath"
   source = "github.com/dennwc/xpath"
-  branch = "dev"
+  branch = "more_funcs"
 
 [prune]
   go-tests = true
