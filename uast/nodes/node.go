@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -15,6 +16,9 @@ func Equal(n1, n2 External) bool {
 		return true
 	} else if n1 == nil || n2 == nil {
 		return false
+	}
+	if Same(n1, n2) {
+		return true
 	}
 	if n, ok := n1.(Node); ok {
 		return n.Equal(n2)
@@ -131,9 +135,10 @@ const (
 )
 
 const (
-	KindsValues = KindString | KindInt | KindUint | KindFloat | KindBool
-	KindsNotNil = KindObject | KindArray | KindsValues
-	KindsAny    = KindNil | KindsNotNil
+	KindsValues    = KindString | KindInt | KindUint | KindFloat | KindBool
+	KindsComposite = KindObject | KindArray
+	KindsNotNil    = KindsComposite | KindsValues
+	KindsAny       = KindNil | KindsNotNil
 )
 
 // KindOf returns a kind of the node.
@@ -284,6 +289,11 @@ func (m Object) equalObjectExt(m2 ExternalObject) bool {
 	return true
 }
 
+func (m Object) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(m, n)
+}
+
 var _ ExternalArray = Array{}
 
 // Array is an ordered list of nodes.
@@ -391,6 +401,11 @@ func (m Array) equalArrayExt(m2 ExternalArray) bool {
 	return true
 }
 
+func (m Array) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(m, n)
+}
+
 func (m *Array) SetNode(n Node) error {
 	if m2, ok := n.(Array); ok || n == nil {
 		*m = m2
@@ -442,6 +457,11 @@ func (v *String) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
+func (v String) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(v, n)
+}
+
 // Int is a integer value used in tree fields.
 type Int int64
 
@@ -488,6 +508,11 @@ func (v *Int) SetNode(n Node) error {
 		return nil
 	}
 	return fmt.Errorf("unexpected type: %T", n)
+}
+
+func (v Int) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(v, n)
 }
 
 // Uint is a unsigned integer value used in tree fields.
@@ -538,6 +563,11 @@ func (v *Uint) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
+func (v Uint) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(v, n)
+}
+
 // Float is a floating point value used in tree fields.
 type Float float64
 
@@ -581,6 +611,11 @@ func (v *Float) SetNode(n Node) error {
 	return fmt.Errorf("unexpected type: %T", n)
 }
 
+func (v Float) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(v, n)
+}
+
 // Bool is a boolean value used in tree fields.
 type Bool bool
 
@@ -622,6 +657,11 @@ func (v *Bool) SetNode(n Node) error {
 		return nil
 	}
 	return fmt.Errorf("unexpected type: %T", n)
+}
+
+func (v Bool) SameAs(n External) bool {
+	// this call relies on the fact that Same will never call SameAs on internal nodes.
+	return Same(v, n)
 }
 
 type ToNodeFunc func(interface{}) (Node, error)
@@ -804,4 +844,63 @@ func Apply(root Node, apply func(n Node) (Node, bool)) (Node, bool) {
 	}
 	nn, changed2 := apply(root)
 	return nn, changed || changed2
+}
+
+// Same check if two nodes represent exactly the same node. This usually means compare nodes by pointers.
+func Same(n1, n2 External) bool {
+	if n1 == nil && n2 == nil {
+		return true
+	} else if n1 == nil || n2 == nil {
+		return false
+	}
+	if n1.Kind() != n2.Kind() {
+		return false
+	}
+	i1, ok := n1.(Node)
+	if !ok {
+		// first node is external, need to call SameAs on it
+		return n1.SameAs(n2)
+	}
+	i2, ok := n2.(Node)
+	if !ok {
+		// second node is external, need to call SameAs on it
+		return n2.SameAs(n1)
+	}
+	// both nodes are internal - compare unique key
+	return UniqueKey(i1) == UniqueKey(i2)
+}
+
+// pointerOf returns a Go pointer for Node that is a reference type (Arrays and Objects).
+func pointerOf(n Node) uintptr {
+	if n == nil {
+		return 0
+	}
+	v := reflect.ValueOf(n)
+	if v.IsNil() {
+		return 0
+	}
+	return v.Pointer()
+}
+
+type arrayPtr uintptr
+type mapPtr uintptr
+
+// UniqueKey returns a unique key of the node in the current tree. The key can be used in maps.
+func UniqueKey(n Node) interface{} {
+	switch n := n.(type) {
+	case nil:
+		return nil
+	case Value:
+		return n
+	default:
+		ptr := pointerOf(n)
+		// distinguish nil arrays and maps
+		switch n.(type) {
+		case Object:
+			return mapPtr(ptr)
+		case Array:
+			return arrayPtr(ptr)
+		}
+		return ptr
+	}
 }
