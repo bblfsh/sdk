@@ -74,9 +74,10 @@ func TestApply(t *testing.T) {
 }
 
 var casesEqual = []struct {
-	name   string
-	n1, n2 Node
-	exp    bool
+	name    string
+	n1, n2  Node
+	exp     bool
+	negHash bool // expHash == !exp
 }{
 	{
 		name: "nil object vs empty object",
@@ -222,7 +223,7 @@ var casesEqual = []struct {
 	{
 		name: "int and uint equal",
 		n1:   Int(42), n2: Uint(42),
-		exp: true,
+		exp: true, negHash: true,
 	},
 	{
 		name: "int and uint overflow",
@@ -232,7 +233,7 @@ var casesEqual = []struct {
 	{
 		name: "uint and int equal",
 		n1:   Uint(42), n2: Int(42),
-		exp: true,
+		exp: true, negHash: true,
 	},
 	{
 		name: "uint and int overflow",
@@ -249,6 +250,11 @@ func TestNodeEqual(t *testing.T) {
 				n2 = n1
 			}
 			require.Equal(t, c.exp, Equal(n1, n2))
+			expHash := c.exp
+			if c.negHash {
+				expHash = !expHash
+			}
+			require.Equal(t, expHash, HashOf(n1) == HashOf(n2))
 		})
 	}
 }
