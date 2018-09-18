@@ -200,6 +200,15 @@ func Tokens(n nodes.Node) []string {
 	return tokens
 }
 
+// HashNoPos hashes the node, but skips positional information.
+func HashNoPos(n nodes.External) nodes.Hash {
+	h := nodes.NewHasher()
+	h.KeyFilter = func(key string) bool {
+		return key != KeyPos
+	}
+	return h.HashOf(n)
+}
+
 // Any is an alias type for any UAST node.
 type Any interface{}
 
