@@ -29,11 +29,10 @@
   revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
 
 [[projects]]
-  branch = "more_funcs"
+  branch = "master"
   name = "github.com/antchfx/xpath"
   packages = ["."]
-  revision = "2f6a6a091d3ae92df23a960c5bb66c28af8b6d82"
-  source = "github.com/dennwc/xpath"
+  revision = "c2547b7f965a33cc46f0883f6d8bccda62ecb2c0"
 
 [[projects]]
   branch = "master"
@@ -337,6 +336,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "06e047ef83ed3d75b0fdf4ffad689ccb4c2bc40d184a4510cdb945d2ab1a8853"
+  inputs-digest = "ca31e7da904c3376a4e905523bd4865967d02e2525a2cde8206049038fc607cb"
   solver-name = "gps-cdcl"
   solver-version = 1
