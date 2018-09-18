@@ -1,15 +1,18 @@
 package xpath
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 
 	"github.com/stretchr/testify/require"
 
 	"gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/query"
+	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 func mustNode(o interface{}) nodes.Node {
@@ -235,4 +238,63 @@ func expect(t testing.TB, it query.Iterator, exp ...nodes.Node) {
 		out = append(out, it.Node().(nodes.Node))
 	}
 	require.Equal(t, exp, out)
+}
+
+const dataDir = "../testdata"
+
+func readUAST(t testing.TB, path string) nodes.Node {
+	data, err := ioutil.ReadFile(path)
+	require.NoError(t, err)
+	nd, err := uastyml.Unmarshal(data)
+	require.NoError(t, err)
+	return nd
+}
+
+func BenchmarkXPath(b *testing.B) {
+	root := readUAST(b, filepath.Join(dataDir, "large.go.sem.uast"))
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		idx := New()
+		it, err := idx.Execute(root, "//uast:Identifier")
+		if err != nil {
+			b.Fatal(err)
+		}
+		n := 0
+		for it.Next() {
+			_ = it.Node()
+			n++
+		}
+		if n != 2292 {
+			b.Fatal("nodes:", n)
+		}
+	}
+}
+
+func BenchmarkXPathPrepare(b *testing.B) {
+	root := readUAST(b, filepath.Join(dataDir, "large.go.sem.uast"))
+
+	idx := New()
+	q, err := idx.Prepare("//uast:Identifier")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		it, err := q.Execute(root)
+		if err != nil {
+			b.Fatal(err)
+		}
+		n := 0
+		for it.Next() {
+			_ = it.Node()
+			n++
+		}
+		if n != 2292 {
+			b.Fatal("nodes:", n)
+		}
+	}
 }
