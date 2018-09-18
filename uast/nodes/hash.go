@@ -15,16 +15,36 @@ const HashSize = sha256.Size
 
 type Hash [HashSize]byte
 
+var DefaultHasher = NewHasher()
+
+// HashOf computes a hash of a node with all it's children.
+// Shorthand for DefaultHasher.HashOf with default settings.
+func HashOf(n External) Hash {
+	return DefaultHasher.HashOf(n)
+}
+
+// NewHasher creates a new hashing config with default options.
+func NewHasher() *Hasher {
+	return &Hasher{}
+}
+
+// Hasher allows to configure node hashing.
+type Hasher struct {
+	// KeyFilter allows to skip field in objects by returning false from the function.
+	// Hash will still reflect the presence or absence of these key, but it won't hash a value of that field.
+	KeyFilter func(key string) bool
+}
+
 // HashOf computes a hash of a node with all it's children.
 // Caller should not rely on a specific hash value, since the hash size and the algorithm might change.
-func HashOf(n External) Hash {
-	h := sha256.New()
-	err := HashTo(h, n)
+func (h *Hasher) HashOf(n External) Hash {
+	hash := sha256.New()
+	err := h.HashTo(hash, n)
 	if err != nil {
 		panic(err)
 	}
 	var v Hash
-	sz := len(h.Sum(v[:0]))
+	sz := len(hash.Sum(v[:0]))
 	if sz != HashSize {
 		panic("unexpected hash size")
 	}
@@ -32,13 +52,13 @@ func HashOf(n External) Hash {
 }
 
 // HashTo hashes the node with a custom hash function. See HashOf for details.
-func HashTo(h hash.Hash, n External) error {
-	return hashTo(h, n)
+func (h *Hasher) HashTo(hash hash.Hash, n External) error {
+	return h.hashTo(hash, n)
 }
 
 var hashEndianess = binary.LittleEndian
 
-func hashTo(w io.Writer, n External) error {
+func (h *Hasher) hashTo(w io.Writer, n External) error {
 	kind := KindOf(n)
 
 	// write kind first (uint32)
@@ -55,22 +75,22 @@ func hashTo(w io.Writer, n External) error {
 		if !ok {
 			return fmt.Errorf("node is an array, but an interface implementation is missing: %T", n)
 		}
-		return hashArray(w, arr)
+		return h.hashArray(w, arr)
 	case KindObject:
 		obj, ok := n.(ExternalObject)
 		if !ok {
 			return fmt.Errorf("node is an object, but an interface implementation is missing: %T", n)
 		}
-		return hashObject(w, obj)
+		return h.hashObject(w, obj)
 	}
 	if kind.In(KindsValues) {
 		v := n.Value()
-		return hashValue(w, v)
+		return h.hashValue(w, v)
 	}
 	return fmt.Errorf("unsupported type: %T (%s)", n, kind)
 }
 
-func hashArray(w io.Writer, arr ExternalArray) error {
+func (h *Hasher) hashArray(w io.Writer, arr ExternalArray) error {
 	sz := arr.Size()
 	var buf [4]byte
 	hashEndianess.PutUint32(buf[:], uint32(sz))
@@ -80,14 +100,14 @@ func hashArray(w io.Writer, arr ExternalArray) error {
 	}
 	for i := 0; i < sz; i++ {
 		v := arr.ValueAt(i)
-		if err = hashTo(w, v); err != nil {
+		if err = h.hashTo(w, v); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func hashObject(w io.Writer, obj ExternalObject) error {
+func (h *Hasher) hashObject(w io.Writer, obj ExternalObject) error {
 	sz := obj.Size()
 	var buf [4]byte
 	hashEndianess.PutUint32(buf[:], uint32(sz))
@@ -104,17 +124,20 @@ func hashObject(w io.Writer, obj ExternalObject) error {
 		if !ok {
 			return fmt.Errorf("key %q is listed, but the value is missing in %T", key, obj)
 		}
-		if err = hashValue(w, String(key)); err != nil {
+		if err = h.hashValue(w, String(key)); err != nil {
 			return err
 		}
-		if err = hashTo(w, v); err != nil {
+		if h.KeyFilter != nil && !h.KeyFilter(key) {
+			continue
+		}
+		if err = h.hashTo(w, v); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func hashValue(w io.Writer, v Value) error {
+func (h *Hasher) hashValue(w io.Writer, v Value) error {
 	switch v := v.(type) {
 	case nil:
 		return nil
