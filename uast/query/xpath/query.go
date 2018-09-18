@@ -35,8 +35,8 @@ const (
 )
 
 type attr struct {
-	k string
-	v string
+	key string
+	val string
 }
 
 type node struct {
@@ -46,11 +46,11 @@ type node struct {
 	kind nodes.Kind
 	obj  nodes.ExternalObject
 
-	tag   [2]string
-	attrs []attr
-	sub   []*node
-	par   *node
-	pari  int // index in parent's sub array
+	tag    [2]string
+	attrs  []attr
+	sub    []*node
+	par    *node
+	parInd int // index in parent's sub array
 }
 
 // nodeNavigator is for navigating JSON document.
@@ -81,7 +81,7 @@ func (a *nodeNavigator) NodeType() xpath.NodeType {
 
 func (a *nodeNavigator) LocalName() string {
 	if a.attri >= 0 {
-		return a.cur.attrs[a.attri].k
+		return a.cur.attrs[a.attri].key
 	}
 	return a.cur.tag[1]
 }
@@ -95,7 +95,7 @@ func (a *nodeNavigator) Prefix() string {
 
 func (a *nodeNavigator) Value() string {
 	if a.attri >= 0 {
-		return a.cur.attrs[a.attri].v
+		return a.cur.attrs[a.attri].val
 	}
 	switch a.cur.typ {
 	case valueNode:
@@ -137,7 +137,7 @@ func (x *nodeNavigator) MoveToNextAttribute() bool {
 func (nd *node) loadAttributes() {
 	nd.attrs = []attr{} // indicate that attributes are loaded even if node has none
 	add := func(k, v string) {
-		nd.attrs = append(nd.attrs, attr{k: k, v: v})
+		nd.attrs = append(nd.attrs, attr{key: k, val: v})
 	}
 	for _, k := range nd.obj.Keys() {
 		v, _ := nd.obj.ValueAt(k)
@@ -223,7 +223,7 @@ func (nd *node) loadChildren() {
 			vn = toNode(v, k)
 		}
 		vn.par = nd
-		vn.pari = len(nd.sub)
+		vn.parInd = len(nd.sub)
 		nd.sub = append(nd.sub, vn)
 	}
 }
@@ -245,7 +245,7 @@ func toNode(n nodes.External, field string) *node {
 			sub: []*node{nd},
 		}
 		nd.par = f
-		nd.pari = 0
+		nd.parInd = 0
 		return f
 	}
 
@@ -280,7 +280,7 @@ func toNode(n nodes.External, field string) *node {
 			v := arr.ValueAt(i)
 			s := toNode(v, "")
 			s.par = f
-			s.pari = i
+			s.parInd = i
 			f.sub = append(f.sub, s)
 		}
 		return f
@@ -331,7 +331,7 @@ func (a *nodeNavigator) MoveToChild() bool {
 }
 
 func (a *nodeNavigator) isSub() bool {
-	return a.cur.par != nil && a.cur.pari < len(a.cur.par.sub)
+	return a.cur.par != nil && a.cur.parInd < len(a.cur.par.sub)
 }
 func (a *nodeNavigator) MoveToFirst() bool {
 	if a.isSub() {
@@ -346,7 +346,7 @@ func (a *nodeNavigator) MoveToFirst() bool {
 func (a *nodeNavigator) MoveToNext() bool {
 	if a.isSub() {
 		par := a.cur.par
-		if i := a.cur.pari + 1; i < len(par.sub) {
+		if i := a.cur.parInd + 1; i < len(par.sub) {
 			a.cur = par.sub[i]
 			return true
 		}
@@ -357,7 +357,7 @@ func (a *nodeNavigator) MoveToNext() bool {
 func (a *nodeNavigator) MoveToPrevious() bool {
 	if a.isSub() {
 		par := a.cur.par
-		if i := a.cur.pari - 1; i >= 0 && i < len(par.sub) {
+		if i := a.cur.parInd - 1; i >= 0 && i < len(par.sub) {
 			a.cur = par.sub[i]
 			return true
 		}
