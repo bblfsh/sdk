@@ -56,6 +56,10 @@ func (q *xQuery) Execute(root nodes.External) (query.Iterator, error) {
 		} else {
 			v = nodes.Float(val)
 		}
+	case int:
+		v = nodes.Int(val)
+	case uint:
+		v = nodes.Uint(val)
 	case string:
 		v = nodes.String(val)
 	default:
