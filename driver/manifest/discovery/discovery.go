@@ -196,6 +196,12 @@ type Options struct {
 	NoMaintainers bool   // do not load maintainers list
 }
 
+// isRateLimit checks if error is due to rate limiting.
+func isRateLimit(err error) bool {
+	_, ok := err.(*github.RateLimitError)
+	return ok
+}
+
 // getDriversForOrg lists all repositories for an organization and filters ones that contains topics of the driver.
 func getDriversForOrg(ctx context.Context, org string) ([]Driver, error) {
 	cli := github.NewClient(nil)
