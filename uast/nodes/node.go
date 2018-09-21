@@ -58,6 +58,7 @@ type Node interface {
 //	* Bool
 type Value interface {
 	Node
+	Comparable
 	isValue() // to limit possible types
 }
 
@@ -418,8 +419,9 @@ func (m *Array) SetNode(n Node) error {
 // String is a string value used in tree fields.
 type String string
 
-func (String) isNode()  {}
-func (String) isValue() {}
+func (String) isNode()       {}
+func (String) isValue()      {}
+func (String) isComparable() {}
 func (String) Kind() Kind {
 	return KindString
 }
@@ -466,8 +468,9 @@ func (v String) SameAs(n External) bool {
 // Int is a integer value used in tree fields.
 type Int int64
 
-func (Int) isNode()  {}
-func (Int) isValue() {}
+func (Int) isNode()       {}
+func (Int) isValue()      {}
+func (Int) isComparable() {}
 func (Int) Kind() Kind {
 	return KindInt
 }
@@ -519,8 +522,9 @@ func (v Int) SameAs(n External) bool {
 // Uint is a unsigned integer value used in tree fields.
 type Uint uint64
 
-func (Uint) isNode()  {}
-func (Uint) isValue() {}
+func (Uint) isNode()       {}
+func (Uint) isValue()      {}
+func (Uint) isComparable() {}
 func (Uint) Kind() Kind {
 	return KindUint
 }
@@ -572,8 +576,9 @@ func (v Uint) SameAs(n External) bool {
 // Float is a floating point value used in tree fields.
 type Float float64
 
-func (Float) isNode()  {}
-func (Float) isValue() {}
+func (Float) isNode()       {}
+func (Float) isValue()      {}
+func (Float) isComparable() {}
 func (Float) Kind() Kind {
 	return KindFloat
 }
@@ -620,8 +625,9 @@ func (v Float) SameAs(n External) bool {
 // Bool is a boolean value used in tree fields.
 type Bool bool
 
-func (Bool) isNode()  {}
-func (Bool) isValue() {}
+func (Bool) isNode()       {}
+func (Bool) isValue()      {}
+func (Bool) isComparable() {}
 func (Bool) Kind() Kind {
 	return KindBool
 }
@@ -907,10 +913,24 @@ func pointerOf(n Node) uintptr {
 }
 
 type arrayPtr uintptr
+
+func (arrayPtr) isComparable() {}
+
 type mapPtr uintptr
 
+func (mapPtr) isComparable() {}
+
+type unkPtr uintptr
+
+func (unkPtr) isComparable() {}
+
+// Comparable is an interface for comparable values that are guaranteed to be safely used as map keys.
+type Comparable interface {
+	isComparable()
+}
+
 // UniqueKey returns a unique key of the node in the current tree. The key can be used in maps.
-func UniqueKey(n Node) interface{} {
+func UniqueKey(n Node) Comparable {
 	switch n := n.(type) {
 	case nil:
 		return nil
@@ -925,6 +945,6 @@ func UniqueKey(n Node) interface{} {
 		case Array:
 			return arrayPtr(ptr)
 		}
-		return ptr
+		return unkPtr(ptr)
 	}
 }
