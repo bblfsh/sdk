@@ -1,154 +1,152 @@
 package diff
 
 import (
-	// TODO: integrate with https://github.com/src-d/lapjv if perf is unacceptable
 	"fmt"
+
 	"github.com/heetch/lapjv"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 type decisionType interface {
-	isDecisionType()
-}
-
-type basicDecisionType struct{}
-
-func (_ basicDecisionType) isDecisionType() {}
-
-type decision struct {
-	cost     int
-	decision decisionType
+	cost() int
 }
 
 // match decision types together with their params
-type sameDecision struct{ basicDecisionType }
-type replaceDecision struct{ basicDecisionType }
-type matchDecision struct{ basicDecisionType }
+type sameDecision struct{ privateCost int }
+type replaceDecision struct{ privateCost int }
+type matchDecision struct{ privateCost int }
 type permuteDecision struct {
-	basicDecisionType
+	privateCost int
 	permutation []int
 }
 
-//convinience method for choosing the cheapest decision
-func (self *decision) minEq(candidate *decision) {
-	if _, ok := candidate.decision.(replaceDecision); ok || self.cost > candidate.cost {
-		self.cost, self.decision = candidate.cost, candidate.decision
+func (d sameDecision) cost() int    { return d.privateCost }
+func (d replaceDecision) cost() int { return d.privateCost }
+func (d matchDecision) cost() int   { return d.privateCost }
+func (d permuteDecision) cost() int { return d.privateCost }
+
+// min is a convinience method for choosing the cheapest decision
+func min(self, candidate decisionType) decisionType {
+	if self.cost() > candidate.cost() {
+		return candidate
 	}
+	return self
 }
 
-//type for cache
+// type for cache
 type keyType struct{ k1, k2 ID }
 
-//cache for diff computation
+// cache for diff computation
 type cacheStorage struct {
-	decisions map[keyType]decision
-	sizes     map[ID]int
+	decisions map[keyType]decisionType
+	counts    map[ID]int
 	changes   Changelist
 }
 
-func emptyCacheStorage() cacheStorage {
-	return cacheStorage{
-		make(map[keyType]decision),
-		make(map[ID]int),
-		make([]Change, 0),
+func makeCacheStorage() *cacheStorage {
+	return &cacheStorage{
+		decisions: make(map[keyType]decisionType),
+		counts:    make(map[ID]int),
 	}
 }
 
-// caches (for perf) tree size (node count)
+// nodeSize caches (for perf) tree size (node count)
 func (ds *cacheStorage) nodeSize(n nodes.Node) int {
 	label := nodes.UniqueKey(n)
-	if cnt, ok := ds.sizes[label]; ok {
+	if cnt, ok := ds.counts[label]; ok {
 		return cnt
 	}
 	ret := nodes.Count(n, nodes.KindsNotNil)
-	ds.sizes[label] = ret
+	ds.counts[label] = ret
 	return ret
 }
 
-// find the cheapest way to naively match src and dst and return the action with its combined cost
-func (ds *cacheStorage) decideAction(src, dst nodes.Node) decision {
+// decideAction finds the cheapest way to naively match src and dst and returns this action
+// with its combined cost
+func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 	label := keyType{nodes.UniqueKey(src), nodes.UniqueKey(dst)}
 
 	if val, ok := ds.decisions[label]; ok {
 		return val
 	}
 
-	// one can always just create the dst ignoring the src
+	// the default (but not always optimal) decision is to ignore the existance of src and just
+	// create the desired dst; implemented below
 	cost := ds.nodeSize(dst) + 1
-	bestDecision := decision{cost, replaceDecision{}}
+
+	var bestDecision decisionType
+	bestDecision = replaceDecision{cost}
 
 	if nodes.KindOf(src) != nodes.KindOf(dst) {
 		ds.decisions[label] = bestDecision
 		return bestDecision
 	}
 
-	switch src.(type) {
+	// from now on src.(type) == dst.(type)
+
+	switch src := src.(type) {
 
 	case nodes.Value:
-		src, dst := src.(nodes.Value), dst.(nodes.Value)
+		dst := dst.(nodes.Value)
+		cost = 0
 		if src == dst {
-			bestDecision.minEq(&decision{0, sameDecision{}})
+			bestDecision = min(bestDecision, sameDecision{cost})
 		} else {
-			bestDecision.minEq(&decision{1, replaceDecision{}})
+			cost = 1
+			bestDecision = min(bestDecision, replaceDecision{cost})
 		}
 
 	case nodes.Object:
-		src, dst := src.(nodes.Object), dst.(nodes.Object)
+		dst := dst.(nodes.Object)
 		cost = 0
 
+		// the code below iterates over each of the keys from src and dst exactly once, that's why
+		// keys isn't reset between iterations.
 		keys := make(map[string]bool)
-		iterate := func(keyset nodes.Object) {
-			for key := range keyset {
-				if in := keys[key]; !in {
-					keys[key] = true
-					cost += ds.decideAction(src[key], dst[key]).cost
-				}
+		for _, key := range append(src.Keys(), dst.Keys()...) {
+			if in := keys[key]; !in {
+				keys[key] = true
+				cost += ds.decideAction(src[key], dst[key]).cost()
 			}
 		}
-		iterate(src)
-		iterate(dst)
 
 		if cost == 0 {
-			bestDecision.minEq(&decision{cost, sameDecision{}})
+			bestDecision = min(bestDecision, sameDecision{cost})
 		} else {
-			bestDecision.minEq(&decision{cost, matchDecision{}})
+			bestDecision = min(bestDecision, matchDecision{cost})
 		}
 
 	case nodes.Array:
-		src, dst := src.(nodes.Array), dst.(nodes.Array)
+		dst := dst.(nodes.Array)
 		cost = 0
-		if len(src) == len(dst) && func() int {
+		if len(src) == len(dst) {
 			sum := 0
 			for i := range src {
-				sum += ds.decideAction(src[i], dst[i]).cost
+				sum += ds.decideAction(src[i], dst[i]).cost()
 			}
-			return sum
-		}() == 0 {
-			bestDecision.minEq(&decision{cost, sameDecision{}})
-			break
-		}
-
-		if len(src) != len(dst) {
+			if sum == 0 {
+				bestDecision = min(bestDecision, sameDecision{cost})
+				break
+			}
+		} else {
 			cost = 2
 		}
 
 		if len(src) < len(dst) {
-			l := len(dst) - len(src)
-			for i := 0; i < l; i++ {
-				src = append(src, nil)
-			}
-		} else {
-			l := len(src) - len(dst)
-			for i := 0; i < l; i++ {
-				dst = append(dst, nil)
-			}
+			arr := make(nodes.Array, len(dst))
+			copy(arr, src)
+			src = arr
+		} else if len(src) > len(dst) {
+			arr := make(nodes.Array, len(src))
+			copy(arr, dst)
+			dst = arr
 		}
 		n := len(src)
 		m := make([][]int, n)
-		for i := 0; i < n; i++ {
+		for i := range src {
 			m[i] = make([]int, n)
-			for j := 0; j < n; j++ {
-				m[i][j] = ds.decideAction(src[i], dst[j]).cost
+			for j := range dst {
+				m[i][j] = ds.decideAction(src[i], dst[j]).cost()
 			}
 		}
 
@@ -163,13 +161,14 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decision {
 
 		cost += res.Cost
 
-		bestDecision.minEq(&decision{cost, permuteDecision{permutation: res.InRow}})
+		bestDecision = min(bestDecision, permuteDecision{cost, res.InRow})
 
 	case nil:
-		bestDecision.minEq(&decision{0, sameDecision{}})
+		cost = 0
+		bestDecision = min(bestDecision, sameDecision{cost})
 
 	default:
-		panic(fmt.Sprintf("unknown node type %T", src))
+		panic(fmt.Errorf("unknown node type %T", src))
 	}
 
 	ds.decisions[label] = bestDecision
@@ -193,54 +192,57 @@ func (ds *cacheStorage) createRec(node nodes.Node) {
 		}
 
 	default:
-		//values and nils are not saved separately
+		// values and nils are not saved separately
 		return
 	}
-	ds.push(&Create{node: node})
+	ds.push(Create{Node: node})
 }
 
 func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, parentKey Key) {
-	decision := ds.decideAction(src, dst)
-	switch d := decision.decision.(type) {
+	switch d := ds.decideAction(src, dst).(type) {
 
-	//no action required if same
+	// no action required if same
 	case sameDecision:
 
 	case replaceDecision:
-		//remove src (no action?) and create dst + attach it
+		// remove src (no action?) and create dst + attach it
 		if dst != nil {
 			ds.createRec(dst)
-			ds.push(&Attach{parent: parentID, key: parentKey, child: nodes.UniqueKey(dst)})
+			ds.push(Attach{Parent: parentID, Key: parentKey, Child: nodes.UniqueKey(dst)})
 		} else {
-			ds.push(&Attach{parent: parentID, key: parentKey, child: nil})
+			ds.push(Attach{Parent: parentID, Key: parentKey, Child: nil})
 		}
 
 	case matchDecision:
 		src, dst := src.(nodes.Object), dst.(nodes.Object)
 		keys := make(map[string]bool)
-		iterate := func(keyset nodes.Object) {
-			for key := range keyset {
-				if in := keys[key]; !in {
-					keys[key] = true
-					if _, ok := dst[key]; !ok {
-						ds.push(&Deattach{parent: nodes.UniqueKey(src), key: String(key)})
-					} else {
-						ds.generateDifference(src[key], dst[key], nodes.UniqueKey(src), String(key))
-					}
+		for _, key := range append(src.Keys(), dst.Keys()...) {
+			if in := keys[key]; !in {
+				keys[key] = true
+				if _, ok := dst[key]; !ok {
+					ds.push(Deatach{Parent: nodes.UniqueKey(src), Key: String(key)})
+				} else if _, ok := src[key]; !ok {
+					ds.createRec(dst[key])
+					ds.push(Attach{
+						Parent: nodes.UniqueKey(src),
+						Key:    String(key),
+						Child:  nodes.UniqueKey(dst[key]),
+					})
+				} else {
+					ds.generateDifference(
+						src[key], dst[key], nodes.UniqueKey(src), String(key))
 				}
 			}
 		}
-		iterate(src)
-		iterate(dst)
 
 	case permuteDecision:
 		src, dst := src.(nodes.Array), dst.(nodes.Array)
 		l := len(dst) - len(src)
-		//add possible nils to src
+		// add possible nils to src
 		if l > 0 {
-			for i := 0; i < l; i++ {
-				src = append(src, nil)
-			}
+			arr := make(nodes.Array, len(dst))
+			copy(arr, src)
+			src = arr
 		}
 		recreate := false
 		if l != 0 {
@@ -253,31 +255,35 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 			}
 		}
 		if recreate {
-			//recreate src with right perm
+			// recreate src with right perm
 			newsrc := make([]nodes.Node, 0, len(dst))
-			for i := 0; i < len(dst); i++ {
+			for i := range dst {
 				newsrc = append(newsrc, src[d.permutation[i]])
 			}
 			src = newsrc
-			ds.push(&Create{node: src}) // TODO: not create, only mutate...
-			ds.push(&Attach{parent: parentID, key: parentKey, child: nodes.UniqueKey(src)})
+			ds.push(Create{Node: src}) // TODO: not create, only mutate...
+			ds.push(Attach{Parent: parentID, Key: parentKey, Child: nodes.UniqueKey(src)})
 		}
 		for i := 0; i < len(dst); i++ {
 			ds.generateDifference(src[i], dst[i], nodes.UniqueKey(src), Int(i))
 		}
 
 	default:
-		panic(fmt.Sprintf("unknown decision %v", d))
+		panic(fmt.Errorf("unknown decision %v", d))
 	}
 }
 
+// Cost is a function that takes two trees: src and dst and returns number of operations needed to
+// convert the former into the latter.
 func Cost(src, dst nodes.Node) int {
-	ds := emptyCacheStorage()
-	return ds.decideAction(src, dst).cost
+	ds := makeCacheStorage()
+	return ds.decideAction(src, dst).cost()
 }
 
+// Changes is a function that takes two trees: src and dst and returns a changelist containing
+// all operations required to convert the former into the latter.
 func Changes(src, dst nodes.Node) Changelist {
-	ds := emptyCacheStorage()
+	ds := makeCacheStorage()
 	ds.generateDifference(src, dst, nil, Int(0))
 	return ds.changes
 }
