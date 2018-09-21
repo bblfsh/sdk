@@ -14,7 +14,7 @@ type changeBase struct {
 	txID uint64
 }
 
-func (_ *changeBase) isChange() {}
+func (changeBase) isChange() {}
 
 // TODO: proper ID of a node somehow
 type ID interface{}
@@ -25,12 +25,12 @@ type Key interface{ isKey() }
 type String string
 type Int int
 
-func (_ Int) isKey()    {}
-func (_ String) isKey() {}
+func (Int) isKey()    {}
+func (String) isKey() {}
 
 // four change types
 
-// create a node
+// Create a node. Each array and object is created separately.
 type Create struct {
 	changeBase
 	node nodes.Node
