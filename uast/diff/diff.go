@@ -200,7 +200,7 @@ func (ds *cacheStorage) createRec(node nodes.Node) {
 		//values and nils are not saved separately
 		return
 	}
-	ds.push(&Create{node: node})
+	ds.push(Create{Node: node})
 }
 
 func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, parentKey Key) {
@@ -214,9 +214,9 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 		//remove src (no action?) and create dst + attach it
 		if dst != nil {
 			ds.createRec(dst)
-			ds.push(&Attach{parent: parentID, key: parentKey, child: nodes.UniqueKey(dst)})
+			ds.push(Attach{Parent: parentID, Key: parentKey, Child: nodes.UniqueKey(dst)})
 		} else {
-			ds.push(&Attach{parent: parentID, key: parentKey, child: nil})
+			ds.push(Attach{Parent: parentID, Key: parentKey, Child: nil})
 		}
 
 	case matchDecision:
@@ -227,7 +227,7 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 				if in := keys[key]; !in {
 					keys[key] = true
 					if _, ok := dst[key]; !ok {
-						ds.push(&Deattach{parent: nodes.UniqueKey(src), key: String(key)})
+						ds.push(Deattach{Parent: nodes.UniqueKey(src), Key: String(key)})
 					} else {
 						ds.generateDifference(src[key], dst[key], nodes.UniqueKey(src), String(key))
 					}
@@ -263,8 +263,8 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 				newsrc[i] = src[d.permutation[i]]
 			}
 			src = newsrc
-			ds.push(&Create{node: src}) // TODO: not create, only mutate...
-			ds.push(&Attach{parent: parentID, key: parentKey, child: nodes.UniqueKey(src)})
+			ds.push(Create{Node: src}) // TODO: not create, only mutate...
+			ds.push(Attach{Parent: parentID, Key: parentKey, Child: nodes.UniqueKey(src)})
 		}
 		for i := 0; i < len(dst); i++ {
 			ds.generateDifference(src[i], dst[i], nodes.UniqueKey(src), Int(i))
