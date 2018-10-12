@@ -140,7 +140,7 @@ func (c *FixturesCommand) writeLegacyUASTv1(source string, filename string) (*pr
 		return nil, err
 	}
 
-	err = c.writeResult(filename, c.ExtLegacy, []byte(resp.String()))
+	err = c.writeResult(filename, c.ExtLegacy, []byte(resp.UAST.String()))
 	if err != nil {
 		return nil, err
 	}
