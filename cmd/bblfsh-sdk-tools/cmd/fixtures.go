@@ -9,7 +9,6 @@ import (
 
 	"google.golang.org/grpc"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 )
 
 const FixturesCommandDescription = "" +
@@ -26,24 +25,14 @@ type FixturesCommand struct {
 	ExtProto  string `long:"extproto" short:"p" description:"File extenstion for proto message fiels"`
 	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
-	manifestCommand
 	cli protocol1.ProtocolServiceClient
 }
 
 func (c *FixturesCommand) Execute(args []string) error {
-	if err := c.manifestCommand.Execute(args); err != nil {
-		return err
-	}
-
-	c.processManifest(c.Manifest)
-	return nil
-}
-
-func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 	conn, err := grpc.Dial(c.Endpoint, grpc.WithTimeout(time.Second*2), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		fmt.Println("Endpoint connection error, is a bblfshd server running?")
-		panic(err)
+		return err
 	}
 
 	c.cli = protocol1.NewProtocolServiceClient(conn)
@@ -57,9 +46,10 @@ func (c *FixturesCommand) processManifest(m *manifest.Manifest) {
 		err := c.generateFixtures(f)
 		if err != nil {
 			fmt.Println("While generating fixtures for ", f)
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func (c *FixturesCommand) generateFixtures(filename string) error {
