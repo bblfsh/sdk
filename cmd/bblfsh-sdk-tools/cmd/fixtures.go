@@ -16,7 +16,7 @@ import (
 )
 
 const FixturesCommandDescription = "" +
-	"Generate integration tests' '.native' and '.uast' fixtures from source files"
+	"Generate integration tests' '.native', '.sem.uast', '.legacy' and '.proto' fixtures from source files"
 
 type FixturesCommand struct {
 	Args struct {
@@ -25,7 +25,8 @@ type FixturesCommand struct {
 	Language  string `long:"language" short:"l" default:"" description:"Language to parse"`
 	Endpoint  string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
 	ExtNative string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
-	ExtUast   string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
+	ExtUast   string `long:"extuast" short:"u" default:"sem.uast" description:"File extension for uast files"`
+	ExtLegacy string `long:"extlegacy" short:"g" default:"legacy" description:"File extenstion for leagacy UASTv1 files"`
 	ExtProto  string `long:"extproto" short:"p" description:"File extenstion for proto message files"`
 	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
@@ -58,9 +59,8 @@ func (c *FixturesCommand) Execute(args []string) error {
 	return nil
 }
 
-//generateFixtures writes .uast, .native and .proto (optional) files.
-//All of them contain plain-text represenation of the same UAST in differetn formats:
-//v1, v2 native, v1 proto.
+//generateFixtures writes v2 '.sem.uast', '.native' and v1 .legacy and .proto (optional) files.
+//All of them contain plain-text represenation of the same UAST in differetn formats.
 
 func (c *FixturesCommand) generateFixtures(filename string) error {
 	if !c.Quiet {
@@ -72,39 +72,32 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 		return err
 	}
 
-	err = c.writeNative(source, filename, c.ExtNative)
+	//UASTv2 sematic, native
+	err = c.writeUASTv2(source, filename, c.ExtNative, protocol2.Mode_Native)
 	if err != nil {
 		return err
 	}
 
-	//TODO(bzz): refactor/add writeSemm(), writeLegacy(), writeProto()
-
-	uast, err := c.getUast(source, filename)
+	err = c.writeUASTv2(source, filename, c.ExtUast, protocol2.Mode_Semantic)
 	if err != nil {
 		return err
 	}
 
-	err = c.writeResult(filename, c.ExtUast, []byte(uast.String()))
+	//UASTv1 legacy, proto
+	resp, err := c.writeLegacyUASTv1(source, filename)
 	if err != nil {
 		return err
 	}
 
 	if c.ExtProto != "" {
-		protoUast, err := uast.UAST.Marshal()
-		if err != nil {
-			return err
-		}
-		err = c.writeResult(filename, c.ExtProto, protoUast)
-		if err != nil {
-			return err
-		}
+		return c.writeProto(resp, filename, c.ExtProto)
 	}
 
 	return nil
 }
 
-func (c *FixturesCommand) writeNative(source, filename, ext string) error {
-	ast, err := c.getNative(source, filename)
+func (c *FixturesCommand) writeUASTv2(source, filename, ext string, mode protocol2.Mode) error {
+	ast, err := c.getUast(source, filename, mode)
 	if err != nil {
 		return err
 	}
@@ -117,12 +110,12 @@ func (c *FixturesCommand) writeNative(source, filename, ext string) error {
 	return c.writeResult(filename, ext, data)
 }
 
-func (c *FixturesCommand) getNative(source string, filename string) (nodes.Node, error) {
+func (c *FixturesCommand) getUast(source, filename string, mode protocol2.Mode) (nodes.Node, error) {
 	req := &protocol2.ParseRequest{
 		Language: c.Language,
 		Content:  source,
 		Filename: filename,
-		Mode:     protocol2.Mode_Native,
+		Mode:     mode,
 	}
 
 	res, err := c.cli2.Parse(context.Background(), req)
@@ -141,7 +134,20 @@ func (c *FixturesCommand) getNative(source string, filename string) (nodes.Node,
 	return ast, nil
 }
 
-func (c *FixturesCommand) getUast(source string, filename string) (*protocol1.ParseResponse, error) {
+func (c *FixturesCommand) writeLegacyUASTv1(source string, filename string) (*protocol1.ParseResponse, error) {
+	resp, err := c.getLegacyUASTv1(source, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.writeResult(filename, c.ExtLegacy, []byte(resp.String()))
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *FixturesCommand) getLegacyUASTv1(source string, filename string) (*protocol1.ParseResponse, error) {
 	req := &protocol1.ParseRequest{
 		Language: c.Language,
 		Content:  source,
@@ -163,6 +169,19 @@ func (c *FixturesCommand) getUast(source string, filename string) (*protocol1.Pa
 	}
 
 	return res, nil
+}
+
+func (c *FixturesCommand) writeProto(resp *protocol1.ParseResponse, filename, ext string) error {
+	protoUast, err := resp.UAST.Marshal()
+	if err != nil {
+		return err
+	}
+
+	err = c.writeResult(filename, ext, protoUast)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *FixturesCommand) writeResult(origName, extension string, content []byte) error {
