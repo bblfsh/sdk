@@ -9,6 +9,10 @@ import (
 
 	"google.golang.org/grpc"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
+	protocol2 "gopkg.in/bblfsh/sdk.v2/protocol"
+
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const FixturesCommandDescription = "" +
@@ -22,10 +26,11 @@ type FixturesCommand struct {
 	Endpoint  string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
 	ExtNative string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
 	ExtUast   string `long:"extuast" short:"u" default:"uast" description:"File extension for uast files"`
-	ExtProto  string `long:"extproto" short:"p" description:"File extenstion for proto message fiels"`
+	ExtProto  string `long:"extproto" short:"p" description:"File extenstion for proto message files"`
 	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
-	cli protocol1.ProtocolServiceClient
+	cli1 protocol1.ProtocolServiceClient
+	cli2 protocol2.DriverClient
 }
 
 func (c *FixturesCommand) Execute(args []string) error {
@@ -35,7 +40,8 @@ func (c *FixturesCommand) Execute(args []string) error {
 		return err
 	}
 
-	c.cli = protocol1.NewProtocolServiceClient(conn)
+	c.cli1 = protocol1.NewProtocolServiceClient(conn)
+	c.cli2 = protocol2.NewDriverClient(conn)
 
 	for _, f := range c.Args.SourceFiles {
 		if _, err := os.Stat(f); os.IsNotExist(err) {
@@ -52,6 +58,10 @@ func (c *FixturesCommand) Execute(args []string) error {
 	return nil
 }
 
+//generateFixtures writes .uast, .native and .proto (optional) files.
+//All of them contain plain-text represenation of the same UAST in differetn formats:
+//v1, v2 native, v1 proto.
+
 func (c *FixturesCommand) generateFixtures(filename string) error {
 	if !c.Quiet {
 		fmt.Println("Processing", filename, "...")
@@ -62,22 +72,19 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 		return err
 	}
 
-	native, err := c.getNative(source, filename)
+	err = c.writeNative(source, filename, c.ExtNative)
 	if err != nil {
 		return err
 	}
 
-	err = c.writeResult(filename, native, c.ExtNative)
-	if err != nil {
-		return err
-	}
+	//TODO(bzz): refactor/add writeSemm(), writeLegacy(), writeProto()
 
 	uast, err := c.getUast(source, filename)
 	if err != nil {
 		return err
 	}
 
-	err = c.writeResult(filename, uast.String(), c.ExtUast)
+	err = c.writeResult(filename, c.ExtUast, []byte(uast.String()))
 	if err != nil {
 		return err
 	}
@@ -87,7 +94,7 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 		if err != nil {
 			return err
 		}
-		err = c.writeResult(filename, string(protoUast), c.ExtProto)
+		err = c.writeResult(filename, c.ExtProto, protoUast)
 		if err != nil {
 			return err
 		}
@@ -96,28 +103,42 @@ func (c *FixturesCommand) generateFixtures(filename string) error {
 	return nil
 }
 
-func (c *FixturesCommand) getNative(source string, filename string) (string, error) {
-	req := &protocol1.NativeParseRequest{
+func (c *FixturesCommand) writeNative(source, filename, ext string) error {
+	ast, err := c.getNative(source, filename)
+	if err != nil {
+		return err
+	}
+
+	data, err := uastyml.Marshal(ast)
+	if err != nil {
+		return err
+	}
+
+	return c.writeResult(filename, ext, data)
+}
+
+func (c *FixturesCommand) getNative(source string, filename string) (nodes.Node, error) {
+	req := &protocol2.ParseRequest{
 		Language: c.Language,
 		Content:  source,
 		Filename: filename,
+		Mode:     protocol2.Mode_Native,
 	}
 
-	res, err := c.cli.NativeParse(context.Background(), req)
+	res, err := c.cli2.Parse(context.Background(), req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if res.Status != protocol1.Ok {
+	ast, err := res.Nodes()
+	if err != nil {
 		if !c.Quiet {
-			fmt.Println("Warning: native request for ", filename, "returned errors:")
-			for _, e := range res.Errors {
-				fmt.Println(e)
-			}
+			fmt.Println("Warning: parsing native AST for ", filename, "returned errors:")
+			fmt.Println(err)
 		}
 	}
 
-	return res.String(), nil
+	return ast, nil
 }
 
 func (c *FixturesCommand) getUast(source string, filename string) (*protocol1.ParseResponse, error) {
@@ -127,7 +148,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (*protocol1.Pa
 		Filename: filename,
 	}
 
-	res, err := c.cli.Parse(context.Background(), req)
+	res, err := c.cli1.Parse(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +165,7 @@ func (c *FixturesCommand) getUast(source string, filename string) (*protocol1.Pa
 	return res, nil
 }
 
-func (c *FixturesCommand) writeResult(origName, content, extension string) error {
+func (c *FixturesCommand) writeResult(origName, extension string, content []byte) error {
 	outname := origName + "." + extension
 	if !c.Quiet {
 		fmt.Println("\tWriting", outname, "...")
