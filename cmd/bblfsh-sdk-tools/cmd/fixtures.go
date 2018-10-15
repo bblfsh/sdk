@@ -61,7 +61,6 @@ func (c *FixturesCommand) Execute(args []string) error {
 
 //generateFixtures writes v2 '.sem.uast', '.native' and v1 .legacy and .proto (optional) files.
 //All of them contain plain-text represenation of the same UAST in differetn formats.
-
 func (c *FixturesCommand) generateFixtures(filename string) error {
 	if !c.Quiet {
 		fmt.Println("Processing", filename, "...")
