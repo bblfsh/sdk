@@ -27,7 +27,7 @@ type FixturesCommand struct {
 	Endpoint  string `long:"endpoint" short:"e" default:"localhost:9432" description:"Endpoint of the gRPC server to use"`
 	ExtNative string `long:"extnative" short:"n" default:"native" description:"File extension for native files"`
 	ExtUast   string `long:"extuast" short:"u" default:"sem.uast" description:"File extension for uast files"`
-	ExtLegacy string `long:"extlegacy" short:"g" default:"legacy" description:"File extenstion for leagacy UASTv1 files"`
+	ExtLegacy string `long:"extlegacy" short:"g" default:"legacy" description:"File extenstion for legacy UASTv1 files"`
 	ExtProto  string `long:"extproto" short:"p" description:"File extenstion for proto message files"`
 	Quiet     bool   `long:"quiet" short:"q" description:"Don't print any output"`
 
