@@ -19,7 +19,8 @@ import (
 
 const (
 	tplExtension = ".tpl"
-	manifestTpl  = "manifest.toml.tpl"
+	manifestName = "manifest.toml"
+	manifestTpl  = manifestName + ".tpl"
 )
 
 var overwriteManagedFiles = os.Getenv("BABELFISH_OVERWRITE_MANAGED") == "true"
