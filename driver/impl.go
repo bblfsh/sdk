@@ -46,9 +46,19 @@ func (d *driverImpl) Close() error {
 func (d *driverImpl) Parse(ctx context.Context, mode Mode, src string) (nodes.Node, error) {
 	ast, err := d.d.Parse(ctx, src)
 	if err != nil {
-		return nil, err
+		if !ErrDriverFailure.Is(err) {
+			// all other errors are considered syntax errors
+			err = ErrSyntax.Wrap(err)
+		} else {
+			ast = nil
+		}
+		return ast, err
 	}
-	return d.t.Do(mode, src, ast)
+	ast, err = d.t.Do(mode, src, ast)
+	if err != nil {
+		err = ErrTransformFailure.Wrap(err)
+	}
+	return ast, err
 }
 
 // Manifest returns a driver manifest.

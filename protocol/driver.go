@@ -3,9 +3,14 @@ package protocol
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	serrors "gopkg.in/src-d/go-errors.v1"
+
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes/nodesproto"
@@ -21,6 +26,19 @@ func AsDriver(cc *grpc.ClientConn, lang string) driver.Driver {
 	return &client{c: NewDriverClient(cc), lang: lang}
 }
 
+func toParseErrors(err error) []*ParseError {
+	if e, ok := err.(*driver.ErrMulti); ok {
+		errs := make([]*ParseError, 0, len(e.Errors))
+		for _, e := range e.Errors {
+			errs = append(errs, &ParseError{Text: e.Error()})
+		}
+		return errs
+	}
+	return []*ParseError{
+		{Text: err.Error()},
+	}
+}
+
 type driverServer struct {
 	d driver.Driver
 }
@@ -28,18 +46,25 @@ type driverServer struct {
 func (s *driverServer) Parse(ctx xcontext.Context, req *ParseRequest) (*ParseResponse, error) {
 	var resp ParseResponse
 	n, err := s.d.Parse(ctx, driver.Mode(req.Mode), req.Content)
-	if e, ok := err.(*driver.ErrPartialParse); ok {
-		n = e.AST
-		for _, txt := range e.Errors {
-			resp.Errors = append(resp.Errors, &ParseError{Text: txt})
+	if e, ok := err.(*serrors.Error); ok {
+		cause := e.Cause()
+		if driver.ErrDriverFailure.Is(err) {
+			return nil, status.Error(codes.Internal, cause.Error())
+		} else if driver.ErrTransformFailure.Is(err) {
+			return nil, status.Error(codes.FailedPrecondition, cause.Error())
+		} else if driver.ErrModeNotSupported.Is(err) {
+			return nil, status.Error(codes.InvalidArgument, cause.Error())
 		}
-	} else if err != nil {
-		return nil, err
+		if !driver.ErrSyntax.Is(err) {
+			return nil, err // unknown error
+		}
+		// partial parse or syntax error; we will send an OK status code, but will fill Errors field
+		resp.Errors = toParseErrors(cause)
 	}
 	buf := bytes.NewBuffer(nil)
 	err = nodesproto.WriteTo(buf, n)
 	if err != nil {
-		return nil, err
+		return nil, err // unknown error = server failure
 	}
 	resp.Uast = buf.Bytes()
 	return &resp, nil
@@ -52,9 +77,24 @@ type client struct {
 
 func (c *client) Parse(ctx context.Context, mode driver.Mode, src string) (nodes.Node, error) {
 	resp, err := c.c.Parse(ctx, &ParseRequest{Content: src, Mode: Mode(mode), Language: c.lang})
-	if err != nil {
-		return nil, err
+	if s, ok := status.FromError(err); ok {
+		var kind *serrors.Kind
+		switch s.Code() {
+		case codes.Internal:
+			kind = driver.ErrDriverFailure
+		case codes.FailedPrecondition:
+			kind = driver.ErrTransformFailure
+		case codes.InvalidArgument:
+			kind = driver.ErrModeNotSupported
+		}
+		if kind != nil {
+			return nil, kind.Wrap(errors.New(s.Message()))
+		}
 	}
+	if err != nil {
+		return nil, err // server or network error
+	}
+	// it may be still a parsing error
 	return resp.Nodes()
 }
 
@@ -64,11 +104,12 @@ func (m *ParseResponse) Nodes() (nodes.Node, error) {
 		return nil, err
 	}
 	if len(m.Errors) != 0 {
-		var errs []string
+		var errs []error
 		for _, e := range m.Errors {
-			errs = append(errs, e.Text)
+			errs = append(errs, errors.New(e.Text))
 		}
-		return nil, &driver.ErrPartialParse{AST: ast, ErrMulti: driver.ErrMulti{Errors: errs}}
+		// syntax error or partial parse - return both UAST and an error
+		err = driver.ErrSyntax.Wrap(driver.JoinErrors(errs))
 	}
-	return ast, nil
+	return ast, err
 }
