@@ -22,8 +22,8 @@ func RegisterDriver(srv *grpc.Server, d driver.Driver) {
 	RegisterDriverServer(srv, &driverServer{d: d})
 }
 
-func AsDriver(cc *grpc.ClientConn, lang string) driver.Driver {
-	return &client{c: NewDriverClient(cc), lang: lang}
+func AsDriver(cc *grpc.ClientConn) driver.Driver {
+	return &client{c: NewDriverClient(cc)}
 }
 
 func toParseErrors(err error) []*ParseError {
@@ -45,7 +45,11 @@ type driverServer struct {
 
 func (s *driverServer) Parse(ctx xcontext.Context, req *ParseRequest) (*ParseResponse, error) {
 	var resp ParseResponse
-	n, err := s.d.Parse(ctx, driver.Mode(req.Mode), req.Content)
+	n, err := s.d.Parse(ctx, req.Content, &driver.ParseOptions{
+		Mode:     driver.Mode(req.Mode),
+		Language: req.Language,
+		Filename: req.Filename,
+	})
 	if e, ok := err.(*serrors.Error); ok {
 		cause := e.Cause()
 		if driver.ErrDriverFailure.Is(err) {
@@ -71,12 +75,17 @@ func (s *driverServer) Parse(ctx xcontext.Context, req *ParseRequest) (*ParseRes
 }
 
 type client struct {
-	c    DriverClient
-	lang string
+	c DriverClient
 }
 
-func (c *client) Parse(ctx context.Context, mode driver.Mode, src string) (nodes.Node, error) {
-	resp, err := c.c.Parse(ctx, &ParseRequest{Content: src, Mode: Mode(mode), Language: c.lang})
+func (c *client) Parse(ctx context.Context, src string, opts *driver.ParseOptions) (nodes.Node, error) {
+	req := &ParseRequest{Content: src}
+	if opts != nil {
+		req.Mode = Mode(opts.Mode)
+		req.Language = opts.Language
+		req.Filename = opts.Filename
+	}
+	resp, err := c.c.Parse(ctx, req)
 	if s, ok := status.FromError(err); ok {
 		var kind *serrors.Kind
 		switch s.Code() {

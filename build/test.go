@@ -139,7 +139,7 @@ func (d *Driver) testIntegration(bblfshdVers, image string) error {
 	if err != nil {
 		return err
 	}
-	cli2, err := srv.ClientV2(ctx, lang)
+	cli2, err := srv.ClientV2(ctx)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,10 @@ func (d *Driver) testIntegration(bblfshdVers, image string) error {
 		}
 
 		// test v2 protocol
-		ast, err := cli2.Parse(ctx, driver.ModeSemantic, content)
+		ast, err := cli2.Parse(ctx, content, &driver.ParseOptions{
+			Mode:     driver.ModeSemantic,
+			Language: lang,
+		})
 		if err != nil {
 			srv.DumpLogs(os.Stderr)
 			return err

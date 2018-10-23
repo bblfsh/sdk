@@ -65,6 +65,12 @@ type Module interface {
 	Close() error
 }
 
+type ParseOptions struct {
+	Mode     Mode
+	Language string
+	Filename string
+}
+
 // Driver is an interface for a language driver that returns UAST.
 type Driver interface {
 	// Parse reads the input string and constructs an AST representation of it.
@@ -77,7 +83,7 @@ type Driver interface {
 	//
 	// Native driver failures are indicated by ErrDriverFailure and UAST transformation are indicated by ErrTransformFailure.
 	// All other errors indicate a protocol or server failure.
-	Parse(ctx context.Context, mode Mode, src string) (nodes.Node, error)
+	Parse(ctx context.Context, src string, opts *ParseOptions) (nodes.Node, error)
 }
 
 // DriverModule is an interface for a driver instance.
