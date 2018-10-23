@@ -64,7 +64,7 @@ func (d *ServerInstance) ClientV1(ctx context.Context) (protocol1.ProtocolServic
 	}
 	return protocol1.NewProtocolServiceClient(d.user), nil
 }
-func (d *ServerInstance) ClientV2(ctx context.Context, lang string) (driver.Driver, error) {
+func (d *ServerInstance) ClientV2(ctx context.Context) (driver.Driver, error) {
 	if d.user == nil {
 		addr := d.bblfshd.NetworkSettings.IPAddress
 		conn, err := grpc.DialContext(ctx, addr+":"+cliPort, grpc.WithInsecure(), grpc.WithBlock())
@@ -73,7 +73,7 @@ func (d *ServerInstance) ClientV2(ctx context.Context, lang string) (driver.Driv
 		}
 		d.user = conn
 	}
-	return protocol.AsDriver(d.user, lang), nil
+	return protocol.AsDriver(d.user), nil
 }
 func (s *ServerInstance) DumpLogs(w io.Writer) error {
 	return getLogs(s.cli, s.bblfshd.ID, w)
