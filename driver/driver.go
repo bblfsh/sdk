@@ -75,6 +75,9 @@ type ParseOptions struct {
 type Driver interface {
 	// Parse reads the input string and constructs an AST representation of it.
 	//
+	// Language can be specified by providing ParseOptions. If the language is not set,
+	// it will be set during the Parse call if implementation supports language detection.
+	//
 	// Depending on the mode, AST may be transformed to different UAST variants.
 	// ErrModeNotSupported is returned for unsupported transformation modes.
 	//

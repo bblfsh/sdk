@@ -44,12 +44,14 @@ type driverServer struct {
 }
 
 func (s *driverServer) Parse(ctx xcontext.Context, req *ParseRequest) (*ParseResponse, error) {
-	var resp ParseResponse
-	n, err := s.d.Parse(ctx, req.Content, &driver.ParseOptions{
+	opts := &driver.ParseOptions{
 		Mode:     driver.Mode(req.Mode),
 		Language: req.Language,
 		Filename: req.Filename,
-	})
+	}
+	var resp ParseResponse
+	n, err := s.d.Parse(ctx, req.Content, opts)
+	resp.Language = opts.Language // can be set during the call
 	if e, ok := err.(*serrors.Error); ok {
 		cause := e.Cause()
 		if driver.ErrDriverFailure.Is(err) {
@@ -102,6 +104,9 @@ func (c *client) Parse(ctx context.Context, src string, opts *driver.ParseOption
 	}
 	if err != nil {
 		return nil, err // server or network error
+	}
+	if opts != nil && opts.Language == "" {
+		opts.Language = resp.Language
 	}
 	// it may be still a parsing error
 	return resp.Nodes()
