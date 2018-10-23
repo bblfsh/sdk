@@ -57,6 +57,9 @@ func (d *driverImpl) Parse(ctx context.Context, src string, opts *ParseOptions) 
 		}
 		return ast, err
 	}
+	if opts.Language == "" {
+		opts.Language = d.m.Language
+	}
 	ast, err = d.t.Do(opts.Mode, src, ast)
 	if err != nil {
 		err = ErrTransformFailure.Wrap(err)
