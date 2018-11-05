@@ -222,7 +222,8 @@ func (d *Driver) testIntegration(bblfshdVers, image string) error {
 		tests = append(tests, name)
 	}
 	if len(tests) == 0 {
-		return fmt.Errorf("expected at least one test called './%s/%s.xxx'", fixturesDir, syntaxErrTestName)
+		fmt.Fprintf(os.Stderr, "WARNING: expected at least one test called './%s/%s.xxx'\n", fixturesDir, syntaxErrTestName)
+		return nil
 	}
 
 	for _, name := range tests {
