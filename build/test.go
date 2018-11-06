@@ -25,7 +25,7 @@ const (
 	fixturesDir         = "fixtures"
 )
 
-func (d *Driver) Test(bblfshdVers, image string) error {
+func (d *Driver) Test(bblfshdVers, image string, syntaxCheck bool) error {
 	if image == "" {
 		id, err := d.Build("")
 		if err != nil {
@@ -36,7 +36,7 @@ func (d *Driver) Test(bblfshdVers, image string) error {
 	if err := d.testFixtures(image); err != nil {
 		return err
 	}
-	if err := d.testIntegration(bblfshdVers, image); err != nil {
+	if err := d.testIntegration(bblfshdVers, image, syntaxCheck); err != nil {
 		return err
 	}
 	return nil
@@ -101,7 +101,7 @@ func (d *Driver) testFixtures(image string) error {
 	return nil
 }
 
-func (d *Driver) testIntegration(bblfshdVers, image string) error {
+func (d *Driver) testIntegration(bblfshdVers, image string, syntaxCheck bool) error {
 	m, err := d.readBuildManifest()
 	if err != nil {
 		return err
@@ -207,39 +207,41 @@ func (d *Driver) testIntegration(bblfshdVers, image string) error {
 		}
 	}
 
-	pref = d.path(fixturesDir, syntaxErrTestName)
-	names, err = filepath.Glob(pref + ".*")
-	if err != nil {
-		return err
-	}
-	tests = nil
-	for _, name := range names {
-		suff := strings.TrimPrefix(name, pref)
-		if strings.Count(suff, ".") > 1 {
-			// we want files with a single extension
-			continue
-		}
-		tests = append(tests, name)
-	}
-	if len(tests) == 0 {
-		return fmt.Errorf("expected at least one test called './%s/%s.xxx'", fixturesDir, syntaxErrTestName)
-	}
-
-	for _, name := range tests {
-		data, err := ioutil.ReadFile(name)
+	if syntaxCheck {
+		pref = d.path(fixturesDir, syntaxErrTestName)
+		names, err = filepath.Glob(pref + ".*")
 		if err != nil {
 			return err
 		}
-		content := string(data)
+		tests = nil
+		for _, name := range names {
+			suff := strings.TrimPrefix(name, pref)
+			if strings.Count(suff, ".") > 1 {
+				// we want files with a single extension
+				continue
+			}
+			tests = append(tests, name)
+		}
+		if len(tests) == 0 {
+			return fmt.Errorf("expected at least one test called './%s/%s.xxx'", fixturesDir, syntaxErrTestName)
+		}
 
-		// test v2 protocol
-		_, err = cli2.Parse(ctx, content, &driver.ParseOptions{
-			Mode:     driver.ModeSemantic,
-			Language: lang,
-		})
-		if !driver.ErrSyntax.Is(err) {
-			srv.DumpLogs(os.Stderr)
-			return fmt.Errorf("expected syntax error, got: %v", err)
+		for _, name := range tests {
+			data, err := ioutil.ReadFile(name)
+			if err != nil {
+				return err
+			}
+			content := string(data)
+
+			// test v2 protocol
+			_, err = cli2.Parse(ctx, content, &driver.ParseOptions{
+				Mode:     driver.ModeSemantic,
+				Language: lang,
+			})
+			if !driver.ErrSyntax.Is(err) {
+				srv.DumpLogs(os.Stderr)
+				return fmt.Errorf("expected syntax error, got: %v", err)
+			}
 		}
 	}
 
