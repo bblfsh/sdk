@@ -229,8 +229,16 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 					keys[key] = true
 					if _, ok := dst[key]; !ok {
 						ds.push(Deatach{Parent: nodes.UniqueKey(src), Key: String(key)})
+					} else  if _, ok := src[key]; !ok {
+						ds.createRec(dst[key])
+						ds.push(Attach{
+							Parent: nodes.UniqueKey(src),
+							Key: String(key),
+							Child: nodes.UniqueKey(dst[key]),
+						})
 					} else {
-						ds.generateDifference(src[key], dst[key], nodes.UniqueKey(src), String(key))
+						ds.generateDifference(
+							src[key], dst[key], nodes.UniqueKey(src), String(key))
 					}
 				}
 			}
@@ -283,8 +291,6 @@ func Cost(src, dst nodes.Node) int {
 
 func Changes(src, dst nodes.Node) Changelist {
 	ds := makeCacheStorage()
-	fmt.Println(ds.nodeSize(src))
-	fmt.Println(ds.nodeSize(dst))
 	ds.generateDifference(src, dst, nil, Int(0))
 	return ds.changes
 }
