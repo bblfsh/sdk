@@ -22,13 +22,13 @@ func Apply(root nodes.Node, changelist Changelist) nodes.Node {
 			//get src and chld from the dictionary, attach (modify src)
 			parent, ok := nodeDict[ch.Parent]
 			if !ok {
-				panic("I don't know what to get attached to!")
+				panic("invalid attachment point")
 			}
 			child, ok := nodeDict[ch.Child]
 			if !ok {
 				child, ok = ch.Child.(nodes.Value)
 				if !ok {
-					panic(fmt.Errorf("I don't know what type of child is %v (type %v)", ch.Child, ch.Child))
+					panic(fmt.Errorf("unknown type of a child: %v (type %T)", ch.Child, ch.Child))
 				}
 			}
 
@@ -43,8 +43,8 @@ func Apply(root nodes.Node, changelist Changelist) nodes.Node {
 				parent[int(key)] = child
 			}
 
-		case Deattach:
-			//get the src from the dictionary, deattach (modify src)
+		case Deatach:
+			//get the src from the dictionary, deatach (modify src)
 			parent := nodeDict[ch.Parent]
 
 			switch key := ch.Key.(type) {
@@ -54,11 +54,11 @@ func Apply(root nodes.Node, changelist Changelist) nodes.Node {
 				delete(parent, string(key))
 
 			case Int:
-				panic(fmt.Errorf("cannot deattach from an Array!"))
+				panic(fmt.Errorf("cannot deatach from an Array"))
 			}
 
 		case Delete:
-			panic(fmt.Errorf("delete is not supported in a Changelist!"))
+			panic(fmt.Errorf("delete is not supported in a Changelist"))
 
 		default:
 			panic(fmt.Sprintf("unknown change %v of type %T", change, change))

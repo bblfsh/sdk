@@ -52,8 +52,8 @@ type Attach struct {
 	Child  ID
 }
 
-// deattach a child from a node
-type Deattach struct {
+// deatach a child from a node
+type Deatach struct {
 	changeBase
 	Parent ID
 	Key    Key //or string, how to do alternative?
