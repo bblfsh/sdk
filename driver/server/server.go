@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 
+	"gopkg.in/bblfsh/sdk.v2"
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/src-d/go-errors.v1"
 )
@@ -15,10 +16,11 @@ var (
 )
 
 var (
-	network *string
-	address *string
-	verbose *string
-	logs    struct {
+	network        *string
+	address        *string
+	verbose        *string
+	maxMessageSize *int
+	logs           struct {
 		level  *string
 		format *string
 		fields *string
@@ -71,6 +73,12 @@ func (s *Server) initialize() error {
 		return err
 	}
 
+	grpcOpts, err := sdk.BuildGRPCOptions(*maxMessageSize)
+	if err != nil {
+		s.Logger.Errorf(err.Error())
+	}
+	s.Options = grpcOpts
+
 	build := "unknown"
 	if m.Build != nil {
 		build = m.Build.Format("2006-01-02T15:04:05Z")
@@ -95,6 +103,8 @@ func (s *Server) initializeFlags() {
 	cmd := flag.NewFlagSet("server", flag.ExitOnError)
 	network = cmd.String("network", defaultNetwork, "network type: tcp, tcp4, tcp6, unix or unixpacket.")
 	address = cmd.String("address", defaultAddress, "address to listen.")
+	maxMessageSize = cmd.Int(sdk.MaxMsgSizeCLIName, sdk.DefaulGRPCMaxMsgSizeMb, sdk.MaxMsgSizeCLIDesc)
+
 	logs.level = cmd.String("log-level", defaultVerbose, "log level: panic, fatal, error, warning, info, debug.")
 	logs.format = cmd.String("log-format", defaultFormat, "format of the logs: text or json.")
 	logs.fields = cmd.String("log-fields", "", "extra fields to add to every log line in json format.")
