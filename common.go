@@ -20,11 +20,12 @@ const (
 	gRPCMaxMsgSizeCapMb    = 2048
 )
 
-//BuildGRPCOptions creats gRPC ServerOption \w maxRecv/Send msg size set.
+// GRPCOptions returns a slice of gRPC server options with the maximum
+// message size set for sending and receiving.
 // Is intended to be shared by gRPC in bblfshd Server and Drivers.
 // Sets the hard limit of message size to less than 2GB since
 // it may overflow an int value, and it should be big enough.
-func BuildGRPCOptions(maxMessageSizeMb int) ([]grpc.ServerOption, error) {
+func GRPCOptions(maxMessageSizeMb int) ([]grpc.ServerOption, error) {
 	var err error
 	size := maxMessageSizeMb
 	if size >= gRPCMaxMsgSizeCapMb {

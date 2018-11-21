@@ -73,7 +73,7 @@ func (s *Server) initialize() error {
 		return err
 	}
 
-	grpcOpts, err := sdk.BuildGRPCOptions(*maxMessageSize)
+	grpcOpts, err := sdk.GRPCOptions(*maxMessageSize)
 	if err != nil {
 		s.Logger.Errorf(err.Error())
 	}
