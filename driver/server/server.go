@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"gopkg.in/bblfsh/sdk.v2"
+	cmdutil "gopkg.in/bblfsh/sdk.v2/cmd"
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/src-d/go-errors.v1"
 )
@@ -73,9 +73,9 @@ func (s *Server) initialize() error {
 		return err
 	}
 
-	grpcOpts, err := sdk.GRPCOptions(*maxMessageSize)
+	grpcOpts, err := cmdutil.GRPCSizeOptions(*maxMessageSize)
 	if err != nil {
-		s.Logger.Errorf(err.Error())
+		s.Logger.Warningf(err.Error())
 	}
 	s.Options = grpcOpts
 
@@ -103,7 +103,7 @@ func (s *Server) initializeFlags() {
 	cmd := flag.NewFlagSet("server", flag.ExitOnError)
 	network = cmd.String("network", defaultNetwork, "network type: tcp, tcp4, tcp6, unix or unixpacket.")
 	address = cmd.String("address", defaultAddress, "address to listen.")
-	maxMessageSize = cmd.Int(sdk.MaxMsgSizeCLIName, sdk.DefaulGRPCMaxMsgSizeMb, sdk.MaxMsgSizeCLIDesc)
+	maxMessageSize = cmdutil.MaxSendRecvMsgSizeMB(cmd)
 
 	logs.level = cmd.String("log-level", defaultVerbose, "log level: panic, fatal, error, warning, info, debug.")
 	logs.format = cmd.String("log-format", defaultFormat, "format of the logs: text or json.")
