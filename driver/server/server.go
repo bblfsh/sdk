@@ -45,7 +45,7 @@ type Server struct {
 
 // NewServer returns a new server for a given Driver.
 func NewServer(d driver.DriverModule) *Server {
-	return &Server{d: d, grpc: NewGRPCServer(d)}
+	return &Server{d: d}
 }
 
 // Start executes the binary driver and start to listen in the network and

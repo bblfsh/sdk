@@ -20,12 +20,10 @@ import (
 // NewGRPCServer creates a gRPC server.
 func NewGRPCServer(drv driver.DriverModule, opts ...grpc.ServerOption) *grpc.Server {
 	tracer := opentracing.GlobalTracer()
-	if tracer != nil {
-		opts = append(opts,
-			grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
-			grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
-		)
-	}
+	opts = append(opts,
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
+	)
 	srv := grpc.NewServer(opts...)
 
 	protocol1.DefaultService = service{drv}
