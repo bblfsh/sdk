@@ -3,10 +3,11 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
+
 	"google.golang.org/grpc"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v2/driver"
@@ -17,46 +18,24 @@ import (
 )
 
 // NewGRPCServer creates a gRPC server.
-func NewGRPCServer(drv driver.DriverModule, opts ...grpc.ServerOption) *GRPCServer {
-	return &GRPCServer{drv: drv, Options: opts}
-}
-
-// GRPCServer is a common implementation of a gRPC server.
-type GRPCServer struct {
-	// Options list of grpc.ServerOption's.
-	Options []grpc.ServerOption
-
-	drv driver.DriverModule
-	*grpc.Server
-}
-
-// Serve accepts incoming connections on the listener lis, creating a new
-// ServerTransport and service goroutine for each.
-func (s *GRPCServer) Serve(listener net.Listener) error {
-	if err := s.initialize(); err != nil {
-		return err
+func NewGRPCServer(drv driver.DriverModule, opts ...grpc.ServerOption) *grpc.Server {
+	tracer := opentracing.GlobalTracer()
+	if tracer != nil {
+		opts = append(opts,
+			grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+			grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
+		)
 	}
+	srv := grpc.NewServer(opts...)
 
-	defer func() {
-		logrus.Infof("grpc server ready")
-	}()
-
-	return s.Server.Serve(listener)
-}
-
-func (s *GRPCServer) initialize() error {
-	s.Server = grpc.NewServer(s.Options...)
-
-	logrus.Debugf("registering grpc service")
-
-	protocol1.DefaultService = service{s.drv}
+	protocol1.DefaultService = service{drv}
 	protocol1.RegisterProtocolServiceServer(
-		s.Server,
+		srv,
 		protocol1.NewProtocolServiceServer(),
 	)
-	protocol2.RegisterDriver(s.Server, s.drv)
+	protocol2.RegisterDriver(srv, drv)
 
-	return nil
+	return srv
 }
 
 type service struct {

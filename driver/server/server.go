@@ -2,8 +2,12 @@ package server
 
 import (
 	"flag"
+	"io"
 	"net"
 	"os"
+
+	jaegercfg "github.com/uber/jaeger-client-go/config"
+	"google.golang.org/grpc"
 
 	cmdutil "gopkg.in/bblfsh/sdk.v2/cmd"
 	"gopkg.in/bblfsh/sdk.v2/driver"
@@ -12,6 +16,7 @@ import (
 
 var (
 	ErrInvalidLogger       = errors.NewKind("invalid logger configuration")
+	ErrInvalidTracer       = errors.NewKind("invalid tracer configuration")
 	ErrUnsupportedLanguage = errors.NewKind("unsupported language: %q")
 )
 
@@ -29,16 +34,18 @@ var (
 
 // Server is a grpc server for the communication with the driver.
 type Server struct {
-	*GRPCServer
+	grpc *grpc.Server
 	// Logger a logger to be used by the server.
 	Logger Logger
 
 	d driver.DriverModule
+
+	closers []io.Closer
 }
 
 // NewServer returns a new server for a given Driver.
 func NewServer(d driver.DriverModule) *Server {
-	return &Server{d: d, GRPCServer: NewGRPCServer(d)}
+	return &Server{d: d, grpc: NewGRPCServer(d)}
 }
 
 // Start executes the binary driver and start to listen in the network and
@@ -60,7 +67,7 @@ func (s *Server) Start() error {
 
 	s.Logger.Infof("server listening in %s (%s)", *address, *network)
 
-	return s.Serve(l)
+	return s.grpc.Serve(l)
 }
 
 func (s *Server) initialize() error {
@@ -72,13 +79,15 @@ func (s *Server) initialize() error {
 	if err != nil {
 		return err
 	}
+	if err := s.initializeTracing(m.Language + "-driver"); err != nil {
+		return err
+	}
 
 	grpcOpts, err := cmdutil.GRPCSizeOptions(*maxMessageSize)
 	if err != nil {
 		s.Logger.Errorf(err.Error())
 		os.Exit(1)
 	}
-	s.Options = grpcOpts
 
 	build := "unknown"
 	if m.Build != nil {
@@ -89,7 +98,7 @@ func (s *Server) initialize() error {
 		m.Version,
 		build,
 	)
-
+	s.grpc = NewGRPCServer(s.d, grpcOpts...)
 	return nil
 }
 
@@ -126,5 +135,18 @@ func (s *Server) initializeLogger() error {
 		return ErrInvalidLogger.Wrap(err)
 	}
 
+	return nil
+}
+
+func (s *Server) initializeTracing(serviceName string) error {
+	c, err := jaegercfg.FromEnv()
+	if err != nil {
+		return ErrInvalidTracer.Wrap(err)
+	}
+	closer, err := c.InitGlobalTracer(serviceName)
+	if err != nil {
+		return ErrInvalidTracer.Wrap(err)
+	}
+	s.closers = append(s.closers, closer)
 	return nil
 }
