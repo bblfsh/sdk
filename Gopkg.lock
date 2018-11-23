@@ -161,6 +161,15 @@
   version = "v1.0.0-rc5"
 
 [[projects]]
+  name = "github.com/opentracing/opentracing-go"
+  packages = [
+    ".",
+    "log"
+  ]
+  revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
+  version = "v1.0.2"
+
+[[projects]]
   name = "github.com/ory/dockertest"
   packages = [
     "docker",
@@ -336,6 +345,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ca31e7da904c3376a4e905523bd4865967d02e2525a2cde8206049038fc607cb"
+  inputs-digest = "30597d830d32c3db8943f378f2c11dea1691e15d3251912d4d6e80212e1ced8c"
   solver-name = "gps-cdcl"
   solver-version = 1
