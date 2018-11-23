@@ -75,7 +75,8 @@ func (s *Server) initialize() error {
 
 	grpcOpts, err := cmdutil.GRPCSizeOptions(*maxMessageSize)
 	if err != nil {
-		s.Logger.Warningf(err.Error())
+		s.Logger.Errorf(err.Error())
+		os.Exit(1)
 	}
 	s.Options = grpcOpts
 
@@ -103,7 +104,7 @@ func (s *Server) initializeFlags() {
 	cmd := flag.NewFlagSet("server", flag.ExitOnError)
 	network = cmd.String("network", defaultNetwork, "network type: tcp, tcp4, tcp6, unix or unixpacket.")
 	address = cmd.String("address", defaultAddress, "address to listen.")
-	maxMessageSize = cmdutil.MaxSendRecvMsgSizeMB(cmd)
+	maxMessageSize = cmdutil.FlagMaxGRPCMsgSizeMB(cmd)
 
 	logs.level = cmd.String("log-level", defaultVerbose, "log level: panic, fatal, error, warning, info, debug.")
 	logs.format = cmd.String("log-format", defaultFormat, "format of the logs: text or json.")
