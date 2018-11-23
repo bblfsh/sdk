@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/opentracing/opentracing-go"
+
 	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -43,7 +45,10 @@ type driverServer struct {
 	d driver.Driver
 }
 
-func (s *driverServer) Parse(ctx xcontext.Context, req *ParseRequest) (*ParseResponse, error) {
+func (s *driverServer) Parse(rctx xcontext.Context, req *ParseRequest) (*ParseResponse, error) {
+	sp, ctx := opentracing.StartSpanFromContext(rctx, "bblfsh.server.Parse")
+	defer sp.Finish()
+
 	opts := &driver.ParseOptions{
 		Mode:     driver.Mode(req.Mode),
 		Language: req.Language,
@@ -67,6 +72,10 @@ func (s *driverServer) Parse(ctx xcontext.Context, req *ParseRequest) (*ParseRes
 		// partial parse or syntax error; we will send an OK status code, but will fill Errors field
 		resp.Errors = toParseErrors(cause)
 	}
+
+	dsp, _ := opentracing.StartSpanFromContext(ctx, "uast.Encode")
+	defer dsp.Finish()
+
 	buf := bytes.NewBuffer(nil)
 	err = nodesproto.WriteTo(buf, n)
 	if err != nil {
@@ -80,7 +89,10 @@ type client struct {
 	c DriverClient
 }
 
-func (c *client) Parse(ctx context.Context, src string, opts *driver.ParseOptions) (nodes.Node, error) {
+func (c *client) Parse(rctx context.Context, src string, opts *driver.ParseOptions) (nodes.Node, error) {
+	sp, ctx := opentracing.StartSpanFromContext(rctx, "bblfsh.client.Parse")
+	defer sp.Finish()
+
 	req := &ParseRequest{Content: src}
 	if opts != nil {
 		req.Mode = Mode(opts.Mode)
@@ -108,6 +120,10 @@ func (c *client) Parse(ctx context.Context, src string, opts *driver.ParseOption
 	if opts != nil && opts.Language == "" {
 		opts.Language = resp.Language
 	}
+
+	dsp, _ := opentracing.StartSpanFromContext(ctx, "uast.Decode")
+	defer dsp.Finish()
+
 	// it may be still a parsing error
 	return resp.Nodes()
 }
