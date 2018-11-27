@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
-
 	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -19,6 +19,34 @@ import (
 )
 
 //go:generate protoc --proto_path=$GOPATH/src:. --gogo_out=plugins=grpc:. ./driver.proto
+
+// ServerOptions returns a set of common options that should be used in bblfsh server.
+//
+// It automatically enables OpenTrace if a global tracer is set.
+func ServerOptions() []grpc.ServerOption {
+	tracer := opentracing.GlobalTracer()
+	if _, ok := tracer.(opentracing.NoopTracer); ok {
+		return nil
+	}
+	return []grpc.ServerOption{
+		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
+		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
+	}
+}
+
+// DialOptions returns a set of common options that should be used when dialing bblfsh server.
+//
+// It automatically enables OpenTrace if a global tracer is set.
+func DialOptions() []grpc.DialOption {
+	tracer := opentracing.GlobalTracer()
+	if _, ok := tracer.(opentracing.NoopTracer); ok {
+		return nil
+	}
+	return []grpc.DialOption{
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)),
+		grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer)),
+	}
+}
 
 func RegisterDriver(srv *grpc.Server, d driver.Driver) {
 	RegisterDriverServer(srv, &driverServer{d: d})
@@ -45,6 +73,7 @@ type driverServer struct {
 	d driver.Driver
 }
 
+// Parse implements DriverServer.
 func (s *driverServer) Parse(rctx xcontext.Context, req *ParseRequest) (*ParseResponse, error) {
 	sp, ctx := opentracing.StartSpanFromContext(rctx, "bblfsh.server.Parse")
 	defer sp.Finish()
@@ -89,6 +118,7 @@ type client struct {
 	c DriverClient
 }
 
+// Parse implements DriverClient.
 func (c *client) Parse(rctx context.Context, src string, opts *driver.ParseOptions) (nodes.Node, error) {
 	sp, ctx := opentracing.StartSpanFromContext(rctx, "bblfsh.client.Parse")
 	defer sp.Finish()
