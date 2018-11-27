@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
-	"github.com/opentracing/opentracing-go"
-
 	"google.golang.org/grpc"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 	"gopkg.in/bblfsh/sdk.v2/driver"
@@ -17,14 +14,16 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
-// NewGRPCServer creates a gRPC server.
+// NewGRPCServer creates a gRPC server instance that dispatches requests to a provided driver.
+//
+// It will automatically include default server options for bblfsh protocol.
 func NewGRPCServer(drv driver.DriverModule, opts ...grpc.ServerOption) *grpc.Server {
-	// always pass tracing options - they are easy to forget
-	tracer := opentracing.GlobalTracer()
-	opts = append(opts,
-		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),
-		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
-	)
+	opts = append(opts, protocol2.ServerOptions()...)
+	return NewGRPCServerCustom(drv, opts...)
+}
+
+// NewGRPCServerCustom is the same as NewGRPCServer, but it won't include any options except the ones that were passed.
+func NewGRPCServerCustom(drv driver.DriverModule, opts ...grpc.ServerOption) *grpc.Server {
 	srv := grpc.NewServer(opts...)
 
 	protocol1.DefaultService = service{drv}
