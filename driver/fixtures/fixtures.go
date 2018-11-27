@@ -337,7 +337,6 @@ func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
 	if s.BenchName == "" {
 		b.SkipNow()
 	}
-	ctx := context.Background()
 	code := s.readFixturesFile(b, s.BenchName+s.Ext)
 
 	tr := s.Transforms
@@ -348,7 +347,7 @@ func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
 	require.NoError(b, err)
 	defer dr.Close()
 
-	ctx, cancel := context.WithTimeout(ctx, parseTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), parseTimeout)
 	rast, err := dr.Parse(ctx, string(code))
 	cancel()
 	if err != nil {

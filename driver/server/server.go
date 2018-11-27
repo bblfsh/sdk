@@ -40,6 +40,8 @@ type Server struct {
 
 	d driver.DriverModule
 
+	// closers is a list of things to be closed
+	// TODO: proper driver shutdown logic; it's unused right now
 	closers []io.Closer
 }
 
