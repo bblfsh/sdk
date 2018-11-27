@@ -19,6 +19,7 @@ import (
 
 // NewGRPCServer creates a gRPC server.
 func NewGRPCServer(drv driver.DriverModule, opts ...grpc.ServerOption) *grpc.Server {
+	// always pass tracing options - they are easy to forget
 	tracer := opentracing.GlobalTracer()
 	opts = append(opts,
 		grpc.UnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)),

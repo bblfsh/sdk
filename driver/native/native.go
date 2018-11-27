@@ -149,13 +149,10 @@ func (d *Driver) writeRequest(ctx context.Context, req *parseRequest) error {
 
 	if !deadline.IsZero() {
 		d.stdin.SetWriteDeadline(deadline)
+		defer d.stdin.SetWriteDeadline(time.Time{})
 	}
 
-	err := d.enc.Encode(req)
-	if !deadline.IsZero() {
-		d.stdin.SetWriteDeadline(time.Time{})
-	}
-	return err
+	return d.enc.Encode(req)
 }
 
 func (d *Driver) readResponse(ctx context.Context) (*parseResponse, error) {
@@ -166,13 +163,11 @@ func (d *Driver) readResponse(ctx context.Context) (*parseResponse, error) {
 
 	if !deadline.IsZero() {
 		d.stdout.SetReadDeadline(deadline)
+		defer d.stdout.SetReadDeadline(time.Time{})
 	}
 
 	var r parseResponse
 	err := d.dec.Decode(&r)
-	if !deadline.IsZero() {
-		d.stdout.SetReadDeadline(time.Time{})
-	}
 	if err != nil {
 		return nil, err
 	}
