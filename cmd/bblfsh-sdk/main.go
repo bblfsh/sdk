@@ -22,7 +22,6 @@ func main() {
 	parser.AddCommand("tag", cmd.TagCommandDescription, "", &cmd.TagCommand{})
 	parser.AddCommand("release", cmd.ReleaseCommandDescription, "", &cmd.ReleaseCommand{})
 	parser.AddCommand("push", cmd.PushCommandDescription, "", &cmd.PushCommand{})
-	parser.AddCommand("fixtures", cmd.FixturesCommandDescription, "", &cmd.FixturesCommand{})
 	parser.AddCommand("ast2gv", cmd.Ast2GraphvizCommandDescription, "", &cmd.Ast2GraphvizCommand{})
 
 	if _, err := parser.Parse(); err != nil {
