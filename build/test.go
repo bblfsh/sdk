@@ -25,7 +25,7 @@ const (
 	fixturesDir         = "fixtures"
 )
 
-func (d *Driver) Test(bblfshdVers, image string) error {
+func (d *Driver) Test(bblfshdVers, image string, bench bool) error {
 	if image == "" {
 		id, err := d.Build("")
 		if err != nil {
@@ -33,7 +33,7 @@ func (d *Driver) Test(bblfshdVers, image string) error {
 		}
 		image = id
 	}
-	if err := d.testFixtures(image); err != nil {
+	if err := d.testFixtures(image, bench); err != nil {
 		return err
 	}
 	if err := d.testIntegration(bblfshdVers, image); err != nil {
@@ -42,7 +42,7 @@ func (d *Driver) Test(bblfshdVers, image string) error {
 	return nil
 }
 
-func (d *Driver) testFixtures(image string) error {
+func (d *Driver) testFixtures(image string, bench bool) error {
 	u, err := user.Current()
 	if err != nil {
 		return err
@@ -67,12 +67,7 @@ func (d *Driver) testFixtures(image string) error {
 		"--entrypoint", bin,
 		image,
 	)
-	buf := bytes.NewBuffer(nil)
-	var out io.Writer = buf
-	if Verbose() {
-		out = io.MultiWriter(buf, os.Stderr)
-	}
-	err = docker.RunAndWait(cli, out, out, docker.CreateContainerOptions{
+	opts := docker.CreateContainerOptions{
 		Config: &docker.Config{
 			User:         usr,
 			Image:        image,
@@ -88,7 +83,51 @@ func (d *Driver) testFixtures(image string) error {
 			AutoRemove: true,
 			Binds:      []string{mnt},
 		},
-	})
+	}
+	// run tests
+	if err := d.runContainer(cli, nil, opts); err != nil {
+		return err
+	}
+	if !bench {
+		return nil
+	}
+	// run benchmarks
+	outPath := filepath.Join(d.root, "bench.txt")
+	fmt.Fprintf(os.Stderr, "running benchmarks (%s)\n", outPath)
+	benchLog, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	defer benchLog.Close()
+
+	printCommand(
+		"docker", "run", "--rm",
+		"-u", usr,
+		"-e", env,
+		"-v", mnt,
+		"--workdir", wd,
+		"--entrypoint", `'`+bin+` -test.run=NONE -test.bench=.'`,
+		image,
+	)
+
+	opts.Config.Entrypoint = append(opts.Config.Entrypoint, "-test.run=NONE", "-test.bench=.")
+	if err := d.runContainer(cli, benchLog, opts); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Driver) runContainer(cli *docker.Client, sout io.Writer, opts docker.CreateContainerOptions) error {
+	buf := bytes.NewBuffer(nil)
+	var stdout io.Writer = buf
+	if Verbose() {
+		stdout = io.MultiWriter(buf, os.Stderr)
+	}
+	var stderr = stdout
+	if sout != nil {
+		stdout = io.MultiWriter(stdout, sout)
+	}
+	err := docker.RunAndWait(cli, stdout, stderr, opts)
 	if err != nil {
 		if !Verbose() {
 			buf.WriteTo(os.Stderr)
