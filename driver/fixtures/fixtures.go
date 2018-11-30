@@ -109,6 +109,7 @@ func (s *Suite) RunBenchmarks(b *testing.B) {
 	b.Run("transform-legacy", func(b *testing.B) {
 		s.benchmarkTransform(b, true)
 	})
+	b.Run("fixtures", s.benchmarkFixtures)
 }
 
 const (
@@ -372,5 +373,48 @@ func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
 			}
 			_ = un
 		}
+	}
+}
+
+func (s *Suite) benchmarkFixtures(b *testing.B) {
+	b.StopTimer()
+	ctx := context.Background()
+
+	list, err := ioutil.ReadDir(s.Path)
+	require.NoError(b, err)
+
+	dr := s.NewDriver()
+	tr := s.Transforms
+
+	err = dr.Start()
+	require.NoError(b, err)
+	defer dr.Close()
+
+	const prefix = "bench_"
+	suffix := s.Ext
+	for _, ent := range list {
+		fname := ent.Name()
+		if !strings.HasPrefix(fname, prefix) || !strings.HasSuffix(fname, suffix) {
+			continue
+		}
+
+		name := strings.TrimSuffix(strings.TrimPrefix(fname, prefix), suffix)
+		b.Run(name, func(b *testing.B) {
+			b.StopTimer()
+			code := string(s.readFixturesFile(b, fname))
+
+			b.ReportAllocs()
+			b.StartTimer()
+			for i := 0; i < b.N; i++ {
+				ctx, cancel := context.WithTimeout(ctx, parseTimeout)
+				ast, err := dr.Parse(ctx, code)
+				cancel()
+				require.NoError(b, err)
+
+				ua, err := tr.Do(ctx, driver.ModeSemantic, code, ast)
+				require.NoError(b, err)
+				_ = ua
+			}
+		})
 	}
 }
