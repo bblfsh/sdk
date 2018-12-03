@@ -128,6 +128,13 @@ func marshalUAST(o nodes.Node) ([]byte, error) {
 	return uastyml.Marshal(o)
 }
 
+func isTest(name, ext string) (string, bool) {
+	if !strings.HasSuffix(name, ext) {
+		return "", false
+	}
+	return strings.TrimSuffix(name, ext), true
+}
+
 func (s *Suite) testFixturesNative(t *testing.T) {
 	list, err := ioutil.ReadDir(s.Path)
 	require.NoError(t, err)
@@ -142,24 +149,24 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 
 	suffix := s.Ext
 	for _, ent := range list {
-		if !strings.HasSuffix(ent.Name(), suffix) {
+		fname := ent.Name()
+		name, ok := isTest(fname, suffix)
+		if !ok {
 			continue
 		} else if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
 			return
 		}
 
-		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
 			if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
 				t.SkipNow()
 			}
-			name += suffix
-			code := s.readFixturesFile(t, name)
+			code := s.readFixturesFile(t, fname)
 
 			ctx, cancel := context.WithTimeout(context.Background(), parseTimeout)
 			resp, err := dr.Parse(ctx, string(code))
 			cancel()
-			if strings.Contains(name, syntaxErrTestName) {
+			if strings.Contains(fname, syntaxErrTestName) {
 				require.True(t, err != nil && !driver.ErrDriverFailure.Is(err), "unexpected error: %v", err)
 				return
 			}
@@ -171,10 +178,10 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 			js, err := marshalNative(resp)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+nativeExt)
+			exp := s.readFixturesFile(t, fname+nativeExt)
 			got := string(js)
 			if exp == "" {
-				s.writeFixturesFile(t, name+nativeExt, got)
+				s.writeFixturesFile(t, fname+nativeExt, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
@@ -182,18 +189,18 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 				if s.UpdateNative {
 					ext = nativeExt
 				}
-				s.writeFixturesFile(t, name+ext, got)
+				s.writeFixturesFile(t, fname+ext, got)
 				if !s.UpdateNative {
 					require.Fail(t, "unexpected AST returned by the driver",
 						"run diff command to debug:\ndiff -d ./%s ./%s",
-						strings.TrimLeft(s.fixturesPath(name+ext), "./"),
-						strings.TrimLeft(s.fixturesPath(name+nativeExt), "./"),
+						strings.TrimLeft(s.fixturesPath(fname+ext), "./"),
+						strings.TrimLeft(s.fixturesPath(fname+nativeExt), "./"),
 					)
 				} else {
 					t.Skip("force update of native fixtures")
 				}
 			} else {
-				s.deleteFixturesFile(name + nativeExt + gotSuffix)
+				s.deleteFixturesFile(fname + nativeExt + gotSuffix)
 			}
 		})
 	}
@@ -215,19 +222,20 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 
 	suffix := s.Ext
 	for _, ent := range list {
-		if !strings.HasSuffix(ent.Name(), suffix) {
+		fname := ent.Name()
+		name, ok := isTest(fname, suffix)
+		if !ok {
 			continue
 		} else if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
 			return
 		}
 
-		name := strings.TrimSuffix(ent.Name(), suffix)
 		t.Run(name, func(t *testing.T) {
 			if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
 				t.SkipNow()
 			}
 			name += suffix
-			code := s.readFixturesFile(t, name)
+			code := s.readFixturesFile(t, fname)
 
 			ctx, cancel := context.WithTimeout(ctx, parseTimeout)
 			ast, err := dr.Parse(ctx, string(code))
@@ -235,7 +243,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			if err != nil {
 				atomic.AddUint32(&parseErrors, 1)
 			}
-			if strings.Contains(name, syntaxErrTestName) {
+			if strings.Contains(fname, syntaxErrTestName) {
 				require.True(t, err != nil && !driver.ErrDriverFailure.Is(err), "unexpected error: %v", err)
 				return
 			}
@@ -249,7 +257,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 				un, err := marshalUAST(ua)
 				require.NoError(t, err)
 
-				s.writeFixturesFile(t, name+preExt, string(un))
+				s.writeFixturesFile(t, fname+preExt, string(un))
 			}
 			ua, err := tr.Do(ctx, mode, code, ast)
 			require.NoError(t, err)
@@ -303,10 +311,10 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			un, err := marshalUAST(ua)
 			require.NoError(t, err)
 
-			exp := s.readFixturesFile(t, name+suf)
+			exp := s.readFixturesFile(t, fname+suf)
 			got := string(un)
 			if exp == "" {
-				s.writeFixturesFile(t, name+suf, got)
+				s.writeFixturesFile(t, fname+suf, got)
 				t.Skip("no test file found - generating")
 			}
 			if !assert.ObjectsAreEqual(exp, got) {
@@ -314,21 +322,21 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 				if s.UpdateUAST {
 					ext = suf
 				}
-				s.writeFixturesFile(t, name+ext, got)
+				s.writeFixturesFile(t, fname+ext, got)
 				if !s.UpdateUAST {
 					require.Fail(t, "unexpected UAST returned by the driver",
 						"run diff command to debug:\ndiff -d ./%s ./%s",
-						strings.TrimLeft(s.fixturesPath(name+ext), "./"),
-						strings.TrimLeft(s.fixturesPath(name+suf), "./"),
+						strings.TrimLeft(s.fixturesPath(fname+ext), "./"),
+						strings.TrimLeft(s.fixturesPath(fname+suf), "./"),
 					)
 				} else {
 					t.Skip("force update of fixtures")
 				}
 			} else {
-				s.deleteFixturesFile(name + suf + gotSuffix)
+				s.deleteFixturesFile(fname + suf + gotSuffix)
 			}
 			if s.WriteViewerJSON {
-				s.writeViewerJSON(t, name+suf, code, ua)
+				s.writeViewerJSON(t, fname+suf, code, ua)
 			}
 		})
 	}
@@ -376,6 +384,14 @@ func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
 	}
 }
 
+func isBench(name, ext string) (string, bool) {
+	const prefix = "bench_"
+	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ext) {
+		return "", false
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(name, prefix), ext), true
+}
+
 func (s *Suite) benchmarkFixtures(b *testing.B) {
 	b.StopTimer()
 	ctx := context.Background()
@@ -390,15 +406,14 @@ func (s *Suite) benchmarkFixtures(b *testing.B) {
 	require.NoError(b, err)
 	defer dr.Close()
 
-	const prefix = "bench_"
 	suffix := s.Ext
 	for _, ent := range list {
 		fname := ent.Name()
-		if !strings.HasPrefix(fname, prefix) || !strings.HasSuffix(fname, suffix) {
+		name, ok := isBench(fname, suffix)
+		if !ok {
 			continue
 		}
 
-		name := strings.TrimSuffix(strings.TrimPrefix(fname, prefix), suffix)
 		b.Run(name, func(b *testing.B) {
 			b.StopTimer()
 			code := string(s.readFixturesFile(b, fname))
@@ -411,9 +426,8 @@ func (s *Suite) benchmarkFixtures(b *testing.B) {
 				cancel()
 				require.NoError(b, err)
 
-				ua, err := tr.Do(ctx, driver.ModeSemantic, code, ast)
+				_, err = tr.Do(ctx, driver.ModeSemantic, code, ast)
 				require.NoError(b, err)
-				_ = ua
 			}
 		})
 	}
