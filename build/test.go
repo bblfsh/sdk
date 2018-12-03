@@ -84,14 +84,18 @@ func (d *Driver) testFixtures(image string, bench bool) error {
 			Binds:      []string{mnt},
 		},
 	}
-	// run tests
+	// Run tests.
+	//
+	// Write output to buffer and show it only if the test fails.
 	if err := d.runContainer(cli, nil, opts); err != nil {
 		return err
 	}
 	if !bench {
 		return nil
 	}
-	// run benchmarks
+	// Run benchmarks.
+	//
+	// We do it in two separate passes to isolate benchmark output from test output.
 	outPath := filepath.Join(d.root, "bench.txt")
 	fmt.Fprintf(os.Stderr, "running benchmarks (%s)\n", outPath)
 	benchLog, err := os.Create(outPath)
