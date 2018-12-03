@@ -114,6 +114,9 @@ func (d *Driver) testFixtures(image string, bench bool) error {
 	if err := d.runContainer(cli, benchLog, opts); err != nil {
 		return err
 	}
+	if err = benchLog.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 
