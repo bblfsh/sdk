@@ -31,6 +31,7 @@ func init() {
 		GenNode{},
 		Identifier{},
 		String{},
+		Bool{},
 		QualifiedIdentifier{},
 		Comment{},
 		Group{},
@@ -583,4 +584,10 @@ type Function struct {
 	//
 	// TODO: we don't have return statements yet
 	Body *Block `json:"Body"`
+}
+
+// Bool is a boolean literal.
+type Bool struct {
+	GenNode
+	Value bool `json:"Value"`
 }
