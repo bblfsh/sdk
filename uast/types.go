@@ -237,10 +237,11 @@ func fieldName(f reflect.StructField) (string, bool, error) {
 }
 
 var (
-	reflString  = reflect.TypeOf("")
-	reflAny     = reflect.TypeOf((*Any)(nil)).Elem()
-	reflNode    = reflect.TypeOf((*nodes.Node)(nil)).Elem()
-	reflNodeExt = reflect.TypeOf((*nodes.External)(nil)).Elem()
+	reflString   = reflect.TypeOf("")
+	reflAny      = reflect.TypeOf((*Any)(nil)).Elem()
+	reflAnySlice = reflect.TypeOf([]Any{})
+	reflNode     = reflect.TypeOf((*nodes.Node)(nil)).Elem()
+	reflNodeExt  = reflect.TypeOf((*nodes.External)(nil)).Elem()
 )
 
 // ToNode converts generic values returned by schema-less encodings such as JSON to Node objects.
@@ -383,6 +384,26 @@ func setAnyOrNode(dst reflect.Value, n nodes.External) (bool, error) {
 			return false, err
 		}
 		dst.Set(reflect.ValueOf(nd))
+		return true, nil
+	} else if rt == reflAnySlice {
+		narr, ok := n.(nodes.ExternalArray)
+		if !ok {
+			return false, nil
+		}
+		sz := narr.Size()
+		arr := make([]Any, 0, sz)
+		for i := 0; i < sz; i++ {
+			e := narr.ValueAt(i)
+			var v Any = e
+			if nv, err := NewValue(TypeOf(e)); err == nil {
+				if err = nodeAs(e, nv); err != nil {
+					return false, err
+				}
+				v = nv.Interface()
+			}
+			arr = append(arr, v)
+		}
+		dst.Set(reflect.ValueOf(arr))
 		return true, nil
 	}
 	return false, nil

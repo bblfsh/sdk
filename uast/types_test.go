@@ -1,13 +1,17 @@
-package uast
+package uast_test
 
 import (
+	"reflect"
 	"testing"
 
-	"reflect"
-
 	"github.com/stretchr/testify/require"
+	. "gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
+
+func init() {
+	RegisterPackage("test", arrayNode{})
+}
 
 var casesTypeOf = []struct {
 	name string
@@ -36,6 +40,11 @@ func expPos(off int, line int, col int) nodes.Object {
 		KeyPosLine: nodes.Uint(line),
 		KeyPosCol:  nodes.Uint(col),
 	}
+}
+
+type arrayNode struct {
+	GenNode
+	Array []Any `json:"Array"`
 }
 
 var casesToNode = []struct {
@@ -173,6 +182,46 @@ var casesToNode = []struct {
 			},
 		},
 	},
+	{
+		name: "arrayNode",
+		obj: arrayNode{
+			GenNode: GenNode{
+				Positions: Positions{
+					KeyStart: {Offset: 3, Line: 2, Col: 1},
+					KeyEnd:   {Offset: 8, Line: 2, Col: 6},
+				},
+			},
+			Array: []Any{
+				Identifier{Name: "a", GenNode: GenNode{
+					Positions: Positions{},
+				}},
+				String{Value: "a", GenNode: GenNode{
+					Positions: Positions{},
+				}},
+			},
+		},
+		exp: nodes.Object{
+			KeyType: nodes.String("test:arrayNode"),
+			KeyPos: nodes.Object{
+				KeyType:  nodes.String(TypePositions),
+				KeyStart: expPos(3, 2, 1),
+				KeyEnd:   expPos(8, 2, 6),
+			},
+			"Array": nodes.Array{
+				nodes.Object{
+					KeyType: nodes.String("uast:Identifier"),
+					KeyPos:  nodes.Object{KeyType: nodes.String(TypePositions)},
+					"Name":  nodes.String("a"),
+				},
+				nodes.Object{
+					KeyType:  nodes.String("uast:String"),
+					KeyPos:   nodes.Object{KeyType: nodes.String(TypePositions)},
+					"Value":  nodes.String("a"),
+					"Format": nodes.String(""),
+				},
+			},
+		},
+	},
 }
 
 func TestToNode(t *testing.T) {
@@ -183,7 +232,7 @@ func TestToNode(t *testing.T) {
 			require.Equal(t, c.exp, got)
 
 			nv := reflect.New(reflect.TypeOf(c.obj)).Elem()
-			err = nodeAs(got, nv)
+			err = NodeAs(got, nv)
 			require.NoError(t, err)
 			expObj := c.expObj
 			if expObj == nil {
