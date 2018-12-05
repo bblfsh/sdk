@@ -29,6 +29,7 @@ func init() {
 		Position{},
 		Positions{},
 		GenNode{},
+		Ambiguity{},
 		Identifier{},
 		String{},
 		QualifiedIdentifier{},
@@ -264,6 +265,16 @@ type Scope = Any
 
 type GenNode struct {
 	Positions Positions `json:"@pos,omitempty"`
+}
+
+// Ambiguity node can be used when the driver cannot interpret the node without additional information, but can propose
+// a small number of possible meanings of this node.
+//
+// An example might be an ambiguity between a builtin identifier like "true" versus the local definition of the same
+// identifier.
+type Ambiguity struct {
+	GenNode
+	Alternatives []Any `json:"Alternatives"`
 }
 
 type Identifier struct {
