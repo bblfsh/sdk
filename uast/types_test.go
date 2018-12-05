@@ -72,6 +72,27 @@ var casesToNode = []struct {
 		},
 	},
 	{
+		name: "Bool",
+		obj: Bool{
+			GenNode: GenNode{
+				Positions: Positions{
+					KeyStart: {Offset: 3, Line: 2, Col: 1},
+					KeyEnd:   {Offset: 8, Line: 2, Col: 6},
+				},
+			},
+			Value: true,
+		},
+		exp: nodes.Object{
+			KeyType: nodes.String("uast:Bool"),
+			KeyPos: nodes.Object{
+				KeyType:  nodes.String(TypePositions),
+				KeyStart: expPos(3, 2, 1),
+				KeyEnd:   expPos(8, 2, 6),
+			},
+			"Value": nodes.Bool(true),
+		},
+	},
+	{
 		name: "Alias",
 		obj: Alias{
 			GenNode: GenNode{
