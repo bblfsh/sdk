@@ -72,6 +72,46 @@ var casesToNode = []struct {
 		},
 	},
 	{
+		name: "Ambiguity",
+		obj: Ambiguity{
+			GenNode: GenNode{
+				Positions: Positions{
+					KeyStart: {Offset: 3, Line: 2, Col: 1},
+					KeyEnd:   {Offset: 8, Line: 2, Col: 6},
+				},
+			},
+			Alternatives: []Any{
+				Identifier{Name: "a", GenNode: GenNode{
+					Positions: Positions{},
+				}},
+				String{Value: "a", GenNode: GenNode{
+					Positions: Positions{},
+				}},
+			},
+		},
+		exp: nodes.Object{
+			KeyType: nodes.String("uast:Ambiguity"),
+			KeyPos: nodes.Object{
+				KeyType:  nodes.String(TypePositions),
+				KeyStart: expPos(3, 2, 1),
+				KeyEnd:   expPos(8, 2, 6),
+			},
+			"Alternatives": nodes.Array{
+				nodes.Object{
+					KeyType: nodes.String("uast:Identifier"),
+					KeyPos:  nodes.Object{KeyType: nodes.String(TypePositions)},
+					"Name":  nodes.String("a"),
+				},
+				nodes.Object{
+					KeyType:  nodes.String("uast:String"),
+					KeyPos:   nodes.Object{KeyType: nodes.String(TypePositions)},
+					"Value":  nodes.String("a"),
+					"Format": nodes.String(""),
+				},
+			},
+		},
+	},
+	{
 		name: "Alias",
 		obj: Alias{
 			GenNode: GenNode{
