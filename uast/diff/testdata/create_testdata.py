@@ -4,7 +4,7 @@
 # to get diffed acquired from
 # https://github.com/vmarkovtsev/treediff/blob/49356e7f85c261ed88cf46326791765c58c22b5b/dataset/flask.tar.xz
 # It uses https://github.com/bblfsh/client-go#Installation to convert python sources into
-# uast binary files.
+# uast yaml files.
 # It needs to be configured with proper DATASET_PATH which is a path to an unpacked
 # flask.tar.xz file.
 
@@ -28,9 +28,6 @@ def get_dst(name):
 i = 0
 for src, dst in ((get_src(name), get_dst(name)) for name in testnames):
     print(i, src)
-    os.system("bblfsh-cli -l python {} -o yaml > testcase_{}_src.uast".format(src, i))
-    os.system("bblfsh-cli -l python {} -o yaml > testcase_{}_dst.uast".format(dst, i))
+    os.system("bblfsh-cli -l python {} -o yaml > {}_src.uast".format(src, i))
+    os.system("bblfsh-cli -l python {} -o yaml > {}_dst.uast".format(dst, i))
     i += 1
-
-# number of testcases
-open("config.txt", "w").write("{}\n".format(i))

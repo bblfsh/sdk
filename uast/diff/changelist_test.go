@@ -1,8 +1,9 @@
 package diff
 
 import (
-    "fmt"
+    "strings"
     "os"
+    "path/filepath"
     "io/ioutil"
     "testing"
     "gopkg.in/bblfsh/sdk.v2/uast/yaml"
@@ -22,23 +23,26 @@ func readUAST(t testing.TB, path string) nodes.Node {
 }
 
 func TestChangelist(t *testing.T) {
-    fd, err := os.Open(fmt.Sprintf("%v/config.txt", dataDir))
+    dir, err := os.Open(dataDir)
     require.NoError(t, err)
-    var n int
-    _, err = fmt.Fscanf(fd, "%d\n", &n)
+    defer dir.Close()
+    names, err := dir.Readdirnames(-1)
     require.NoError(t, err)
 
-    for i := 0; i < n; i++ {
-        name := fmt.Sprintf("%v/testcase_%v", dataDir, i)
-        t.Run(name, func(t *testing.T) {
-            src_name := fmt.Sprintf("%v_src.uast", name)
-            dst_name := fmt.Sprintf("%v_dst.uast", name)
-            src := readUAST(t, src_name)
-            dst := readUAST(t, dst_name)
+    for _, fname := range names {
+        if strings.HasSuffix(fname, "_src.uast") {
+            name := fname[:len(fname)-len("_src.uast")]
 
-            changes := Changes(src, dst)
-            newsrc := Apply(src, changes)
-            require.True(t, nodes.Equal(newsrc, dst))
-        })
+            t.Run(name, func(t *testing.T) {
+                src_name := filepath.Join(dataDir, name + "_src.uast")
+                dst_name := filepath.Join(dataDir, name + "_dst.uast")
+                src := readUAST(t, src_name)
+                dst := readUAST(t, dst_name)
+
+                changes := Changes(src, dst)
+                newsrc := changes.Apply(src)
+                require.True(t, nodes.Equal(newsrc, dst))
+            })
+        }
     }
 }

@@ -5,7 +5,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
-func Apply(root nodes.Node, changelist Changelist) nodes.Node {
+func (changelist Changelist) Apply(root nodes.Node) nodes.Node {
 	nodeDict := make(map[ID]nodes.Node)
 	nodes.WalkPreOrder(root, func(node nodes.Node) bool {
 		nodeDict[nodes.UniqueKey(node)] = node
@@ -15,11 +15,11 @@ func Apply(root nodes.Node, changelist Changelist) nodes.Node {
 	for _, change := range changelist {
 		switch ch := change.(type) {
 		case Create:
-			//create a node and add to the dictionary
+			// create a node and add to the dictionary
 			nodeDict[nodes.UniqueKey(ch.Node)] = ch.Node
 
 		case Attach:
-			//get src and chld from the dictionary, attach (modify src)
+			// get src and chld from the dictionary, attach (modify src)
 			parent, ok := nodeDict[ch.Parent]
 			if !ok {
 				panic("invalid attachment point")
@@ -44,7 +44,7 @@ func Apply(root nodes.Node, changelist Changelist) nodes.Node {
 			}
 
 		case Deatach:
-			//get the src from the dictionary, deatach (modify src)
+			// get the src from the dictionary, deatach (modify src)
 			parent := nodeDict[ch.Parent]
 
 			switch key := ch.Key.(type) {

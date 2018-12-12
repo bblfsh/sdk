@@ -25,7 +25,7 @@ type permuteDecision struct {
 	permutation []int
 }
 
-//min is a convinience method for choosing the cheapest decision
+// min is a convinience method for choosing the cheapest decision
 func min(self, candidate decisionType) decisionType {
 	if self.cost() > candidate.cost() {
 		return candidate
@@ -34,10 +34,10 @@ func min(self, candidate decisionType) decisionType {
 	}
 }
 
-//type for cache
+// type for cache
 type keyType struct{ k1, k2 ID }
 
-//cache for diff computation
+// cache for diff computation
 type cacheStorage struct {
 	decisions map[keyType]decisionType
 	counts     map[ID]int
@@ -104,16 +104,12 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 		// the code below iterates over each of the keys from src and dst exactly once, that's why
 		// keys isn't reset between iterations.
 		keys := make(map[string]bool)
-		iterate := func(keyset nodes.Object) {
-			for key := range keyset {
-				if in := keys[key]; !in {
-					keys[key] = true
-					cost += ds.decideAction(src[key], dst[key]).cost()
-				}
+		for _, key := range append(src.Keys(), dst.Keys()...) {
+			if in := keys[key]; !in {
+				keys[key] = true
+				cost += ds.decideAction(src[key], dst[key]).cost()
 			}
 		}
-		iterate(src)
-		iterate(dst)
 
 		if cost == 0 {
 			bestDecision = min(bestDecision, sameDecision{basicDecision{cost}})
@@ -133,9 +129,7 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 				bestDecision = min(bestDecision, sameDecision{basicDecision{cost}})
 				break
 			}
-		}
-
-		if len(src) != len(dst) {
+		} else {
 			cost = 2
 		}
 
@@ -223,28 +217,24 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 	case matchDecision:
 		src, dst := src.(nodes.Object), dst.(nodes.Object)
 		keys := make(map[string]bool)
-		iterate := func(keyset nodes.Object) {
-			for key := range keyset {
-				if in := keys[key]; !in {
-					keys[key] = true
-					if _, ok := dst[key]; !ok {
-						ds.push(Deatach{Parent: nodes.UniqueKey(src), Key: String(key)})
-					} else  if _, ok := src[key]; !ok {
-						ds.createRec(dst[key])
-						ds.push(Attach{
-							Parent: nodes.UniqueKey(src),
-							Key: String(key),
-							Child: nodes.UniqueKey(dst[key]),
-						})
-					} else {
-						ds.generateDifference(
-							src[key], dst[key], nodes.UniqueKey(src), String(key))
-					}
+		for _, key := range append(src.Keys(), dst.Keys()...) {
+			if in := keys[key]; !in {
+				keys[key] = true
+				if _, ok := dst[key]; !ok {
+					ds.push(Deatach{Parent: nodes.UniqueKey(src), Key: String(key)})
+				} else  if _, ok := src[key]; !ok {
+					ds.createRec(dst[key])
+					ds.push(Attach{
+						Parent: nodes.UniqueKey(src),
+						Key: String(key),
+						Child: nodes.UniqueKey(dst[key]),
+					})
+				} else {
+					ds.generateDifference(
+						src[key], dst[key], nodes.UniqueKey(src), String(key))
 				}
 			}
 		}
-		iterate(src)
-		iterate(dst)
 
 	case permuteDecision:
 		src, dst := src.(nodes.Array), dst.(nodes.Array)

@@ -18,7 +18,6 @@ type changeBase struct {
 func (changeBase) isChange()                {}
 func (ch changeBase) TransactionID() uint64 { return ch.txID }
 
-// TODO: proper ID of a node somehow
 type ID nodes.Comparable
 
 // key in a node, string for nodes.Object and int for nodes.Array
@@ -56,5 +55,6 @@ type Attach struct {
 type Deatach struct {
 	changeBase
 	Parent ID
-	Key    Key //or string, how to do alternative?
+	Key    Key 	// Currently deatach semantics are only defined for nodes.Object so the Key is
+				// practically always a string
 }
