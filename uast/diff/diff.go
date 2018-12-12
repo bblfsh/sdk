@@ -10,20 +10,19 @@ type decisionType interface {
 	cost() int
 }
 
-type basicDecision struct {
-	privateCost int
-}
-
-func (b basicDecision) cost() int { return b.privateCost }
-
 // match decision types together with their params
-type sameDecision struct{ basicDecision }
-type replaceDecision struct{ basicDecision }
-type matchDecision struct{ basicDecision }
+type sameDecision struct{ privateCost int }
+type replaceDecision struct{ privateCost int }
+type matchDecision struct{ privateCost int }
 type permuteDecision struct {
-	basicDecision
+	privateCost int
 	permutation []int
 }
+
+func (d sameDecision) 		cost() int { return d.privateCost }
+func (d replaceDecision) 	cost() int { return d.privateCost }
+func (d matchDecision) 		cost() int { return d.privateCost }
+func (d permuteDecision) 	cost() int { return d.privateCost }
 
 // min is a convinience method for choosing the cheapest decision
 func min(self, candidate decisionType) decisionType {
@@ -76,7 +75,7 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 	cost := ds.nodeSize(dst) + 1
 
 	var bestDecision decisionType
-	bestDecision = replaceDecision{basicDecision{cost}}
+	bestDecision = replaceDecision{cost}
 
 	if nodes.KindOf(src) != nodes.KindOf(dst) {
 		ds.decisions[label] = bestDecision
@@ -91,10 +90,10 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 		dst := dst.(nodes.Value)
 		cost = 0
 		if src == dst {
-			bestDecision = min(bestDecision, sameDecision{basicDecision{cost}})
+			bestDecision = min(bestDecision, sameDecision{cost})
 		} else {
 			cost = 1
-			bestDecision = min(bestDecision, replaceDecision{basicDecision{cost}})
+			bestDecision = min(bestDecision, replaceDecision{cost})
 		}
 
 	case nodes.Object:
@@ -112,9 +111,9 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 		}
 
 		if cost == 0 {
-			bestDecision = min(bestDecision, sameDecision{basicDecision{cost}})
+			bestDecision = min(bestDecision, sameDecision{cost})
 		} else {
-			bestDecision = min(bestDecision, matchDecision{basicDecision{cost}})
+			bestDecision = min(bestDecision, matchDecision{cost})
 		}
 
 	case nodes.Array:
@@ -126,7 +125,7 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 				sum += ds.decideAction(src[i], dst[i]).cost()
 			}
 			if sum == 0 {
-				bestDecision = min(bestDecision, sameDecision{basicDecision{cost}})
+				bestDecision = min(bestDecision, sameDecision{cost})
 				break
 			}
 		} else {
@@ -162,11 +161,11 @@ func (ds *cacheStorage) decideAction(src, dst nodes.Node) decisionType {
 
 		cost += res.Cost
 
-		bestDecision = min(bestDecision, permuteDecision{basicDecision{cost}, res.InRow})
+		bestDecision = min(bestDecision, permuteDecision{cost, res.InRow})
 
 	case nil:
 		cost = 0
-		bestDecision = min(bestDecision, sameDecision{basicDecision{cost}})
+		bestDecision = min(bestDecision, sameDecision{cost})
 
 	default:
 		panic(fmt.Errorf("unknown node type %T", src))
