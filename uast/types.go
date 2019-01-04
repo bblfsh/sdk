@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	// ErrIncorrectType is returned when trying to load a generic UAST node into Go value of an incorrect type.
+	// ErrIncorrectType is returned when trying to load a generic UAST node into a Go value
+	// of an incorrect type.
 	ErrIncorrectType = errors.NewKind("incorrect object type: %q, expected: %q")
-	// ErrTypeNotRegistered is returned when trying to create a UAST type that was not associated with any Go type.
+	// ErrTypeNotRegistered is returned when trying to create a UAST type that was not associated
+	// with any Go type. See RegisterPackage.
 	ErrTypeNotRegistered = errors.NewKind("type is not registered: %q")
 )
 
@@ -48,7 +50,9 @@ func (n nodeID) String() string {
 	return n.NS + ":" + n.Name
 }
 
-// RegisterPackage registers UAST namespace and associates listed types with it.
+// RegisterPackage registers a new UAST namespace and associates the concrete types
+// of the specified values with it. All types should be in the same Go package.
+// The name of each type is derived from its reflect.Type name.
 //
 // Example:
 //   type Node struct{}
@@ -172,7 +176,7 @@ func NewValue(typ string) (reflect.Value, error) {
 
 // TypeOf returns the UAST type of a value.
 //
-// If the value is a generic UAST node, the function return the value of KeyType.
+// If the value is a generic UAST node, the function returns the value of its KeyType.
 //
 // If an object is registered as a UAST schema type, the function returns the associated type.
 func TypeOf(o interface{}) string {

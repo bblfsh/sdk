@@ -102,9 +102,10 @@ func (p Position) Valid() bool {
 	return p != (Position{})
 }
 
-// Less returns true if the current position is less than an argument.
+// Less reports whether position p is strictly less than p2.
 //
-// If both positions has an offset, it will be used for comparison. Otherwise, line-column pair will be used.
+// If both positions have offsets, they will be used for comparison.
+// Otherwise, line-column pair will be used.
 //
 // Invalid positions are sorted last.
 func (p Position) Less(p2 Position) bool {
@@ -125,7 +126,11 @@ func (p Position) Less(p2 Position) bool {
 	return p.Col != 0 && p.Col < p2.Col
 }
 
-// Positions is a container object that stores all positional information for a UAST node.
+// Positions is a container that stores all positional information for a UAST node.
+//
+// The string key is a name of a position, for example KeyStart is a start position
+// of a node and KeyEnd is an end position of a node. Driver may provide additional
+// positional information for other tokens that the node consists of.
 type Positions map[string]Position
 
 // Keys returns a sorted slice of position names.
@@ -154,7 +159,7 @@ func (p Positions) End() *Position {
 	return nil
 }
 
-// ToObject converts positions map to a generic UAST node.
+// ToObject converts a positions map to a generic UAST node.
 func (p Positions) ToObject() nodes.Object {
 	n, err := toNodeReflect(reflect.ValueOf(p))
 	if err != nil {
@@ -175,7 +180,7 @@ func AsPosition(m nodes.Object) *Position {
 	return &p
 }
 
-// PositionsOf returns an map with all positional information for a given UAST node.
+// PositionsOf returns a complete positions map for the given UAST node.
 func PositionsOf(m nodes.Object) Positions {
 	o, _ := m[KeyPos].(nodes.Object)
 	if len(o) == 0 {
@@ -270,7 +275,7 @@ type Any interface{}
 // Scope is a temporary definition of a scope semantic type.
 type Scope = Any
 
-// GenNode is a base of every UAST node. It stores positional information.
+// GenNode is embedded into every UAST node to store positional information.
 type GenNode struct {
 	Positions Positions `json:"@pos,omitempty"`
 }
@@ -292,7 +297,7 @@ type Identifier struct {
 	Name string `json:"Name"`
 }
 
-// Roles returns a list of UAST node roles that this node implies.
+// Roles returns a list of UAST node roles that apply to this node.
 func (Identifier) Roles() []role.Role {
 	return []role.Role{
 		role.Identifier,
@@ -339,7 +344,7 @@ type String struct {
 type QualifiedIdentifier struct {
 	GenNode
 	// Names is a list of simple identifiers starting from a root level of hierarchy
-	// and ending with leaf identifier.
+	// and ending with leaf identifier. Names should not be empty.
 	Names []Identifier `json:"Names"`
 }
 
@@ -358,8 +363,8 @@ type Comment struct {
 
 	// Text is an unescaped UTF8 string with the comment text.
 	//
-	// Drivers should trim any comment-related tokens as well as whitespaces and
-	// stylistic characters at the beginning of each line. See Prefix, Suffix, Tab.
+	// Drivers must trim any comment-related tokens as well as whitespaces and
+	// stylistic characters at the beginning of ToObjecteach line. See Prefix, Suffix, Tab.
 	//
 	// Example:
 	//    /*
@@ -469,11 +474,11 @@ type Alias struct {
 
 // Import is a statement that can load other modules into the program or library.
 //
-// This is a declarative import statement. It's position in the UAST does not affect
+// This is a declarative import statement. Its position in the UAST does not affect
 // the way and the time when the module is imported and the side-effects are executed
 // only once a package is initialized.
 //
-// Similar to import in Go, Java, C#.
+// This describes imports in Go, Java, and C#, for example.
 //
 // For more specific types see RuntimeImport, RuntimeReImport, InlineImport.
 type Import struct {
@@ -497,15 +502,16 @@ type Import struct {
 // reaches this UAST node. The import side effects are executed only once, regardless of how many
 // times a statement is reached.
 //
-// Similar to import in PHP, Python, JS.
+// This describes imports in PHP, Python and JS for example.
 //
 // For other import types, see Import.
 type RuntimeImport Import
 
-// RuntimeReImport is a subset of RuntimeImport statement that will re-execute an import and its
-// side-effects statement each time an execution reaches the statement.
+// RuntimeReImport is a subset of RuntimeImport statement that will re-execute
+// an import and its side-effects statement each time an execution reaches the
+// statement.
 //
-// Similar to import in PHP, Python.
+// This describes imports in PHP and Python for example.
 //
 // For other import types, see Import.
 type RuntimeReImport RuntimeImport
@@ -513,7 +519,7 @@ type RuntimeReImport RuntimeImport
 // InlineImport is a subset of import statement that acts like a preprocessor - all statements in
 // the imported module are copied into a position of the UAST node.
 //
-// Similar to import in C and C++.
+// This describes #include in C and C++.
 //
 // For other import types, see Import.
 type InlineImport Import
@@ -527,16 +533,16 @@ type Argument struct {
 	// Type is an optional type of an argument.
 	Type Any `json:"Type"`
 
-	// Init is an expression that should be used to initialize an argument
-	// in case no value is provided. Also known as a default value of an argument.
+	// Init is an optional expression used to initialize the argument
+	// in case no value is provided.
 	Init Any `json:"Init"`
 
-	// Variadic flag may be set only for the last argument to denote a function
-	// with a variadic number of arguments.
+	// Variadic is set for the last argument of a function with a
+	// variadic number of arguments.
 	Variadic bool `json:"Variadic"`
 
-	// MapVariadic flag may be set only for the last argument to denote a function
-	// that accepts a map/dictionary value that is mapped to function arguments.
+	// MapVariadic is set for the last argument of a function that accepts a
+	// map/dictionary value that is mapped to function arguments.
 	MapVariadic bool `json:"MapVariadic"`
 
 	// Receiver is set to true if an argument is a receiver of a method call.
@@ -548,7 +554,7 @@ type FunctionType struct {
 	GenNode
 	// Arguments is a set of arguments the function accepts.
 	//
-	// Methods defined on structures and classes should have the first argument
+	// Methods defined on structures and classes must have the first argument
 	// that corresponds to a method's receiver ("this" in most languages).
 	Arguments []Argument `json:"Arguments"`
 
