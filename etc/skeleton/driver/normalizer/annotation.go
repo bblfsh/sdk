@@ -25,7 +25,7 @@ var Native = Transformers([][]Transformer{
 //
 // https://godoc.org/gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner
 var Code = []CodeTransformer{
-	positioner.NewFillLineColFromOffset(),
+	positioner.FromOffset(),
 }
 
 // Annotations is a list of individual transformations to annotate a native AST with roles.

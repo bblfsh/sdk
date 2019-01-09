@@ -47,7 +47,7 @@ func TestFillLineColNested(t *testing.T) {
 		}},
 	}
 
-	p := NewFillLineColFromOffset()
+	p := FromOffset()
 	out, err := p.OnCode(data).Do(input)
 	require.NoError(err)
 	require.Equal(expected, out)
@@ -80,7 +80,7 @@ func TestFillOffsetNested(t *testing.T) {
 		}},
 	}
 
-	p := NewFillOffsetFromLineCol()
+	p := FromLineCol()
 	out, err := p.OnCode(data).Do(input)
 	require.NoError(err)
 	require.Equal(expected, out)
@@ -101,7 +101,7 @@ func TestFillOffsetEmptyFile(t *testing.T) {
 		uast.KeyEnd:   fullPos(0, 1, 1),
 	}
 
-	p := NewFillOffsetFromLineCol()
+	p := FromLineCol()
 	out, err := p.OnCode(data).Do(input)
 	require.NoError(err)
 	require.Equal(expected, out)

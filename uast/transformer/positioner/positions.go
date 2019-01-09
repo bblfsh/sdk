@@ -13,24 +13,39 @@ var _ transformer.CodeTransformer = Positioner{}
 
 const cloneObj = false
 
-// NewFillOffsetFromLineCol gets the original source code and its parsed form
-// as *Node and fills every Offset field using its Line and Column.
-func NewFillOffsetFromLineCol() Positioner {
-	return Positioner{method: fillOffsetFromLineCol}
+// FromLineCol fills the Offset field of all Position nodes by using their Line and Col.
+func FromLineCol() Positioner {
+	return Positioner{method: fromLineCol}
 }
 
-// NewFillLineColFromOffset gets the original source code and its parsed form
-// as *Node and fills every Line and Column field using its Offset.
+// NewFillOffsetFromLineCol fills the Offset field of all Position nodes by using
+// their Line and Col.
+//
+// Deprecated: see FromLineCol
+func NewFillOffsetFromLineCol() Positioner {
+	return FromLineCol()
+}
+
+// FromOffset the Line and Col fields of all Position nodes by using their Offset.
+func FromOffset() Positioner {
+	return Positioner{method: fromOffset}
+}
+
+// NewFillLineColFromOffset the Line and Col fields of all Position nodes by using
+// their Offset.
+//
+// Deprecated: see FromOffset
 func NewFillLineColFromOffset() Positioner {
-	return Positioner{method: fillLineColFromOffset}
+	return FromOffset()
 }
 
 // Positioner is a transformation that only changes positional information.
+// The transformation should be initialized with the source code by calling OnCode.
 type Positioner struct {
 	method func(*positionIndex, *uast.Position) error
 }
 
-// OnCode uses the source code to update positional information.
+// OnCode uses the source code to update positional information of UAST nodes.
 func (t Positioner) OnCode(code string) transformer.Transformer {
 	idx := newPositionIndex([]byte(code))
 	return transformer.TransformObjFunc(func(o nodes.Object) (nodes.Object, bool, error) {
@@ -51,7 +66,7 @@ func (t Positioner) OnCode(code string) transformer.Transformer {
 	})
 }
 
-func fillOffsetFromLineCol(idx *positionIndex, pos *uast.Position) error {
+func fromLineCol(idx *positionIndex, pos *uast.Position) error {
 	offset, err := idx.Offset(int(pos.Line), int(pos.Col))
 	if err != nil {
 		return err
@@ -60,7 +75,7 @@ func fillOffsetFromLineCol(idx *positionIndex, pos *uast.Position) error {
 	return nil
 }
 
-func fillLineColFromOffset(idx *positionIndex, pos *uast.Position) error {
+func fromOffset(idx *positionIndex, pos *uast.Position) error {
 	line, col, err := idx.LineCol(int(pos.Offset))
 	if err != nil {
 		return err
