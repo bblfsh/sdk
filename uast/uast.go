@@ -374,8 +374,8 @@ type Comment struct {
 	//    only "some comment" is considered a text
 	Text string `json:"Text"`
 
-	// Prefix is usually a set of whitespaces that appear before the first line of an
-	// actual comment text.
+	// Prefix is a set of whitespaces and stylistic characters that appear before
+	// the first line of an actual comment text.
 	//
 	// Example:
 	//    /*
@@ -385,8 +385,8 @@ type Comment struct {
 	//    the "\n" after the "/*" token is considered a prefix
 	Prefix string `json:"Prefix"`
 
-	// Suffix is usually a set of whitespaces that appear after the last line of an
-	// actual comment text.
+	// Suffix is a set of whitespaces and stylistic characters that appear after
+	// the last line of an actual comment text.
 	//
 	// Example:
 	//    /*
@@ -397,7 +397,7 @@ type Comment struct {
 	Suffix string `json:"Suffix"`
 
 	// Tab is a set of whitespace and stylistic characters that appears at the beginning
-	// of each comment line, except the first one.
+	// of each comment line, except the first one, which uses Prefix.
 	//
 	// Example:
 	//    /*
