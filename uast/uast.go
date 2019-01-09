@@ -82,7 +82,7 @@ type Position struct {
 	Offset uint32 `json:"offset"`
 	// Line is the line number. It is a 1-based index.
 	Line uint32 `json:"line"`
-	// Col is the column number - the byte offset of the position relative to
+	// Col is the column number — the byte offset of the position relative to
 	// a line. It is a 1-based index.
 	Col uint32 `json:"col"`
 }

@@ -108,6 +108,8 @@ func TestFillOffsetEmptyFile(t *testing.T) {
 }
 
 func TestPosIndex(t *testing.T) {
+	// Verify that a multi-byte Unicode rune does not displace offsets after
+	// its occurrence in the input. Test few other simple cases as well.
 	const source = `line1
 ё2
 a3`
@@ -115,14 +117,14 @@ a3`
 		{Offset: 0, Line: 1, Col: 1},
 		{Offset: 4, Line: 1, Col: 5},
 
-		// utf8 rune
+		// multi-byte unicode rune
 		{Offset: 6, Line: 2, Col: 1},
-		{Offset: 8, Line: 2, Col: 3}, // col is a byte offset
+		{Offset: 8, Line: 2, Col: 3}, // col is a byte offset+1, not a rune index
 
 		{Offset: 10, Line: 3, Col: 1},
 		{Offset: 11, Line: 3, Col: 2},
 
-		{Offset: 12, Line: 3, Col: 3}, // special case - EOF position
+		{Offset: 12, Line: 3, Col: 3}, // special case — EOF position
 	}
 
 	ind := newPositionIndex([]byte(source))
