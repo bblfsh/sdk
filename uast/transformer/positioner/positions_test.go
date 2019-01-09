@@ -124,10 +124,11 @@ a3`
 		{Offset: 10, Line: 3, Col: 1},
 		{Offset: 11, Line: 3, Col: 2},
 
-		{Offset: 12, Line: 3, Col: 3}, // special case — EOF position
+		// special case — EOF position
+		{Offset: 12, Line: 3, Col: 3},
 	}
 
-	ind := newPositionIndex([]byte(source))
+	ind := newPositionIndex([]byte(source), false)
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
 			line, col, err := ind.LineCol(int(c.Offset))
@@ -138,6 +139,44 @@ a3`
 			off, err := ind.Offset(int(c.Line), int(c.Col))
 			require.NoError(t, err)
 			require.Equal(t, c.Offset, uint32(off))
+		})
+	}
+}
+
+func TestPosIndexUnicode(t *testing.T) {
+	// Verify that a rune offset -> byte offset conversion works.
+	const source = `line1
+ё2
+a3`
+	var cases = []struct {
+		runeOff   int
+		byteOff   int
+		line, col int
+	}{
+		{runeOff: 0, byteOff: 0, line: 1, col: 1},
+
+		// multi-byte unicode rune
+		{runeOff: 6, byteOff: 6, line: 2, col: 1},
+
+		{runeOff: 7, byteOff: 8, line: 2, col: 3},
+		{runeOff: 10, byteOff: 11, line: 3, col: 2},
+
+		// special case — EOF position
+		{runeOff: 11, byteOff: 12, line: 3, col: 3},
+	}
+
+	ind := newPositionIndex([]byte(source), true)
+	for _, c := range cases {
+		t.Run("", func(t *testing.T) {
+			off, err := ind.RuneOffset(c.runeOff)
+			require.NoError(t, err)
+			require.Equal(t, c.byteOff, off)
+
+			// verify that offset -> line/col conversion still works
+			line, col, err := ind.LineCol(off)
+			require.NoError(t, err)
+			require.Equal(t, c.line, line)
+			require.Equal(t, c.col, col)
 		})
 	}
 }
