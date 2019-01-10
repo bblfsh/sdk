@@ -76,21 +76,20 @@ type positionIndex struct {
 }
 
 func newPositionIndex(data []byte) *positionIndex {
-	idx := &positionIndex{}
-	idx.size = len(data)
+	idx := &positionIndex{
+		size: len(data),
+	}
 	idx.addLineOffset(0)
 	for offset, b := range data {
 		if b == '\n' {
 			idx.addLineOffset(offset + 1)
 		}
 	}
-
 	return idx
 }
 
 func (idx *positionIndex) addLineOffset(offset int) {
 	idx.offsetByLine = append(idx.offsetByLine, offset)
-
 }
 
 // LineCol returns a one-based line and col given a zero-based byte offset.
@@ -146,7 +145,7 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 		maxCol = 1
 	}
 
-	if col < minCol || (maxCol > 0 && col - 1 > maxCol) {
+	if col < minCol || (maxCol > 0 && col-1 > maxCol) {
 		return 0, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
 	}
 
