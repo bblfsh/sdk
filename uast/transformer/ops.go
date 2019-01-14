@@ -221,6 +221,7 @@ func (o Objs) ObjectOps() []ObjectOp {
 	return l
 }
 
+// EmptyObj checks that a node is an empty object.
 func EmptyObj() Op {
 	return Is(nodes.Object{})
 }
@@ -237,16 +238,13 @@ func (o Obj) Fields() (FieldDescs, bool) {
 	fields := make(FieldDescs, len(o))
 	for k, v := range o {
 		f := FieldDesc{Optional: false}
-		if is, ok := v.(opIs); ok {
-			n := is.n
-			f.Fixed = &n
-		}
+		f.SetValue(v)
 		fields[k] = f
 	}
 	return fields, true
 }
 
-// Object converts this helper to a full Object description.
+// fields converts this helper to a full Fields description.
 func (o Obj) fields() Fields {
 	fields := make(Fields, 0, len(o))
 	for k, op := range o {
@@ -256,33 +254,50 @@ func (o Obj) fields() Fields {
 	return fields
 }
 
-// Check will make an Object operation from this helper and call Check on it.
+// Check will convert the operation to Fields and will call Check on it.
 func (o Obj) Check(st *State, n nodes.Node) (bool, error) {
 	return o.fields().Check(st, n)
 }
 
-// Construct will make an Object operation from this helper and call Construct on it.
+// Construct will convert the operation to Fields and will call Construct on it.
 func (o Obj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return o.fields().Construct(st, n)
 }
 
-// CheckObj will make an Object operation from this helper and call Check on it.
+// CheckObj will convert the operation to Fields and will call CheckObj on it.
 func (o Obj) CheckObj(st *State, n nodes.Object) (bool, error) {
 	return o.fields().CheckObj(st, n)
 }
 
-// ConstructObj will make an Object operation from this helper and call Construct on it.
+// ConstructObj will convert the operation to Fields and will call ConstructObj on it.
 func (o Obj) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
 	return o.fields().ConstructObj(st, n)
 }
 
+// FieldDesc is a field descriptor for operations that act on objects.
+//
+// It is used for transformation optimizer to filter candidate nodes upfront
+// without running the full transformation tree.
 type FieldDesc struct {
-	Optional bool        // field might not exists in the object
-	Fixed    *nodes.Node // field is required to have a fixed value; the value may be nil
+	// Optional indicates that field might not exists in the object.
+	Optional bool
+	// Fixed is set if a field is required to have a specific value. The value may be nil.
+	Fixed *nodes.Node
 }
 
-// FieldDescs is a descriptions of static fields of an object.
-// Transformation operation may return this struct to indicate what fields they will require.
+// SetValue checks the selector for a fixed value and sets it for the field descriptor.
+func (f *FieldDesc) SetValue(sel Sel) {
+	if is, ok := sel.(opIs); ok {
+		n := is.n
+		f.Fixed = &n
+	}
+}
+
+// FieldDescs contains descriptions of static fields of an object.
+//
+// Transformations may return this type to indicate what fields they will require.
+//
+// See FieldDesc for details.
 type FieldDescs map[string]FieldDesc
 
 // Clone makes a copy of field description, without cloning each field values.
@@ -319,7 +334,7 @@ func (f FieldDescs) CheckObj(n nodes.Object) bool {
 type ObjectOp interface {
 	Op
 	// Fields returns a map of field names that will be processed by this operation.
-	// The flag if the map indicates if the field is required.
+	// The flag in the map indicates if the field is required.
 	// False bool value returned as a second argument indicates that implementation will process all fields.
 	Fields() (FieldDescs, bool)
 
@@ -745,10 +760,7 @@ func (o Fields) Fields() (FieldDescs, bool) {
 	fields := make(FieldDescs, len(o))
 	for _, f := range o {
 		fld := FieldDesc{Optional: f.Optional != ""}
-		if is, ok := f.Op.(opIs); ok {
-			n := is.n
-			fld.Fixed = &n
-		}
+		fld.SetValue(f.Op)
 		fields[f.Name] = fld
 	}
 	return fields, true
