@@ -1088,7 +1088,7 @@ var Native = Transformers([][]Transformer{
 //
 // https://godoc.org/gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner
 var Code = []CodeTransformer{
-	positioner.NewFillLineColFromOffset(),
+	positioner.FromOffset(),
 }
 
 // Annotations is a list of individual transformations to annotate a native AST with roles.
@@ -1107,7 +1107,7 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 1132, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 1118, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
