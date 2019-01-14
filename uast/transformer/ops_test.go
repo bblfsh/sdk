@@ -429,7 +429,7 @@ var opsCases = []struct {
 			}
 		},
 		src: Check(
-			Not(Has{"b": Any(nil)}),
+			Not(Has{"b": Any()}),
 			Obj{
 				u.KeyType: String("node"),
 				"val":     Var("x"),
