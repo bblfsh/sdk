@@ -330,15 +330,22 @@ func (f FieldDescs) CheckObj(n nodes.Object) bool {
 	return true
 }
 
-// ObjectOp is an operation that is executed on an object. See Object.
-type ObjectOp interface {
-	Op
+// ObjectSel is a selector that matches objects. See Object.
+type ObjectSel interface {
+	Sel
 	// Fields returns a map of field names that will be processed by this operation.
 	// The flag in the map indicates if the field is required.
 	// False bool value returned as a second argument indicates that implementation will process all fields.
 	Fields() (FieldDescs, bool)
 
 	CheckObj(st *State, n nodes.Object) (bool, error)
+}
+
+// ObjectOp is an operation that is executed on an object. See Object.
+type ObjectOp interface {
+	Mod
+	ObjectSel
+
 	ConstructObj(st *State, n nodes.Object) (nodes.Object, error)
 }
 
@@ -1250,8 +1257,72 @@ func (op *opCheck) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return op.op.Construct(st, n)
 }
 
+// CheckObj is similar to Check, but accepts only object operators.
+func CheckObj(s ObjectSel, op ObjectOp) ObjectOp {
+	// merge field descriptor once, so we don't have to compute them later
+
+	// doesn't matter if check is marked as partial or not
+	// we always consider it as such
+	checks, _ := s.Fields()
+	// optional selectors doesn't make sense
+	for _, f := range checks {
+		if f.Optional {
+			panic("optional fields are not allowed in CheckObj")
+		}
+	}
+
+	// merge maps, prefer fields from op
+	fields, full := op.Fields()
+	for name, f := range fields {
+		checks[name] = f
+	}
+
+	return &opCheckObj{sel: s, op: op, fields: checks, full: full}
+}
+
+type opCheckObj struct {
+	sel    ObjectSel
+	op     ObjectOp
+	fields FieldDescs
+	full   bool
+}
+
+func (op *opCheckObj) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
+
+func (op *opCheckObj) Fields() (FieldDescs, bool) {
+	return op.fields, op.full
+}
+
+func (op *opCheckObj) CheckObj(st *State, n nodes.Object) (bool, error) {
+	if ok, err := op.sel.CheckObj(st.Clone(), n); err != nil || !ok {
+		return ok, err
+	}
+	return op.op.CheckObj(st, n)
+}
+
+func (op *opCheckObj) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
+	return op.op.ConstructObj(st, n)
+}
+
+func (op *opCheckObj) Check(st *State, n nodes.Node) (bool, error) {
+	if ok, err := op.sel.Check(st.Clone(), n); err != nil || !ok {
+		return ok, err
+	}
+	return op.op.Check(st, n)
+}
+
+func (op *opCheckObj) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+	return op.op.Construct(st, n)
+}
+
 // Not negates the check.
 func Not(s Sel) Sel {
+	if k, ok := s.(opKind); ok {
+		// invert the kind mask
+		return opKind{k: nodes.KindsAny &^ k.k}
+	}
 	return &opNot{sel: s}
 }
 
@@ -1264,6 +1335,40 @@ func (*opNot) Kinds() nodes.Kind {
 }
 
 func (op *opNot) Check(st *State, n nodes.Node) (bool, error) {
+	ok, err := op.sel.Check(st.Clone(), n)
+	if err != nil {
+		return false, err
+	}
+	return !ok, nil
+}
+
+// ObjNot negates all checks on an object, while still asserting this node as an object.
+func ObjNot(s ObjectSel) ObjectSel {
+	return &opObjNot{sel: s}
+}
+
+type opObjNot struct {
+	sel ObjectSel
+}
+
+func (*opObjNot) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
+
+func (op *opObjNot) Fields() (FieldDescs, bool) {
+	// TODO(dennwc): FieldDescs should contain negative checks as well
+	return nil, false // not sure; can be anything
+}
+
+func (op *opObjNot) CheckObj(st *State, n nodes.Object) (bool, error) {
+	ok, err := op.sel.CheckObj(st.Clone(), n)
+	if err != nil {
+		return false, err
+	}
+	return !ok, nil
+}
+
+func (op *opObjNot) Check(st *State, n nodes.Node) (bool, error) {
 	ok, err := op.sel.Check(st.Clone(), n)
 	if err != nil {
 		return false, err
@@ -1314,6 +1419,8 @@ func HasType(o interface{}) Sel {
 	return Has{uast.KeyType: String(typ)}
 }
 
+var _ ObjectSel = Has{}
+
 // Has is a check-only operation that verifies that object has specific fields and they match given checks.
 type Has map[string]Sel
 
@@ -1321,14 +1428,20 @@ func (Has) Kinds() nodes.Kind {
 	return nodes.KindObject
 }
 
-// Check verifies that specified fields exists and matches the provided sub-operations.
-func (m Has) Check(st *State, n nodes.Node) (bool, error) {
-	o, ok := n.(nodes.Object)
-	if !ok {
-		return false, nil
-	}
+func (m Has) Fields() (FieldDescs, bool) {
+	desc := make(FieldDescs, len(m))
 	for k, sel := range m {
-		v, ok := o[k]
+		f := FieldDesc{Optional: false}
+		f.SetValue(sel)
+		desc[k] = f
+	}
+	return desc, false
+}
+
+// CheckObj verifies that specified fields exist and matches the provided sub-operations.
+func (m Has) CheckObj(st *State, n nodes.Object) (bool, error) {
+	for k, sel := range m {
+		v, ok := n[k]
 		if !ok {
 			return false, nil
 		}
@@ -1337,6 +1450,54 @@ func (m Has) Check(st *State, n nodes.Node) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// Check verifies that specified fields exist and matches the provided sub-operations.
+func (m Has) Check(st *State, n nodes.Node) (bool, error) {
+	o, ok := n.(nodes.Object)
+	if !ok {
+		return false, nil
+	}
+	return m.CheckObj(st, o)
+}
+
+var _ ObjectSel = HasFields{}
+
+// HasFields is a check-only operation that verifies existence of specific fields.
+type HasFields map[string]bool
+
+func (HasFields) Kinds() nodes.Kind {
+	return nodes.KindObject
+}
+
+func (m HasFields) Fields() (FieldDescs, bool) {
+	desc := make(FieldDescs, len(m))
+	for k, expect := range m {
+		if expect {
+			desc[k] = FieldDesc{Optional: false}
+		}
+	}
+	return desc, false
+}
+
+// CheckObj verifies that specified fields exist and matches the provided sub-operations.
+func (m HasFields) CheckObj(st *State, n nodes.Object) (bool, error) {
+	for k, expect := range m {
+		_, ok := n[k]
+		if ok != expect {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// Check verifies that specified fields exist and matches the provided sub-operations.
+func (m HasFields) Check(st *State, n nodes.Node) (bool, error) {
+	o, ok := n.(nodes.Object)
+	if !ok {
+		return false, nil
+	}
+	return m.CheckObj(st, o)
 }
 
 // In check that the node is a value from a given list.
