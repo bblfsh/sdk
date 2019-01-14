@@ -122,6 +122,13 @@ func (op opVar) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 }
 
 // AnyNode matches any node and throws it away. Reversal will create a node with create op.
+//
+// This operation should not be used thoughtlessly. Each field that is dropped this way
+// is an information loss and may become a source of bugs.
+//
+// The preferred way is to assert an exact value with Is or similar operator. If possible,
+// assert the type of expected node or any other field that indicates that this node
+// is useless.
 func AnyNode(create Mod) Op {
 	if create == nil {
 		create = Is(nil)
@@ -145,7 +152,14 @@ func (op opAnyNode) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	return op.create.Construct(st, n)
 }
 
-// AnyVal accept any value and aways creates a node with a provided one.
+// Any matches any node and throws it away. It creates a nil node on reversal.
+// See AnyNode for details.
+func Any() Op {
+	return AnyNode(nil)
+}
+
+// AnyVal accept any value and creates a provided value on reversal.
+// See AnyNode for details.
 func AnyVal(val nodes.Value) Op {
 	return AnyNode(Is(val))
 }
@@ -1271,63 +1285,6 @@ func (op opAnd) Check(st *State, n nodes.Node) (bool, error) {
 			return false, err
 		} else if !ok {
 			return false, nil
-		}
-	}
-	return true, nil
-}
-
-// Any check matches if any of list elements matches sub-check.
-func Any(s Sel) Sel {
-	if s == nil {
-		s = Is(nil)
-	}
-	return &opAny{sel: s}
-}
-
-type opAny struct {
-	sel Sel
-}
-
-func (*opAny) Kinds() nodes.Kind {
-	return nodes.KindArray
-}
-
-func (op *opAny) Check(st *State, n nodes.Node) (bool, error) {
-	l, ok := n.(nodes.Array)
-	if !ok {
-		return false, nil
-	}
-	for _, o := range l {
-		if ok, err := op.sel.Check(st.Clone(), o); err != nil {
-			return false, err
-		} else if ok {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// All check matches if all list elements matches sub-check.
-func All(s Sel) Sel {
-	return &opAll{sel: s}
-}
-
-type opAll struct {
-	sel Sel
-}
-
-func (*opAll) Kinds() nodes.Kind {
-	return nodes.KindArray
-}
-
-func (op *opAll) Check(st *State, n nodes.Node) (bool, error) {
-	l, ok := n.(nodes.Array)
-	if !ok {
-		return false, nil
-	}
-	for _, o := range l {
-		if ok, err := op.sel.Check(st.Clone(), o); err != nil || !ok {
-			return false, err
 		}
 	}
 	return true, nil
