@@ -55,7 +55,12 @@ type Positioner struct {
 
 // OnCode uses the source code to update positional information of UAST nodes.
 func (t Positioner) OnCode(code string) transformer.Transformer {
-	idx := newPositionIndex([]byte(code), t.unicode)
+	var idx *positionIndex
+	if t.unicode {
+		idx = newPositionIndexUnicode([]byte(code))
+	} else {
+		idx = newPositionIndex([]byte(code))
+	}
 	return transformer.TransformObjFunc(func(o nodes.Object) (nodes.Object, bool, error) {
 		pos := uast.AsPosition(o)
 		if pos == nil {
@@ -104,67 +109,73 @@ func fromUnicodeOffset(idx *positionIndex, pos *uast.Position) error {
 
 // runeSpan represents a sequence of UTF8 characters of the same size in bytes.
 type runeSpan struct {
-	runeOff  int // index of the first rune
-	byteOff  int // bytes offset of the first rune
-	runes    int // number of runes
-	runeSize int // in bytes
+	firstRuneInd int // index of the first rune
+	byteOff      int // bytes offset of the first rune
+	numRunes     int // number of runes
+	runeSize     int // in bytes
 }
 
 type positionIndex struct {
 	offsetByLine []int
-	runeSpans    []runeSpan
+	spans        []runeSpan
 	size         int
 }
 
-func newPositionIndex(data []byte, unicode bool) *positionIndex {
+func newPositionIndex(data []byte) *positionIndex {
 	idx := &positionIndex{
 		size: len(data),
 	}
 	idx.addLineOffset(0)
-	if unicode {
-		cur := runeSpan{
-			runeSize: 1,
+	for i, b := range data {
+		if b == '\n' {
+			idx.addLineOffset(i + 1)
 		}
-		runes := 0
-		// decode UTF8 runes and collect a slice of UTF8 character spans
-		// each span only contains characters with the same size in bytes
-		for i := 0; i < len(data); i++ {
-			r, n := utf8.DecodeRune(data[i:])
-			if n == 0 {
-				break // EOF, should not happen
-			}
-			if r == '\n' {
-				idx.addLineOffset(i + 1)
-			}
-			if n == cur.runeSize {
-				// continue this span
-				cur.runes++
-				runes++
-				i += n - 1
-				continue
-			}
-			if cur.runes != 0 {
-				idx.runeSpans = append(idx.runeSpans, cur)
-			}
-			// make a new span
-			cur = runeSpan{
-				byteOff:  i,
-				runeOff:  runes,
-				runes:    1,
-				runeSize: n,
-			}
+	}
+	return idx
+}
+
+func newPositionIndexUnicode(data []byte) *positionIndex {
+	idx := &positionIndex{
+		size: len(data),
+	}
+	idx.addLineOffset(0)
+
+	cur := runeSpan{
+		runeSize: 1,
+	}
+	runes := 0
+	// decode UTF8 runes and collect a slice of UTF8 character spans
+	// each span only contains characters with the same size in bytes
+	for i := 0; i < len(data); i++ {
+		r, n := utf8.DecodeRune(data[i:])
+		if n == 0 {
+			break // EOF, should not happen
+		}
+		if r == '\n' {
+			idx.addLineOffset(i + 1)
+		}
+		if n == cur.runeSize {
+			// continue this span
+			cur.numRunes++
 			runes++
 			i += n - 1
+			continue
 		}
-		if cur.runes != 0 {
-			idx.runeSpans = append(idx.runeSpans, cur)
+		if cur.numRunes != 0 {
+			idx.spans = append(idx.spans, cur)
 		}
-	} else {
-		for i, b := range data {
-			if b == '\n' {
-				idx.addLineOffset(i + 1)
-			}
+		// make a new span
+		cur = runeSpan{
+			byteOff:      i,
+			firstRuneInd: runes,
+			numRunes:     1,
+			runeSize:     n,
 		}
+		runes++
+		i += n - 1
+	}
+	if cur.numRunes != 0 {
+		idx.spans = append(idx.spans, cur)
 	}
 	return idx
 }
@@ -236,9 +247,9 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 // RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
 func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 	var last int
-	if len(idx.runeSpans) != 0 {
-		s := idx.runeSpans[len(idx.runeSpans)-1]
-		last = s.runeOff + s.runes
+	if len(idx.spans) != 0 {
+		s := idx.spans[len(idx.spans)-1]
+		last = s.firstRuneInd + s.numRunes
 	}
 	if offset == last {
 		// special case — EOF position
@@ -247,10 +258,10 @@ func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 	if offset < 0 || offset >= last {
 		return -1, fmt.Errorf("rune out of bounds: %d [%d, %d)", offset, 0, last)
 	}
-	i := sort.Search(len(idx.runeSpans), func(i int) bool {
-		s := idx.runeSpans[i]
-		return offset < s.runeOff
+	i := sort.Search(len(idx.spans), func(i int) bool {
+		s := idx.spans[i]
+		return offset < s.firstRuneInd
 	})
-	s := idx.runeSpans[i-1]
-	return s.byteOff + s.runeSize*(offset-s.runeOff), nil
+	s := idx.spans[i-1]
+	return s.byteOff + s.runeSize*(offset-s.firstRuneInd), nil
 }

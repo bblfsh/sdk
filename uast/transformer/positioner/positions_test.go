@@ -128,7 +128,7 @@ a3`
 		{Offset: 12, Line: 3, Col: 3},
 	}
 
-	ind := newPositionIndex([]byte(source), false)
+	ind := newPositionIndex([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
 			line, col, err := ind.LineCol(int(c.Offset))
@@ -165,7 +165,7 @@ a3`
 		{runeOff: 11, byteOff: 12, line: 3, col: 3},
 	}
 
-	ind := newPositionIndex([]byte(source), true)
+	ind := newPositionIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
 			off, err := ind.RuneOffset(c.runeOff)
