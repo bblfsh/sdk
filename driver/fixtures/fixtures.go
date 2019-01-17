@@ -12,10 +12,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
 	"gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
 	"gopkg.in/bblfsh/sdk.v2/uast/viewer"
 	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
@@ -34,6 +36,9 @@ type SemanticConfig struct {
 	BlacklistTypes []string
 }
 
+// DockerConfig was used to run fixture tests locally using "go test".
+//
+// Deprecated: use "bblfsh-sdk test"
 type DockerConfig struct {
 	Debug bool
 	Image string
@@ -59,6 +64,10 @@ type Suite struct {
 
 	Semantic SemanticConfig
 	Docker   DockerConfig
+
+	// VerifyTokens checks that token and positional info matches.
+	// Executed after the preprocessing stage (in annotated mode).
+	VerifyTokens []positioner.VerifyToken
 }
 
 func (s *Suite) fixturesPath(name string) string {
@@ -306,6 +315,13 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 					}
 					return true
 				})
+			}
+			if len(s.VerifyTokens) != 0 && mode == driver.ModeAnnotated {
+				for _, v := range s.VerifyTokens {
+					if err := v.Verify(code, ua); err != nil {
+						t.Error(err)
+					}
+				}
 			}
 
 			un, err := marshalUAST(ua)
