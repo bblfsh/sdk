@@ -957,6 +957,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/driver/fixtures"
 	"gopkg.in/bblfsh/sdk.v2/driver/native"
+	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
 )
 
 const projectRoot = "../../"
@@ -975,8 +976,8 @@ var Suite = &fixtures.Suite{
 			// TODO: list native types that should be converted to semantic UAST
 		},
 	},
-	Docker:fixtures.DockerConfig{
-		//Image:"image:tag", // TODO: specify a docker image with language runtime
+	VerifyTokens: []positioner.VerifyToken{
+	    // TODO: list nodes that needs to be checked for token correctness
 	},
 }
 
@@ -999,7 +1000,7 @@ func driverFixturesFixtures_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1133, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/fixtures/fixtures_test.go.tpl", size: 1192, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

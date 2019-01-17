@@ -8,6 +8,7 @@ import (
 	"gopkg.in/bblfsh/sdk.v2/driver"
 	"gopkg.in/bblfsh/sdk.v2/driver/fixtures"
 	"gopkg.in/bblfsh/sdk.v2/driver/native"
+	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
 )
 
 const projectRoot = "../../"
@@ -26,8 +27,8 @@ var Suite = &fixtures.Suite{
 			// TODO: list native types that should be converted to semantic UAST
 		},
 	},
-	Docker:fixtures.DockerConfig{
-		//Image:"image:tag", // TODO: specify a docker image with language runtime
+	VerifyTokens: []positioner.VerifyToken{
+	    // TODO: list nodes that needs to be checked for token correctness
 	},
 }
 
