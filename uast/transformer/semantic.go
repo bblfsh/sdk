@@ -94,7 +94,7 @@ func MapSemanticPos(nativeType string, semType interface{}, pos map[string]strin
 }
 
 func CommentText(tokens [2]string, vr string) Op {
-	return commentUAST{
+	return &commentUAST{
 		tokens: tokens,
 		text:   vr + "_text", pref: vr + "_pref", suff: vr + "_suff", tab: vr + "_tab",
 	}
@@ -114,30 +114,22 @@ func CommentNode(block bool, vr string, pos Op) ObjectOp {
 	return UASTType(uast.Comment{}, obj)
 }
 
-type commentUAST struct {
-	tokens          [2]string
-	text            string
-	pref, suff, tab string
+// commentElems contains individual comment elements.
+// See uast.Comment for details.
+type commentElems struct {
+	Tokens [2]string
+	Text   string
+	Pref   string
+	Suff   string
+	Tab    string
 }
 
-func (commentUAST) Kinds() nodes.Kind {
-	return nodes.KindString
-}
-
-func (op commentUAST) Check(st *State, n nodes.Node) (bool, error) {
-	s, ok := n.(nodes.String)
-	if !ok {
-		return false, nil
+func (c *commentElems) Split(text string) bool {
+	if !strings.HasPrefix(text, c.Tokens[0]) || !strings.HasSuffix(text, c.Tokens[1]) {
+		return false
 	}
-	text := string(s)
-	if !strings.HasPrefix(text, op.tokens[0]) || !strings.HasSuffix(text, op.tokens[1]) {
-		return false, nil
-	}
-	text = strings.TrimPrefix(text, op.tokens[0])
-	text = strings.TrimSuffix(text, op.tokens[1])
-	var (
-		pref, suff, tab string
-	)
+	text = strings.TrimPrefix(text, c.Tokens[0])
+	text = strings.TrimSuffix(text, c.Tokens[1])
 
 	// find prefix
 	i := 0
@@ -146,28 +138,62 @@ func (op commentUAST) Check(st *State, n nodes.Node) (bool, error) {
 			break
 		}
 	}
-	pref = text[:i]
+	c.Pref = text[:i]
 	text = text[i:]
 
 	// find suffix
 	i = len(text) - 1
 	for ; i >= 0 && unicode.IsSpace(rune(text[i])); i-- {
 	}
-	suff = text[i+1:]
+	c.Suff = text[i+1:]
 	text = text[:i+1]
 
 	// TODO: set tab
+	c.Tab = ""
+	c.Text = text
+	return true
+}
+
+func (c commentElems) Join() string {
+	// FIXME: handle tab
+	return strings.Join([]string{
+		c.Tokens[0], c.Pref,
+		c.Text,
+		c.Suff, c.Tokens[1],
+	}, "")
+}
+
+type commentUAST struct {
+	tokens          [2]string
+	text            string
+	pref, suff, tab string
+}
+
+func (*commentUAST) Kinds() nodes.Kind {
+	return nodes.KindString
+}
+
+func (op *commentUAST) Check(st *State, n nodes.Node) (bool, error) {
+	s, ok := n.(nodes.String)
+	if !ok {
+		return false, nil
+	}
+
+	c := commentElems{Tokens: op.tokens}
+	if !c.Split(string(s)) {
+		return false, nil
+	}
 
 	err := st.SetVars(Vars{
-		op.text: nodes.String(text),
-		op.pref: nodes.String(pref),
-		op.suff: nodes.String(suff),
-		op.tab:  nodes.String(tab),
+		op.text: nodes.String(c.Text),
+		op.pref: nodes.String(c.Pref),
+		op.suff: nodes.String(c.Suff),
+		op.tab:  nodes.String(c.Tab),
 	})
 	return err == nil, err
 }
 
-func (op commentUAST) Construct(st *State, n nodes.Node) (nodes.Node, error) {
+func (op *commentUAST) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	var (
 		text, pref, suff, tab nodes.String
 	)
@@ -179,7 +205,14 @@ func (op commentUAST) Construct(st *State, n nodes.Node) (nodes.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	// FIXME: handle tab
-	text = pref + text + suff
-	return nodes.String(op.tokens[0] + string(text) + op.tokens[1]), nil
+
+	c := commentElems{
+		Tokens: op.tokens,
+		Text:   string(text),
+		Pref:   string(pref),
+		Suff:   string(suff),
+		Tab:    string(tab),
+	}
+
+	return nodes.String(c.Join()), nil
 }
