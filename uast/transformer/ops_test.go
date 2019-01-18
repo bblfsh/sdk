@@ -498,6 +498,88 @@ var opsCases = []struct {
 		},
 	},
 	{
+		// TODO(dennwc): this will only work when FieldDesc will support negative checks
+		skip: true,
+		name: "has fields",
+		inp: func() un.Node {
+			return un.Array{
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(1)},
+					"type":   un.String("ident"),
+					"name":   un.String("A"),
+				},
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(2)},
+					"type":   un.String("ident"),
+				},
+			}
+		},
+		src: Part("p", CheckObj(
+			HasFields{"name": false},
+			Obj{
+				"type": String("ident"),
+			},
+		)),
+		dst: Part("p", Obj{
+			"type": String("ident"),
+			"name": String("<empty>"),
+		}),
+		exp: func() un.Node {
+			return un.Array{
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(1)},
+					"type":   un.String("ident"),
+					"name":   un.String("A"),
+				},
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(2)},
+					"type":   un.String("ident"),
+					"name":   un.String("<empty>"),
+				},
+			}
+		},
+	},
+	{
+		name: "has fields root",
+		inp: func() un.Node {
+			return un.Array{
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(1)},
+					"type":   un.String("ident"),
+					"name":   un.String("A"),
+				},
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(2)},
+					"type":   un.String("ident"),
+				},
+			}
+		},
+		src: CheckObj(
+			HasFields{"name": false},
+			Part("p", Obj{
+				"type": String("ident"),
+			}),
+		),
+		dst: Part("p", Obj{
+			"type": String("ident"),
+			"name": String("<empty>"),
+		}),
+		exp: func() un.Node {
+			return un.Array{
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(1)},
+					"type":   un.String("ident"),
+					"name":   un.String("A"),
+				},
+				un.Object{
+					u.KeyPos: un.Object{u.KeyStart: un.Int(2)},
+					"type":   un.String("ident"),
+					"name":   un.String("<empty>"),
+				},
+			}
+		},
+	},
+	{
 		name: "append complex",
 		inp: func() un.Node {
 			return un.Object{
