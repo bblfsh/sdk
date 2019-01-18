@@ -58,9 +58,8 @@ func TestComment(t *testing.T) {
 */`,
 			exp: commentElems{
 				Tokens: [2]string{"/*", "*/"},
-				Pref:   "\n\t", Suff: "\n",
-				// TODO(dennwc): we need to split Tab
-				Text: "some text\n\tline two",
+				Pref:   "\n\t", Tab: "\t", Suff: "\n",
+				Text: "some text\nline two",
 			},
 		},
 		{
@@ -68,12 +67,12 @@ func TestComment(t *testing.T) {
 			text: `/*
  * some text
  * line two
+ * line three
 */`,
 			exp: commentElems{
 				Tokens: [2]string{"/*", "*/"},
-				// TODO(dennwc): we need to split Tab
-				Pref: "\n * ", Suff: "\n",
-				Text: "some text\n * line two",
+				Pref:   "\n * ", Tab: " * ", Suff: "\n",
+				Text: "some text\nline two\nline three",
 			},
 		},
 		{
@@ -82,9 +81,34 @@ func TestComment(t *testing.T) {
 // line two`,
 			exp: commentElems{
 				Tokens: [2]string{"//", ""},
-				// TODO(dennwc): we need to split Tab
-				Pref: " ", Suff: "",
-				Text: "some text\n// line two",
+				Pref:   " ", Tab: "// ", Suff: "",
+				Text: "some text\nline two",
+			},
+		},
+		{
+			name: "stylistic inconsistent",
+			text: `/*
+ * some text
+ *   line two
+ * line three
+*/`,
+			exp: commentElems{
+				Tokens: [2]string{"/*", "*/"},
+				Pref:   "\n * ", Tab: " * ", Suff: "\n",
+				Text: "some text\n  line two\nline three",
+			},
+		},
+		{
+			name: "inconsistent",
+			text: `/*
+ * some text
+   line two
+ * line three
+*/`,
+			exp: commentElems{
+				Tokens: [2]string{"/*", "*/"},
+				Pref:   "\n * ", Tab: " ", Suff: "\n",
+				Text: "some text\n  line two\n* line three",
 			},
 		},
 	}

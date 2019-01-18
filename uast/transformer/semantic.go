@@ -124,6 +124,23 @@ type commentElems struct {
 	Tab    string
 }
 
+func (c *commentElems) isTab(r rune) bool {
+	if unicode.IsSpace(r) {
+		return true
+	}
+	for _, r2 := range c.Tokens[0] {
+		if r == r2 {
+			return true
+		}
+	}
+	for _, r2 := range c.Tokens[1] {
+		if r == r2 {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *commentElems) Split(text string) bool {
 	if !strings.HasPrefix(text, c.Tokens[0]) || !strings.HasSuffix(text, c.Tokens[1]) {
 		return false
@@ -132,30 +149,82 @@ func (c *commentElems) Split(text string) bool {
 	text = strings.TrimSuffix(text, c.Tokens[1])
 
 	// find prefix
-	i := 0
-	for ; i < len(text); i++ {
-		if r := rune(text[i]); unicode.IsLetter(r) || unicode.IsNumber(r) {
-			break
-		}
-	}
+	i := strings.IndexFunc(text, func(r rune) bool {
+		return !c.isTab(r)
+	})
 	c.Pref = text[:i]
 	text = text[i:]
 
 	// find suffix
-	i = len(text) - 1
-	for ; i >= 0 && unicode.IsSpace(rune(text[i])); i-- {
-	}
+	i = strings.LastIndexFunc(text, func(r rune) bool {
+		return !c.isTab(r)
+	})
 	c.Suff = text[i+1:]
 	text = text[:i+1]
-
-	// TODO: set tab
-	c.Tab = ""
 	c.Text = text
+
+	sub := strings.Split(text, "\n")
+	if len(sub) == 1 {
+		// fast path, no tabs
+		return true
+	}
+
+	// find minimal common prefix for other lines
+	// first line is special, it won't contain tab
+	for i, line := range sub[1:] {
+		if i == 0 {
+			j := strings.IndexFunc(line, func(r rune) bool {
+				return !c.isTab(r)
+			})
+			c.Tab = line[:j]
+			if c.Tab == "" {
+				return true // no tabs
+			}
+			continue
+		}
+		if strings.HasPrefix(line, c.Tab) {
+			continue
+		}
+		j := strings.IndexFunc(line, func(r rune) bool {
+			return !c.isTab(r)
+		})
+		tab := line[:j]
+		if tab == "" {
+			return true // no tabs
+		}
+		for j := 0; j < len(c.Tab) && j < len(tab); j++ {
+			if c.Tab[j] == tab[j] {
+				continue
+			}
+			if j == 0 {
+				return true // inconsistent, no tabs
+			}
+			tab = tab[:j]
+			break
+		}
+		c.Tab = tab
+	}
+	for i, line := range sub {
+		if i == 0 {
+			continue
+		}
+		sub[i] = strings.TrimPrefix(line, c.Tab)
+	}
+	c.Text = strings.Join(sub, "\n")
 	return true
 }
 
 func (c commentElems) Join() string {
-	// FIXME: handle tab
+	if c.Tab != "" {
+		sub := strings.Split(c.Text, "\n")
+		for i, line := range sub {
+			if i == 0 {
+				continue
+			}
+			sub[i] = c.Tab + line
+		}
+		c.Text = strings.Join(sub, "\n")
+	}
 	return strings.Join([]string{
 		c.Tokens[0], c.Pref,
 		c.Text,
