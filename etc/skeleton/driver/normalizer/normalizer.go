@@ -32,5 +32,9 @@ var Preprocessors = []Mapping{
 	}.Mapping(),
 }
 
+// PreprocessCode is a preprocessor stage that can use the source code to
+// fix tokens and positional information.
+var PreprocessCode = []CodeTransformer{}
+
 // Normalizers is the main block of normalization rules to convert native AST to semantic UAST.
 var Normalizers = []Mapping{}

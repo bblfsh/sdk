@@ -1147,6 +1147,10 @@ var Preprocessors = []Mapping{
 	}.Mapping(),
 }
 
+// PreprocessCode is a preprocessor stage that can use the source code to
+// fix tokens and positional information.
+var PreprocessCode = []CodeTransformer{}
+
 // Normalizers is the main block of normalization rules to convert native AST to semantic UAST.
 var Normalizers = []Mapping{}
 `)
@@ -1161,7 +1165,7 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 951, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 1109, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1171,11 +1175,12 @@ var _driverNormalizerTransformsGoTpl = []byte(`package normalizer
 import "gopkg.in/bblfsh/sdk.v2/driver"
 
 var Transforms = driver.Transforms{
-	Namespace:   "{{.Manifest.Language}}",
-	Preprocess:  Preprocess,
-	Normalize:   Normalize,
-	Annotations: Native,
-	Code:        Code,
+	Namespace:      "{{.Manifest.Language}}",
+	Preprocess:     Preprocess,
+	PreprocessCode: PreprocessCode,
+	Normalize:      Normalize,
+	Annotations:    Native,
+	Code:           Code,
 }
 `)
 
@@ -1189,7 +1194,7 @@ func driverNormalizerTransformsGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/transforms.go.tpl", size: 231, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "driver/normalizer/transforms.go.tpl", size: 279, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
