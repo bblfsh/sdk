@@ -1530,10 +1530,32 @@ func (op *opIn) Check(st *State, n nodes.Node) (bool, error) {
 	return ok, nil
 }
 
+// Cases acts like a switch statement: it checks multiple operations, picks one that
+// matches node structure and writes the number of the taken branch to the variable.
+//
+// Operations in branches should not be ambiguous. They should not overlap.
 func Cases(vr string, cases ...Op) Op {
 	return &opCases{vr: vr, cases: cases}
 }
 
+// CasesObj is similar to Cases, but only works on object nodes. It also allows to specify
+// a common set of operations that will be executed for each branch.
+//
+// It is also required for all branches in CasesObj to have exactly the same set of keys.
+//
+// Example:
+//   CasesObj("case",
+//     // common
+//     Obj{
+//       "type": String("ident"),
+//     },
+//     Objects{
+//       // case 1: A
+//       {"name": String("A")},
+//       // case 1: B
+//       {"name": String("B")},
+//     },
+//   )
 func CasesObj(vr string, common ObjectOp, cases ObjectOps) ObjectOp {
 	list := cases.ObjectOps()
 	if len(list) == 0 {
