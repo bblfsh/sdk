@@ -644,6 +644,61 @@ var opsCases = []struct {
 			}
 		},
 	},
+	{
+		name: "cases",
+		inp: func() un.Node {
+			return un.Array{
+				un.Object{
+					"type": un.String("ident"),
+					"name": un.Array{un.String("A")},
+				},
+				un.Object{
+					"type": un.String("ident"),
+					"name": un.String("B"),
+				},
+			}
+		},
+		src: CasesObj("case",
+			// common
+			Obj{"type": String("ident")},
+			Objects{
+				// case 1: array
+				Obj{"name": Arr(Var("name"))},
+				// case 2: string
+				Obj{"name": Check(OfKind(un.KindString), Var("name"))},
+			},
+		),
+		dst: CasesObj("case",
+			// common
+			Obj{"type": String("ident")},
+			Objects{
+				// case 1: array
+				Obj{
+					"name2": Var("name"),
+					"arr":   Bool(true),
+				},
+				// case 2: string
+				Obj{
+					"name2": Var("name"),
+					"arr":   Bool(false),
+				},
+			},
+		),
+		exp: func() un.Node {
+			return un.Array{
+				un.Object{
+					"type":  un.String("ident"),
+					"name2": un.String("A"),
+					"arr":   un.Bool(true),
+				},
+				un.Object{
+					"type":  un.String("ident"),
+					"name2": un.String("B"),
+					"arr":   un.Bool(false),
+				},
+			}
+		},
+	},
 }
 
 func TestOps(t *testing.T) {
