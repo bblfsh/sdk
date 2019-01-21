@@ -16,8 +16,8 @@ func TestComment(t *testing.T) {
 			name: "one line",
 			text: "// some text",
 			exp: commentElems{
-				Tokens: [2]string{"//", ""},
-				Pref:   " ",
+				StartToken: "//", EndToken: "",
+				Prefix: " ",
 				Text:   "some text",
 			},
 		},
@@ -25,8 +25,8 @@ func TestComment(t *testing.T) {
 			name: "new line",
 			text: "// some text\n",
 			exp: commentElems{
-				Tokens: [2]string{"//", ""},
-				Pref:   " ", Suff: "\n",
+				StartToken: "//", EndToken: "",
+				Prefix: " ", Suffix: "\n",
 				Text: "some text",
 			},
 		},
@@ -34,8 +34,8 @@ func TestComment(t *testing.T) {
 			name: "multi-line single",
 			text: "/* some text */",
 			exp: commentElems{
-				Tokens: [2]string{"/*", "*/"},
-				Pref:   " ", Suff: " ",
+				StartToken: "/*", EndToken: "*/",
+				Prefix: " ", Suffix: " ",
 				Text: "some text",
 			},
 		},
@@ -45,8 +45,8 @@ func TestComment(t *testing.T) {
 	some text
 */`,
 			exp: commentElems{
-				Tokens: [2]string{"/*", "*/"},
-				Pref:   "\n\t", Suff: "\n",
+				StartToken: "/*", EndToken: "*/",
+				Prefix: "\n\t", Suffix: "\n",
 				Text: "some text",
 			},
 		},
@@ -57,8 +57,8 @@ func TestComment(t *testing.T) {
 	line two
 */`,
 			exp: commentElems{
-				Tokens: [2]string{"/*", "*/"},
-				Pref:   "\n\t", Tab: "\t", Suff: "\n",
+				StartToken: "/*", EndToken: "*/",
+				Prefix: "\n\t", Indent: "\t", Suffix: "\n",
 				Text: "some text\nline two",
 			},
 		},
@@ -70,8 +70,8 @@ func TestComment(t *testing.T) {
  * line three
 */`,
 			exp: commentElems{
-				Tokens: [2]string{"/*", "*/"},
-				Pref:   "\n * ", Tab: " * ", Suff: "\n",
+				StartToken: "/*", EndToken: "*/",
+				Prefix: "\n * ", Indent: " * ", Suffix: "\n",
 				Text: "some text\nline two\nline three",
 			},
 		},
@@ -80,8 +80,8 @@ func TestComment(t *testing.T) {
 			text: `// some text
 // line two`,
 			exp: commentElems{
-				Tokens: [2]string{"//", ""},
-				Pref:   " ", Tab: "// ", Suff: "",
+				StartToken: "//", EndToken: "",
+				Prefix: " ", Indent: "// ", Suffix: "",
 				Text: "some text\nline two",
 			},
 		},
@@ -93,8 +93,8 @@ func TestComment(t *testing.T) {
  * line three
 */`,
 			exp: commentElems{
-				Tokens: [2]string{"/*", "*/"},
-				Pref:   "\n * ", Tab: " * ", Suff: "\n",
+				StartToken: "/*", EndToken: "*/",
+				Prefix: "\n * ", Indent: " * ", Suffix: "\n",
 				Text: "some text\n  line two\nline three",
 			},
 		},
@@ -106,15 +106,18 @@ func TestComment(t *testing.T) {
  * line three
 */`,
 			exp: commentElems{
-				Tokens: [2]string{"/*", "*/"},
-				Pref:   "\n * ", Tab: " ", Suff: "\n",
+				StartToken: "/*", EndToken: "*/",
+				Prefix: "\n * ", Indent: " ", Suffix: "\n",
 				Text: "some text\n  line two\n* line three",
 			},
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			v := commentElems{Tokens: c.exp.Tokens}
+			v := commentElems{
+				StartToken: c.exp.StartToken,
+				EndToken:   c.exp.EndToken,
+			}
 			if !v.Split(c.text) {
 				t.Error("split failed")
 			}
