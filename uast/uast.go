@@ -406,6 +406,8 @@ type Comment struct {
 	//     */
 	//
 	//    the " *" before the comment text is considered a tab
+	//
+	// TODO(dennwc): rename to Indent?
 	Tab string `json:"Tab"`
 }
 
