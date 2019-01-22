@@ -132,7 +132,11 @@ type VerifyToken struct {
 }
 
 func (t VerifyToken) Verify(code string, root nodes.Node) error {
-	f := newTokenFilter(code, t.Key, t.Types)
+	key := t.Key
+	if key == "" {
+		key = uast.KeyToken
+	}
+	f := newTokenFilter(code, key, t.Types)
 
 	var last error
 	nodes.WalkPreOrder(root, func(node nodes.Node) bool {
@@ -144,7 +148,7 @@ func (t VerifyToken) Verify(code string, root nodes.Node) error {
 			// skip node, but recurse to children
 			return true
 		}
-		token1, ok := obj[t.Key].(nodes.String)
+		token1, ok := obj[key].(nodes.String)
 		if !ok {
 			return true
 		}
