@@ -12,12 +12,12 @@ import (
 )
 
 func init() {
-	ManifestLocation = "../native/internal/manifest.toml"
+	ManifestLocation = "../native/internal/simple/manifest.toml"
 }
 
 func newDriver(path string) (*service, error) {
 	if path == "" {
-		path = "../native/internal/mock"
+		path = "../native/internal/simple/mock"
 	}
 	m, err := manifest.Load(ManifestLocation)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestDriverParserParse(t *testing.T) {
 .  .  0:  {
 .  .  .  Properties: {
 .  .  .  .  internalRole: root
-.  .  .  .  key: val
+.  .  .  .  key: foo
 .  .  .  }
 .  .  }
 .  }
@@ -137,7 +137,7 @@ func TestDriverParserNativeParse(t *testing.T) {
 	require.Equal(r.Status, protocol1.Ok)
 	require.Equal(r.Language, "fixture")
 	require.Equal(r.Elapsed.Nanoseconds() > 0, true)
-	require.Equal(r.AST, "{\"root\":{\"key\":\"val\"}}")
+	require.Equal(r.AST, "{\"root\":{\"key\":\"foo\"}}")
 
 	err = d.d.Close()
 	require.NoError(err)
