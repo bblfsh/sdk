@@ -2,12 +2,14 @@ package native
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	derrors "gopkg.in/bblfsh/sdk.v2/driver/errors"
+	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 func TestEncoding(t *testing.T) {
@@ -51,7 +53,11 @@ func TestNativeDriverNativeParse(t *testing.T) {
 
 	r, err := d.Parse(context.Background(), "foo")
 	require.NoError(err)
-	require.NotNil(r)
+	require.Equal(nodes.Object{
+		"root": nodes.Object{
+			"key": nodes.String("foo"),
+		},
+	}, r)
 
 	err = d.Close()
 	require.NoError(err)
@@ -69,16 +75,21 @@ func TestNativeDriverNativeParse_Lock(t *testing.T) {
 	count := 1000
 
 	var wg sync.WaitGroup
-	call := func() {
+	call := func(i int) {
 		defer wg.Done()
-		r, err := d.Parse(context.Background(), "foo")
+		key := fmt.Sprintf("foo_%d", i)
+		r, err := d.Parse(context.Background(), key)
 		require.NoError(err)
-		require.NotNil(r)
+		require.Equal(nodes.Object{
+			"root": nodes.Object{
+				"key": nodes.String(key),
+			},
+		}, r)
 	}
 
 	wg.Add(count)
 	for i := 0; i < count; i++ {
-		go call()
+		go call(i)
 	}
 
 	wg.Wait()
