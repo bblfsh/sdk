@@ -49,6 +49,14 @@ func NewDriverAt(bin string, enc Encoding) driver.Native {
 	return &Driver{bin: bin, ec: enc}
 }
 
+type driverState int
+
+const (
+	stateOK = driverState(iota)
+	stateTimeout
+	stateBroken
+)
+
 // Driver is a wrapper of the native command. The operations with the
 // driver are synchronous by design, this is controlled by a mutex. This means
 // that only one parse request can attend at the same time.
@@ -57,12 +65,14 @@ type Driver struct {
 	ec      Encoding
 	running bool
 
-	mu     sync.Mutex
-	enc    jsonlines.Encoder
-	dec    jsonlines.Decoder
-	stdin  *os.File
-	stdout *os.File
-	cmd    *exec.Cmd
+	mu      sync.Mutex
+	enc     jsonlines.Encoder
+	dec     jsonlines.Decoder
+	stdin   *os.File
+	stdout  *os.File
+	cmd     *exec.Cmd
+	state   driverState
+	lastErr error
 }
 
 // Start executes the given native driver and prepares it to parse code.
@@ -142,33 +152,58 @@ func (r *parseResponse) UnmarshalJSON(data []byte) error {
 }
 
 func (d *Driver) writeRequest(ctx context.Context, req *parseRequest) error {
-	deadline, _ := ctx.Deadline()
-
 	sp, _ := opentracing.StartSpanFromContext(ctx, "bblfsh.native.Parse.encodeReq")
 	defer sp.Finish()
-
-	if !deadline.IsZero() {
-		d.stdin.SetWriteDeadline(deadline)
-		defer d.stdin.SetWriteDeadline(time.Time{})
-	}
 
 	return d.enc.Encode(req)
 }
 
-func (d *Driver) readResponse(ctx context.Context) (*parseResponse, error) {
-	deadline, _ := ctx.Deadline()
+type timeoutError interface {
+	Timeout() bool
+}
 
+func (d *Driver) broken(err error) {
+	d.state = stateBroken
+	d.lastErr = err
+	_ = d.Close()
+}
+
+func (d *Driver) skipResponse(ctx context.Context) error {
+	if d.state != stateTimeout { // safeguard
+		panic(fmt.Errorf("unexpected state: %v", d.state))
+	}
+	sp, _ := opentracing.StartSpanFromContext(ctx, "bblfsh.native.Parse.skipResp")
+	defer sp.Finish()
+
+	// TODO(dennwc): relies on JSON; should probably be a method on an interface
+	var r json.RawMessage
+	err := d.dec.Decode(&r)
+	if e, ok := err.(timeoutError); ok && e.Timeout() {
+		d.state = stateTimeout
+		return err
+	} else if err != nil {
+		d.broken(err)
+		return err
+	}
+	d.state = stateOK
+	return nil
+}
+
+func (d *Driver) readResponse(ctx context.Context) (*parseResponse, error) {
 	sp, _ := opentracing.StartSpanFromContext(ctx, "bblfsh.native.Parse.decodeResp")
 	defer sp.Finish()
 
-	if !deadline.IsZero() {
-		d.stdout.SetReadDeadline(deadline)
-		defer d.stdout.SetReadDeadline(time.Time{})
-	}
-
 	var r parseResponse
 	err := d.dec.Decode(&r)
-	if err != nil {
+	if e, ok := err.(timeoutError); ok && e.Timeout() {
+		// the request is still being processed by the native driver,
+		// so next time we will need to discard the first response
+		d.state = stateTimeout
+		return nil, err
+	} else if err != nil {
+		// we can't be sure what happened, so let's not mess with
+		// the client; we will stop the driver now
+		d.broken(err)
 		return nil, err
 	}
 	return &r, nil
@@ -190,6 +225,25 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
+	if d.state != stateOK && d.state != stateTimeout {
+		return nil, driver.ErrDriverFailure.Wrap(d.lastErr)
+	}
+
+	if deadline, ok := ctx.Deadline(); ok {
+		_ = d.stdout.SetReadDeadline(deadline)
+		_ = d.stdin.SetWriteDeadline(deadline)
+		defer func() {
+			_ = d.stdin.SetWriteDeadline(time.Time{})
+			_ = d.stdout.SetReadDeadline(time.Time{})
+		}()
+	}
+
+	if d.state == stateTimeout {
+		if err = d.skipResponse(ctx); err != nil {
+			return nil, driver.ErrDriverFailure.Wrap(err)
+		}
+	}
 
 	err = d.writeRequest(ctx, &parseRequest{
 		Content: str, Encoding: d.ec,
@@ -234,6 +288,10 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 
 // Stop stops the execution of the native driver.
 func (d *Driver) Close() error {
+	if !d.running {
+		return nil
+	}
+	// note: it should not hold the mutex, or readResponse will deadlock
 	var last error
 	if err := d.stdin.Close(); err != nil {
 		last = err
@@ -253,6 +311,7 @@ func (d *Driver) Close() error {
 		d.cmd.Process.Kill()
 	}
 	err2 := d.stdout.Close()
+	d.running = false
 	if last != nil {
 		return last
 	}
