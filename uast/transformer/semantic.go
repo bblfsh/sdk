@@ -163,8 +163,6 @@ func (c *commentElems) isTab(r rune) bool {
 func (c *commentElems) Split(text string) bool {
 	if c.DoTrim {
 		text = strings.TrimLeftFunc(text, unicode.IsSpace)
-			return unicode.IsSpace(r)
-		})
 	}
 
 	if !strings.HasPrefix(text, c.StartToken) || !strings.HasSuffix(text, c.EndToken) {
