@@ -101,6 +101,19 @@ func CommentText(tokens [2]string, vr string) Op {
 		prefVar:    vr + "_pref",
 		suffVar:    vr + "_suff",
 		indentVar:  vr + "_tab",
+		doTrim:     false,
+	}
+}
+
+func CommentTextTrimmed(tokens [2]string, vr string) Op {
+	return &commentUAST{
+		startToken: tokens[0],
+		endToken:   tokens[1],
+		textVar:    vr + "_text",
+		prefVar:    vr + "_pref",
+		suffVar:    vr + "_suff",
+		indentVar:  vr + "_tab",
+		doTrim:     true,
 	}
 }
 
@@ -127,6 +140,7 @@ type commentElems struct {
 	Prefix     string
 	Suffix     string
 	Indent     string
+	DoTrim     bool
 }
 
 func (c *commentElems) isTab(r rune) bool {
@@ -147,14 +161,16 @@ func (c *commentElems) isTab(r rune) bool {
 }
 
 func (c *commentElems) Split(text string) bool {
-	trimmed := strings.TrimLeftFunc(text, func(r rune) bool {
-		return unicode.IsSpace(r)
-	})
+	if c.DoTrim {
+		text = strings.TrimLeftFunc(text, func(r rune) bool {
+			return unicode.IsSpace(r)
+		})
+	}
 
-	if !strings.HasPrefix(trimmed, c.StartToken) || !strings.HasSuffix(trimmed, c.EndToken) {
+	if !strings.HasPrefix(text, c.StartToken) || !strings.HasSuffix(text, c.EndToken) {
 		return false
 	}
-	text = strings.TrimPrefix(trimmed, c.StartToken)
+	text = strings.TrimPrefix(text, c.StartToken)
 	text = strings.TrimSuffix(text, c.EndToken)
 
 	// find prefix (if not already trimmed)
@@ -162,9 +178,9 @@ func (c *commentElems) Split(text string) bool {
 		return !c.isTab(r)
 	})
 
-	if i == -1 {
-		c.Prefix = ""
-	} else {
+	c.Prefix = ""
+
+	if i >= 0 {
 		c.Prefix = text[:i]
 		text = text[i:]
 	}
@@ -174,9 +190,8 @@ func (c *commentElems) Split(text string) bool {
 		return !c.isTab(r)
 	})
 
-	if i == -1 {
-		c.Suffix = ""
-	} else {
+	c.Suffix = ""
+	if i >= 0 {
 		c.Suffix = text[i+1:]
 		text = text[:i+1]
 	}
@@ -196,13 +211,10 @@ func (c *commentElems) Split(text string) bool {
 				return !c.isTab(r)
 			})
 
-			if j == -1 {
-				c.Indent = ""
-			} else {
+			c.Indent = ""
+			if j >= 0 {
 				c.Indent = line[:j]
-			}
-
-			if c.Indent == "" {
+			} else {
 				return true // no tabs
 			}
 			continue
@@ -214,16 +226,13 @@ func (c *commentElems) Split(text string) bool {
 			return !c.isTab(r)
 		})
 
-		var tab string
-		if j == -1 {
-			tab = ""
-		} else {
+		tab := ""
+		if j >= 0 {
 			tab = line[:j]
-		}
-
-		if tab == "" {
+		} else {
 			return true // no tabs
 		}
+
 		for j := 0; j < len(c.Indent) && j < len(tab); j++ {
 			if c.Indent[j] == tab[j] {
 				continue
@@ -271,6 +280,7 @@ type commentUAST struct {
 	prefVar    string
 	suffVar    string
 	indentVar  string
+	doTrim     bool
 }
 
 func (*commentUAST) Kinds() nodes.Kind {
@@ -283,7 +293,7 @@ func (op *commentUAST) Check(st *State, n nodes.Node) (bool, error) {
 		return false, nil
 	}
 
-	c := commentElems{StartToken: op.startToken, EndToken: op.endToken}
+	c := commentElems{StartToken: op.startToken, EndToken: op.endToken, DoTrim: op.doTrim}
 	if !c.Split(string(s)) {
 		return false, nil
 	}
