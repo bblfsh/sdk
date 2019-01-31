@@ -162,7 +162,7 @@ func (c *commentElems) isTab(r rune) bool {
 
 func (c *commentElems) Split(text string) bool {
 	if c.DoTrim {
-		text = strings.TrimLeftFunc(text, func(r rune) bool {
+		text = strings.TrimLeftFunc(text, unicode.IsSpace)
 			return unicode.IsSpace(r)
 		})
 	}
