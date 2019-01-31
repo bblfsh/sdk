@@ -147,25 +147,39 @@ func (c *commentElems) isTab(r rune) bool {
 }
 
 func (c *commentElems) Split(text string) bool {
-	if !strings.HasPrefix(text, c.StartToken) || !strings.HasSuffix(text, c.EndToken) {
+	trimmed := strings.TrimLeftFunc(text, func(r rune) bool {
+		return unicode.IsSpace(r)
+	})
+
+	if !strings.HasPrefix(trimmed, c.StartToken) || !strings.HasSuffix(trimmed, c.EndToken) {
 		return false
 	}
-	text = strings.TrimPrefix(text, c.StartToken)
+	text = strings.TrimPrefix(trimmed, c.StartToken)
 	text = strings.TrimSuffix(text, c.EndToken)
 
-	// find prefix
+	// find prefix (if not already trimmed)
 	i := strings.IndexFunc(text, func(r rune) bool {
 		return !c.isTab(r)
 	})
-	c.Prefix = text[:i]
-	text = text[i:]
+
+	if i == -1 {
+		c.Prefix = ""
+	} else {
+		c.Prefix = text[:i]
+		text = text[i:]
+	}
 
 	// find suffix
 	i = strings.LastIndexFunc(text, func(r rune) bool {
 		return !c.isTab(r)
 	})
-	c.Suffix = text[i+1:]
-	text = text[:i+1]
+
+	if i == -1 {
+		c.Suffix = ""
+	} else {
+		c.Suffix = text[i+1:]
+		text = text[:i+1]
+	}
 	c.Text = text
 
 	sub := strings.Split(text, "\n")
@@ -181,7 +195,13 @@ func (c *commentElems) Split(text string) bool {
 			j := strings.IndexFunc(line, func(r rune) bool {
 				return !c.isTab(r)
 			})
-			c.Indent = line[:j]
+
+			if j == -1 {
+				c.Indent = ""
+			} else {
+				c.Indent = line[:j]
+			}
+
 			if c.Indent == "" {
 				return true // no tabs
 			}
@@ -193,7 +213,14 @@ func (c *commentElems) Split(text string) bool {
 		j := strings.IndexFunc(line, func(r rune) bool {
 			return !c.isTab(r)
 		})
-		tab := line[:j]
+
+		var tab string
+		if j == -1 {
+			tab = ""
+		} else {
+			tab = line[:j]
+		}
+
 		if tab == "" {
 			return true // no tabs
 		}
