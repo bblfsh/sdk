@@ -583,7 +583,7 @@ func (op *opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
 			return false, err
 		}
 	} else if len(n) != 0 {
-		return false, ErrUnusedField.New(n.Keys())
+		return false, NewErrUnusedField(src, n.Keys())
 	}
 	return true, nil
 }
@@ -821,7 +821,7 @@ func (o Fields) CheckObj(st *State, n nodes.Object) (bool, error) {
 		set, _ := o.Fields() // TODO: optimize
 		for k := range n {
 			if _, ok := set[k]; !ok {
-				return false, ErrUnusedField.New(k)
+				return false, NewErrUnusedField(n, []string{k})
 			}
 		}
 	}
