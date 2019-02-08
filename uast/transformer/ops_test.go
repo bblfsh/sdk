@@ -289,6 +289,122 @@ var opsCases = []struct {
 		src: Each("objs", Var("part")),
 	},
 	{
+		name: "field missing (fields)",
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Op: String("a")},
+		},
+		err: ErrUnusedField,
+	},
+	{
+		name: "field missing (obj)",
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
+				"v": nil,
+			}
+		},
+		src: Obj{
+			"t": String("a"),
+		},
+		err: ErrUnusedField,
+	},
+	{
+		name: "join obj",
+		inp: func() un.Node {
+			return un.Object{
+				"t":  un.String("a"),
+				"v1": un.Int(1),
+				"v2": un.Int(2),
+			}
+		},
+		src: JoinObj(
+			Obj{
+				"t": String("a"),
+			},
+			Obj{
+				"v1": Int(1),
+				"v2": Int(2),
+			},
+		),
+		dst: JoinObj(
+			Obj{
+				"t":  String("a"),
+				"k1": Int(3),
+			},
+			Obj{
+				"k2": Int(4),
+			},
+		),
+		exp: func() un.Node {
+			return un.Object{
+				"t":  un.String("a"),
+				"k1": un.Int(3),
+				"k2": un.Int(4),
+			}
+		},
+	},
+	{
+		name: "join obj unused",
+		inp: func() un.Node {
+			return un.Object{
+				"t":  un.String("a"),
+				"v1": un.Int(1),
+				"v2": un.Int(2),
+			}
+		},
+		src: JoinObj(
+			Obj{
+				"t": String("a"),
+			},
+			Obj{
+				"v1": Int(1),
+			},
+		),
+		err: ErrUnusedField,
+	},
+	{
+		name: "join obj unused part",
+		inp: func() un.Node {
+			return un.Object{
+				"t":  un.String("a"),
+				"v1": un.Int(1),
+				"v2": un.Int(2),
+			}
+		},
+		src: JoinObj(
+			Obj{
+				"t": String("a"),
+			},
+			Part("part", Obj{
+				"v1": Int(1),
+			}),
+		),
+		dst: JoinObj(
+			Obj{
+				"t": String("a"),
+				"m": Var("part"),
+			},
+			Obj{
+				"k2": Int(4),
+			},
+		),
+		exp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
+				"m": un.Object{
+					"v2": un.Int(2),
+				},
+				"k2": un.Int(4),
+			}
+		},
+	},
+	{
 		name: "optional field",
 		inp: func() un.Node {
 			return un.Object{

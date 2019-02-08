@@ -44,7 +44,7 @@ var (
 	// ErrUnusedField is returned when a transformation is not defined as partial, but does not process a specific key
 	// found in object. This usually means that an AST has a field that is not covered by transformation code and it
 	// should be added to the mapping.
-	ErrUnusedField = errors.NewKind("field was not used: %v")
+	ErrUnusedField = errors.NewKind("unused field(s): %v")
 	// ErrDuplicateField is returned when trying to create a Fields definition with two items with the same name.
 	ErrDuplicateField = errors.NewKind("duplicate field: %v")
 	// ErrUndefinedField is returned when trying to create an object with a field that is not defined in the type spec.
