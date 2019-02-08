@@ -231,7 +231,7 @@ var mappingCases = []struct {
 				"type": String("B"),
 			},
 		)),
-		err: "check: unused field(s): name",
+		err: "check: unused field(s) on node [name type]: name",
 	},
 	{
 		name: "variable undefined",
