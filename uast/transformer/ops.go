@@ -335,7 +335,9 @@ type ObjectSel interface {
 	Sel
 	// Fields returns a map of field names that will be processed by this operation.
 	// The flag in the map indicates if the field is required.
-	// False bool value returned as a second argument indicates that implementation will process all fields.
+	//
+	// Returning true as a second argument indicates that the operation will always
+	// use all fields. Returning false means that an operation is partial.
 	Fields() (FieldDescs, bool)
 
 	CheckObj(st *State, n nodes.Object) (bool, error)
@@ -580,6 +582,8 @@ func (op *opObjJoin) CheckObj(st *State, n nodes.Object) (bool, error) {
 		if ok, err := op.partial.CheckObj(st, n); err != nil || !ok {
 			return false, err
 		}
+	} else if len(n) != 0 {
+		return false, ErrUnusedField.New(n.Keys())
 	}
 	return true, nil
 }
