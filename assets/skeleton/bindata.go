@@ -81,13 +81,13 @@ func Gitignore() (*asset, error) {
 var _TravisYml = []byte(`language: go
 
 go:
-  - '1.10'
+  - '1.11'
 
 services:
   - docker
 
 env:
-  - BBLFSHD_VERSION=v2.9.1
+  - BBLFSHD_VERSION=v2.11.7
 
 install:
   - curl -L https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 > $GOPATH/bin/dep
@@ -116,7 +116,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 579, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 580, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -125,7 +125,7 @@ var _gopkgToml = []byte(`# Refer to https://golang.github.io/dep/docs/Gopkg.toml
 # for detailed Gopkg.toml documentation.
 
 [[constraint]]
-  version = "v2.0.x"
+  version = "v2.14.x"
   name = "gopkg.in/bblfsh/sdk.v2"
 
 [prune]
@@ -147,7 +147,7 @@ func gopkgToml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Gopkg.toml", size: 310, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Gopkg.toml", size: 311, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -913,7 +913,7 @@ func readmeMdTpl() (*asset, error) {
 
 var _buildYmlTpl = []byte(`sdk: '2'
 go-runtime:
-  version: '1.10'
+  version: '1.11'
 native:
   image: 'debian:latest'
   static:
@@ -1251,7 +1251,7 @@ description  = """
 
 [runtime]
 # go_version describes the version being use to build the driver Go code.
-go_version = "1.10"
+go_version = "1.11"
 
 # native_version describes the version or versions being use to build and
 # execute the native code, you should define at least one. (eg.: "1.8").

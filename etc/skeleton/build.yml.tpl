@@ -1,6 +1,6 @@
 sdk: '2'
 go-runtime:
-  version: '1.10'
+  version: '1.11'
 native:
   image: 'debian:latest'
   static:
