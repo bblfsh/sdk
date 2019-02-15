@@ -80,7 +80,10 @@ func (s *Suite) genDockerfile(t testing.TB, dir string) {
 }
 
 func compileTest(t testing.TB, path, dst string) {
-	out, err := exec.Command("go", "test", "-c", "-o", dst, path).CombinedOutput()
+	cmd := exec.Command("go", "test", "-c", "-o", dst, path)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "GOOS=linux")
+	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, "failed to compile tests; output:\n%s", out)
 }
 
