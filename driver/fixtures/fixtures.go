@@ -27,7 +27,7 @@ const Dir = "fixtures"
 const (
 	syntaxErrTestName = "_syntax_error"
 	maxParseErrors    = 3
-	parseTimeout      = 5 * time.Minute
+	parseTimeout      = time.Minute
 )
 
 type SemanticConfig struct {
