@@ -32,6 +32,8 @@ func (c *BuildCommand) Execute(args []string) error {
 
 const TestCommandDescription = "tests the driver using fixtures"
 
+// TestCommand will compare gold annotations in driver ./fixtures to the
+// ones produced by
 type TestCommand struct {
 	cmd.Command
 	Bblfshd string `long:"bblfshd" description:"bblfshd version to test with"`
