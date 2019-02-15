@@ -34,8 +34,8 @@ at `$GOPATH/bin/`.
 
 ### Contribute
 
-The SDK provides many templates for language drivers.
-These templates are converted to Go code that ends up in both `bblfsh-sdk` and `bblfsh-sdk-tools` automatically. Use `make` convert templates to code:
+The SDK provides scaffolding templates for creating a new language driver.
+These templates are converted to Go code that ends up in `bblfsh-sdk` tool. Use `make` to update these templates:
 
 ```bash
 $ make
@@ -150,6 +150,26 @@ For further details of how to construct a language driver,
 take a look at [Implementing the driver](https://doc.bblf.sh/driver/sdk.html#implementing-the-driver)
 section in documentation.
 
+### Testing the driver
+
+`bbflsh-sdk` also includes a testing framework for a driver.
+In order to run test for a particular dirver, change to it's directory and run:
+
+```bash
+$ bblfsh-sdk test
+```
+
+This will:
+ - compile a "test binary" that parses content of the `./fixtures` directory of the driver
+ - create a docker image with all dependencies, native driver and a test binary
+ - run this test binary inside a Docker container, using that image
+
+ Overall, SDK supports 3 different kind of tests for a driver:
+  - UnitTests, parsing content of `./fixtures` and applying UAST transformations. Described above.
+  - Integration tests, using content of `./fixtures/_integration*`
+  - Benchmarks, using content of `./fixtures/bench_*`
+
+First two always run, benchmarks are only triggered by `bblfsh-sdk test --bench`.
 
 ## License
 
