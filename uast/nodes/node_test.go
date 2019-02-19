@@ -38,6 +38,50 @@ func TestClone(t *testing.T) {
 	}, arr)
 }
 
+func TestChildrenCount(t *testing.T) {
+	var cases = []struct {
+		name string
+		node Node
+		exp  int
+	}{
+		{
+			name: "value",
+			node: Int(3),
+			exp:  0,
+		},
+		{
+			name: "array",
+			node: Array{
+				Int(1),
+				Array{Int(2), Int(3)},
+				Object{
+					"a": Int(1),
+					"b": Int(2),
+				},
+			},
+			exp: 3,
+		},
+		{
+			name: "object",
+			node: Object{
+				"k1":  Int(1),
+				"k2":  Int(2),
+				"arr": Array{Int(2), Int(3)},
+				"obj": Object{
+					"a": Int(1),
+					"b": Int(2),
+				},
+			},
+			exp: 3,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			require.Equal(t, c.exp, ChildrenCount(c.node))
+		})
+	}
+}
+
 func TestApply(t *testing.T) {
 	o1 := Object{"v": Int(1)}
 	o2 := Object{"k": o1, "v": Int(2)}
