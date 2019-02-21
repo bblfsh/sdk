@@ -40,6 +40,7 @@ var opsCases = []struct {
 	err      *errors.Kind
 	skip     bool
 	noRev    bool // should only be set in exceptional cases
+	expRev   func() un.Node
 }{
 	{
 		name: "is",
@@ -427,6 +428,105 @@ var opsCases = []struct {
 		src: Fields{
 			{Name: "t", Op: String("a")},
 			{Name: "v", Op: Opt("exists", Var("val"))},
+		},
+	},
+	{
+		name: "drop field any",
+		inp: func() un.Node {
+			return un.Object{
+				"t": nil,
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Drop: true, Op: Any()},
+			{Name: "v", Op: Is(nil)},
+		},
+		dst: Obj{"v": Is(nil)},
+		exp: func() un.Node {
+			return un.Object{
+				"v": nil,
+			}
+		},
+	},
+	{
+		name: "drop field op",
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Drop: true, Op: String("a")},
+			{Name: "v", Op: Is(nil)},
+		},
+		dst: Obj{"v": Is(nil)},
+		exp: func() un.Node {
+			return un.Object{
+				"v": nil,
+			}
+		},
+	},
+	{
+		name: "drop field op fail",
+		inp: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Drop: true, Op: String("b")},
+			{Name: "v", Op: Is(nil)},
+		},
+	},
+	{
+		name: "drop field missing any",
+		inp: func() un.Node {
+			return un.Object{
+				"v": nil,
+			}
+		},
+		expRev: func() un.Node {
+			return un.Object{
+				"t": nil,
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Drop: true, Op: Any()},
+			{Name: "v", Op: Is(nil)},
+		},
+		dst: Obj{"v": Is(nil)},
+		exp: func() un.Node {
+			return un.Object{
+				"v": nil,
+			}
+		},
+	},
+	{
+		name: "drop field missing op",
+		inp: func() un.Node {
+			return un.Object{
+				"v": nil,
+			}
+		},
+		expRev: func() un.Node {
+			return un.Object{
+				"t": un.String("a"),
+				"v": nil,
+			}
+		},
+		src: Fields{
+			{Name: "t", Drop: true, Op: String("a")},
+			{Name: "v", Op: Is(nil)},
+		},
+		dst: Obj{"v": Is(nil)},
+		exp: func() un.Node {
+			return un.Object{
+				"v": nil,
+			}
 		},
 	},
 	{
@@ -851,11 +951,15 @@ func TestOps(t *testing.T) {
 				return
 			}
 			// test reverse transformation
-			do(Reverse(m), nil, c.exp, c.inp)
+			expRev := c.inp
+			if c.expRev != nil {
+				expRev = c.expRev
+			}
+			do(Reverse(m), nil, c.exp, expRev)
 
 			// test identity transform (forward)
 			m = Identity(c.src)
-			do(m, nil, c.inp, c.inp)
+			do(m, nil, c.inp, expRev)
 
 			// test identity transform (reverse)
 			m = Identity(c.dst)
