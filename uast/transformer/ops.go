@@ -751,8 +751,9 @@ type Field struct {
 	// exists in the object, and it does not mean that the field can be nil.
 	// To handle nil fields, see Opt operation.
 	Optional string
-	// Drop the field if it exists. Op should be set and it will be called to check the
-	// value before dropping it. If the check fails, the whole transform will be canceled.
+	// Drop the field if it exists. Optional is implied, but the variable won't be created
+	// in this case. Op should be set and it will be called to check the value before
+	// dropping it. If the check fails, the whole transform will be canceled.
 	//
 	// Please note that you should avoid dropping fields with Any unless there is no
 	// reasonable alternative.
