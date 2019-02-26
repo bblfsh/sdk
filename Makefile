@@ -1,8 +1,5 @@
 # Package configuration
 PROJECT := bblfsh-sdk
-DEPENDENCIES := \
-	github.com/jteeuwen/go-bindata \
-	golang.org/x/tools/cmd/cover
 
 # Environment
 BASE_PATH := $(shell pwd)
@@ -12,7 +9,7 @@ ASSETS_PATH := $(BASE_PATH)/etc
 ASSETS := $(shell ls $(ASSETS_PATH))
 ASSETS_PACKAGE := assets
 BINDATA_FILE := bindata.go
-BINDATA_CMD := go-bindata
+BINDATA_CMD := go run github.com/kevinburke/go-bindata/go-bindata/
 
 # Go parameters
 GO_CMD = go
@@ -28,13 +25,7 @@ all: bindata
 
 bindata: $(ASSETS)
 
-install:
-	go get -t -v -ldflags '-extldflags "-static"' ./...
-
-$(DEPENDENCIES):
-	$(GO_GET) $@/...
-
-$(ASSETS): $(DEPENDENCIES)
+$(ASSETS):
 	chmod -R go=r $(ASSETS_PATH)/$@; \
 	$(BINDATA_CMD) \
 		-pkg $@ \
@@ -70,4 +61,4 @@ validate-commit: bindata
 		exit 2; \
 	fi
 
-.PHONY: bindata test test-coverage validate-commit driver-tpl $(ASSETS) $(DEPENDENCIES) install
+.PHONY: bindata test test-coverage validate-commit driver-tpl $(ASSETS)

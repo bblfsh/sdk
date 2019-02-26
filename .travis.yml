@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - '1.10'
-  - '1.11'
+  - '1.11.x'
+  - '1.12.x'
   - tip
 
 go_import_path: gopkg.in/bblfsh/sdk.v2
@@ -12,12 +12,13 @@ matrix:
   allow_failures:
     - go: tip
 
+env:
+  - GO111MODULE=on
 
 before_install:
   - cd $GOPATH/src/gopkg.in/bblfsh/sdk.v2
   - make validate-commit
-  - wget -O dep https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 && chmod +x dep
-  - ./dep ensure --vendor-only
+  - go mod download
 
 script:
   - make test-coverage
