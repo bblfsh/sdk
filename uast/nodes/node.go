@@ -45,20 +45,30 @@ func Equal(n1, n2 External) bool {
 			return n1 == n2
 		}
 	case Object:
-		n2, ok := n2.(Object)
-		if !ok || len(n1) != len(n2) {
+		if n2, ok := n2.(Object); ok {
+			if len(n1) != len(n2) {
+				return false
+			}
+			if pointerOf(n1) == pointerOf(n2) {
+				return true
+			}
+			return n1.EqualObject(n2)
+		}
+		if _, ok := n2.(Node); ok {
 			return false
 		}
-		if pointerOf(n1) == pointerOf(n2) {
-			return true
-		}
-		return n1.EqualObject(n2)
+		return n1.Equal(n2)
 	case Array:
-		n2, ok := n2.(Array)
-		if !ok || len(n1) != len(n2) {
+		if n2, ok := n2.(Array); ok {
+			if len(n1) != len(n2) {
+				return false
+			}
+			return len(n1) == 0 || &n1[0] == &n2[0] || n1.EqualArray(n2)
+		}
+		if _, ok := n2.(Node); ok {
 			return false
 		}
-		return len(n1) == 0 || &n1[0] == &n2[0] || n1.EqualArray(n2)
+		return n1.Equal(n2)
 	default:
 		if Same(n1, n2) {
 			return true
@@ -972,7 +982,7 @@ func Same(n1, n2 External) bool {
 }
 
 // pointerOf returns a Go pointer for Node that is a reference type (Arrays and Objects).
-func pointerOf(n Node) uintptr {
+func pointerOf(n interface{}) uintptr {
 	if n == nil {
 		return 0
 	}
