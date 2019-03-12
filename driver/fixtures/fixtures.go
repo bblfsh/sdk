@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
 	"gopkg.in/bblfsh/sdk.v2/uast"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
@@ -112,12 +111,7 @@ func (s *Suite) RunTests(t *testing.T) {
 }
 
 func (s *Suite) RunBenchmarks(b *testing.B) {
-	b.Run("transform", func(b *testing.B) {
-		s.benchmarkTransform(b, false)
-	})
-	b.Run("transform-legacy", func(b *testing.B) {
-		s.benchmarkTransform(b, true)
-	})
+	b.Run("transform", s.benchmarkTransform)
 	b.Run("fixtures", s.benchmarkFixtures)
 }
 
@@ -358,45 +352,40 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 	}
 }
 
-func (s *Suite) benchmarkTransform(b *testing.B, legacy bool) {
-	if s.BenchName == "" {
-		b.SkipNow()
-	}
-	code := s.readFixturesFile(b, s.BenchName+s.Ext)
+func (s *Suite) benchmarkTransform(b *testing.B) {
+	list, err := ioutil.ReadDir(s.Path)
+	require.NoError(b, err)
 
 	tr := s.Transforms
 
-	dr := s.NewDriver()
-
-	err := dr.Start()
-	require.NoError(b, err)
-	defer dr.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), parseTimeout)
-	rast, err := dr.Parse(ctx, string(code))
-	cancel()
-	if err != nil {
-		b.Fatal(err)
-	}
-	dr.Close()
-
 	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		ast := rast.Clone()
-
-		ua, err := tr.Do(ctx, driver.ModeSemantic, code, ast)
-		if err != nil {
-			b.Fatal(err)
+	for _, fi := range list {
+		fname := fi.Name()
+		name, ok := isBench(fname, s.Ext)
+		if !ok {
+			continue
 		}
-
-		if legacy {
-			un, err := uast1.ToNode(ua)
+		b.Run(name, func(b *testing.B) {
+			code := s.readFixturesFile(b, fname)
+			data := s.readFixturesFile(b, fname+nativeExt)
+			rast, err := uastyml.Unmarshal([]byte(data))
 			if err != nil {
 				b.Fatal(err)
 			}
-			_ = un
-		}
+			ctx := context.Background()
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				ast := rast.Clone()
+
+				ua, err := tr.Do(ctx, driver.ModeSemantic, code, ast)
+				if err != nil {
+					b.Fatal(err)
+				}
+				_ = ua
+			}
+		})
 	}
 }
 
