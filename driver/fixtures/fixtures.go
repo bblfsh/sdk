@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"os"
@@ -123,12 +124,24 @@ const (
 	highExt   = ".sem.uast"
 )
 
-func marshalNative(o nodes.Node) ([]byte, error) {
-	return uastyml.Marshal(o)
+func marshalNoRoles(o nodes.Node) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	enc := uastyml.NewEncoder(buf)
+	enc.ForceRoles(false)
+	if err := enc.Encode(o); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
-func marshalUAST(o nodes.Node) ([]byte, error) {
-	return uastyml.Marshal(o)
+func marshalForceRoles(o nodes.Node) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	enc := uastyml.NewEncoder(buf)
+	enc.ForceRoles(true)
+	if err := enc.Encode(o); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func isTest(name, ext string) (string, bool) {
@@ -178,7 +191,7 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			js, err := marshalNative(resp)
+			js, err := marshalNoRoles(resp)
 			require.NoError(t, err)
 
 			exp := s.readFixturesFile(t, fname+nativeExt)
@@ -257,7 +270,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 				ua, err := tr.Do(ctx, driver.ModePreprocessed, code, ast)
 				require.NoError(t, err)
 
-				un, err := marshalUAST(ua)
+				un, err := marshalNoRoles(ua)
 				require.NoError(t, err)
 
 				s.writeFixturesFile(t, fname+preExt, string(un))
@@ -318,7 +331,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 				}
 			}
 
-			un, err := marshalUAST(ua)
+			un, err := marshalForceRoles(ua)
 			require.NoError(t, err)
 
 			exp := s.readFixturesFile(t, fname+suf)
