@@ -30,12 +30,18 @@ const (
 )
 
 func NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w: bufio.NewWriter(w)}
+	return &Encoder{w: bufio.NewWriter(w), forceRoles: true}
 }
 
 type Encoder struct {
-	w   *bufio.Writer
-	err error
+	w          *bufio.Writer
+	err        error
+	forceRoles bool
+}
+
+// ForceRoles will force an output of Unannotated roles fiend for nodes that don't have roles.
+func (enc *Encoder) ForceRoles(enable bool) {
+	enc.forceRoles = enable
 }
 
 func (enc *Encoder) Encode(n nodes.Node) error {
@@ -93,13 +99,15 @@ func (enc *Encoder) writeObject(tabs []byte, m nodes.Object) {
 		enc.writeValue(v, true)
 		enc.writeString(",")
 	}
-	if v := uast.RolesOf(m); len(v) != 0 {
-		writeSysKey(uast.KeyRoles, true)
-		sort.Slice(v, func(i, j int) bool {
-			return v[i].String() < v[j].String()
-		})
-		enc.writeArray(ntabs, uast.RoleList(v...))
-		enc.writeString(",")
+	if enc.forceRoles || m[uast.KeyRoles] != nil {
+		if v := uast.RolesOf(m); len(v) != 0 {
+			writeSysKey(uast.KeyRoles, true)
+			sort.Slice(v, func(i, j int) bool {
+				return v[i].String() < v[j].String()
+			})
+			enc.writeArray(ntabs, uast.RoleList(v...))
+			enc.writeString(",")
+		}
 	}
 	// enforce specific sorting for known types
 	emitObj := func(key string) {
