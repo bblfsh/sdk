@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 	"math"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -117,9 +118,80 @@ func TestApply(t *testing.T) {
 	}, out)
 }
 
+type extObject map[string]External
+
+func (m extObject) Kind() Kind {
+	return KindObject
+}
+
+func (m extObject) Value() Value {
+	return nil
+}
+
+func (m extObject) SameAs(n2 External) bool {
+	m2, ok := n2.(extObject)
+	if !ok {
+		return false
+	}
+	return pointerOf(m) == pointerOf(m2)
+}
+
+func (m extObject) Size() int {
+	return len(m)
+}
+
+func (m extObject) Keys() []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func (m extObject) ValueAt(key string) (External, bool) {
+	v, ok := m[key]
+	return v, ok
+}
+
+type extArray []External
+
+func (a extArray) Kind() Kind {
+	return KindArray
+}
+
+func (a extArray) Value() Value {
+	return nil
+}
+
+func (a extArray) SameAs(n2 External) bool {
+	a2, ok := n2.(extArray)
+	if !ok || len(a) != len(a2) {
+		return false
+	} else if a == nil && a2 == nil {
+		return true
+	} else if a == nil || a2 == nil {
+		return false
+	} else if len(a) == 0 {
+		return true
+	}
+	return &a[0] == &a2[0]
+}
+
+func (a extArray) Size() int {
+	return len(a)
+}
+
+func (a extArray) ValueAt(i int) External {
+	if i < 0 || i >= len(a) {
+		return nil
+	}
+	return a[i]
+}
+
 var casesEqual = []struct {
 	name    string
-	n1, n2  Node
+	n1, n2  External
 	exp     bool
 	negHash bool // expHash == !exp
 }{
@@ -174,6 +246,30 @@ var casesEqual = []struct {
 			"k1": String("v1"),
 			"k2": Array{
 				Object{"k4": Bool(false)},
+				nil,
+				Int(-1),
+				Uint(1),
+			},
+			"k3": nil,
+		},
+		exp: true,
+	},
+	{
+		name: "nested object external",
+		n1: Object{
+			"k1": String("v1"),
+			"k2": Array{
+				Object{"k4": Bool(false)},
+				nil,
+				Int(-1),
+				Uint(1),
+			},
+			"k3": nil,
+		},
+		n2: extObject{
+			"k1": String("v1"),
+			"k2": extArray{
+				extObject{"k4": Bool(false)},
 				nil,
 				Int(-1),
 				Uint(1),
@@ -294,6 +390,7 @@ func TestNodeEqual(t *testing.T) {
 				n2 = n1
 			}
 			require.Equal(t, c.exp, Equal(n1, n2))
+			require.Equal(t, c.exp, Equal(n2, n1))
 			expHash := c.exp
 			if c.negHash {
 				expHash = !expHash
@@ -440,6 +537,7 @@ func TestNodeSame(t *testing.T) {
 				n2 = n1
 			}
 			require.Equal(t, c.exp, Same(n1, n2))
+			require.Equal(t, c.exp, Same(n2, n1))
 			require.Equal(t, c.exp, UniqueKey(n1) == UniqueKey(n2))
 		})
 	}
@@ -456,9 +554,11 @@ func TestNodeEqualExt(t *testing.T) {
 				t.SkipNow()
 			}
 			require.Equal(t, c.exp, equalExt(n1, n2))
+			require.Equal(t, c.exp, equalExt(n2, n1))
 			n3, err := toNodeExt(n2)
 			require.NoError(t, err)
 			require.Equal(t, c.exp, Equal(n1, n3))
+			require.Equal(t, c.exp, Equal(n3, n1))
 		})
 	}
 }
