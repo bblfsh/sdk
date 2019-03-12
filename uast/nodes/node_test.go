@@ -522,3 +522,37 @@ func TestCount(t *testing.T) {
 	require.Equal(t, int(7), int(Count(root, KindsNotNil)))
 	require.Equal(t, int(4), int(Count(root, KindsValues)))
 }
+
+func BenchmarkNodeSame(b *testing.B) {
+	for _, c := range casesSame {
+		b.Run(c.name, func(b *testing.B) {
+			n1, n2 := c.n1, c.n2
+			if n2 == nil {
+				n2 = n1
+			}
+			for i := 0; i < b.N; i++ {
+				ok := Same(n1, n2)
+				if ok != c.exp {
+					b.Fatal("invalid result")
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkNodeEqual(b *testing.B) {
+	for _, c := range casesEqual {
+		b.Run(c.name, func(b *testing.B) {
+			n1, n2 := c.n1, c.n2
+			if n2 == nil {
+				n2 = n1
+			}
+			for i := 0; i < b.N; i++ {
+				ok := Equal(n1, n2)
+				if ok != c.exp {
+					b.Fatal("invalid result")
+				}
+			}
+		})
+	}
+}

@@ -13,11 +13,6 @@ const applySort = false
 // Equal compares two subtrees.
 // Equality is checked by value (deep), not by reference.
 func Equal(n1, n2 External) bool {
-	if n1 == nil && n2 == nil {
-		return true
-	} else if n1 == nil || n2 == nil {
-		return false
-	}
 	if Same(n1, n2) {
 		return true
 	}
@@ -895,6 +890,34 @@ func Same(n1, n2 External) bool {
 	if !ok {
 		// second node is external, need to call SameAs on it
 		return n2.SameAs(n1)
+	}
+	// fast path
+	switch i1 := i1.(type) {
+	case Object:
+		i2, ok := i2.(Object)
+		if !ok || len(i1) != len(i2) {
+			return false
+		}
+		return pointerOf(i1) == pointerOf(i2)
+	case Array:
+		i2, ok := i2.(Array)
+		if !ok || len(i1) != len(i2) {
+			return false
+		}
+		if i1 == nil && i2 == nil {
+			return true
+		} else if i1 == nil || i2 == nil {
+			return false
+		} else if len(i1) == 0 {
+			return true
+		}
+		return &i1[0] == &i2[0]
+	case Value:
+		i2, ok := i2.(Value)
+		if !ok {
+			return false
+		}
+		return i1 == i2
 	}
 	// both nodes are internal - compare unique key
 	return UniqueKey(i1) == UniqueKey(i2)
