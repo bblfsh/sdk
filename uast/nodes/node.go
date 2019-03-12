@@ -13,8 +13,56 @@ const applySort = false
 // Equal compares two subtrees.
 // Equality is checked by value (deep), not by reference.
 func Equal(n1, n2 External) bool {
-	if Same(n1, n2) {
+	if n1 == nil && n2 == nil {
 		return true
+	} else if n1 == nil || n2 == nil {
+		return false
+	}
+	switch n1 := n1.(type) {
+	case String:
+		n2, ok := n2.(String)
+		if ok {
+			return n1 == n2
+		}
+	case Int:
+		n2, ok := n2.(Int)
+		if ok {
+			return n1 == n2
+		}
+	case Uint:
+		n2, ok := n2.(Uint)
+		if ok {
+			return n1 == n2
+		}
+	case Bool:
+		n2, ok := n2.(Bool)
+		if ok {
+			return n1 == n2
+		}
+	case Float:
+		n2, ok := n2.(Float)
+		if ok {
+			return n1 == n2
+		}
+	case Object:
+		n2, ok := n2.(Object)
+		if !ok || len(n1) != len(n2) {
+			return false
+		}
+		if pointerOf(n1) == pointerOf(n2) {
+			return true
+		}
+		return n1.EqualObject(n2)
+	case Array:
+		n2, ok := n2.(Array)
+		if !ok || len(n1) != len(n2) {
+			return false
+		}
+		return len(n1) == 0 || &n1[0] == &n2[0] || n1.EqualArray(n2)
+	default:
+		if Same(n1, n2) {
+			return true
+		}
 	}
 	if n, ok := n1.(Node); ok {
 		return n.Equal(n2)
