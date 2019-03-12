@@ -391,6 +391,12 @@ func TestNodeEqual(t *testing.T) {
 			}
 			require.Equal(t, c.exp, Equal(n1, n2))
 			require.Equal(t, c.exp, Equal(n2, n1))
+			if no1, ok := n1.(Node); ok {
+				if no2, ok := n2.(Node); ok {
+					require.Equal(t, c.exp, NodeEqual(no1, no2))
+					require.Equal(t, c.exp, NodeEqual(no2, no1))
+				}
+			}
 			expHash := c.exp
 			if c.negHash {
 				expHash = !expHash

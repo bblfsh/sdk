@@ -69,7 +69,7 @@ func (op opIs) Kinds() nodes.Kind {
 }
 
 func (op opIs) Check(st *State, n nodes.Node) (bool, error) {
-	return nodes.Equal(op.n, n), nil
+	return nodes.NodeEqual(op.n, n), nil
 }
 
 func (op opIs) Construct(st *State, n nodes.Node) (nodes.Node, error) {
@@ -398,7 +398,7 @@ func (f *FieldDescs) CheckObj(n nodes.Object) bool {
 		if !ok {
 			return false
 		}
-		if d.Fixed != nil && !nodes.Equal(*d.Fixed, v) {
+		if d.Fixed != nil && !nodes.NodeEqual(*d.Fixed, v) {
 			return false
 		}
 	}
@@ -569,7 +569,7 @@ func JoinObj(ops ...ObjectOp) ObjectOp {
 				k := req.name
 				if req2, ok := required.Get(k); ok {
 					// only allow this if values are fixed and equal
-					if req.Fixed == nil || req2.Fixed == nil || !nodes.Equal(*req.Fixed, *req2.Fixed) {
+					if req.Fixed == nil || req2.Fixed == nil || !nodes.NodeEqual(*req.Fixed, *req2.Fixed) {
 						panic(ErrDuplicateField.New(k))
 					}
 				}
@@ -678,7 +678,7 @@ func (op *opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, erro
 			return nil, err
 		}
 		for k, v := range np {
-			if v2, ok := n[k]; ok && !nodes.Equal(v, v2) {
+			if v2, ok := n[k]; ok && !nodes.NodeEqual(v, v2) {
 				return nil, ErrDuplicateField.New(k)
 			}
 			n[k] = v
@@ -690,7 +690,7 @@ func (op *opObjJoin) ConstructObj(st *State, n nodes.Object) (nodes.Object, erro
 			return nil, err
 		}
 		for k, v := range n2 {
-			if v2, ok := n[k]; ok && !nodes.Equal(v, v2) {
+			if v2, ok := n[k]; ok && !nodes.NodeEqual(v, v2) {
 				return nil, ErrDuplicateField.New(k)
 			} else if !s.fields.Has(k) {
 				return nil, fmt.Errorf("undeclared field was set: %v", k)
