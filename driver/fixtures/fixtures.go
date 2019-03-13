@@ -44,6 +44,11 @@ type DockerConfig struct {
 	Image string
 }
 
+func runsInDocker() bool {
+	_, err := os.Stat("/.dockerenv")
+	return err == nil
+}
+
 type Suite struct {
 	Lang string
 	Ext  string // with dot
@@ -152,6 +157,9 @@ func isTest(name, ext string) (string, bool) {
 }
 
 func (s *Suite) testFixturesNative(t *testing.T) {
+	if !runsInDocker() {
+		t.SkipNow()
+	}
 	list, err := ioutil.ReadDir(s.Path)
 	require.NoError(t, err)
 
@@ -223,6 +231,9 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 }
 
 func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, blacklist ...string) {
+	if !runsInDocker() {
+		t.SkipNow()
+	}
 	ctx := context.Background()
 
 	list, err := ioutil.ReadDir(s.Path)
@@ -411,6 +422,9 @@ func isBench(name, ext string) (string, bool) {
 }
 
 func (s *Suite) benchmarkFixtures(b *testing.B) {
+	if !runsInDocker() {
+		b.SkipNow()
+	}
 	b.StopTimer()
 	ctx := context.Background()
 
