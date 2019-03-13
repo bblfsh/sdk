@@ -424,6 +424,7 @@ BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
 	-v $(GO_PATH):/go \
 	-e ENVIRONMENT=$(DOCKER_BUILD_DRIVER_IMAGE) \
 	-e HOST_PLATFORM=$(shell uname) \
+	-e TRAVIS_TAG=$(TRAVIS_TAG) \
 	$(DOCKER_BUILD_DRIVER_IMAGE)
 
 # if VERBOSE is unset docker build is executed in quite mode
@@ -520,7 +521,7 @@ func makeRulesMk() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "make/rules.mk", size: 4299, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "make/rules.mk", size: 4330, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
