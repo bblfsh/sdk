@@ -48,6 +48,7 @@ BUILD_DRIVER_CMD ?= $(DOCKER_RUN) \
 	-v $(GO_PATH):/go \
 	-e ENVIRONMENT=$(DOCKER_BUILD_DRIVER_IMAGE) \
 	-e HOST_PLATFORM=$(shell uname) \
+	-e TRAVIS_TAG=$(TRAVIS_TAG) \
 	$(DOCKER_BUILD_DRIVER_IMAGE)
 
 # if VERBOSE is unset docker build is executed in quite mode
