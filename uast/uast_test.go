@@ -22,6 +22,69 @@ func tObj(typ, tok string) Obj {
 	return obj
 }
 
+func TestContentOf(t *testing.T) {
+	var cases = []struct {
+		name string
+		node interface{}
+		exp  string
+	}{
+		{
+			name: "string",
+			node: nodes.String("a"),
+			exp:  "a",
+		},
+		{
+			name: "int",
+			node: nodes.Int(1),
+			exp:  "1",
+		},
+		{
+			name: "string lit",
+			node: String{
+				Value: "a",
+			},
+			exp: "a",
+		},
+		{
+			name: "bool lit",
+			node: Bool{
+				Value: true,
+			},
+			exp: "true",
+		},
+		{
+			name: "identifier",
+			node: Identifier{
+				Name: "a",
+			},
+			exp: "a",
+		},
+		{
+			name: "comment",
+			node: Comment{
+				Prefix: " ",
+				Text:   "a",
+			},
+			exp: "a",
+		},
+		{
+			name: "array",
+			node: nodes.Array{
+				nodes.String("a"),
+				nodes.String("b"),
+			},
+			exp: "", // TODO(dennwc): define it later if we find a valid use case for it
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			n, err := ToNode(c.node)
+			require.NoError(t, err)
+			require.Equal(t, c.exp, ContentOf(n))
+		})
+	}
+}
+
 func TestPrefixTokens(t *testing.T) {
 	require := require.New(t)
 
