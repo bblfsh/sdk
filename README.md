@@ -119,7 +119,7 @@ creating file "Dockerfile.build.tpl"
 creating file "driver/normalizer/normalizer_test.go"
 creating file "Dockerfile.tpl"
 creating file "LICENSE"
-managed file "README.md" has changed, discarding changes
+managed file "README.md" has changed, overriding changes
 $ git add -A
 $ git commit -m 'initialize repository'
 ```
@@ -135,13 +135,13 @@ You can find the driver skeleton used here at [`etc/skeleton`](etc/skeleton).
 ### Keeping managed files updated
 
 Whenever the managed files are updated, drivers need to update them.
-`bblfsh-sdk` can be used to perform some of this updates in managed files.
+The `update.go` script can be used to perform some of those updates in managed files.
 For example, if the README template is updated,
-running `bblfsh-sdk update` will overwrite it.
+running `go run ./update.go` will overwrite it.
 
 ```bash
-$ bblfsh-sdk update
-managed file "README.md" has changed, discarding changes
+$ go run ./update.go
+managed file "README.md" has changed, overriding changes
 ```
 
 `bblfsh-sdk` doesn't update the SDK itself.
