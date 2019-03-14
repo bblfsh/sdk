@@ -5,6 +5,7 @@
 // etc/skeleton/Gopkg.toml
 // etc/skeleton/LICENSE
 // etc/skeleton/README.md.tpl
+// etc/skeleton/build.go
 // etc/skeleton/build.yml.tpl
 // etc/skeleton/driver/fixtures/fixtures_test.go.tpl
 // etc/skeleton/driver/impl/impl.go
@@ -12,10 +13,13 @@
 // etc/skeleton/driver/normalizer/annotation.go
 // etc/skeleton/driver/normalizer/normalizer.go
 // etc/skeleton/driver/normalizer/transforms.go.tpl
+// etc/skeleton/driver/sdk_test.go
 // etc/skeleton/git/hooks/pre-commit
 // etc/skeleton/manifest.toml.tpl
 // etc/skeleton/native/README.md.tpl
 // etc/skeleton/native/native.sh
+// etc/skeleton/test.go
+// etc/skeleton/update.go
 // DO NOT EDIT!
 
 package skeleton
@@ -87,7 +91,7 @@ services:
   - docker
 
 env:
-  - BBLFSHD_VERSION=v2.11.7
+  - BBLFSHD_VERSION=v2.11.8
 
 install:
   - curl -L https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 > $GOPATH/bin/dep
@@ -98,9 +102,9 @@ install:
   - docker pull bblfsh/bblfshd:$BBLFSHD_VERSION
 
 script:
-  - bblfsh-sdk update --dry-run
-  - bblfsh-sdk build ci-build
-  - bblfsh-sdk test --bblfshd $BBLFSHD_VERSION ci-build
+  - go test ./driver/...
+  - go run build.go ci-build
+  - go run test.go --bblfshd $BBLFSHD_VERSION ci-build
 
 after_success:
   - bblfsh-sdk push ci-build
@@ -116,7 +120,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 580, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 571, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -860,15 +864,15 @@ Development Environment
 
 Requirements:
 - ` + "`" + `docker` + "`" + `
-- [` + "`" + `bblfsh-sdk` + "`" + `](https://github.com/bblfsh/sdk) _(go get -u gopkg.in/bblfsh/sdk.v2/...)_
-- UAST converter dependencies _(dep ensure --vendor-only)_
+- Go 1.11+
+- SDK dependencies _(dep ensure --vendor-only)_
 
-To initialize the build system execute: ` + "`" + `bblfsh-sdk update` + "`" + `, at the root of the project. This will generate the ` + "`" + `Dockerfile` + "`" + ` for this driver.
+To initialize the build system execute: ` + "`" + `go test ./driver` + "`" + `, at the root of the project. This will generate the ` + "`" + `Dockerfile` + "`" + ` for this driver.
 
-To execute the tests just execute ` + "`" + `bblfsh-sdk test` + "`" + `, this will execute the test over the native and the go components of the driver using Docker.
+To execute the tests just execute ` + "`" + `go run ./test.go` + "`" + `, this will execute the test over the native and the go components of the driver using Docker.
 
-The build is done executing ` + "`" + `bblfsh-sdk build` + "`" + `. To evaluate the result using a docker container, execute:
-` + "`" + `bblfsh-sdk build test-driver && docker run -it test-driver` + "`" + `.
+The build is done executing ` + "`" + `go run ./build.go` + "`" + `. To evaluate the result using a docker container, execute:
+` + "`" + `go run ./build.go test-driver && docker run -it test-driver` + "`" + `.
 
 
 License
@@ -906,7 +910,59 @@ func readmeMdTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "README.md.tpl", size: 1931, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "README.md.tpl", size: 1844, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _buildGo = []byte(`package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"gopkg.in/bblfsh/sdk.v2/build"
+)
+
+func main() {
+	flag.Parse()
+	if err := runBuild("."); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runBuild(root string) error {
+	args := flag.Args()
+	name := ""
+	if len(args) != 0 {
+		name = args[0]
+	}
+	d, err := build.NewDriver(root)
+	if err != nil {
+		return err
+	}
+	id, err := d.Build(name)
+	if err != nil {
+		return err
+	}
+	fmt.Println(id)
+	return nil
+}
+`)
+
+func buildGoBytes() ([]byte, error) {
+	return _buildGo, nil
+}
+
+func buildGo() (*asset, error) {
+	bytes, err := buildGoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "build.go", size: 462, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1199,12 +1255,52 @@ func driverNormalizerTransformsGoTpl() (*asset, error) {
 	return a, nil
 }
 
+var _driverSdk_testGo = []byte(`package main_test
+
+import (
+	"testing"
+
+	"gopkg.in/bblfsh/sdk.v2/build"
+)
+
+func TestSDKUpToDate(t *testing.T) {
+	printf := func(format string, args ...interface{}) (int, error) {
+		t.Logf(format, args...)
+		return 0, nil
+	}
+	err := build.SDKUpdate("../", &build.UpdateOptions{
+		DryRun:   true,
+		Debugf:   printf,
+		Noticef:  printf,
+		Warningf: printf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+`)
+
+func driverSdk_testGoBytes() ([]byte, error) {
+	return _driverSdk_testGo, nil
+}
+
+func driverSdk_testGo() (*asset, error) {
+	bytes, err := driverSdk_testGoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "driver/sdk_test.go", size: 396, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _gitHooksPreCommit = []byte(`#!/bin/bash
 last_stash=$(git rev-parse -q --verify refs/stash)
 git stash save -q --keep-index "automatic stash on pre-commit at $(git branch  --points-at HEAD)";
 new_stash=$(git rev-parse -q --verify refs/stash)
 
-bblfsh-sdk update --root ` + "`" + `git rev-parse --show-toplevel` + "`" + ` --dry-run
+go test ` + "`" + `git rev-parse --show-toplevel` + "`" + `/driver
 status=$?
 
 if [ "$last_stash" != "$new_stash" ]; then
@@ -1224,7 +1320,7 @@ func gitHooksPreCommit() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "git/hooks/pre-commit", size: 426, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "git/hooks/pre-commit", size: 406, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1315,6 +1411,99 @@ func nativeNativeSh() (*asset, error) {
 	return a, nil
 }
 
+var _testGo = []byte(`package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"gopkg.in/bblfsh/sdk.v2/build"
+)
+
+var (
+	fBblfshd = flag.String("bblfshd", "", "bblfshd version to test with")
+	fBench   = flag.Bool("bench", false, "benchmark the driver")
+)
+
+func main() {
+	flag.Parse()
+	if err := runTest("."); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runTest(root string) error {
+	args := flag.Args()
+	image := ""
+	if len(args) != 0 {
+		image = args[0]
+	}
+	d, err := build.NewDriver(root)
+	if err != nil {
+		return err
+	}
+	return d.Test(*fBblfshd, image, *fBench)
+}
+`)
+
+func testGoBytes() ([]byte, error) {
+	return _testGo, nil
+}
+
+func testGo() (*asset, error) {
+	bytes, err := testGoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test.go", size: 558, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _updateGo = []byte(`package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"gopkg.in/bblfsh/sdk.v2/build"
+)
+
+func main() {
+	flag.Parse()
+	if err := runUpdate("."); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func runUpdate(root string) error {
+	return build.SDKUpdate(root, &build.UpdateOptions{
+		Noticef:  fmt.Printf,
+		Warningf: fmt.Printf,
+	})
+}
+`)
+
+func updateGoBytes() ([]byte, error) {
+	return _updateGo, nil
+}
+
+func updateGo() (*asset, error) {
+	bytes, err := updateGoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "update.go", size: 340, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1372,6 +1561,7 @@ var _bindata = map[string]func() (*asset, error){
 	"Gopkg.toml":                           gopkgToml,
 	"LICENSE":                              license,
 	"README.md.tpl":                        readmeMdTpl,
+	"build.go":                             buildGo,
 	"build.yml.tpl":                        buildYmlTpl,
 	"driver/fixtures/fixtures_test.go.tpl": driverFixturesFixtures_testGoTpl,
 	"driver/impl/impl.go":                  driverImplImplGo,
@@ -1379,10 +1569,13 @@ var _bindata = map[string]func() (*asset, error){
 	"driver/normalizer/annotation.go":      driverNormalizerAnnotationGo,
 	"driver/normalizer/normalizer.go":      driverNormalizerNormalizerGo,
 	"driver/normalizer/transforms.go.tpl":  driverNormalizerTransformsGoTpl,
+	"driver/sdk_test.go":                   driverSdk_testGo,
 	"git/hooks/pre-commit":                 gitHooksPreCommit,
 	"manifest.toml.tpl":                    manifestTomlTpl,
 	"native/README.md.tpl":                 nativeReadmeMdTpl,
 	"native/native.sh":                     nativeNativeSh,
+	"test.go":                              testGo,
+	"update.go":                            updateGo,
 }
 
 // AssetDir returns the file names below a certain
@@ -1431,6 +1624,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"Gopkg.toml":    &bintree{gopkgToml, map[string]*bintree{}},
 	"LICENSE":       &bintree{license, map[string]*bintree{}},
 	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
+	"build.go":      &bintree{buildGo, map[string]*bintree{}},
 	"build.yml.tpl": &bintree{buildYmlTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
 		"fixtures": &bintree{nil, map[string]*bintree{
@@ -1445,6 +1639,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"normalizer.go":     &bintree{driverNormalizerNormalizerGo, map[string]*bintree{}},
 			"transforms.go.tpl": &bintree{driverNormalizerTransformsGoTpl, map[string]*bintree{}},
 		}},
+		"sdk_test.go": &bintree{driverSdk_testGo, map[string]*bintree{}},
 	}},
 	"git": &bintree{nil, map[string]*bintree{
 		"hooks": &bintree{nil, map[string]*bintree{
@@ -1456,6 +1651,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"README.md.tpl": &bintree{nativeReadmeMdTpl, map[string]*bintree{}},
 		"native.sh":     &bintree{nativeNativeSh, map[string]*bintree{}},
 	}},
+	"test.go":   &bintree{testGo, map[string]*bintree{}},
+	"update.go": &bintree{updateGo, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

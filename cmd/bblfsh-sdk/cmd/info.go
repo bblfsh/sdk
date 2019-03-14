@@ -16,7 +16,7 @@ type InfoCommand struct {
 }
 
 func (c *InfoCommand) Execute(args []string) error {
-	m, err := manifest.Load(filepath.Join(c.Root, manifestName))
+	m, err := manifest.Load(filepath.Join(c.Root, manifest.Filename))
 	if err != nil {
 		return err
 	}

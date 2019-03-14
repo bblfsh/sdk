@@ -3,7 +3,7 @@ last_stash=$(git rev-parse -q --verify refs/stash)
 git stash save -q --keep-index "automatic stash on pre-commit at $(git branch  --points-at HEAD)";
 new_stash=$(git rev-parse -q --verify refs/stash)
 
-bblfsh-sdk update --root `git rev-parse --show-toplevel` --dry-run
+go test `git rev-parse --show-toplevel`/driver
 status=$?
 
 if [ "$last_stash" != "$new_stash" ]; then

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/bblfsh/sdk.v2/build"
 	"gopkg.in/bblfsh/sdk.v2/cmd"
 )
 
@@ -55,5 +56,5 @@ func (c *InitCommand) processManifest() error {
 		return err
 	}
 
-	return c.processTemplateAsset(manifestTpl, c.Args, false)
+	return build.GenerateManifest(c.Root, c.Args.Language)
 }
