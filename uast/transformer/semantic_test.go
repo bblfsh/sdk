@@ -22,6 +22,15 @@ func TestComment(t *testing.T) {
 			},
 		},
 		{
+			name: "space",
+			text: "// ",
+			exp: commentElems{
+				StartToken: "//", EndToken: "",
+				Prefix: " ",
+				Text:   "",
+			},
+		},
+		{
 			name: "new line",
 			text: "// some text\n",
 			exp: commentElems{

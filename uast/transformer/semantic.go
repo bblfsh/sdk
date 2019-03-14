@@ -181,6 +181,9 @@ func (c *commentElems) Split(text string) bool {
 	if i >= 0 {
 		c.Prefix = text[:i]
 		text = text[i:]
+	} else {
+		c.Prefix = text
+		text = ""
 	}
 
 	// find suffix
