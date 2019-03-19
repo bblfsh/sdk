@@ -103,10 +103,6 @@ func (s *Suite) deleteFixturesFile(name string) {
 }
 
 func (s *Suite) RunTests(t *testing.T) {
-	if s.Docker.Image != "" && runInDocker {
-		s.runTestsDocker(t)
-		return
-	}
 	t.Run("native", s.testFixturesNative)
 	t.Run("uast", func(t *testing.T) {
 		s.testFixturesUAST(t, driver.ModeAnnotated, uastExt)

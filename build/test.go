@@ -56,12 +56,10 @@ func (d *Driver) testFixtures(image string, bench bool) error {
 	const (
 		wd  = "/opt/driver/bin"
 		bin = "./fixtures.test"
-		env = "BBLFSH_TEST_LOCAL=true"
 	)
 	printCommand(
 		"docker", "run", "--rm",
 		"-u", usr,
-		"-e", env,
 		"-v", mnt,
 		"--workdir", wd,
 		"--entrypoint", bin,
@@ -75,9 +73,6 @@ func (d *Driver) testFixtures(image string, bench bool) error {
 			AttachStderr: true,
 			WorkingDir:   wd,
 			Entrypoint:   []string{bin},
-			Env: []string{
-				env,
-			},
 		},
 		HostConfig: &docker.HostConfig{
 			AutoRemove: true,
@@ -107,7 +102,6 @@ func (d *Driver) testFixtures(image string, bench bool) error {
 	printCommand(
 		"docker", "run", "--rm",
 		"-u", usr,
-		"-e", env,
 		"-v", mnt,
 		"--workdir", wd,
 		"--entrypoint", `'`+bin+` -test.run=NONE -test.bench=.'`,
