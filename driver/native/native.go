@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -32,7 +33,10 @@ const (
 )
 
 var (
+	// ErrNotRunning is returned when calling Parse on the not running driver.
 	ErrNotRunning = serrors.NewKind("native driver is not running")
+	// ErrDriverCrashed is returned when the driver crashes after parsing attempt.
+	ErrDriverCrashed = serrors.NewKind("native driver crashed")
 )
 
 func NewDriver(enc Encoding) driver.Native {
@@ -71,12 +75,15 @@ type Driver struct {
 	stdin   *os.File
 	stdout  *os.File
 	cmd     *exec.Cmd
+	cmdErr  chan error
 	state   driverState
 	lastErr error
 }
 
 // Start executes the given native driver and prepares it to parse code.
 func (d *Driver) Start() error {
+	d.state = stateOK
+	d.lastErr = nil
 	d.cmd = exec.Command(d.bin)
 	d.cmd.Stderr = os.Stderr
 
@@ -105,6 +112,17 @@ func (d *Driver) Start() error {
 	err = d.cmd.Start()
 	if err == nil {
 		d.running = true
+		errc := make(chan error, 1)
+		d.cmdErr = errc
+		go func() {
+			// close pipes when driver exits
+			defer func() {
+				stdin.Close()
+				stdout.Close()
+				close(errc)
+			}()
+			errc <- d.cmd.Wait()
+		}()
 		return nil
 	}
 	d.stdin.Close()
@@ -155,7 +173,21 @@ func (d *Driver) writeRequest(ctx context.Context, req *parseRequest) error {
 	sp, _ := opentracing.StartSpanFromContext(ctx, "bblfsh.native.Parse.encodeReq")
 	defer sp.Finish()
 
-	return d.enc.Encode(req)
+	err := d.enc.Encode(req)
+	if err == nil {
+		return nil
+	}
+	// Cannot write data - this means the stream is broken or driver crashed.
+	// We will try to recover by reading the response, but since it might be
+	// a stack trace or an error message, we will read it as a "raw" value.
+	// This preserves an original text instead of failing with decoding error.
+	var raw json.RawMessage
+	// TODO: this reads a single line only; we can be smarter and read the whole log if driver cannot recover
+	if err := d.dec.Decode(&raw); err != nil {
+		// stream is broken on both sides, cannot get additional info
+		return driver.ErrDriverFailure.Wrap(err)
+	}
+	return driver.ErrDriverFailure.Wrap(fmt.Errorf("error: %v; %s", err, string(raw)))
 }
 
 type timeoutError interface {
@@ -249,20 +281,19 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 		Content: str, Encoding: d.ec,
 	})
 	if err != nil {
-		// Cannot write data - this means the stream is broken or driver crashed.
-		// We will try to recover by reading the response, but since it might be
-		// a stack trace or an error message, we will read it as a "raw" value.
-		// This preserves an original text instead of failing with decoding error.
-		var raw json.RawMessage
-		// TODO: this reads a single line only; we can be smarter and read the whole log if driver cannot recover
-		if err := d.dec.Decode(&raw); err != nil {
-			// stream is broken on both sides, cannot get additional info
-			return nil, driver.ErrDriverFailure.Wrap(err)
-		}
-		return nil, driver.ErrDriverFailure.Wrap(fmt.Errorf("error: %v; %s", err, string(raw)))
+		return nil, err
 	}
 
 	r, err := d.readResponse(ctx)
+	if err == io.EOF {
+		// driver just died; try to restart it once
+		<-d.cmdErr
+		if err := d.Start(); err != nil {
+			return nil, driver.ErrDriverFailure.Wrap(err, "driver restart failed")
+		}
+		// fail anyway - this request may have caused the crash
+		err = ErrDriverCrashed.New()
+	}
 	if err != nil {
 		return nil, driver.ErrDriverFailure.Wrap(err)
 	}
@@ -296,13 +327,9 @@ func (d *Driver) Close() error {
 	if err := d.stdin.Close(); err != nil {
 		last = err
 	}
-	errc := make(chan error, 1)
-	go func() {
-		errc <- d.cmd.Wait()
-	}()
 	timeout := time.NewTimer(closeTimeout)
 	select {
-	case err := <-errc:
+	case err := <-d.cmdErr:
 		timeout.Stop()
 		if err != nil {
 			last = err

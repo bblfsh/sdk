@@ -70,6 +70,46 @@ func TestNativeDriverNativeParse(t *testing.T) {
 	require.NoError(err)
 }
 
+func TestNativeDriverNativeCrash(t *testing.T) {
+	require := require.New(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	d := NewDriverAt("internal/simple/mock", "")
+	err := d.Start()
+	require.NoError(err)
+
+	// fist request should succeed
+	r, err := d.Parse(ctx, "foo")
+	require.NoError(err)
+	require.Equal(mockResponse("foo"), r)
+
+	// this is a special word that causes the driver to panic and crash
+	_, err = d.Parse(ctx, "die")
+	require.True(ErrDriverCrashed.Is(err))
+	require.True(derrors.ErrDriverFailure.Is(err))
+
+	// we expect that the next request will restart the driver
+	_, err = d.Parse(ctx, "foo")
+	require.NoError(err)
+	require.Equal(mockResponse("foo"), r)
+
+	err = d.Close()
+	require.NoError(err)
+
+	// try to restarting manually just to make sure the driver state is clean
+	err = d.Start()
+	require.NoError(err)
+
+	r, err = d.Parse(ctx, "foo")
+	require.NoError(err)
+	require.Equal(mockResponse("foo"), r)
+
+	err = d.Close()
+	require.NoError(err)
+}
+
 func TestNativeDriverNativeParse_Lock(t *testing.T) {
 	require := require.New(t)
 
