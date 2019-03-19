@@ -11,11 +11,11 @@ func TestSDKUpToDate(t *testing.T) {
 		t.Logf(format, args...)
 		return 0, nil
 	}
-	err := build.SDKUpdate("../", &build.UpdateOptions{
-		DryRun:   true,
-		Debugf:   printf,
-		Noticef:  printf,
-		Warningf: printf,
+	err := build.UpdateSDK("../", &build.UpdateOptions{
+		DryRun:  true,
+		Debug:   printf,
+		Notice:  printf,
+		Warning: printf,
 	})
 	if err != nil {
 		t.Fatal(err)

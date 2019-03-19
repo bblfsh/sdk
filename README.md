@@ -137,10 +137,10 @@ You can find the driver skeleton used here at [`etc/skeleton`](etc/skeleton).
 Whenever the managed files are updated, drivers need to update them.
 The `update.go` script can be used to perform some of those updates in managed files.
 For example, if the README template is updated,
-running `go run ./update.go` will overwrite it.
+running `go run update.go` will overwrite it.
 
 ```bash
-$ go run ./update.go
+$ go run update.go
 managed file "README.md" has changed, overriding changes
 ```
 
