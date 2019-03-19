@@ -55,6 +55,31 @@ func TestEncoding(t *testing.T) {
 	}
 }
 
+func TestNativeDriverNativeCrash(t *testing.T) {
+	require := require.New(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	d := NewDriverAt("internal/crash/mock", "")
+
+	// cannot detect crash here because of native protocol limitations
+	err := d.Start()
+	require.NoError(err)
+
+	// all requests should fail the same way
+	_, err = d.Parse(ctx, "foo")
+	require.True(ErrDriverCrashed.Is(err))
+	require.True(derrors.ErrDriverFailure.Is(err))
+
+	_, err = d.Parse(ctx, "bar")
+	require.True(ErrDriverCrashed.Is(err))
+	require.True(derrors.ErrDriverFailure.Is(err))
+
+	err = d.Close()
+	require.NoError(err)
+}
+
 func TestNativeDriverNativeParse(t *testing.T) {
 	require := require.New(t)
 
@@ -70,7 +95,7 @@ func TestNativeDriverNativeParse(t *testing.T) {
 	require.NoError(err)
 }
 
-func TestNativeDriverNativeCrash(t *testing.T) {
+func TestNativeDriverNativeParseCrash(t *testing.T) {
 	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -80,7 +105,7 @@ func TestNativeDriverNativeCrash(t *testing.T) {
 	err := d.Start()
 	require.NoError(err)
 
-	// fist request should succeed
+	// first request should succeed
 	r, err := d.Parse(ctx, "foo")
 	require.NoError(err)
 	require.Equal(mockResponse("foo"), r)

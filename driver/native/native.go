@@ -286,8 +286,9 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 
 	r, err := d.readResponse(ctx)
 	if err == io.EOF {
-		// driver just died; try to restart it once
+		// driver just died; we don't care about exit code
 		<-d.cmdErr
+		// try to restart it once
 		if err := d.Start(); err != nil {
 			return nil, driver.ErrDriverFailure.Wrap(err, "driver restart failed")
 		}
@@ -329,11 +330,8 @@ func (d *Driver) Close() error {
 	}
 	timeout := time.NewTimer(closeTimeout)
 	select {
-	case err := <-d.cmdErr:
+	case <-d.cmdErr: // don't care about exit code
 		timeout.Stop()
-		if err != nil {
-			last = err
-		}
 	case <-timeout.C:
 		d.cmd.Process.Kill()
 	}
