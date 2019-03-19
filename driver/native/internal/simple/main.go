@@ -14,6 +14,9 @@ func (mockDriver) Start() error {
 }
 
 func (mockDriver) Parse(ctx context.Context, src string) (nodes.Node, error) {
+	if src == "die" {
+		panic("died")
+	}
 	return nodes.Object{
 		"root": nodes.Object{
 			"key": nodes.String(src),
