@@ -17,8 +17,8 @@ func main() {
 }
 
 func runUpdate(root string) error {
-	return build.SDKUpdate(root, &build.UpdateOptions{
-		Noticef:  fmt.Printf,
-		Warningf: fmt.Printf,
+	return build.UpdateSDK(root, &build.UpdateOptions{
+		Notice:  fmt.Printf,
+		Warning: fmt.Printf,
 	})
 }

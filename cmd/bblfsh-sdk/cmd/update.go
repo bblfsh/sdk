@@ -15,16 +15,16 @@ type UpdateCommand struct {
 
 func (c *UpdateCommand) Options() *build.UpdateOptions {
 	opt := &build.UpdateOptions{
-		DryRun:   c.DryRun,
-		Noticef:  cmd.Notice.Printf,
-		Warningf: cmd.Warning.Printf,
+		DryRun:  c.DryRun,
+		Notice:  cmd.Notice.Printf,
+		Warning: cmd.Warning.Printf,
 	}
 	if c.Verbose {
-		opt.Debugf = cmd.Debug.Printf
+		opt.Debug = cmd.Debug.Printf
 	}
 	return opt
 }
 
 func (c *UpdateCommand) Execute(args []string) error {
-	return build.SDKUpdate(c.Root, c.Options())
+	return build.UpdateSDK(c.Root, c.Options())
 }

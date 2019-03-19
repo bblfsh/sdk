@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
+	"unicode/utf8"
 
 	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
 	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
@@ -21,7 +23,19 @@ const (
 	manifestTpl = manifest.Filename + tplExt
 )
 
-var overwriteManagedFiles = os.Getenv("BABELFISH_OVERWRITE_MANAGED") == "true"
+func genEnvBool(key string) bool {
+	str := os.Getenv(key)
+	if str == "" {
+		return false
+	}
+	v, err := strconv.ParseBool(str)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+var overwriteManagedFiles = genEnvBool("BABELFISH_OVERWRITE_MANAGED")
 
 // managedFiles are files that always are overwritten
 var managedFiles = map[string]bool{
@@ -47,25 +61,35 @@ type updater struct {
 // PrintfFunc is a logging function type similar to log.Printf.
 type PrintfFunc func(format string, args ...interface{}) (int, error)
 
-// Silencef is a logging function that does nothing.
-func Silencef(format string, args ...interface{}) (int, error) {
-	return 0, nil
+func (f PrintfFunc) printf(msg string, args ...interface{}) {
+	if f == nil {
+		return
+	}
+	_, _ = f(msg, args...)
+}
+
+func mustAssetInfo(name string) os.FileInfo {
+	fi, err := skeleton.AssetInfo(name)
+	if err != nil {
+		panic(fmt.Errorf("missing asset info for %q: %v", name, err))
+	}
+	return fi
 }
 
 // UpdateOptions is a set of options available for
 type UpdateOptions struct {
 	DryRun bool
 
-	Debugf   PrintfFunc
-	Noticef  PrintfFunc
-	Warningf PrintfFunc
+	Debug   PrintfFunc
+	Notice  PrintfFunc
+	Warning PrintfFunc
 }
 
-// ErrChangesRequired is returned by SDKUpdate in DryRun mode when changes are required.
+// ErrChangesRequired is returned by UpdateSDK in DryRun mode when changes are required.
 var ErrChangesRequired = errors.New("changes are required")
 
 // GenerateManifest writes the manifest file to a root driver directory.
-func GenerateManifest(root string, language string) error {
+func GenerateManifest(root, language string) error {
 	tpl := string(skeleton.MustAsset(manifestTpl))
 
 	t, err := template.New(manifestTpl).Funcs(funcs).Parse(tpl)
@@ -76,42 +100,29 @@ func GenerateManifest(root string, language string) error {
 	name := fixGitFolder(manifestTpl)
 	file := filepath.Join(root, manifest.Filename)
 
-	if _, err = os.Stat(file); err == nil {
-		return errors.New("trying to overwrite the manifest")
-	}
-	info, _ := skeleton.AssetInfo(name)
+	info := mustAssetInfo(name)
 
-	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, info.Mode())
+	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC|os.O_EXCL, info.Mode())
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	args := map[string]string{
+	if err := t.Execute(f, map[string]string{
 		"Language": language,
-	}
-	if err := t.Execute(f, args); err != nil {
+	}); err != nil {
 		return err
 	}
 	return f.Close()
 }
 
-// SDKUpdate updates SDK-managed files for the driver located at root.
+// UpdateSDK updates SDK-managed files for the driver located at root.
 //
 // If DryRun option is set, the function would not update any files, and instead will
 // return ErrChangesRequired if there are any changes required.
-func SDKUpdate(root string, opt *UpdateOptions) error {
+func UpdateSDK(root string, opt *UpdateOptions) error {
 	if opt == nil {
 		opt = &UpdateOptions{}
-	}
-	if opt.Warningf == nil {
-		opt.Warningf = Silencef
-	}
-	if opt.Noticef == nil {
-		opt.Noticef = Silencef
-	}
-	if opt.Debugf == nil {
-		opt.Debugf = Silencef
 	}
 
 	m, err := manifest.Load(filepath.Join(root, manifest.Filename))
@@ -126,10 +137,6 @@ func SDKUpdate(root string, opt *UpdateOptions) error {
 	}
 
 	for _, file := range skeleton.AssetNames() {
-		if file == manifestTpl {
-			continue
-		}
-
 		if err := c.processAsset(file); err != nil {
 			return err
 		}
@@ -158,10 +165,12 @@ func SDKUpdate(root string, opt *UpdateOptions) error {
 }
 
 func (c *updater) processAsset(name string) error {
-	overwrite := managedFiles[name]
-	if overwriteManagedFiles {
-		overwrite = false
+	if name == manifestTpl {
+		// manifest is always managed by the driver developer
+		// the template is only for the driver init
+		return nil
 	}
+	overwrite := managedFiles[name] && !overwriteManagedFiles
 
 	if strings.HasSuffix(name, tplExt) {
 		return c.processTemplateAsset(name, c.context, overwrite)
@@ -172,15 +181,15 @@ func (c *updater) processAsset(name string) error {
 
 func (c *updater) processFileAsset(name string, overwrite bool) error {
 	content := skeleton.MustAsset(name)
-	info, _ := skeleton.AssetInfo(name)
+	info := mustAssetInfo(name)
 
 	name = fixGitFolder(name)
-	return c.writeFile(filepath.Join(c.root, name), content, info.Mode(), overwrite)
+	return c.writeIfChanged(filepath.Join(c.root, name), content, info.Mode(), overwrite)
 }
 
 var funcs = map[string]interface{}{
-	"escape_shield": escapeShield,
-	"expName":       expName,
+	"escape_shield":  escapeShield,
+	"toExportedName": toExportedName,
 }
 
 func (c *updater) processTemplateAsset(name string, v interface{}, overwrite bool) error {
@@ -199,22 +208,18 @@ func (c *updater) processTemplateAsset(name string, v interface{}, overwrite boo
 		return err
 	}
 
-	info, _ := skeleton.AssetInfo(name)
-	return c.writeFile(file, buf.Bytes(), info.Mode(), overwrite)
+	info := mustAssetInfo(name)
+	return c.writeIfChanged(file, buf.Bytes(), info.Mode(), overwrite)
 }
 
-func (c *updater) writeFile(file string, content []byte, m os.FileMode, overwrite bool) error {
+func (c *updater) writeIfChanged(file string, content []byte, m os.FileMode, overwrite bool) error {
 	f, err := os.Open(file)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	if f == nil {
+	if os.IsNotExist(err) {
 		c.notifyMissingFile(file)
-		return c.doWriteFile(file, content, m)
-	}
-
-	if !overwrite {
+		return c.writeFile(file, content, m)
+	} else if err != nil {
+		return err
+	} else if !overwrite {
 		return nil
 	}
 
@@ -228,10 +233,10 @@ func (c *updater) writeFile(file string, content []byte, m os.FileMode, overwrit
 	}
 
 	c.notifyChangedFile(file)
-	return c.doWriteFile(file, content, m)
+	return c.writeFile(file, content, m)
 }
 
-func (c *updater) doWriteFile(file string, content []byte, m os.FileMode) error {
+func (c *updater) writeFile(file string, content []byte, m os.FileMode) error {
 	if c.opt.DryRun {
 		return nil
 	}
@@ -247,8 +252,8 @@ func (c *updater) doWriteFile(file string, content []byte, m os.FileMode) error 
 
 	defer f.Close()
 
-	if c.opt.Debugf != nil {
-		c.opt.Debugf("file %q has been written\n", file)
+	if c.opt.Debug != nil {
+		c.opt.Debug.printf("file %q has been written\n", file)
 	}
 
 	_, err = f.Write(content)
@@ -263,48 +268,47 @@ func (c *updater) doWriteFile(file string, content []byte, m os.FileMode) error 
 		git := exec.Command("git", "add", rel)
 		git.Dir = c.root
 		if out, err := git.CombinedOutput(); err != nil {
-			c.opt.Warningf("cannot add a file to git: %v\n%s", err, string(out))
+			c.opt.Warning.printf("cannot add a file to git: %v\n%s", err, string(out))
 		}
 	}
 	return nil
 }
 
 func (c *updater) notifyMissingFile(file string) {
-	if !c.opt.DryRun {
-		c.opt.Noticef("creating file %q\n", file)
-		return
-	}
-
 	if isDotGit(file) {
 		return
 	}
 
+	if !c.opt.DryRun {
+		c.opt.Notice.printf("creating file %q\n", file)
+		return
+	}
+
 	c.changes++
-	c.opt.Warningf("missing file %q\n", file)
+	c.opt.Warning.printf("missing file %q\n", file)
 }
 
 func (c *updater) notifyChangedFile(file string) {
 	if !c.opt.DryRun {
-		c.opt.Warningf("managed file %q has changed, overriding changes\n", file)
+		c.opt.Warning.printf("managed file %q has changed, overriding changes\n", file)
 		return
 
 	}
 
 	c.changes++
-	c.opt.Warningf("managed file changed %q\n", file)
+	c.opt.Warning.printf("managed file changed %q\n", file)
 }
 
 func escapeShield(text interface{}) string {
 	return strings.Replace(fmt.Sprintf("%s", text), "-", "--", -1)
 }
 
-func expName(s string) string {
-	if len(s) == 0 {
-		return ""
+func toExportedName(s string) string {
+	r, n := utf8.DecodeRuneInString(s)
+	if n == 0 {
+		return s
 	}
-	r := []rune(s)
-	r[0] = unicode.ToUpper(r[0])
-	return string(r)
+	return string(unicode.ToUpper(r)) + s[n:]
 }
 
 func fixGitFolder(path string) string {
