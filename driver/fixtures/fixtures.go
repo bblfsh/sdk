@@ -87,6 +87,17 @@ func (s *Suite) readFixturesFile(t testing.TB, name string) string {
 	return string(data)
 }
 
+func (s *Suite) readFixturesFileUAST(t testing.TB, name string, noFail bool) nodes.Node {
+	data, err := ioutil.ReadFile(s.fixturesPath(name))
+	if noFail && os.IsNotExist(err) {
+		return nil
+	}
+	require.NoError(t, err)
+	ast, err := uastyml.Unmarshal(data)
+	require.NoError(t, err)
+	return ast
+}
+
 func (s *Suite) writeFixturesFile(t testing.TB, name string, data string) {
 	err := ioutil.WriteFile(s.fixturesPath(name), []byte(data), 0666)
 	require.NoError(t, err)
@@ -227,19 +238,10 @@ func (s *Suite) testFixturesNative(t *testing.T) {
 }
 
 func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, blacklist ...string) {
-	if !runsInDocker() {
-		t.SkipNow()
-	}
 	ctx := context.Background()
 
 	list, err := ioutil.ReadDir(s.Path)
 	require.NoError(t, err)
-
-	dr := s.NewDriver()
-
-	err = dr.Start()
-	require.NoError(t, err)
-	defer dr.Close()
 
 	var parseErrors uint32
 
@@ -247,7 +249,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 	for _, ent := range list {
 		fname := ent.Name()
 		name, ok := isTest(fname, suffix)
-		if !ok {
+		if !ok || name == syntaxErrTestName {
 			continue
 		} else if atomic.LoadUint32(&parseErrors) >= maxParseErrors {
 			return
@@ -259,18 +261,7 @@ func (s *Suite) testFixturesUAST(t *testing.T, mode driver.Mode, suf string, bla
 			}
 			name += suffix
 			code := s.readFixturesFile(t, fname)
-
-			ctx, cancel := context.WithTimeout(ctx, parseTimeout)
-			ast, err := dr.Parse(ctx, string(code))
-			cancel()
-			if err != nil {
-				atomic.AddUint32(&parseErrors, 1)
-			}
-			if strings.Contains(fname, syntaxErrTestName) {
-				require.True(t, err != nil && !driver.ErrDriverFailure.Is(err), "unexpected error: %v", err)
-				return
-			}
-			require.NoError(t, err)
+			ast := s.readFixturesFileUAST(t, fname+nativeExt, name == syntaxErrTestName)
 
 			tr := s.Transforms
 			if s.WritePreprocessed {
