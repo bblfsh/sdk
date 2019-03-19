@@ -289,6 +289,9 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 		// driver just died; we don't care about exit code
 		<-d.cmdErr
 		// try to restart it once
+		// TODO(dennwc): use exponential backoff? but it may slow down the processing in case
+		//				 a user sends a batch of broken files
+		//				 maybe we can somehow differentiate between those two cases?
 		if err := d.Start(); err != nil {
 			return nil, driver.ErrDriverFailure.Wrap(err, "driver restart failed")
 		}
