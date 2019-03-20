@@ -30,7 +30,7 @@ func genEnvBool(key string) bool {
 	}
 	v, err := strconv.ParseBool(str)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("invalid value %q for environment flag %q: %v", str, key, err))
 	}
 	return v
 }
@@ -106,11 +106,11 @@ func GenerateManifest(root, language string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
 	if err := t.Execute(f, map[string]string{
 		"Language": language,
 	}); err != nil {
+		_ = f.Close()
 		return err
 	}
 	return f.Close()
@@ -240,26 +240,18 @@ func (c *updater) writeFile(file string, content []byte, m os.FileMode) error {
 	if c.opt.DryRun {
 		return nil
 	}
-
 	if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, m)
+	err := ioutil.WriteFile(file, content, m.Perm())
 	if err != nil {
 		return err
 	}
-
-	defer f.Close()
-
 	if c.opt.Debug != nil {
 		c.opt.Debug.printf("file %q has been written\n", file)
 	}
 
-	_, err = f.Write(content)
-	if err != nil {
-		return err
-	}
 	rel, err := filepath.Rel(c.root, file)
 	if err != nil {
 		return err
