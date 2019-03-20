@@ -29,8 +29,7 @@ or make command:
 $ make install
 ```
 
-These commands will install both `bblfsh-sdk` and `bblfsh-sdk-tools` programs
-at `$GOPATH/bin/`.
+These commands will install `bblfsh-sdk` program at `$GOPATH/bin/`.
 
 ### Contribute
 
@@ -144,7 +143,7 @@ $ go run update.go
 managed file "README.md" has changed, overriding changes
 ```
 
-`bblfsh-sdk` doesn't update the SDK itself.
+`bblfsh-sdk` doesn't update the SDK itself. Check `Gopkg.toml` for the target SDK version.
 
 For further details of how to construct a language driver,
 take a look at [Implementing the driver](https://doc.bblf.sh/driver/sdk.html#implementing-the-driver)
@@ -152,11 +151,10 @@ section in documentation.
 
 ### Testing the driver
 
-`bbflsh-sdk` also includes a testing framework for a driver.
 In order to run test for a particular dirver, change to it's directory and run:
 
 ```bash
-$ bblfsh-sdk test
+$ go run ./test.go
 ```
 
 This will:
@@ -164,12 +162,23 @@ This will:
  - create a docker image with all dependencies, native driver and a test binary
  - run this test binary inside a Docker container, using that image
 
- Overall, SDK supports 3 different kind of tests for a driver:
-  - UnitTests, parsing content of `./fixtures` and applying UAST transformations. Described above.
-  - Integration tests, using content of `./fixtures/_integration*`
-  - Benchmarks, using content of `./fixtures/bench_*`
+The test binary first parses all source files in `./fixtures` and generates a set of
+`*.native` AST files. Then the second set of test is run that uses `*.native` files,
+applies UAST annotations and normalizations to produce `*.uast` and `*.sem.uast` files.
 
-First two always run, benchmarks are only triggered by `bblfsh-sdk test --bench`.
+If `*.native` files were already generated, the second stage can be run on the host without
+Docker container:
+```bash
+$ go test ./driver/...
+```
+
+Overall, SDK supports 4 different kind of tests for a driver:
+ - Native unit tests, parsing source files in `./fixtures` and writing `*.native`. Runs only in Docker.
+ - UAST transformation unit tests, using `*.native` and writing `*.uast` files. Can be run both on host and in Docker.
+ - Integration tests, using content of `./fixtures/_integration*`. Those are run in Docker using `bblfshd`.
+ - Benchmarks, using content of `./fixtures/bench_*.native`. Can be run on the host or in Docker.
+
+First two always run, benchmarks are only triggered by `bblfsh-sdk test --bench` or `go test -bench=. ./driver/...`.
 
 ## License
 
