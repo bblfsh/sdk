@@ -31,7 +31,7 @@ const (
 )
 
 type SemanticConfig struct {
-	// BlacklistTypes is a list og types that should not appear in semantic UAST.
+	// BlacklistTypes is a list of types that should not appear in semantic UAST.
 	// Used to test if all cases of a specific native AST type were converted to semantic UAST.
 	BlacklistTypes []string
 }
