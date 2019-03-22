@@ -188,8 +188,8 @@ func (c *updater) processFileAsset(name string, overwrite bool) error {
 }
 
 var funcs = map[string]interface{}{
-	"escape_shield":  escapeShield,
-	"toExportedName": toExportedName,
+	"escape_shield": escapeShield,
+	"expName":       toExportedName,
 }
 
 func (c *updater) processTemplateAsset(name string, v interface{}, overwrite bool) error {
