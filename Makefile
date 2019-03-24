@@ -1,6 +1,7 @@
 # Package configuration
 PROJECT := bblfsh-sdk
 DEPENDENCIES := \
+	github.com/heetch/lapjv \
 	github.com/jteeuwen/go-bindata \
 	golang.org/x/tools/cmd/cover
 
