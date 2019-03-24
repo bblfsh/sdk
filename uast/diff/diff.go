@@ -2,6 +2,7 @@ package diff
 
 import (
 	"fmt"
+
 	"github.com/heetch/lapjv"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
@@ -19,18 +20,17 @@ type permuteDecision struct {
 	permutation []int
 }
 
-func (d sameDecision) 		cost() int { return d.privateCost }
-func (d replaceDecision) 	cost() int { return d.privateCost }
-func (d matchDecision) 		cost() int { return d.privateCost }
-func (d permuteDecision) 	cost() int { return d.privateCost }
+func (d sameDecision) cost() int    { return d.privateCost }
+func (d replaceDecision) cost() int { return d.privateCost }
+func (d matchDecision) cost() int   { return d.privateCost }
+func (d permuteDecision) cost() int { return d.privateCost }
 
 // min is a convinience method for choosing the cheapest decision
 func min(self, candidate decisionType) decisionType {
 	if self.cost() > candidate.cost() {
 		return candidate
-	} else {
-		return self
 	}
+	return self
 }
 
 // type for cache
@@ -39,14 +39,14 @@ type keyType struct{ k1, k2 ID }
 // cache for diff computation
 type cacheStorage struct {
 	decisions map[keyType]decisionType
-	counts     map[ID]int
+	counts    map[ID]int
 	changes   Changelist
 }
 
 func makeCacheStorage() *cacheStorage {
 	return &cacheStorage{
 		decisions: make(map[keyType]decisionType),
-		counts: make(map[ID]int),
+		counts:    make(map[ID]int),
 	}
 }
 
@@ -221,12 +221,12 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 				keys[key] = true
 				if _, ok := dst[key]; !ok {
 					ds.push(Deatach{Parent: nodes.UniqueKey(src), Key: String(key)})
-				} else  if _, ok := src[key]; !ok {
+				} else if _, ok := src[key]; !ok {
 					ds.createRec(dst[key])
 					ds.push(Attach{
 						Parent: nodes.UniqueKey(src),
-						Key: String(key),
-						Child: nodes.UniqueKey(dst[key]),
+						Key:    String(key),
+						Child:  nodes.UniqueKey(dst[key]),
 					})
 				} else {
 					ds.generateDifference(
@@ -273,11 +273,15 @@ func (ds *cacheStorage) generateDifference(src, dst nodes.Node, parentID ID, par
 	}
 }
 
+// Cost is a function that takes two trees: src and dst and returns number of operations needed to
+// convert the former into the latter.
 func Cost(src, dst nodes.Node) int {
 	ds := makeCacheStorage()
 	return ds.decideAction(src, dst).cost()
 }
 
+// Changes is a function that takes two trees: src and dst and returns a changelist containing
+// all operations required to convert the former into the latter.
 func Changes(src, dst nodes.Node) Changelist {
 	ds := makeCacheStorage()
 	ds.generateDifference(src, dst, nil, Int(0))

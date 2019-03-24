@@ -2,9 +2,12 @@ package diff
 
 import (
 	"fmt"
+
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
+// Apply is a method that takes a tree (nodes.Node) and applies the current changelist to that
+// tree.
 func (changelist Changelist) Apply(root nodes.Node) nodes.Node {
 	nodeDict := make(map[ID]nodes.Node)
 	nodes.WalkPreOrder(root, func(node nodes.Node) bool {
