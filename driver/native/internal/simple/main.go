@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"gopkg.in/bblfsh/sdk.v2/driver/native"
 	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
@@ -14,8 +16,14 @@ func (mockDriver) Start() error {
 }
 
 func (mockDriver) Parse(ctx context.Context, src string) (nodes.Node, error) {
-	if src == "die" {
+	switch src {
+	case "die":
+		// just die, prints stack trace on stderr
 		panic("died")
+	case "print-and-die":
+		// protocol runs on stdout, break it and then exit
+		fmt.Println("crash command received")
+		os.Exit(0)
 	}
 	return nodes.Object{
 		"root": nodes.Object{
