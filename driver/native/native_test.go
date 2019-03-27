@@ -55,7 +55,7 @@ func TestEncoding(t *testing.T) {
 	}
 }
 
-func TestNativeDriverNativeCrash(t *testing.T) {
+func TestNativeCrash(t *testing.T) {
 	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -80,7 +80,7 @@ func TestNativeDriverNativeCrash(t *testing.T) {
 	require.NoError(err)
 }
 
-func TestNativeDriverNativeParse(t *testing.T) {
+func TestNativeParse(t *testing.T) {
 	require := require.New(t)
 
 	d := NewDriverAt("internal/simple/mock", "")
@@ -95,7 +95,7 @@ func TestNativeDriverNativeParse(t *testing.T) {
 	require.NoError(err)
 }
 
-func TestNativeDriverNativeParseCrash(t *testing.T) {
+func testNativeParseCrashWith(t *testing.T, keyword string, crash bool) {
 	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -111,8 +111,10 @@ func TestNativeDriverNativeParseCrash(t *testing.T) {
 	require.Equal(mockResponse("foo"), r)
 
 	// this is a special word that causes the driver to panic and crash
-	_, err = d.Parse(ctx, "die")
-	require.True(ErrDriverCrashed.Is(err))
+	_, err = d.Parse(ctx, keyword)
+	if crash {
+		require.True(ErrDriverCrashed.Is(err), "%v", err)
+	}
 	require.True(derrors.ErrDriverFailure.Is(err))
 
 	// we expect that the next request will restart the driver
@@ -135,7 +137,17 @@ func TestNativeDriverNativeParseCrash(t *testing.T) {
 	require.NoError(err)
 }
 
-func TestNativeDriverNativeParse_Lock(t *testing.T) {
+func TestNativeParseCrash(t *testing.T) {
+	testNativeParseCrashWith(t, "die", true)
+}
+
+func TestNativeParsePrintAndCrash(t *testing.T) {
+	// case is similar to TestNativeParseCrash, but driver will first break
+	// the native protocol by printing error message and will then crash
+	testNativeParseCrashWith(t, "print-and-die", false)
+}
+
+func TestNativeParse_Lock(t *testing.T) {
 	require := require.New(t)
 
 	d := NewDriverAt("internal/simple/mock", "")
@@ -173,7 +185,7 @@ func TestNativeDriverStart_BadPath(t *testing.T) {
 	require.Error(err)
 }
 
-func TestNativeDriverNativeParse_Malfunctioning(t *testing.T) {
+func TestNativeParse_Malfunctioning(t *testing.T) {
 	require := require.New(t)
 
 	d := NewDriverAt("echo", "")
@@ -186,7 +198,7 @@ func TestNativeDriverNativeParse_Malfunctioning(t *testing.T) {
 	require.True(derrors.ErrDriverFailure.Is(err))
 }
 
-func TestNativeDriverNativeParse_Malformed(t *testing.T) {
+func TestNativeParse_Malformed(t *testing.T) {
 	require := require.New(t)
 
 	d := NewDriverAt("yes", "")

@@ -67,23 +67,21 @@ const (
 type Driver struct {
 	bin     string
 	ec      Encoding
-	running bool
+	started bool
 
-	mu      sync.Mutex
-	enc     jsonlines.Encoder
-	dec     jsonlines.Decoder
-	stdin   *os.File
-	stdout  *os.File
-	cmd     *exec.Cmd
-	cmdErr  chan error
-	state   driverState
-	lastErr error
+	mu     sync.Mutex
+	enc    jsonlines.Encoder
+	dec    jsonlines.Decoder
+	stdin  *os.File
+	stdout *os.File
+	cmd    *exec.Cmd
+	cmdErr chan error
+	state  driverState
 }
 
 // Start executes the given native driver and prepares it to parse code.
 func (d *Driver) Start() error {
 	d.state = stateOK
-	d.lastErr = nil
 	d.cmd = exec.Command(d.bin)
 	d.cmd.Stderr = os.Stderr
 
@@ -111,7 +109,7 @@ func (d *Driver) Start() error {
 
 	err = d.cmd.Start()
 	if err == nil {
-		d.running = true
+		d.started = true
 		errc := make(chan error, 1)
 		d.cmdErr = errc
 		go func() {
@@ -194,10 +192,9 @@ type timeoutError interface {
 	Timeout() bool
 }
 
-func (d *Driver) broken(err error) {
+func (d *Driver) broken() {
 	d.state = stateBroken
-	d.lastErr = err
-	_ = d.Close()
+	_ = d.close()
 }
 
 func (d *Driver) skipResponse(ctx context.Context) error {
@@ -214,7 +211,7 @@ func (d *Driver) skipResponse(ctx context.Context) error {
 		d.state = stateTimeout
 		return err
 	} else if err != nil {
-		d.broken(err)
+		d.broken()
 		return err
 	}
 	d.state = stateOK
@@ -235,10 +232,23 @@ func (d *Driver) readResponse(ctx context.Context) (*parseResponse, error) {
 	} else if err != nil {
 		// we can't be sure what happened, so let's not mess with
 		// the client; we will stop the driver now
-		d.broken(err)
+		d.broken()
 		return nil, err
 	}
 	return &r, nil
+}
+
+func (d *Driver) restart() error {
+	// driver died; we don't care about exit code
+	<-d.cmdErr
+	// try to restart it once
+	// TODO(dennwc): use exponential backoff? but it may slow down the processing in case
+	//				 a user sends a batch of broken files
+	//				 maybe we can somehow differentiate between those two cases?
+	if err := d.Start(); err != nil {
+		return driver.ErrDriverFailure.Wrap(err, "driver restart failed")
+	}
+	return nil
 }
 
 // Parse sends a request to the native driver and returns its response.
@@ -246,7 +256,7 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 	sp, ctx := opentracing.StartSpanFromContext(rctx, "bblfsh.native.Parse")
 	defer sp.Finish()
 
-	if !d.running {
+	if !d.started {
 		return nil, driver.ErrDriverFailure.Wrap(ErrNotRunning.New())
 	}
 
@@ -258,10 +268,6 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if d.state != stateOK && d.state != stateTimeout {
-		return nil, driver.ErrDriverFailure.Wrap(d.lastErr)
-	}
-
 	if deadline, ok := ctx.Deadline(); ok {
 		_ = d.stdout.SetReadDeadline(deadline)
 		_ = d.stdin.SetWriteDeadline(deadline)
@@ -272,9 +278,19 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 	}
 
 	if d.state == stateTimeout {
+		// timed out last time, so we still have a response on the wire
+		// skip it before sending a new request
 		if err = d.skipResponse(ctx); err != nil {
 			return nil, driver.ErrDriverFailure.Wrap(err)
 		}
+	} else if d.state == stateBroken {
+		// protocol is broken and we decided to shutdown the driver
+		// try restarting it now
+		if err := d.restart(); err != nil {
+			return nil, driver.ErrDriverFailure.Wrap(err, "driver restart failed")
+		}
+	} else if d.state != stateOK {
+		return nil, driver.ErrDriverFailure.Wrap(err, "unexpected state: %v", d.state)
 	}
 
 	err = d.writeRequest(ctx, &parseRequest{
@@ -286,14 +302,8 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 
 	r, err := d.readResponse(ctx)
 	if err == io.EOF {
-		// driver just died; we don't care about exit code
-		<-d.cmdErr
-		// try to restart it once
-		// TODO(dennwc): use exponential backoff? but it may slow down the processing in case
-		//				 a user sends a batch of broken files
-		//				 maybe we can somehow differentiate between those two cases?
-		if err := d.Start(); err != nil {
-			return nil, driver.ErrDriverFailure.Wrap(err, "driver restart failed")
+		if err := d.restart(); err != nil {
+			return nil, err
 		}
 		// fail anyway - this request may have caused the crash
 		err = ErrDriverCrashed.New()
@@ -321,15 +331,15 @@ func (d *Driver) Parse(rctx context.Context, src string) (nodes.Node, error) {
 	return r.AST, err
 }
 
-// Stop stops the execution of the native driver.
-func (d *Driver) Close() error {
-	if !d.running {
-		return nil
-	}
+// close stops the execution of the native driver.
+func (d *Driver) close() error {
 	// note: it should not hold the mutex, or readResponse will deadlock
 	var last error
 	if err := d.stdin.Close(); err != nil {
 		last = err
+	}
+	if er, ok := last.(*os.PathError); ok && er.Err == os.ErrClosed {
+		last = nil
 	}
 	timeout := time.NewTimer(closeTimeout)
 	select {
@@ -338,18 +348,26 @@ func (d *Driver) Close() error {
 	case <-timeout.C:
 		d.cmd.Process.Kill()
 	}
-	err2 := d.stdout.Close()
-	d.running = false
+	err := d.stdout.Close()
 	if last != nil {
 		return last
 	}
-	if er, ok := err2.(*os.PathError); ok && er.Err == os.ErrClosed {
-		err2 = nil
+	if er, ok := err.(*os.PathError); ok && er.Err == os.ErrClosed {
+		err = nil
 	}
-	if err2 != nil {
-		last = err2
+	if err != nil {
+		last = err
 	}
 	return last
+}
+
+// Close stops the execution of the native driver.
+func (d *Driver) Close() error {
+	if !d.started {
+		return nil
+	}
+	d.started = false
+	return d.close()
 }
 
 var _ json.Unmarshaler = (*status)(nil)
