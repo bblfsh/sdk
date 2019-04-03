@@ -197,6 +197,7 @@ a4`
 
 func TestPosIndexUTF16(t *testing.T) {
 	// Verify that a UTF-16 code point offset -> byte offset conversion works.
+	// Also test UTF-16 surrogate pairs.
 	const source = `line1
 𝓏𝓏2
 ё3
@@ -208,9 +209,9 @@ a4`
 	}{
 		{cpOff: 0, byteOff: 0, line: 1, col: 1},
 
-		// first 4-byte rune (2 code points)
+		// first 4-byte rune (surrogate pair; 2 code points)
 		{cpOff: 6, byteOff: 6, line: 2, col: 1},
-		// second 4-byte rune (2 code points)
+		// second 4-byte rune (surrogate pair; 2 code points)
 		{cpOff: 8, byteOff: 10, line: 2, col: 5},
 		// end of the second rune
 		{cpOff: 10, byteOff: 14, line: 2, col: 9},

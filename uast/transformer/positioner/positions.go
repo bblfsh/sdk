@@ -47,6 +47,12 @@ func FromUnicodeOffset() Positioner {
 	return Positioner{unicode: true, method: fromUnicodeOffset}
 }
 
+// FromUTF16Offset fills the Line, Col and Offset fields of all Position nodes by
+// interpreting their Offset as a 0-based UTF-16 code point index.
+func FromUTF16Offset() Positioner {
+	return Positioner{unicode: true, method: fromUTF16Offset}
+}
+
 // Positioner is a transformation that only changes positional information.
 // The transformation should be initialized with the source code by calling OnCode.
 type Positioner struct {
@@ -108,14 +114,31 @@ func fromUnicodeOffset(idx *positionIndex, pos *uast.Position) error {
 	return fromOffset(idx, pos)
 }
 
+func fromUTF16Offset(idx *positionIndex, pos *uast.Position) error {
+	off, err := idx.UTF16Offset(int(pos.Offset))
+	if err != nil {
+		return err
+	}
+	pos.Offset = uint32(off)
+	return fromOffset(idx, pos)
+}
+
 // runeSpan represents a sequence of UTF8 characters of the same size in bytes.
 type runeSpan struct {
+	// offset/index invariant:
+	// byteOff >= firstUTF16Ind >= firstRuneInd
+
 	firstRuneInd  int // index of the first rune
 	firstUTF16Ind int // index of the first UTF-16 code point
 	byteOff       int // bytes offset of the first rune
-	numRunes      int // number of runes
-	runeSize8     int // in bytes
-	runeSize16    int // in utf16 code points
+
+	// size invariant:
+	// runeSize8 >= runeSize16
+
+	runeSize8  int // in bytes
+	runeSize16 int // in utf16 code points (2 = surrogate pair)
+
+	numRunes int // number of runes in this span
 }
 
 type positionIndex struct {
@@ -180,7 +203,7 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 			runeSize16:    1,
 		}
 		if r1, r2 := utf16.EncodeRune(r); r1 != utf8.RuneError || r2 != utf8.RuneError {
-			// needs two UTF-16 code points
+			// surrogate pair: needs two UTF-16 code points
 			cur.runeSize16 = 2
 		}
 		runes++
@@ -264,12 +287,11 @@ func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 		s := idx.spans[len(idx.spans)-1]
 		last = s.firstRuneInd + s.numRunes
 	}
-	if offset == last {
+	if offset < 0 || offset > last {
+		return -1, fmt.Errorf("rune out of bounds: %d [%d, %d)", offset, 0, last)
+	} else if offset == last {
 		// special case — EOF position
 		return idx.size, nil
-	}
-	if offset < 0 || offset >= last {
-		return -1, fmt.Errorf("rune out of bounds: %d [%d, %d)", offset, 0, last)
 	}
 	i := sort.Search(len(idx.spans), func(i int) bool {
 		s := idx.spans[i]
@@ -286,12 +308,11 @@ func (idx *positionIndex) UTF16Offset(offset int) (int, error) {
 		s := idx.spans[len(idx.spans)-1]
 		last = s.firstUTF16Ind + s.numRunes*s.runeSize16
 	}
-	if offset == last {
+	if offset < 0 || offset > last {
+		return -1, fmt.Errorf("code point out of bounds: %d [%d, %d)", offset, 0, last)
+	} else if offset == last {
 		// special case — EOF position
 		return idx.size, nil
-	}
-	if offset < 0 || offset >= last {
-		return -1, fmt.Errorf("code point out of bounds: %d [%d, %d)", offset, 0, last)
 	}
 	i := sort.Search(len(idx.spans), func(i int) bool {
 		s := idx.spans[i]
