@@ -146,8 +146,9 @@ a3`
 func TestPosIndexUnicode(t *testing.T) {
 	// Verify that a rune offset -> byte offset conversion works.
 	const source = `line1
-ё2
-a3`
+𝓏𝓏2
+ё3
+a4`
 	var cases = []struct {
 		runeOff   int
 		byteOff   int
@@ -155,14 +156,27 @@ a3`
 	}{
 		{runeOff: 0, byteOff: 0, line: 1, col: 1},
 
-		// multi-byte unicode rune
+		// first 4-byte rune
 		{runeOff: 6, byteOff: 6, line: 2, col: 1},
+		// second 4-byte rune
+		{runeOff: 7, byteOff: 10, line: 2, col: 5},
+		// end of the second rune
+		{runeOff: 8, byteOff: 14, line: 2, col: 9},
+		// EOL
+		{runeOff: 9, byteOff: 15, line: 2, col: 10},
 
-		{runeOff: 7, byteOff: 8, line: 2, col: 3},
-		{runeOff: 10, byteOff: 11, line: 3, col: 2},
+		// 2-byte rune
+		{runeOff: 10, byteOff: 16, line: 3, col: 1},
+		// end of the rune
+		{runeOff: 11, byteOff: 18, line: 3, col: 3},
+		// EOL
+		{runeOff: 12, byteOff: 19, line: 3, col: 4},
+
+		// last line with 1-byte runes
+		{runeOff: 13, byteOff: 20, line: 4, col: 1},
 
 		// special case — EOF position
-		{runeOff: 11, byteOff: 12, line: 3, col: 3},
+		{runeOff: 15, byteOff: 22, line: 4, col: 3},
 	}
 
 	ind := newPositionIndexUnicode([]byte(source))
