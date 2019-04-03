@@ -194,3 +194,55 @@ a4`
 		})
 	}
 }
+
+func TestPosIndexUTF16(t *testing.T) {
+	// Verify that a UTF-16 code point offset -> byte offset conversion works.
+	const source = `line1
+𝓏𝓏2
+ё3
+a4`
+	var cases = []struct {
+		cpOff     int
+		byteOff   int
+		line, col int
+	}{
+		{cpOff: 0, byteOff: 0, line: 1, col: 1},
+
+		// first 4-byte rune (2 code points)
+		{cpOff: 6, byteOff: 6, line: 2, col: 1},
+		// second 4-byte rune (2 code points)
+		{cpOff: 8, byteOff: 10, line: 2, col: 5},
+		// end of the second rune
+		{cpOff: 10, byteOff: 14, line: 2, col: 9},
+		// EOL
+		{cpOff: 11, byteOff: 15, line: 2, col: 10},
+
+		// 2-byte rune (1 code point)
+		{cpOff: 12, byteOff: 16, line: 3, col: 1},
+		// end of the rune
+		{cpOff: 13, byteOff: 18, line: 3, col: 3},
+		// EOL
+		{cpOff: 14, byteOff: 19, line: 3, col: 4},
+
+		// last line with 1-byte runes
+		{cpOff: 15, byteOff: 20, line: 4, col: 1},
+
+		// special case — EOF position
+		{cpOff: 17, byteOff: 22, line: 4, col: 3},
+	}
+
+	ind := newPositionIndexUnicode([]byte(source))
+	for _, c := range cases {
+		t.Run("", func(t *testing.T) {
+			off, err := ind.UTF16Offset(c.cpOff)
+			require.NoError(t, err)
+			require.Equal(t, c.byteOff, off)
+
+			// verify that offset -> line/col conversion still works
+			line, col, err := ind.LineCol(off)
+			require.NoError(t, err)
+			require.Equal(t, c.line, line)
+			require.Equal(t, c.col, col)
+		})
+	}
+}
