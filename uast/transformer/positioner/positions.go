@@ -223,6 +223,17 @@ func (idx *Index) addLineOffset(offset int) {
 	idx.offsetByLine = append(idx.offsetByLine, offset)
 }
 
+func (idx *Index) lineOffset(line int) int {
+	return idx.offsetByLine[line-1]
+}
+
+func (idx *Index) lineEnd(line int) int {
+	if line == len(idx.offsetByLine) {
+		return idx.size - 1
+	}
+	return idx.offsetByLine[line] - 1
+}
+
 // checkByteOffset checks if the byte offset is in bounds.
 // As a special case, it returns io.EOF if the offset equals to the size of the file.
 func (idx *Index) checkByteOffset(offset int) error {
@@ -255,28 +266,25 @@ func (idx *Index) LineCol(offset int) (int, int, error) {
 	return line, col, nil
 }
 
+func (idx *Index) checkLine(line int) error {
+	const minLine = 1
+	maxLine := len(idx.offsetByLine)
+	if line < minLine || line > maxLine {
+		return fmt.Errorf("line out of bounds: %d [%d, %d]", line, minLine, maxLine)
+	}
+	return nil
+}
+
 // Offset returns a zero-based byte offset given a one-based line and column.
 // It returns an error if the given line and column are out of bounds.
 func (idx *Index) Offset(line, col int) (int, error) {
-	var (
-		minLine = 1
-		maxLine = len(idx.offsetByLine)
-		minCol  = 1
-	)
-
-	maxOffset := idx.size - 1
-
-	if line < minLine || line > maxLine {
-		return -1, fmt.Errorf("line out of bounds: %d [%d, %d]", line, minLine, maxLine)
+	if err := idx.checkLine(line); err != nil {
+		return -1, err
 	}
+	const minCol = 1
 
-	nextLine := line
-	line = line - 1
-	if nextLine < len(idx.offsetByLine) {
-		maxOffset = idx.offsetByLine[nextLine] - 1
-	}
-
-	maxCol := maxOffset - idx.offsetByLine[line] + 1
+	lineOffset := idx.lineOffset(line)
+	maxCol := idx.lineEnd(line) - lineOffset + 1
 
 	// For empty files with 1-indexed drivers, set maxCol to 1
 	if maxCol == 0 && col == 1 {
@@ -286,9 +294,7 @@ func (idx *Index) Offset(line, col int) (int, error) {
 	if col < minCol || (maxCol > 0 && col-1 > maxCol) {
 		return 0, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
 	}
-
-	offset := idx.offsetByLine[line] + col - 1
-	return offset, nil
+	return lineOffset + col - 1, nil
 }
 
 // unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code unit offset.
