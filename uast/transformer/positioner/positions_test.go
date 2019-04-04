@@ -107,6 +107,21 @@ func TestFillOffsetEmptyFile(t *testing.T) {
 	require.Equal(expected, out)
 }
 
+func TestPosIndexSpans(t *testing.T) {
+	const source = `line1
+𝓏𝓏2
+ё3
+a4`
+	ind := NewIndex([]byte(source), &IndexOptions{Unicode: true})
+	require.Equal(t, []runeSpan{
+		{firstRuneInd: 0, firstUTF16Ind: 0, byteOff: 0, runeSize8: 1, runeSize16: 1, numRunes: 6},
+		{firstRuneInd: 6, firstUTF16Ind: 6, byteOff: 6, runeSize8: 4, runeSize16: 2, numRunes: 2},
+		{firstRuneInd: 8, firstUTF16Ind: 10, byteOff: 14, runeSize8: 1, runeSize16: 1, numRunes: 2},
+		{firstRuneInd: 10, firstUTF16Ind: 12, byteOff: 16, runeSize8: 2, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 11, firstUTF16Ind: 13, byteOff: 18, runeSize8: 1, runeSize16: 1, numRunes: 4},
+	}, ind.spans)
+}
+
 func TestPosIndex(t *testing.T) {
 	// Verify that a multi-byte Unicode rune does not displace offsets after
 	// its occurrence in the input. Test few other simple cases as well.

@@ -185,30 +185,27 @@ func newIndexUnicode(data []byte) *Index {
 		if r == '\n' {
 			idx.addLineOffset(i + 1)
 		}
-		if n == cur.runeSize8 {
-			// continue this span
-			cur.numRunes++
-			runes++
-			codePoints += cur.runeSize16
-			i += n - 1
-			continue
+
+		if n != cur.runeSize8 {
+			if cur.numRunes != 0 {
+				// save previous span
+				idx.spans = append(idx.spans, cur)
+			}
+			// start a new span
+			cur = runeSpan{
+				byteOff:       i,
+				firstRuneInd:  runes,
+				firstUTF16Ind: codePoints,
+				runeSize8:     n,
+				runeSize16:    1,
+			}
+			if r1, r2 := utf16.EncodeRune(r); r1 != utf8.RuneError || r2 != utf8.RuneError {
+				// surrogate pair: needs two UTF-16 code units
+				cur.runeSize16 = 2
+			}
 		}
-		if cur.numRunes != 0 {
-			idx.spans = append(idx.spans, cur)
-		}
-		// make a new span
-		cur = runeSpan{
-			byteOff:       i,
-			firstRuneInd:  runes,
-			firstUTF16Ind: codePoints,
-			numRunes:      1,
-			runeSize8:     n,
-			runeSize16:    1,
-		}
-		if r1, r2 := utf16.EncodeRune(r); r1 != utf8.RuneError || r2 != utf8.RuneError {
-			// surrogate pair: needs two UTF-16 code units
-			cur.runeSize16 = 2
-		}
+
+		cur.numRunes++
 		runes++
 		codePoints += cur.runeSize16
 		i += n - 1
