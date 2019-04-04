@@ -128,17 +128,17 @@ type runeSpan struct {
 	// offset/index invariant:
 	// byteOff >= firstUTF16Ind >= firstRuneInd
 
-	firstRuneInd  int // index of the first rune
-	firstUTF16Ind int // index of the first UTF-16 code point
-	byteOff       int // bytes offset of the first rune
+	firstRuneInd  uint32 // index of the first rune
+	firstUTF16Ind uint32 // index of the first UTF-16 code point
+	byteOff       uint32 // bytes offset of the first rune
 
 	// size invariant:
 	// runeSize8 >= runeSize16
 
-	runeSize8  int // in bytes
-	runeSize16 int // in utf16 code points (2 = surrogate pair)
+	runeSize8  uint8 // in bytes
+	runeSize16 uint8 // in utf16 code points (2 = surrogate pair)
 
-	numRunes int // number of runes in this span
+	numRunes uint32 // number of runes in this span
 }
 
 type positionIndex struct {
@@ -170,8 +170,9 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 		runeSize8:  1,
 		runeSize16: 1,
 	}
-	runes := 0
-	codePoints := 0
+	runes := uint32(0)
+	codePoints := uint32(0)
+	newSpan := false
 	// decode UTF8 runes and collect a slice of UTF8 character spans
 	// each span only contains characters with the same size in bytes
 	for i := 0; i < len(data); i++ {
@@ -183,17 +184,18 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 			idx.addLineOffset(i + 1)
 		}
 
-		if n != cur.runeSize8 {
+		if newSpan || n != int(cur.runeSize8) {
+			newSpan = false
 			if cur.numRunes != 0 {
 				// save previous span
 				idx.spans = append(idx.spans, cur)
 			}
 			// start a new span
 			cur = runeSpan{
-				byteOff:       i,
+				byteOff:       uint32(i),
 				firstRuneInd:  runes,
 				firstUTF16Ind: codePoints,
-				runeSize8:     n,
+				runeSize8:     uint8(n),
 				runeSize16:    1,
 			}
 			if r1, r2 := utf16.EncodeRune(r); r1 != utf8.RuneError || r2 != utf8.RuneError {
@@ -204,8 +206,9 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 
 		cur.numRunes++
 		runes++
-		codePoints += cur.runeSize16
+		codePoints += uint32(cur.runeSize16)
 		i += n - 1
+		newSpan = r == '\n'
 	}
 	if cur.numRunes != 0 {
 		idx.spans = append(idx.spans, cur)
@@ -288,7 +291,7 @@ func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
-		last = s.firstRuneInd + s.numRunes
+		last = int(s.firstRuneInd + s.numRunes)
 	}
 	if offset < 0 || offset > last {
 		return -1, fmt.Errorf("rune out of bounds: %d [%d, %d)", offset, 0, last)
@@ -298,10 +301,10 @@ func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 	}
 	i := sort.Search(len(idx.spans), func(i int) bool {
 		s := idx.spans[i]
-		return offset < s.firstRuneInd
+		return offset < int(s.firstRuneInd)
 	})
 	s := idx.spans[i-1]
-	return s.byteOff + s.runeSize8*(offset-s.firstRuneInd), nil
+	return int(s.byteOff) + int(s.runeSize8)*(offset-int(s.firstRuneInd)), nil
 }
 
 // UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code point offset.
@@ -309,7 +312,7 @@ func (idx *positionIndex) UTF16Offset(offset int) (int, error) {
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
-		last = s.firstUTF16Ind + s.numRunes*s.runeSize16
+		last = int(s.firstUTF16Ind + s.numRunes*uint32(s.runeSize16))
 	}
 	if offset < 0 || offset > last {
 		return -1, fmt.Errorf("code point out of bounds: %d [%d, %d)", offset, 0, last)
@@ -319,8 +322,8 @@ func (idx *positionIndex) UTF16Offset(offset int) (int, error) {
 	}
 	i := sort.Search(len(idx.spans), func(i int) bool {
 		s := idx.spans[i]
-		return offset < s.firstUTF16Ind
+		return offset < int(s.firstUTF16Ind)
 	})
 	s := idx.spans[i-1]
-	return s.byteOff + s.runeSize8*((offset-s.firstUTF16Ind)/s.runeSize16), nil
+	return int(s.byteOff) + int(s.runeSize8)*((offset-int(s.firstUTF16Ind))/int(s.runeSize16)), nil
 }

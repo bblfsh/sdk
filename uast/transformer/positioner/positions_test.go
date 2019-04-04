@@ -110,15 +110,19 @@ func TestFillOffsetEmptyFile(t *testing.T) {
 func TestPosIndexSpans(t *testing.T) {
 	const source = `line1
 𝓏𝓏2
-ё3
+aё3
+
 a4`
 	ind := newPositionIndexUnicode([]byte(source))
 	require.Equal(t, []runeSpan{
 		{firstRuneInd: 0, firstUTF16Ind: 0, byteOff: 0, runeSize8: 1, runeSize16: 1, numRunes: 6},
 		{firstRuneInd: 6, firstUTF16Ind: 6, byteOff: 6, runeSize8: 4, runeSize16: 2, numRunes: 2},
 		{firstRuneInd: 8, firstUTF16Ind: 10, byteOff: 14, runeSize8: 1, runeSize16: 1, numRunes: 2},
-		{firstRuneInd: 10, firstUTF16Ind: 12, byteOff: 16, runeSize8: 2, runeSize16: 1, numRunes: 1},
-		{firstRuneInd: 11, firstUTF16Ind: 13, byteOff: 18, runeSize8: 1, runeSize16: 1, numRunes: 4},
+		{firstRuneInd: 10, firstUTF16Ind: 12, byteOff: 16, runeSize8: 1, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 11, firstUTF16Ind: 13, byteOff: 17, runeSize8: 2, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 12, firstUTF16Ind: 14, byteOff: 19, runeSize8: 1, runeSize16: 1, numRunes: 2},
+		{firstRuneInd: 14, firstUTF16Ind: 16, byteOff: 21, runeSize8: 1, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 15, firstUTF16Ind: 17, byteOff: 22, runeSize8: 1, runeSize16: 1, numRunes: 2},
 	}, ind.spans)
 }
 
