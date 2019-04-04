@@ -115,14 +115,14 @@ aё3
 a4`
 	ind := newPositionIndexUnicode([]byte(source))
 	require.Equal(t, []runeSpan{
-		{firstRuneInd: 0, firstUTF16Ind: 0, byteOff: 0, runeSize8: 1, runeSize16: 1, numRunes: 6},
-		{firstRuneInd: 6, firstUTF16Ind: 6, byteOff: 6, runeSize8: 4, runeSize16: 2, numRunes: 2},
-		{firstRuneInd: 8, firstUTF16Ind: 10, byteOff: 14, runeSize8: 1, runeSize16: 1, numRunes: 2},
-		{firstRuneInd: 10, firstUTF16Ind: 12, byteOff: 16, runeSize8: 1, runeSize16: 1, numRunes: 1},
-		{firstRuneInd: 11, firstUTF16Ind: 13, byteOff: 17, runeSize8: 2, runeSize16: 1, numRunes: 1},
-		{firstRuneInd: 12, firstUTF16Ind: 14, byteOff: 19, runeSize8: 1, runeSize16: 1, numRunes: 2},
-		{firstRuneInd: 14, firstUTF16Ind: 16, byteOff: 21, runeSize8: 1, runeSize16: 1, numRunes: 1},
-		{firstRuneInd: 15, firstUTF16Ind: 17, byteOff: 22, runeSize8: 1, runeSize16: 1, numRunes: 2},
+		{firstRuneInd: 0, firstUTF16Ind: 0, byteOff: 0, runeCol: 1, utf16Col: 1, runeSize8: 1, runeSize16: 1, numRunes: 6},
+		{firstRuneInd: 6, firstUTF16Ind: 6, byteOff: 6, runeCol: 1, utf16Col: 1, runeSize8: 4, runeSize16: 2, numRunes: 2},
+		{firstRuneInd: 8, firstUTF16Ind: 10, byteOff: 14, runeCol: 3, utf16Col: 5, runeSize8: 1, runeSize16: 1, numRunes: 2},
+		{firstRuneInd: 10, firstUTF16Ind: 12, byteOff: 16, runeCol: 1, utf16Col: 1, runeSize8: 1, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 11, firstUTF16Ind: 13, byteOff: 17, runeCol: 2, utf16Col: 2, runeSize8: 2, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 12, firstUTF16Ind: 14, byteOff: 19, runeCol: 3, utf16Col: 3, runeSize8: 1, runeSize16: 1, numRunes: 2},
+		{firstRuneInd: 14, firstUTF16Ind: 16, byteOff: 21, runeCol: 1, utf16Col: 1, runeSize8: 1, runeSize16: 1, numRunes: 1},
+		{firstRuneInd: 15, firstUTF16Ind: 17, byteOff: 22, runeCol: 1, utf16Col: 1, runeSize8: 1, runeSize16: 1, numRunes: 2},
 	}, ind.spans)
 }
 
@@ -263,6 +263,63 @@ a4`
 			require.NoError(t, err)
 			require.Equal(t, c.line, line)
 			require.Equal(t, c.col, col)
+		})
+	}
+}
+
+func TestPosIndexUnicodeCol(t *testing.T) {
+	// Verify that a UTF-16 code point offset -> byte offset conversion works.
+	// Also test UTF-16 surrogate pairs.
+	const source = `line1
+𝓏𝓏2
+aё3
+
+a4`
+	var cases = []struct {
+		line    int
+		col8    int
+		col16   int
+		byteOff int
+	}{
+		{line: 1, col8: 1, col16: 1, byteOff: 0},
+		{line: 1, col8: 6, col16: 6, byteOff: 5}, // EOL
+
+		// first 4-byte rune
+		{line: 2, col8: 1, col16: 1, byteOff: 6},
+		// second 4-byte rune (surrogate pair; 2 code points)
+		{line: 2, col8: 2, col16: 3, byteOff: 10},
+		// end of the second rune
+		{line: 2, col8: 3, col16: 5, byteOff: 14},
+		// EOL
+		{line: 2, col8: 4, col16: 6, byteOff: 15},
+
+		// 2-byte rune
+		{line: 3, col8: 2, col16: 2, byteOff: 17},
+		// end of the rune
+		{line: 3, col8: 3, col16: 3, byteOff: 19},
+		// EOL
+		{line: 3, col8: 4, col16: 4, byteOff: 20},
+
+		// empty line
+		{line: 4, col8: 1, col16: 1, byteOff: 21},
+
+		// last line with 1-byte runes
+		{line: 5, col8: 1, col16: 1, byteOff: 22},
+
+		// special case — EOF position
+		{line: 5, col8: 3, col16: 3, byteOff: 24},
+	}
+
+	ind := newPositionIndexUnicode([]byte(source))
+	for _, c := range cases {
+		t.Run("", func(t *testing.T) {
+			off, err := ind.LineColUnicode(c.line, c.col8)
+			require.NoError(t, err)
+			require.Equal(t, c.byteOff, off)
+
+			off, err = ind.LineColUTF16(c.line, c.col16)
+			require.NoError(t, err)
+			require.Equal(t, c.byteOff, off)
 		})
 	}
 }

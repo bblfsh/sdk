@@ -53,6 +53,18 @@ func FromUTF16Offset() Positioner {
 	return Positioner{unicode: true, method: fromUTF16Offset}
 }
 
+// FromUnicodeLineCol fills the Line, Col and Offset fields of all Position nodes by
+// interpreting their Line and Col as a 1-based Unicode indexes.
+func FromUnicodeLineCol() Positioner {
+	return Positioner{unicode: true, method: fromUnicodeLineCol}
+}
+
+// FromUTF16LineCol fills the Line, Col and Offset fields of all Position nodes by
+// interpreting their Line and Col as a 1-based UTF-16 code point indexes.
+func FromUTF16LineCol() Positioner {
+	return Positioner{unicode: true, method: fromUTF16LineCol}
+}
+
 // Positioner is a transformation that only changes positional information.
 // The transformation should be initialized with the source code by calling OnCode.
 type Positioner struct {
@@ -123,6 +135,24 @@ func fromUTF16Offset(idx *positionIndex, pos *uast.Position) error {
 	return fromOffset(idx, pos)
 }
 
+func fromUnicodeLineCol(idx *positionIndex, pos *uast.Position) error {
+	off, err := idx.LineColUnicode(int(pos.Line), int(pos.Col))
+	if err != nil {
+		return err
+	}
+	pos.Offset = uint32(off)
+	return fromOffset(idx, pos)
+}
+
+func fromUTF16LineCol(idx *positionIndex, pos *uast.Position) error {
+	off, err := idx.LineColUTF16(int(pos.Line), int(pos.Col))
+	if err != nil {
+		return err
+	}
+	pos.Offset = uint32(off)
+	return fromOffset(idx, pos)
+}
+
 // runeSpan represents a sequence of UTF8 characters of the same size in bytes.
 type runeSpan struct {
 	// offset/index invariant:
@@ -139,6 +169,9 @@ type runeSpan struct {
 	runeSize16 uint8 // in utf16 code points (2 = surrogate pair)
 
 	numRunes uint32 // number of runes in this span
+
+	runeCol  uint32
+	utf16Col uint32
 }
 
 type positionIndex struct {
@@ -169,10 +202,13 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 	cur := runeSpan{
 		runeSize8:  1,
 		runeSize16: 1,
+		runeCol:    1,
+		utf16Col:   1,
 	}
 	runes := uint32(0)
 	codePoints := uint32(0)
-	newSpan := false
+	col, col16 := cur.runeCol, cur.utf16Col
+	newLine := false
 	// decode UTF8 runes and collect a slice of UTF8 character spans
 	// each span only contains characters with the same size in bytes
 	for i := 0; i < len(data); i++ {
@@ -184,12 +220,16 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 			idx.addLineOffset(i + 1)
 		}
 
-		if newSpan || n != int(cur.runeSize8) {
-			newSpan = false
+		// make span for each new line and a different rune size
+		if newLine || n != int(cur.runeSize8) {
 			if cur.numRunes != 0 {
 				// save previous span
 				idx.spans = append(idx.spans, cur)
+				if newLine {
+					col, col16 = 1, 1
+				}
 			}
+			newLine = false
 			// start a new span
 			cur = runeSpan{
 				byteOff:       uint32(i),
@@ -197,6 +237,8 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 				firstUTF16Ind: codePoints,
 				runeSize8:     uint8(n),
 				runeSize16:    1,
+				runeCol:       col,
+				utf16Col:      col16,
 			}
 			if r1, r2 := utf16.EncodeRune(r); r1 != utf8.RuneError || r2 != utf8.RuneError {
 				// surrogate pair: needs two UTF-16 code points
@@ -207,8 +249,10 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 		cur.numRunes++
 		runes++
 		codePoints += uint32(cur.runeSize16)
+		col++
+		col16 += uint32(cur.runeSize16)
 		i += n - 1
-		newSpan = r == '\n'
+		newLine = r == '\n'
 	}
 	if cur.numRunes != 0 {
 		idx.spans = append(idx.spans, cur)
@@ -326,4 +370,85 @@ func (idx *positionIndex) UTF16Offset(offset int) (int, error) {
 	})
 	s := idx.spans[i-1]
 	return int(s.byteOff) + int(s.runeSize8)*((offset-int(s.firstUTF16Ind))/int(s.runeSize16)), nil
+}
+
+// spanForOffset returns a span that contains a provided byte offset. Offset should be valid.
+func (idx *positionIndex) spanForOffset(off int) int {
+	i := sort.Search(len(idx.spans), func(i int) bool {
+		s := idx.spans[i]
+		return off < int(s.byteOff)
+	})
+	return i - 1
+}
+
+// LineColUnicode returns a zero-based byte offset given a one-based line and Unicode column.
+// It returns an error if the given line and column are out of bounds.
+func (idx *positionIndex) LineColUnicode(line, col int) (int, error) {
+	if err := idx.checkLine(line); err != nil {
+		return -1, err
+	}
+	const minCol = 1
+
+	lineOffset := idx.lineOffset(line)
+	lineEnd := idx.lineEnd(line)
+
+	// there may be multiple spans for this line (different rune sizes)
+	startSpan := idx.spanForOffset(lineOffset)
+	endSpan := idx.spanForOffset(lineEnd)
+
+	es := idx.spans[endSpan]
+	maxCol := int(es.runeCol + es.numRunes)
+	// For empty files with 1-indexed drivers, set maxCol to 1
+	if maxCol == 0 && col == 1 {
+		maxCol = 1
+	}
+
+	if col < minCol || (maxCol > 0 && col-1 > maxCol) {
+		return 0, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
+	}
+
+	i := sort.Search(endSpan-startSpan+1, func(i int) bool {
+		s := idx.spans[startSpan+i]
+		return col < int(s.runeCol)
+	})
+	i--
+	s := idx.spans[startSpan+i]
+
+	return int(s.byteOff) + (col-int(s.runeCol))*int(s.runeSize8), nil
+}
+
+// LineColUTF16 returns a zero-based byte offset given a one-based line and UTF16 code point column.
+// It returns an error if the given line and column are out of bounds.
+func (idx *positionIndex) LineColUTF16(line, col int) (int, error) {
+	if err := idx.checkLine(line); err != nil {
+		return -1, err
+	}
+	const minCol = 1
+
+	lineOffset := idx.lineOffset(line)
+	lineEnd := idx.lineEnd(line)
+
+	// there may be multiple spans for this line (different rune sizes)
+	startSpan := idx.spanForOffset(lineOffset)
+	endSpan := idx.spanForOffset(lineEnd)
+
+	es := idx.spans[endSpan]
+	maxCol := int(es.utf16Col + es.numRunes*uint32(es.runeSize16))
+	// For empty files with 1-indexed drivers, set maxCol to 1
+	if maxCol == 0 && col == 1 {
+		maxCol = 1
+	}
+
+	if col < minCol || (maxCol > 0 && col-1 > maxCol) {
+		return 0, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
+	}
+
+	i := sort.Search(endSpan-startSpan+1, func(i int) bool {
+		s := idx.spans[startSpan+i]
+		return col < int(s.utf16Col)
+	})
+	i--
+	s := idx.spans[startSpan+i]
+
+	return int(s.byteOff) + (col-int(s.utf16Col))/int(s.runeSize16)*int(s.runeSize8), nil
 }
