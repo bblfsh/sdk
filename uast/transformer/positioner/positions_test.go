@@ -155,7 +155,7 @@ a3`
 			require.Equal(t, c.Line, uint32(line))
 			require.Equal(t, c.Col, uint32(col))
 
-			off, err := ind.Offset(int(c.Line), int(c.Col))
+			off, err := ind.FromLineCol(int(c.Line), int(c.Col))
 			require.NoError(t, err)
 			require.Equal(t, c.Offset, uint32(off))
 		})
@@ -201,7 +201,7 @@ a4`
 	ind := newPositionIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			off, err := ind.RuneOffset(c.runeOff)
+			off, err := ind.FromRuneOffset(c.runeOff)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
@@ -254,7 +254,7 @@ a4`
 	ind := newPositionIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			off, err := ind.UTF16Offset(c.cpOff)
+			off, err := ind.FromUTF16Offset(c.cpOff)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
@@ -313,11 +313,11 @@ a4`
 	ind := newPositionIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			off, err := ind.LineColUnicode(c.line, c.col8)
+			off, err := ind.FromUnicodeLineCol(c.line, c.col8)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
-			off, err = ind.LineColUTF16(c.line, c.col16)
+			off, err = ind.FromUTF16LineCol(c.line, c.col16)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 		})

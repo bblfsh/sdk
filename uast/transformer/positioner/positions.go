@@ -99,7 +99,7 @@ func (t Positioner) OnCode(code string) transformer.Transformer {
 }
 
 func fromLineCol(idx *positionIndex, pos *uast.Position) error {
-	offset, err := idx.Offset(int(pos.Line), int(pos.Col))
+	offset, err := idx.FromLineCol(int(pos.Line), int(pos.Col))
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func fromOffset(idx *positionIndex, pos *uast.Position) error {
 }
 
 func fromUnicodeOffset(idx *positionIndex, pos *uast.Position) error {
-	off, err := idx.RuneOffset(int(pos.Offset))
+	off, err := idx.FromRuneOffset(int(pos.Offset))
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func fromUnicodeOffset(idx *positionIndex, pos *uast.Position) error {
 }
 
 func fromUTF16Offset(idx *positionIndex, pos *uast.Position) error {
-	off, err := idx.UTF16Offset(int(pos.Offset))
+	off, err := idx.FromUTF16Offset(int(pos.Offset))
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func fromUTF16Offset(idx *positionIndex, pos *uast.Position) error {
 }
 
 func fromUnicodeLineCol(idx *positionIndex, pos *uast.Position) error {
-	off, err := idx.LineColUnicode(int(pos.Line), int(pos.Col))
+	off, err := idx.FromUnicodeLineCol(int(pos.Line), int(pos.Col))
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func fromUnicodeLineCol(idx *positionIndex, pos *uast.Position) error {
 }
 
 func fromUTF16LineCol(idx *positionIndex, pos *uast.Position) error {
-	off, err := idx.LineColUTF16(int(pos.Line), int(pos.Col))
+	off, err := idx.FromUTF16LineCol(int(pos.Line), int(pos.Col))
 	if err != nil {
 		return err
 	}
@@ -308,9 +308,9 @@ func (idx *positionIndex) checkLine(line int) error {
 	return nil
 }
 
-// Offset returns a zero-based byte offset given a one-based line and column.
+// FromLineCol returns a zero-based byte offset given a one-based line and column.
 // It returns an error if the given line and column are out of bounds.
-func (idx *positionIndex) Offset(line, col int) (int, error) {
+func (idx *positionIndex) FromLineCol(line, col int) (int, error) {
 	if err := idx.checkLine(line); err != nil {
 		return -1, err
 	}
@@ -330,8 +330,8 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 	return lineOffset + col - 1, nil
 }
 
-// RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
-func (idx *positionIndex) RuneOffset(offset int) (int, error) {
+// FromRuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
+func (idx *positionIndex) FromRuneOffset(offset int) (int, error) {
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
@@ -351,8 +351,8 @@ func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 	return int(s.byteOff) + int(s.runeSize8)*(offset-int(s.firstRuneInd)), nil
 }
 
-// UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code point offset.
-func (idx *positionIndex) UTF16Offset(offset int) (int, error) {
+// FromUTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code point offset.
+func (idx *positionIndex) FromUTF16Offset(offset int) (int, error) {
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
@@ -381,9 +381,9 @@ func (idx *positionIndex) spanForOffset(off int) int {
 	return i - 1
 }
 
-// LineColUnicode returns a zero-based byte offset given a one-based line and Unicode column.
+// FromUnicodeLineCol returns a zero-based byte offset given a one-based line and Unicode column.
 // It returns an error if the given line and column are out of bounds.
-func (idx *positionIndex) LineColUnicode(line, col int) (int, error) {
+func (idx *positionIndex) FromUnicodeLineCol(line, col int) (int, error) {
 	if err := idx.checkLine(line); err != nil {
 		return -1, err
 	}
@@ -417,9 +417,9 @@ func (idx *positionIndex) LineColUnicode(line, col int) (int, error) {
 	return int(s.byteOff) + (col-int(s.runeCol))*int(s.runeSize8), nil
 }
 
-// LineColUTF16 returns a zero-based byte offset given a one-based line and UTF16 code point column.
+// FromUTF16LineCol returns a zero-based byte offset given a one-based line and UTF16 code point column.
 // It returns an error if the given line and column are out of bounds.
-func (idx *positionIndex) LineColUTF16(line, col int) (int, error) {
+func (idx *positionIndex) FromUTF16LineCol(line, col int) (int, error) {
 	if err := idx.checkLine(line); err != nil {
 		return -1, err
 	}
