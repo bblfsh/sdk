@@ -154,7 +154,7 @@ func (d *Driver) generateBuildScript() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 func (d *Driver) Prepare() (bool, error) {
-	if err := d.modTidy(); err != nil {
+	if err := d.modPrepare(); err != nil {
 		return false, err
 	}
 
