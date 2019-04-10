@@ -76,7 +76,7 @@ func mustAssetInfo(name string) os.FileInfo {
 	return fi
 }
 
-// UpdateOptions is a set of options available for
+// UpdateOptions is a set of options available for the driver update.
 type UpdateOptions struct {
 	DryRun bool
 
@@ -87,34 +87,6 @@ type UpdateOptions struct {
 
 // ErrChangesRequired is returned by UpdateSDK in DryRun mode when changes are required.
 var ErrChangesRequired = errors.New("changes are required")
-
-// GenerateManifest writes the manifest file to a root driver directory.
-func GenerateManifest(root, language string) error {
-	tpl := string(skeleton.MustAsset(manifestTpl))
-
-	t, err := template.New(manifestTpl).Funcs(funcs).Parse(tpl)
-	if err != nil {
-		return err
-	}
-
-	name := fixGitFolder(manifestTpl)
-	file := filepath.Join(root, manifest.Filename)
-
-	info := mustAssetInfo(name)
-
-	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC|os.O_EXCL, info.Mode())
-	if err != nil {
-		return err
-	}
-
-	if err := t.Execute(f, map[string]string{
-		"Language": language,
-	}); err != nil {
-		_ = f.Close()
-		return err
-	}
-	return f.Close()
-}
 
 // UpdateSDK updates SDK-managed files for the driver located at root.
 //

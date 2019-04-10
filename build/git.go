@@ -36,3 +36,19 @@ func gitHasChanges(path string) (bool, error) {
 	data = bytes.TrimSpace(data)
 	return len(data) != 0, nil
 }
+
+func gitInit(path string) error {
+	if out, err := exec.Command("git", "init", path).CombinedOutput(); err != nil {
+		return fmt.Errorf("cannot init a repository: %v\n%s\n", err, string(out))
+	}
+	return nil
+}
+
+func gitAdd(root, file string) error {
+	git := exec.Command("git", "add", file)
+	git.Dir = root
+	if out, err := git.CombinedOutput(); err != nil {
+		return fmt.Errorf("cannot add a file to git: %v\n%s\n", err, string(out))
+	}
+	return nil
+}
