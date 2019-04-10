@@ -9,8 +9,8 @@ import (
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"google.golang.org/grpc"
 
-	cmdutil "gopkg.in/bblfsh/sdk.v2/cmd"
-	"gopkg.in/bblfsh/sdk.v2/driver"
+	cmdutil "github.com/bblfsh/sdk/v3/cmd"
+	"github.com/bblfsh/sdk/v3/driver"
 	"gopkg.in/src-d/go-errors.v1"
 )
 

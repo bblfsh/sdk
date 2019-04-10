@@ -5,10 +5,10 @@ import (
 
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
+	"github.com/bblfsh/sdk/v3/driver/native"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	"gopkg.in/bblfsh/sdk.v2/driver/native"
 )
 
 func init() {

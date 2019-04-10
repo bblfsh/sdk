@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 )
 
 func TestOfficialDrivers(t *testing.T) {

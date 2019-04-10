@@ -3,9 +3,9 @@ package positioner
 import (
 	"testing"
 
+	"github.com/bblfsh/sdk/v3/uast"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v2/uast"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 func offset(v int) nodes.Object {

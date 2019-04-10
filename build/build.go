@@ -11,9 +11,9 @@ import (
 	"text/template"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v2/assets/build"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	"gopkg.in/bblfsh/sdk.v2/internal/docker"
+	"github.com/bblfsh/sdk/v3/assets/build"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
+	"github.com/bblfsh/sdk/v3/internal/docker"
 	"gopkg.in/yaml.v2"
 )
 

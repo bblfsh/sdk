@@ -5,14 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
-
 	"github.com/stretchr/testify/require"
 
-	"gopkg.in/bblfsh/sdk.v2/uast"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/query"
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
+	"github.com/bblfsh/sdk/v3/uast"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/query"
+	"github.com/bblfsh/sdk/v3/uast/role"
+	uastyml "github.com/bblfsh/sdk/v3/uast/yaml"
 )
 
 func mustNode(o interface{}) nodes.Node {

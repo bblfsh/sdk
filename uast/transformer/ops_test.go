@@ -3,9 +3,9 @@ package transformer
 import (
 	"testing"
 
+	u "github.com/bblfsh/sdk/v3/uast"
+	un "github.com/bblfsh/sdk/v3/uast/nodes"
 	"github.com/stretchr/testify/require"
-	u "gopkg.in/bblfsh/sdk.v2/uast"
-	un "gopkg.in/bblfsh/sdk.v2/uast/nodes"
 	"gopkg.in/src-d/go-errors.v1"
 )
 

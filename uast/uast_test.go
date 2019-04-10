@@ -3,9 +3,9 @@ package uast
 import (
 	"testing"
 
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/role"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 type Obj = nodes.Object

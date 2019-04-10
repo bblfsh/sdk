@@ -1,8 +1,8 @@
 package impl
 
 import (
-	"gopkg.in/bblfsh/sdk.v2/driver/native"
-	"gopkg.in/bblfsh/sdk.v2/driver/server"
+	"github.com/bblfsh/sdk/v3/driver/native"
+	"github.com/bblfsh/sdk/v3/driver/server"
 )
 
 func init() {

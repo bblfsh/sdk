@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"gopkg.in/bblfsh/sdk.v2/build"
-	"gopkg.in/bblfsh/sdk.v2/cmd"
+	"github.com/bblfsh/sdk/v3/build"
+	"github.com/bblfsh/sdk/v3/cmd"
 )
 
 const UpdateCommandDescription = "updates an already initialized driver"

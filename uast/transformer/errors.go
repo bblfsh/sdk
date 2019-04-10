@@ -6,8 +6,8 @@ import (
 
 	"gopkg.in/src-d/go-errors.v1"
 
-	"gopkg.in/bblfsh/sdk.v2/uast"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 var (

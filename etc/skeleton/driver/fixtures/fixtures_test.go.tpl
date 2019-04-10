@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/driver/fixtures"
-	"gopkg.in/bblfsh/sdk.v2/driver/native"
-	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/driver/fixtures"
+	"github.com/bblfsh/sdk/v3/driver/native"
+	"github.com/bblfsh/sdk/v3/uast/transformer/positioner"
 )
 
 const projectRoot = "../../"

@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/internal/docker"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/internal/docker"
+	"github.com/bblfsh/sdk/v3/protocol"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 func TestIsApkOrApt(t *testing.T) {
@@ -61,7 +61,7 @@ func TestDriverBuildAndRun(t *testing.T) {
 	// replace the SDK with the dev version, so we can actually test our changes
 	out, err := exec.Command(
 		"go", "mod", "edit",
-		"-replace=gopkg.in/bblfsh/sdk.v2="+sdkRoot,
+		"-replace=github.com/bblfsh/sdk/v3="+sdkRoot,
 		filepath.Join(dir, "go.mod"),
 	).CombinedOutput()
 	if err != nil {

@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/status"
 	serrors "gopkg.in/src-d/go-errors.v1"
 
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes/nodesproto"
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/nodes/nodesproto"
 )
 
 //go:generate protoc --proto_path=$GOPATH/src:. --gogo_out=plugins=grpc:. ./driver.proto

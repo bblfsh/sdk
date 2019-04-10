@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/internal/docker"
+	uastyml "github.com/bblfsh/sdk/v3/uast/yaml"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 	uast1 "gopkg.in/bblfsh/sdk.v1/uast"
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/internal/docker"
-	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const (

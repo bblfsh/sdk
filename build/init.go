@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/template"
 
-	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
+	"github.com/bblfsh/sdk/v3/assets/skeleton"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 )
 
 // InitOptions is a set of options available for the driver init.

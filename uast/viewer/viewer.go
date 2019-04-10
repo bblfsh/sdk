@@ -3,9 +3,9 @@ package viewer
 import (
 	"encoding/json"
 
-	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
+	uast1 "github.com/bblfsh/sdk/v3/protocol/v1"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/role"
 )
 
 // MarshalUAST writes a UAST file compatible with uast-viewer.

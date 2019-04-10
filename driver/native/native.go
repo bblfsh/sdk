@@ -15,10 +15,10 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	derrors "gopkg.in/bblfsh/sdk.v2/driver/errors"
-	"gopkg.in/bblfsh/sdk.v2/driver/native/jsonlines"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/driver"
+	derrors "github.com/bblfsh/sdk/v3/driver/errors"
+	"github.com/bblfsh/sdk/v3/driver/native/jsonlines"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 	serrors "gopkg.in/src-d/go-errors.v1"
 )
 

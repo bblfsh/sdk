@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 var treeCases = []struct {
