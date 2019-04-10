@@ -1,4 +1,4 @@
-package uastyml
+package uastyaml
 
 import (
 	"testing"

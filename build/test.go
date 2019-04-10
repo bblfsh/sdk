@@ -14,7 +14,7 @@ import (
 
 	"github.com/bblfsh/sdk/v3/driver"
 	"github.com/bblfsh/sdk/v3/internal/docker"
-	uastyml "github.com/bblfsh/sdk/v3/uast/yaml"
+	"github.com/bblfsh/sdk/v3/uast/uastyaml"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
 	uast1 "gopkg.in/bblfsh/sdk.v1/uast"
 )
@@ -233,7 +233,7 @@ func (d *Driver) testIntegration(bblfshdVers, image string) error {
 			return err
 		}
 		buf.Reset()
-		exp, err := uastyml.Marshal(ast)
+		exp, err := uastyaml.Marshal(ast)
 		if err != nil {
 			return err
 		}

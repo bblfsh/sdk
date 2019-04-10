@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/bblfsh/sdk/v3/uast/nodes"
-	"github.com/bblfsh/sdk/v3/uast/yaml"
+	"github.com/bblfsh/sdk/v3/uast/uastyaml"
 	"github.com/ghodss/yaml"
 )
 
@@ -78,7 +78,7 @@ func (c *Ast2GraphvizCommand) processFile(name string) error {
 	if err != nil {
 		return err
 	}
-	ast, err := uastyml.Unmarshal(data)
+	ast, err := uastyaml.Unmarshal(data)
 	if err != nil {
 		return fmt.Errorf("cannot unmarshal uast: %v", err)
 	}

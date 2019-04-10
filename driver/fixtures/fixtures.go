@@ -18,8 +18,8 @@ import (
 	"github.com/bblfsh/sdk/v3/uast"
 	"github.com/bblfsh/sdk/v3/uast/nodes"
 	"github.com/bblfsh/sdk/v3/uast/transformer/positioner"
+	"github.com/bblfsh/sdk/v3/uast/uastyaml"
 	"github.com/bblfsh/sdk/v3/uast/viewer"
-	uastyml "github.com/bblfsh/sdk/v3/uast/yaml"
 )
 
 const Dir = "fixtures"
@@ -84,7 +84,7 @@ func (s *Suite) readFixturesFileUAST(t testing.TB, name string, noFail bool) nod
 		return nil
 	}
 	require.NoError(t, err)
-	ast, err := uastyml.Unmarshal(data)
+	ast, err := uastyaml.Unmarshal(data)
 	require.NoError(t, err)
 	return ast
 }
@@ -129,7 +129,7 @@ const (
 
 func marshalNoRoles(o nodes.Node) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	enc := uastyml.NewEncoder(buf)
+	enc := uastyaml.NewEncoder(buf)
 	enc.ForceRoles(false)
 	if err := enc.Encode(o); err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func marshalNoRoles(o nodes.Node) ([]byte, error) {
 
 func marshalForceRoles(o nodes.Node) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	enc := uastyml.NewEncoder(buf)
+	enc := uastyaml.NewEncoder(buf)
 	enc.ForceRoles(true)
 	if err := enc.Encode(o); err != nil {
 		return nil, err
@@ -370,7 +370,7 @@ func (s *Suite) benchmarkTransform(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			code := s.readFixturesFile(b, fname)
 			data := s.readFixturesFile(b, fname+nativeExt)
-			rast, err := uastyml.Unmarshal([]byte(data))
+			rast, err := uastyaml.Unmarshal([]byte(data))
 			if err != nil {
 				b.Fatal(err)
 			}
