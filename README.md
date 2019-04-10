@@ -20,7 +20,7 @@ GOPATH](https://golang.org/doc/code.html#Workspaces) environment variables.
 Babelfish SDK gets installed using either Go:
 
 ```bash
-$ go get -t -v gopkg.in/bblfsh/sdk.v2/...
+$ go get -t -v github.com/bblfsh/sdk/v3/...
 ```
 
 or make command:
@@ -34,30 +34,28 @@ These commands will install `bblfsh-sdk` program at `$GOPATH/bin/`.
 ### Contribute
 
 The SDK provides scaffolding templates for creating a new language driver.
-These templates are converted to Go code that ends up in `bblfsh-sdk` tool. Use `make` to update these templates:
+These templates are converted to Go code that ends up in `bblfsh-sdk` tool. Use `make bindata` to update these templates:
 
 ```bash
-$ make
-go get -v github.com/jteeuwen/go-bindata/...
-go get -v golang.org/x/tools/cmd/cover/...
-cat protocol/internal/testdriver/main.go | sed -e 's|\([[:space:]]\+\).*//REPLACE:\(.*\)|\1\2|g' \
-	> etc/skeleton/driver/main.go.tpl
-chmod -R go=r ${GOPATH}/src/github.com/bblfsh/sdk/etc/build; \
-go-bindata \
-	-pkg build \
-	-modtime 1 \
-	-nocompress \
-	-prefix ${GOPATH}/src/github.com/bblfsh/sdk/etc/build \
-	-o assets/build/bindata.go \
-	${GOPATH}/src/github.com/bblfsh/sdk/etc/build/...
-chmod -R go=r ${GOPATH}/src/github.com/bblfsh/sdk/etc/skeleton; \
-go-bindata \
-	-pkg skeleton \
-	-modtime 1 \
-	-nocompress \
-	-prefix ${GOPATH}/src/github.com/bblfsh/sdk/etc/skeleton \
-	-o assets/skeleton/bindata.go \
-	${GOPATH}/src/github.com/bblfsh/sdk/etc/skeleton/...
+$ make bindata
+chmod -R go=r /home/user/bblfsh-sdk/etc/build; \
+go run github.com/kevinburke/go-bindata/go-bindata/ \
+        -pkg build \
+        -modtime 1 \
+        -nocompress \
+        -prefix /home/user/bblfsh-sdk/etc/build \
+        -o assets/build/bindata.go \
+        /home/user/bblfsh-sdk/etc/build/...
+go fmt ./assets/...
+chmod -R go=r /home/user/bblfsh-sdk/etc/skeleton; \
+go run github.com/kevinburke/go-bindata/go-bindata/ \
+        -pkg skeleton \
+        -modtime 1 \
+        -nocompress \
+        -prefix /home/user/bblfsh-sdk/etc/skeleton \
+        -o assets/skeleton/bindata.go \
+        /home/user/bblfsh-sdk/etc/skeleton/...
+go fmt ./assets/...
 ```
 
 You can validate this process has been properly done before submitting changes:
