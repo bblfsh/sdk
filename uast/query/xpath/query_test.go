@@ -11,7 +11,7 @@ import (
 	"github.com/bblfsh/sdk/v3/uast/nodes"
 	"github.com/bblfsh/sdk/v3/uast/query"
 	"github.com/bblfsh/sdk/v3/uast/role"
-	uastyml "github.com/bblfsh/sdk/v3/uast/yaml"
+	"github.com/bblfsh/sdk/v3/uast/uastyaml"
 )
 
 func mustNode(o interface{}) nodes.Node {
@@ -244,7 +244,7 @@ const dataDir = "../testdata"
 func readUAST(t testing.TB, path string) nodes.Node {
 	data, err := ioutil.ReadFile(path)
 	require.NoError(t, err)
-	nd, err := uastyml.Unmarshal(data)
+	nd, err := uastyaml.Unmarshal(data)
 	require.NoError(t, err)
 	return nd
 }
