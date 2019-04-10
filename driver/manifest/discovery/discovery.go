@@ -56,11 +56,6 @@ func (arr byStatusAndName) Swap(i, j int) {
 	arr[i], arr[j] = arr[j], arr[i]
 }
 
-// Maintainer is an information about project maintainer.
-//
-// Deprecated: use manifest.Maintainer
-type Maintainer = manifest.Maintainer
-
 // RepositoryURL returns Github repository URL for browsers (not git).
 func (d Driver) RepositoryURL() string {
 	return d.repo.GetHTMLURL()

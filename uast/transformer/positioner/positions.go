@@ -20,25 +20,9 @@ func FromLineCol() Positioner {
 	return Positioner{method: fromLineCol}
 }
 
-// NewFillOffsetFromLineCol fills the Offset field of all Position nodes by using
-// their Line and Col.
-//
-// Deprecated: see FromLineCol
-func NewFillOffsetFromLineCol() Positioner {
-	return FromLineCol()
-}
-
 // FromOffset fills the Line and Col fields of all Position nodes by using their Offset.
 func FromOffset() Positioner {
 	return Positioner{method: fromOffset}
-}
-
-// NewFillLineColFromOffset fills the Line and Col fields of all Position nodes by using
-// their Offset.
-//
-// Deprecated: see FromOffset
-func NewFillLineColFromOffset() Positioner {
-	return FromOffset()
 }
 
 // FromUnicodeOffset fills the Line, Col and Offset fields of all Position nodes by

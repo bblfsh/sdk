@@ -36,14 +36,6 @@ type SemanticConfig struct {
 	BlacklistTypes []string
 }
 
-// DockerConfig was used to run fixture tests locally using "go test".
-//
-// Deprecated: use "bblfsh-sdk test"
-type DockerConfig struct {
-	Debug bool
-	Image string
-}
-
 func runsInDocker() bool {
 	_, err := os.Stat("/.dockerenv")
 	return err == nil
@@ -68,7 +60,6 @@ type Suite struct {
 	BenchName string // fixture name to benchmark (with no extension)
 
 	Semantic SemanticConfig
-	Docker   DockerConfig
 
 	// VerifyTokens checks that token and positional info matches.
 	// Executed after the preprocessing stage (in annotated mode).
