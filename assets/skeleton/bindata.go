@@ -9,9 +9,9 @@
 // etc/skeleton/driver/fixtures/fixtures_test.go.tpl (1.2kB)
 // etc/skeleton/driver/impl/impl.go (251B)
 // etc/skeleton/driver/main.go.tpl (254B)
-// etc/skeleton/driver/normalizer/annotation.go (1.128kB)
-// etc/skeleton/driver/normalizer/normalizer.go (1.115kB)
-// etc/skeleton/driver/normalizer/transforms.go.tpl (281B)
+// etc/skeleton/driver/normalizer/annotation.go (757B)
+// etc/skeleton/driver/normalizer/normalizer.go (1.198kB)
+// etc/skeleton/driver/normalizer/transforms.go.tpl (258B)
 // etc/skeleton/driver/sdk_test.go (394B)
 // etc/skeleton/git/hooks/pre-commit (406B)
 // etc/skeleton/go.mod.tpl (64B)
@@ -1100,7 +1100,6 @@ var _driverNormalizerAnnotationGo = []byte(((`package normalizer
 import (
 	"github.com/bblfsh/sdk/v3/uast/role"
 	. "github.com/bblfsh/sdk/v3/uast/transformer"
-	"github.com/bblfsh/sdk/v3/uast/transformer/positioner"
 )
 
 // Native is the of list ` + "`") + (`transformer.Transformer` + ("`" + ` to apply to a native AST.
@@ -1115,15 +1114,6 @@ var Native = Transformers([][]Transformer{
 		RolesDedup(),
 	},
 }...)
-
-// Code is a special block of transformations that are applied at the end
-// and can access original source code file. It can be used to improve or
-// fix positional information.
-//
-// https://godoc.org/github.com/bblfsh/sdk/v3/uast/transformer/positioner
-var Code = []CodeTransformer{
-	positioner.FromOffset(),
-}
 
 // Annotations is a list of individual transformations to annotate a native AST with roles.
 var Annotations = []Mapping{
@@ -1141,8 +1131,8 @@ func driverNormalizerAnnotationGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 1128, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xea, 0x64, 0xab, 0x18, 0x88, 0xf, 0x77, 0x4, 0x80, 0x13, 0x78, 0xa3, 0x2b, 0xd9, 0x16, 0xb9, 0xe8, 0xf9, 0xce, 0xec, 0x66, 0x93, 0xd5, 0xe2, 0x4, 0x15, 0x9d, 0x2e, 0xc1, 0x21, 0xbc, 0x15}}
+	info := bindataFileInfo{name: "driver/normalizer/annotation.go", size: 757, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x86, 0xe5, 0xd0, 0x8, 0x28, 0xcf, 0x48, 0x40, 0x40, 0x5, 0xbe, 0x2a, 0x84, 0x5e, 0xf8, 0xfc, 0xaf, 0xd, 0xed, 0xcc, 0xe4, 0x6d, 0xe, 0xcf, 0x88, 0xaa, 0x51, 0x2b, 0x5c, 0x20, 0xe1, 0x1a}}
 	return a, nil
 }
 
@@ -1150,6 +1140,7 @@ var _driverNormalizerNormalizerGo = []byte(`package normalizer
 
 import (
 	. "github.com/bblfsh/sdk/v3/uast/transformer"
+	"github.com/bblfsh/sdk/v3/uast/transformer/positioner"
 )
 
 var Preprocess = Transformers([][]Transformer{
@@ -1182,7 +1173,9 @@ var Preprocessors = []Mapping{
 
 // PreprocessCode is a preprocessor stage that can use the source code to
 // fix tokens and positional information.
-var PreprocessCode = []CodeTransformer{}
+var PreprocessCode = []CodeTransformer{
+	positioner.FromOffset(),
+}
 
 // Normalizers is the main block of normalization rules to convert native AST to semantic UAST.
 var Normalizers = []Mapping{}
@@ -1198,8 +1191,8 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 1115, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x3, 0xf6, 0xfc, 0xd1, 0xef, 0xbd, 0x8b, 0xec, 0xba, 0x4f, 0xcd, 0x3, 0xa, 0xf8, 0xc2, 0x78, 0x7d, 0x72, 0xb4, 0xc8, 0xc4, 0x6d, 0x3, 0xf1, 0x5b, 0xd2, 0xb0, 0xe2, 0x52, 0x35, 0xb2, 0xa}}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 1198, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xff, 0xe6, 0xf1, 0xa8, 0x23, 0x32, 0x30, 0x1c, 0x86, 0xd3, 0xd7, 0xd4, 0x4e, 0x96, 0x63, 0xc8, 0xfb, 0x61, 0xa5, 0x47, 0xfb, 0x6, 0xc5, 0xe8, 0x67, 0x9, 0x31, 0xce, 0x2e, 0xb6, 0x62, 0x7f}}
 	return a, nil
 }
 
@@ -1213,7 +1206,6 @@ var Transforms = driver.Transforms{
 	PreprocessCode: PreprocessCode,
 	Normalize:      Normalize,
 	Annotations:    Native,
-	Code:           Code,
 }
 `)
 
@@ -1227,8 +1219,8 @@ func driverNormalizerTransformsGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/transforms.go.tpl", size: 281, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xba, 0x6c, 0x4b, 0x50, 0x6, 0xbe, 0x3a, 0xca, 0xfb, 0x80, 0xf1, 0x4c, 0x15, 0xf0, 0xcb, 0x10, 0x65, 0xe, 0xef, 0xf5, 0x9f, 0x8, 0xea, 0x1d, 0x27, 0xfc, 0x54, 0xd2, 0x58, 0xbe, 0x15, 0x3f}}
+	info := bindataFileInfo{name: "driver/normalizer/transforms.go.tpl", size: 258, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x48, 0x3f, 0x7c, 0xcb, 0x8c, 0xa9, 0xfb, 0xaa, 0x13, 0x14, 0xba, 0xd2, 0xb3, 0xa5, 0xbe, 0x1a, 0x10, 0xd1, 0x1e, 0xe5, 0xa9, 0xbd, 0x73, 0xd1, 0xec, 0x35, 0xc9, 0xe8, 0xd2, 0x2c, 0x92, 0x92}}
 	return a, nil
 }
 

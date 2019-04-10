@@ -57,16 +57,6 @@ type Transforms struct {
 	// It also changes token key to uast.KeyToken. It should not be done in the
 	// Preprocess stage, because Semantic annotations are easier on clean native AST.
 	Annotations []transformer.Transformer
-
-	// Code stage is applied directly after annotations and provides a way
-	// to extract more information from source files, fix positional info, etc.
-	//
-	// TODO(dennwc): deprecate and examine drivers; documentation was incorrect
-	//               it was described that the stage runs after Native, but it
-	//               was always running after all annotation stages
-	//
-	// Deprecated: see PreprocessCode
-	Code []transformer.CodeTransformer
 }
 
 // Do applies AST transformation pipeline for specified AST subtree.
@@ -143,12 +133,6 @@ func (t Transforms) do(ctx context.Context, mode Mode, code string, nd nodes.Nod
 		if err := runAll("annotated", t.Annotations); err != nil {
 			return nd, err
 		}
-	}
-
-	// Run a code-assisted post-processing. Deprecated.
-	// There is no real reason to run it after all other stages except Preprocess.
-	if err := runAllCode("on-code", t.Code); err != nil {
-		return nd, err
 	}
 
 	// All native nodes should have a namespace in Semantic mode.

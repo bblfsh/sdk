@@ -2,6 +2,7 @@ package normalizer
 
 import (
 	. "github.com/bblfsh/sdk/v3/uast/transformer"
+	"github.com/bblfsh/sdk/v3/uast/transformer/positioner"
 )
 
 var Preprocess = Transformers([][]Transformer{
@@ -34,7 +35,9 @@ var Preprocessors = []Mapping{
 
 // PreprocessCode is a preprocessor stage that can use the source code to
 // fix tokens and positional information.
-var PreprocessCode = []CodeTransformer{}
+var PreprocessCode = []CodeTransformer{
+	positioner.FromOffset(),
+}
 
 // Normalizers is the main block of normalization rules to convert native AST to semantic UAST.
 var Normalizers = []Mapping{}
