@@ -12,9 +12,9 @@ native:
       - 'echo dependencies'
     run:
       - 'echo build'
-    artifacts:
-      - path: '/native/native-binary'
-        dest: 'native-binary'
+#    artifacts:
+#      - path: '/native/native-binary'
+#        dest: 'native-binary'
   test:
     run:
       - 'echo tests'

@@ -981,9 +981,9 @@ native:
       - 'echo dependencies'
     run:
       - 'echo build'
-    artifacts:
-      - path: '/native/native-binary'
-        dest: 'native-binary'
+#    artifacts:
+#      - path: '/native/native-binary'
+#        dest: 'native-binary'
   test:
     run:
       - 'echo tests'`)
@@ -998,7 +998,7 @@ func buildYmlTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "build.yml.tpl", size: 347, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "build.yml.tpl", size: 350, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1391,8 +1391,14 @@ func nativeReadmeMdTpl() (*asset, error) {
 	return a, nil
 }
 
-var _nativeNativeSh = []byte(`#!/usr/bin/env sh
-echo "TODO: native driver"
+var _nativeNativeSh = []byte(`#!/usr/bin/env bash
+while read -r req
+do
+  resp='{"status":"ok", "ast": '
+  resp+=$req
+  resp+='}'
+  echo $resp
+done
 exit 1
 `)
 
@@ -1406,7 +1412,7 @@ func nativeNativeSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "native/native.sh", size: 52, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "native/native.sh", size: 124, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
