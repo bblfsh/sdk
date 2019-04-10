@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,16 +15,23 @@ import (
 	"unicode"
 
 	"github.com/BurntSushi/toml"
+	"github.com/rogpeppe/go-internal/modfile"
 )
 
 // CurrentSDKMajor returns a major version of this SDK package.
 func CurrentSDKMajor() int {
 	type dummy struct{}
 	p := reflect.TypeOf(dummy{}).PkgPath()
-	const pref = "/sdk.v"
-	i := strings.Index(p, pref)
-	p = p[i+len(pref):]
-	i = strings.Index(p, "/")
+	const (
+		pref    = "/sdk.v"
+		prefMod = "/sdk/v"
+	)
+	if i := strings.Index(p, pref); i > 0 {
+		p = p[i+len(pref):]
+	} else if i = strings.Index(p, prefMod); i > 0 {
+		p = p[i+len(prefMod):]
+	}
+	i := strings.Index(p, "/")
 	if i > 0 {
 		p = p[:i]
 	}
@@ -312,21 +320,61 @@ func Maintainers(open OpenFunc) ([]Maintainer, error) {
 	return list, nil
 }
 
-const sdkName = "gopkg.in/bblfsh/sdk"
+const (
+	sdkNameLegacy = "gopkg.in/bblfsh/sdk"
+	sdkName       = "github.com/bblfsh/sdk"
+)
 
 // maxVersionToml finds a maximal version of a Babelfish SDK in the list of the projects.
 func maxVersionToml(projs []map[string]interface{}) string {
 	max := ""
 	for _, p := range projs {
 		name, _ := p["name"].(string)
-		if !strings.HasPrefix(name, sdkName) {
+		if !strings.HasPrefix(name, sdkNameLegacy) {
 			continue
 		}
 		vers, _ := p["version"].(string)
 		vers = strings.TrimPrefix(vers, "v")
 		vers = strings.TrimRight(vers, ".x")
 		if vers == "" || !unicode.IsDigit(rune(vers[0])) {
-			vers = strings.TrimPrefix(name, sdkName+".v")
+			vers = strings.TrimPrefix(name, sdkNameLegacy+".v")
+			if max < vers {
+				max = vers
+			}
+			continue
+		}
+		if max < vers {
+			max = vers
+		}
+	}
+	return max
+}
+
+// maxVersionMod finds a maximal version of a Babelfish SDK in the list of the projects.
+func maxVersionMod(req []*modfile.Require) string {
+	max := ""
+	for _, p := range req {
+		if p.Indirect {
+			continue
+		}
+		vers := strings.TrimPrefix(p.Mod.Version, "v")
+		prefix := ""
+		switch {
+		case strings.HasPrefix(p.Mod.Path, sdkName):
+			prefix = sdkName + "/v"
+		case strings.HasPrefix(p.Mod.Path, sdkNameLegacy):
+			prefix = sdkNameLegacy + ".v"
+		default:
+			continue
+		}
+		if i := strings.IndexByte(vers, '-'); i >= 0 {
+			vers = vers[:i]
+		}
+		if i := strings.IndexByte(vers, '+'); i >= 0 {
+			vers = vers[:i]
+		}
+		if vers == "" || vers == "0.0.0" {
+			vers = strings.TrimPrefix(p.Mod.Path, prefix)
 			if max < vers {
 				max = vers
 			}
@@ -341,6 +389,23 @@ func maxVersionToml(projs []map[string]interface{}) string {
 
 // SDKVersion detects a Babelfish SDK version of a driver. Returned format is "x[.y[.z]]".
 func SDKVersion(open OpenFunc) (string, error) {
+	if f, err := open("go.mod"); err == nil && f != nil {
+		defer f.Close()
+
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			return "", err
+		}
+
+		mod, err := modfile.Parse("go.mod", data, nil)
+		if err != nil {
+			return "", err
+		}
+		max := maxVersionMod(mod.Require)
+		if max != "" {
+			return max, nil
+		}
+	}
 	if f, err := open("Gopkg.lock"); err == nil && f != nil {
 		defer f.Close()
 

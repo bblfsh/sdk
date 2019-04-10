@@ -225,6 +225,16 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/rogpeppe/go-internal"
+  packages = [
+    "modfile",
+    "module",
+    "semver"
+  ]
+  revision = "438578804ca6f31be148c27683afc419ce47c06e"
+  version = "v1.3.0"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
@@ -388,6 +398,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "de848e8d06535c0133ff260a9efc285d0203fcc9f0cc027ff01e10d864a21e77"
+  inputs-digest = "4915ca340e070436882f8d26b10c275051c2fe1edfec827c36a0617dfe6b7b1b"
   solver-name = "gps-cdcl"
   solver-version = 1

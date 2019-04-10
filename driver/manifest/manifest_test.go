@@ -132,6 +132,57 @@ var casesVersion = []struct {
 		},
 		expect: "1.16",
 	},
+	{
+		name: "go mod",
+		files: map[string]string{
+			"go.mod": `module github.com/bblfsh/some-driver
+
+require (
+	gopkg.in/bblfsh/sdk.v1 v1.16.1
+	github.com/bblfsh/sdk/v3 v3.1.2
+)
+`,
+		},
+		expect: "3.1.2",
+	},
+	{
+		name: "go mod legacy",
+		files: map[string]string{
+			"go.mod": `module github.com/bblfsh/some-driver
+
+require (
+	gopkg.in/bblfsh/sdk.v1 v1.16.1
+)
+`,
+		},
+		expect: "1.16.1",
+	},
+	{
+		name: "go mod incompatible",
+		files: map[string]string{
+			"go.mod": `module github.com/bblfsh/some-driver
+
+require (
+	gopkg.in/bblfsh/sdk.v1 v1.16.1
+	github.com/bblfsh/sdk/v3 v3.1.2+incompatible
+)
+`,
+		},
+		expect: "3.1.2",
+	},
+	{
+		name: "go mod no tag",
+		files: map[string]string{
+			"go.mod": `module github.com/bblfsh/some-driver
+
+require (
+	gopkg.in/bblfsh/sdk.v1 v1.16.1
+	github.com/bblfsh/sdk/v3 v3.0.0-20190326155454-bbb149502c30
+)
+`,
+		},
+		expect: "3.0.0",
+	},
 }
 
 func TestSDKVersion(t *testing.T) {
