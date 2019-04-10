@@ -45,9 +45,14 @@ func (fi bindataFileInfo) Sys() interface{} {
 	return nil
 }
 
-var _dockerfileTpl = []byte(`# Prerequisites:
-#   dep ensure --vendor-only
+var _dockerfileTpl = []byte(`# This file can be used directly with Docker.
+#
+# Prerequisites:
+#   go mod vendor
 #   bblfsh-sdk release
+#
+# However, the preferred way is:
+#   go run ./build.go driver:tag
 
 #==============================
 # Stage 1: Native Driver Build
@@ -78,10 +83,12 @@ RUN {{ . }}
 ENV DRIVER_REPO=github.com/bblfsh/{{ .Language }}-driver
 ENV DRIVER_REPO_PATH={{ .Native.Build.Gopath }}/src/$DRIVER_REPO
 
+ADD go.* $DRIVER_REPO_PATH/
 ADD vendor $DRIVER_REPO_PATH/vendor
 ADD driver $DRIVER_REPO_PATH/driver
 ADD native $DRIVER_REPO_PATH/native
 WORKDIR $DRIVER_REPO_PATH/native
+ENV GO111MODULE=on GOFLAGS=-mod=vendor
 {{- else -}}
 ADD native /native
 WORKDIR /native
@@ -119,11 +126,14 @@ FROM golang:{{ .Runtime.Version }} as driver
 ENV DRIVER_REPO=github.com/bblfsh/{{ .Language }}-driver
 ENV DRIVER_REPO_PATH=/go/src/$DRIVER_REPO
 
+ADD go.* $DRIVER_REPO_PATH/
 ADD vendor $DRIVER_REPO_PATH/vendor
 ADD driver $DRIVER_REPO_PATH/driver
 {{- end}}
 
 WORKDIR $DRIVER_REPO_PATH/
+
+ENV GO111MODULE=on GOFLAGS=-mod=vendor
 
 # build server binary
 RUN go build -o /tmp/driver ./driver/main.go
@@ -181,7 +191,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 2838, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 3078, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

@@ -2,7 +2,6 @@
 // sources:
 // etc/skeleton/.gitignore
 // etc/skeleton/.travis.yml
-// etc/skeleton/Gopkg.toml
 // etc/skeleton/LICENSE
 // etc/skeleton/README.md.tpl
 // etc/skeleton/build.go
@@ -15,6 +14,7 @@
 // etc/skeleton/driver/normalizer/transforms.go.tpl
 // etc/skeleton/driver/sdk_test.go
 // etc/skeleton/git/hooks/pre-commit
+// etc/skeleton/go.mod.tpl
 // etc/skeleton/manifest.toml.tpl
 // etc/skeleton/native/README.md.tpl
 // etc/skeleton/native/native.sh
@@ -65,7 +65,8 @@ func (fi bindataFileInfo) Sys() interface{} {
 }
 
 var _Gitignore = []byte(`.sdk
-build`)
+build
+vendor/`)
 
 func GitignoreBytes() ([]byte, error) {
 	return _Gitignore, nil
@@ -77,7 +78,7 @@ func Gitignore() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".gitignore", size: 10, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".gitignore", size: 18, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -85,20 +86,16 @@ func Gitignore() (*asset, error) {
 var _TravisYml = []byte(`language: go
 
 go:
-  - '1.11'
+  - '1.12.x'
 
 services:
   - docker
 
 env:
-  - BBLFSHD_VERSION=v2.11.8
+  - GO111MODULE=on BBLFSHD_VERSION=v2.12.1
 
 install:
-  - curl -L https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 > $GOPATH/bin/dep
-  - chmod +x $GOPATH/bin/dep
-  - dep ensure --vendor-only
-  - go get ./vendor/gopkg.in/bblfsh/sdk.v2/cmd/...
-  - go install ./vendor/gopkg.in/bblfsh/sdk.v2/cmd/...
+  - go mod download
   - docker pull bblfsh/bblfshd:$BBLFSHD_VERSION
 
 script:
@@ -107,7 +104,7 @@ script:
   - go run test.go --bblfshd $BBLFSHD_VERSION ci-build
 
 after_success:
-  - bblfsh-sdk push ci-build
+  - go run gopkg.in/bblfsh/sdk.v2/cmd/bblfsh-sdk push ci-build
 `)
 
 func TravisYmlBytes() ([]byte, error) {
@@ -120,38 +117,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 571, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _gopkgToml = []byte(`# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
-# for detailed Gopkg.toml documentation.
-
-[[constraint]]
-  version = "v2.14.x"
-  name = "gopkg.in/bblfsh/sdk.v2"
-
-[prune]
-  go-tests = true
-  unused-packages = true
-  [[prune.project]]
-    name = "gopkg.in/bblfsh/sdk.v2"
-    unused-packages = false
-
-`)
-
-func gopkgTomlBytes() ([]byte, error) {
-	return _gopkgToml, nil
-}
-
-func gopkgToml() (*asset, error) {
-	bytes, err := gopkgTomlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "Gopkg.toml", size: 311, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 377, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1325,6 +1291,26 @@ func gitHooksPreCommit() (*asset, error) {
 	return a, nil
 }
 
+var _goModTpl = []byte(`module github.com/bblfsh/{{.Manifest.Language}}-driver
+
+go 1.11
+`)
+
+func goModTplBytes() ([]byte, error) {
+	return _goModTpl, nil
+}
+
+func goModTpl() (*asset, error) {
+	bytes, err := goModTplBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "go.mod.tpl", size: 64, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _manifestTomlTpl = []byte(`# Manifest contains metadata about the driver. To learn about the different
 # values in this manifest refer to:
 #   https://github.com/bblfsh/sdk/blob/master/driver/manifest/manifest.go
@@ -1347,7 +1333,7 @@ description  = """
 
 [runtime]
 # go_version describes the version being use to build the driver Go code.
-go_version = "1.11"
+go_version = "1.12"
 
 # native_version describes the version or versions being use to build and
 # execute the native code, you should define at least one. (eg.: "1.8").
@@ -1564,7 +1550,6 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	".gitignore":                           Gitignore,
 	".travis.yml":                          TravisYml,
-	"Gopkg.toml":                           gopkgToml,
 	"LICENSE":                              license,
 	"README.md.tpl":                        readmeMdTpl,
 	"build.go":                             buildGo,
@@ -1577,6 +1562,7 @@ var _bindata = map[string]func() (*asset, error){
 	"driver/normalizer/transforms.go.tpl":  driverNormalizerTransformsGoTpl,
 	"driver/sdk_test.go":                   driverSdk_testGo,
 	"git/hooks/pre-commit":                 gitHooksPreCommit,
+	"go.mod.tpl":                           goModTpl,
 	"manifest.toml.tpl":                    manifestTomlTpl,
 	"native/README.md.tpl":                 nativeReadmeMdTpl,
 	"native/native.sh":                     nativeNativeSh,
@@ -1627,7 +1613,6 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	".gitignore":    &bintree{Gitignore, map[string]*bintree{}},
 	".travis.yml":   &bintree{TravisYml, map[string]*bintree{}},
-	"Gopkg.toml":    &bintree{gopkgToml, map[string]*bintree{}},
 	"LICENSE":       &bintree{license, map[string]*bintree{}},
 	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
 	"build.go":      &bintree{buildGo, map[string]*bintree{}},
@@ -1652,6 +1637,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"pre-commit": &bintree{gitHooksPreCommit, map[string]*bintree{}},
 		}},
 	}},
+	"go.mod.tpl":        &bintree{goModTpl, map[string]*bintree{}},
 	"manifest.toml.tpl": &bintree{manifestTomlTpl, map[string]*bintree{}},
 	"native": &bintree{nil, map[string]*bintree{
 		"README.md.tpl": &bintree{nativeReadmeMdTpl, map[string]*bintree{}},

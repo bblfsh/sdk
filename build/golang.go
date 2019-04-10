@@ -4,17 +4,9 @@ import (
 	"os"
 )
 
-func (d *Driver) depEnsure() error {
-	if _, err := os.Stat(d.path("Gopkg.toml")); os.IsNotExist(err) {
-		err = execIn(d.root, nil, "dep", "init")
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-	if _, err := os.Stat(d.path("Gopkg.lock")); os.IsNotExist(err) {
-		err = execIn(d.root, nil, "dep", "ensure")
+func (d *Driver) modTidy() error {
+	if _, err := os.Stat(d.path("go.sum")); os.IsNotExist(err) {
+		err = execIn(d.root, nil, "go", "mod", "tidy")
 		if err != nil {
 			return err
 		}
@@ -22,7 +14,7 @@ func (d *Driver) depEnsure() error {
 		return err
 	}
 	if _, err := os.Stat(d.path("vendor")); os.IsNotExist(err) {
-		err = execIn(d.root, nil, "dep", "ensure", "--vendor-only")
+		err = execIn(d.root, nil, "go", "mod", "vendor")
 		if err != nil {
 			return err
 		}
