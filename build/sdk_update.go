@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -95,6 +96,18 @@ var ErrChangesRequired = errors.New("changes are required")
 func UpdateSDK(root string, opt *UpdateOptions) error {
 	if opt == nil {
 		opt = &UpdateOptions{}
+	}
+	if _, err := os.Stat(filepath.Join(root, manifest.Filename)); os.IsNotExist(err) {
+		return errors.New("not a Babelfish language driver; missing manifest file")
+	} else if err != nil {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(root, "Gopkg.toml")); err == nil {
+		if err = updateToModules(root); err != nil {
+			return err
+		}
+		// significant changes - restart the update to use the new SDK version
+		return restartSDKUpdate(root)
 	}
 
 	m, err := manifest.Load(filepath.Join(root, manifest.Filename))
@@ -281,4 +294,68 @@ func fixGitFolder(path string) string {
 
 func isDotGit(path string) bool {
 	return strings.Contains(path, ".git/")
+}
+
+// restartSDKUpdate executes a driver SDK update as an external command.
+// This is needed when an update is triggered by a Go script and changes a major SDK version.
+// The function will then re-run the Go script, so the new SDK version is used for it.
+func restartSDKUpdate(root string) error {
+	return goExec(root, "run", "./update.go")
+}
+
+func updateToModules(root string) error {
+	m, err := manifest.Load(filepath.Join(root, manifest.Filename))
+	if err != nil {
+		return err
+	}
+	// first, generate Go module files
+	if err := modInit(root, "github.com/bblfsh/"+m.Language+"-driver"); err != nil {
+		return err
+	}
+	if err := modTidy(root); err != nil {
+		return err
+	}
+	if err := modVendor(root); err != nil {
+		return err
+	}
+	// next, replace Go version in the driver's manifest
+	if err = updateGo(root, "1.12"); err != nil {
+		return err
+	}
+	// remove unneeded files (from git as well)
+	for _, file := range []string{
+		"Gopkg.toml",
+		"Gopkg.lock",
+	} {
+		if err := gitRm(root, file); err != nil {
+			return err
+		}
+	}
+	// add new files to git
+	for _, file := range []string{
+		"go.mod",
+		"go.sum",
+	} {
+		if err := gitAdd(root, file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func updateGo(root string, vers string) error {
+	return replaceInFile(
+		filepath.Join(root, manifest.Filename),
+		`go_version\s*=\s*"[^"]*"`,
+		`go_version = "`+vers+`"`,
+	)
+}
+
+func replaceInFile(path, re, to string) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	data = regexp.MustCompile(re).ReplaceAll(data, []byte(to))
+	return ioutil.WriteFile(path, data, 0644)
 }

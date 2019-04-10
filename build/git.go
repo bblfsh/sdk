@@ -52,3 +52,12 @@ func gitAdd(root, file string) error {
 	}
 	return nil
 }
+
+func gitRm(root, file string) error {
+	git := exec.Command("git", "rm", file)
+	git.Dir = root
+	if out, err := git.CombinedOutput(); err != nil {
+		return fmt.Errorf("cannot remove a file from git: %v\n%s\n", err, string(out))
+	}
+	return nil
+}
