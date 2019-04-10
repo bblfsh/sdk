@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"gopkg.in/bblfsh/sdk.v2/build"
-	"gopkg.in/bblfsh/sdk.v2/cmd"
+	"github.com/bblfsh/sdk/v3/build"
+	"github.com/bblfsh/sdk/v3/cmd"
 )
 
 const BuildCommandDescription = "builds the driver"

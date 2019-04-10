@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 	"gopkg.in/src-d/go-errors.v1"
 )
 

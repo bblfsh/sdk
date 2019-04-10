@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	integration "github.com/bblfsh/sdk/v3/driver/integration/consts"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v2/driver/integration/consts"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/require"

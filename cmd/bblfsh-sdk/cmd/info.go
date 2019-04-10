@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/bblfsh/sdk.v2/cmd"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
+	"github.com/bblfsh/sdk/v3/cmd"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 )
 
 const InfoCommandDescription = "prints info about the driver"

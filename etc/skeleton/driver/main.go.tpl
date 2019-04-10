@@ -4,7 +4,7 @@ import (
 	_ "github.com/bblfsh/{{.Manifest.Language}}-driver/driver/impl"
 	"github.com/bblfsh/{{.Manifest.Language}}-driver/driver/normalizer"
 
-	"gopkg.in/bblfsh/sdk.v2/driver/server"
+	"github.com/bblfsh/sdk/v3/driver/server"
 )
 
 func main() {

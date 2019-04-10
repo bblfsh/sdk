@@ -10,9 +10,9 @@ import (
 	"os/exec"
 	"strconv"
 
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/yaml"
 	"github.com/ghodss/yaml"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
 )
 
 const Ast2GraphvizCommandDescription = "" +

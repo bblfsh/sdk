@@ -3,7 +3,7 @@ package nodes_test
 import (
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 func TestIterPreOrder(t *testing.T) {

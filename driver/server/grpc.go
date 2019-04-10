@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
+	protocol2 "github.com/bblfsh/sdk/v3/protocol"
+	uast1 "github.com/bblfsh/sdk/v3/protocol/v1"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 	"google.golang.org/grpc"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	protocol2 "gopkg.in/bblfsh/sdk.v2/protocol"
-	"gopkg.in/bblfsh/sdk.v2/protocol/v1"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
 )
 
 // NewGRPCServer creates a gRPC server instance that dispatches requests to a provided driver.

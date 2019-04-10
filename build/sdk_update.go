@@ -15,8 +15,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"gopkg.in/bblfsh/sdk.v2/assets/skeleton"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
+	"github.com/bblfsh/sdk/v3/assets/skeleton"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 )
 
 const (

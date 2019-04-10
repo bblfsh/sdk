@@ -3,7 +3,7 @@ package uast
 import (
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 // NewPositionalIterator creates a new iterator that enumerates all object nodes, sorting them by positions in the source file.

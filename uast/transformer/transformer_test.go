@@ -3,10 +3,10 @@ package transformer
 import (
 	"testing"
 
+	u "github.com/bblfsh/sdk/v3/uast"
+	un "github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/role"
 	"github.com/stretchr/testify/require"
-	u "gopkg.in/bblfsh/sdk.v2/uast"
-	un "gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/role"
 )
 
 func toNode(o interface{}) un.Node {

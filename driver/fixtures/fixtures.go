@@ -14,12 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/uast"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/transformer/positioner"
-	"gopkg.in/bblfsh/sdk.v2/uast/viewer"
-	"gopkg.in/bblfsh/sdk.v2/uast/yaml"
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/uast"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/transformer/positioner"
+	"github.com/bblfsh/sdk/v3/uast/viewer"
+	uastyml "github.com/bblfsh/sdk/v3/uast/yaml"
 )
 
 const Dir = "fixtures"

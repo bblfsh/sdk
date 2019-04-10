@@ -11,8 +11,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	derrors "gopkg.in/bblfsh/sdk.v2/driver/errors"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	derrors "github.com/bblfsh/sdk/v3/driver/errors"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 func mockResponse(src string) nodes.Node {

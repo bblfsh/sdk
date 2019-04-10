@@ -3,7 +3,7 @@ package main_test
 import (
 	"testing"
 
-	"gopkg.in/bblfsh/sdk.v2/build"
+	"github.com/bblfsh/sdk/v3/build"
 )
 
 func TestSDKUpToDate(t *testing.T) {

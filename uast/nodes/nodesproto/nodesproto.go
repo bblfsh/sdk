@@ -7,8 +7,8 @@ import (
 	"io"
 	"sort"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes/nodesproto/pio"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/nodes/nodesproto/pio"
 )
 
 //go:generate protoc --proto_path=$GOPATH/src:. --gogo_out=. nodes.proto

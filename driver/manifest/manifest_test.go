@@ -59,7 +59,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestCurrentSDKVersion(t *testing.T) {
-	require.Equal(t, 2, CurrentSDKMajor())
+	require.Equal(t, 3, CurrentSDKMajor())
 }
 
 func TestParseMaintainers(t *testing.T) {

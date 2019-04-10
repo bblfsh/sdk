@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/internal/docker"
+	"github.com/bblfsh/sdk/v3/protocol"
 	"google.golang.org/grpc"
 	protocol1 "gopkg.in/bblfsh/sdk.v1/protocol"
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/internal/docker"
-	"gopkg.in/bblfsh/sdk.v2/protocol"
 )
 
 const (

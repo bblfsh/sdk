@@ -7,9 +7,9 @@ import (
 
 	"gopkg.in/src-d/go-errors.v1"
 
-	derrors "gopkg.in/bblfsh/sdk.v2/driver/errors"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	derrors "github.com/bblfsh/sdk/v3/driver/errors"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 var (

@@ -1,6 +1,6 @@
 package normalizer
 
-import "gopkg.in/bblfsh/sdk.v2/driver"
+import "github.com/bblfsh/sdk/v3/driver"
 
 var Transforms = driver.Transforms{
 	Namespace:      "{{.Manifest.Language}}",

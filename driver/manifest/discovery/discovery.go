@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 	"github.com/google/go-github/github"
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
 )
 
 const (

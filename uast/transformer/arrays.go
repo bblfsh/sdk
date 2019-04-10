@@ -1,6 +1,6 @@
 package transformer
 
-import "gopkg.in/bblfsh/sdk.v2/uast/nodes"
+import "github.com/bblfsh/sdk/v3/uast/nodes"
 
 func MapEach(vr string, m Mapping) Mapping {
 	src, dst := m.Mapping()

@@ -5,8 +5,8 @@ import (
 
 	"github.com/antchfx/xpath"
 
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
-	"gopkg.in/bblfsh/sdk.v2/uast/query"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/bblfsh/sdk/v3/uast/query"
 )
 
 func New() query.Interface {

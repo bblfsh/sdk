@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"gopkg.in/bblfsh/sdk.v2/driver/native"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/driver/native"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 type mockDriver struct{}

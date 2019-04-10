@@ -6,8 +6,8 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
-	"gopkg.in/bblfsh/sdk.v2/driver/manifest"
-	"gopkg.in/bblfsh/sdk.v2/uast/nodes"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
+	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
 // NewDriver returns a new Driver instance based on the given ObjectToNode and list of transformers.

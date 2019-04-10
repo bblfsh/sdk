@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"gopkg.in/bblfsh/sdk.v2/driver"
-	"gopkg.in/bblfsh/sdk.v2/driver/native/jsonlines"
+	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/driver/native/jsonlines"
 )
 
 // Main is a main function for running a native Go driver as an Exec-based module that uses internal json protocol.
