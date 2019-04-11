@@ -11,15 +11,9 @@ type Changelist []Change
 // Change is a single operation performed
 type Change interface {
 	isChange()
-	TransactionID() uint64
+	// GroupID is the same for multiple changes that are a part of one high-level operation.
+	GroupID() uint64
 }
-
-type changeBase struct {
-	txID uint64
-}
-
-func (changeBase) isChange()                {}
-func (ch changeBase) TransactionID() uint64 { return ch.txID }
 
 // ID is a type representing node unique ID that can be compared in O(1)
 type ID nodes.Comparable
@@ -40,28 +34,55 @@ func (String) isKey() {}
 
 // Create a node. Each array and object is created separately.
 type Create struct {
-	changeBase
+	group uint64
+
+	// Node to create.
 	Node nodes.Node
 }
 
+func (Create) isChange() {}
+
+func (ch Create) GroupID() uint64 { return ch.group }
+
 // Delete a node by ID
 type Delete struct {
-	changeBase
-	NodeID ID
+	group uint64
+
+	// Node to delete.
+	Node ID
 }
+
+func (Delete) isChange() {}
+
+func (ch Delete) GroupID() uint64 { return ch.group }
 
 // Attach a node as a child of another node with a given key
 type Attach struct {
-	changeBase
+	group uint64
+
+	// Parent node ID to attach the key to.
 	Parent ID
-	Key    Key
-	Child  ID
+	// Key to attach.
+	Key Key
+	// Child to attach on a given key.
+	Child ID
 }
 
-// Deatach a child from a node
-type Deatach struct {
-	changeBase
+func (Attach) isChange() {}
+
+func (ch Attach) GroupID() uint64 { return ch.group }
+
+// Detach a child from a node
+type Detach struct {
+	group uint64
+
+	// Parent node ID to detach the key from.
 	Parent ID
-	Key    Key // Currently deatach semantics are only defined for nodes.Object so the Key is
-	// practically always a string
+	// Key to detach. Currently detach semantics are only defined for nodes.Object so the
+	// Key is practically always a String.
+	Key Key
 }
+
+func (Detach) isChange() {}
+
+func (ch Detach) GroupID() uint64 { return ch.group }

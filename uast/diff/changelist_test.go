@@ -40,7 +40,8 @@ func TestChangelist(t *testing.T) {
 				dst := readUAST(t, dstName)
 
 				changes := Changes(src, dst)
-				newsrc := changes.Apply(src)
+				newsrc, err := changes.Apply(src)
+				require.NoError(t, err)
 				require.True(t, nodes.Equal(newsrc, dst))
 			})
 		}
