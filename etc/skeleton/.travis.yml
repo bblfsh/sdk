@@ -7,7 +7,9 @@ services:
   - docker
 
 env:
-  - GO111MODULE=on BBLFSHD_VERSION=v2.12.1
+  global:
+    - GO111MODULE=on
+    - BBLFSHD_VERSION=v2.12.1
 
 install:
   - go mod download

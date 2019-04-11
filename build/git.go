@@ -44,20 +44,18 @@ func gitInit(path string) error {
 	return nil
 }
 
-func gitAdd(root, file string) error {
-	git := exec.Command("git", "add", file)
-	git.Dir = root
-	if out, err := git.CombinedOutput(); err != nil {
-		return fmt.Errorf("cannot add a file to git: %v\n%s\n", err, string(out))
+func gitExec(root, cmd string, files ...string) error {
+	git := cmdIn(root, "git", append([]string{cmd}, files...)...)
+	if err := git.Run(); err != nil {
+		return fmt.Errorf("cannot %s a file to git: %v\n", cmd, err)
 	}
 	return nil
 }
 
-func gitRm(root, file string) error {
-	git := exec.Command("git", "rm", file)
-	git.Dir = root
-	if out, err := git.CombinedOutput(); err != nil {
-		return fmt.Errorf("cannot remove a file from git: %v\n%s\n", err, string(out))
-	}
-	return nil
+func gitAdd(root string, files ...string) error {
+	return gitExec(root, "add", files...)
+}
+
+func gitRm(root string, files ...string) error {
+	return gitExec(root, "rm", files...)
 }

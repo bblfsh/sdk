@@ -24,3 +24,22 @@ func execIn(wd string, out io.Writer, cmd string, args ...string) error {
 	c.Stdout = out
 	return c.Run()
 }
+
+func cmdIn(wd string, cmd string, args ...string) Cmd {
+	printCommand(cmd, args...)
+	c := exec.Command(cmd, args...)
+	c.Dir = wd
+	return Cmd{c}
+}
+
+type Cmd struct {
+	*exec.Cmd
+}
+
+func (c Cmd) Run() error {
+	err := c.Cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok {
+		err = fmt.Errorf("%s\n%s", e.ProcessState, string(e.Stderr))
+	}
+	return err
+}

@@ -92,7 +92,9 @@ services:
   - docker
 
 env:
-  - GO111MODULE=on BBLFSHD_VERSION=v2.12.1
+  global:
+    - GO111MODULE=on
+    - BBLFSHD_VERSION=v2.12.1
 
 install:
   - go mod download
@@ -117,7 +119,7 @@ func TravisYml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: ".travis.yml", size: 377, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: ".travis.yml", size: 395, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -839,8 +841,8 @@ To run the tests just execute ` + "`" + `go run test.go` + "`" + `, this will st
 The build is done executing ` + "`" + `go run build.go` + "`" + `. To evaluate the result using a docker container, execute:
 ` + "`" + `go run build.go test-driver && docker run -it test-driver` + "`" + `.
 
-If the project is located under ` + "`" + `GOPATH` + "`" + `, run all the above with ` + "`" + `GO111MODULE=on` + "`" + ` environment variable,
-or move the project to any other directory outside of ` + "`" + `GOPATH` + "`" + `.
+If the project is located under ` + "`" + `$GOPATH` + "`" + `, run all the above with ` + "`" + `GO111MODULE=on` + "`" + ` environment variable,
+or move the project to any other directory outside of ` + "`" + `$GOPATH` + "`" + `.
 
 License
 -------
@@ -877,7 +879,7 @@ func readmeMdTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "README.md.tpl", size: 1979, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "README.md.tpl", size: 1981, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -938,20 +940,27 @@ var _buildYmlTpl = []byte(`sdk: '2'
 go-runtime:
   version: '1.11'
 native:
+  # TODO: an image used as a driver runtime
   image: 'debian:latest'
+  # TODO: files copied from the source to the driver image
   static:
   - path: 'native.sh'
     dest: 'native'
   build:
+    # TODO: an image to build a driver
     image: 'debian:latest'
+    # TODO: build system dependencies, can not use the source
     deps:
       - 'echo dependencies'
+    # TODO: build steps
     run:
       - 'echo build'
+# TODO: files copied from the builder to the driver image
 #    artifacts:
 #      - path: '/native/native-binary'
 #        dest: 'native-binary'
   test:
+    # TODO: native driver tests
     run:
       - 'echo tests'`)
 
@@ -965,7 +974,7 @@ func buildYmlTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "build.yml.tpl", size: 350, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "build.yml.tpl", size: 668, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1379,6 +1388,8 @@ func nativeReadmeMdTpl() (*asset, error) {
 }
 
 var _nativeNativeSh = []byte(`#!/usr/bin/env bash
+# This implements a trivial native driver that returns its input unchanged.
+# TODO: Implement a parser for the target language.
 while read -r req
 do
   resp='{"status":"ok", "ast": '
@@ -1399,7 +1410,7 @@ func nativeNativeSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "native/native.sh", size: 124, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "native/native.sh", size: 252, mode: os.FileMode(484), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

@@ -300,7 +300,9 @@ func isDotGit(path string) bool {
 // This is needed when an update is triggered by a Go script and changes a major SDK version.
 // The function will then re-run the Go script, so the new SDK version is used for it.
 func restartSDKUpdate(root string) error {
-	return goExec(root, "run", "./update.go")
+	cmd := goCmd(root, os.Stdout, "run", "./update.go")
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func updateToModules(root string) error {
@@ -323,22 +325,18 @@ func updateToModules(root string) error {
 		return err
 	}
 	// remove unneeded files (from git as well)
-	for _, file := range []string{
+	if err := gitRm(root,
 		"Gopkg.toml",
 		"Gopkg.lock",
-	} {
-		if err := gitRm(root, file); err != nil {
-			return err
-		}
+	); err != nil {
+		return err
 	}
 	// add new files to git
-	for _, file := range []string{
+	if err := gitAdd(root,
 		"go.mod",
 		"go.sum",
-	} {
-		if err := gitAdd(root, file); err != nil {
-			return err
-		}
+	); err != nil {
+		return err
 	}
 	return nil
 }

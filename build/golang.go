@@ -1,8 +1,8 @@
 package build
 
 import (
+	"io"
 	"os"
-	"os/exec"
 )
 
 func (d *Driver) modPrepare() error {
@@ -25,22 +25,15 @@ func (d *Driver) modPrepare() error {
 	return nil
 }
 
-func goExec(dir string, args ...string) error {
-	cmd := exec.Command("go", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Dir = dir
+func goCmd(dir string, stdout io.Writer, args ...string) Cmd {
+	cmd := cmdIn(dir, "go", args...)
+	cmd.Stdout = stdout
 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
-	return cmd.Run()
+	return cmd
 }
 
 func modExec(dir string, args ...string) error {
-	args = append([]string{"mod"}, args...)
-	cmd := exec.Command("go", args...)
-	cmd.Stderr = os.Stderr
-	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "GO111MODULE=on")
-	return cmd.Run()
+	return goCmd(dir, nil, append([]string{"mod"}, args...)...).Run()
 }
 
 func modTidy(dir string) error {
