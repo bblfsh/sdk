@@ -24,8 +24,8 @@ To run the tests just execute `go run test.go`, this will start the test over th
 The build is done executing `go run build.go`. To evaluate the result using a docker container, execute:
 `go run build.go test-driver && docker run -it test-driver`.
 
-If the project is located under `GOPATH`, run all the above with `GO111MODULE=on` environment variable,
-or move the project to any other directory outside of `GOPATH`.
+If the project is located under `$GOPATH`, run all the above with `GO111MODULE=on` environment variable,
+or move the project to any other directory outside of `$GOPATH`.
 
 License
 -------

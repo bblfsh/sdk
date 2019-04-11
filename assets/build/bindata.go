@@ -53,6 +53,8 @@ var _dockerfileTpl = []byte(`# This file can be used directly with Docker.
 #
 # However, the preferred way is:
 #   go run ./build.go driver:tag
+#
+# This will regenerate all necessary files before building the driver.
 
 #==============================
 # Stage 1: Native Driver Build
@@ -191,7 +193,7 @@ func dockerfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Dockerfile.tpl", size: 3078, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "Dockerfile.tpl", size: 3151, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

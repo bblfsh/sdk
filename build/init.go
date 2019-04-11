@@ -70,22 +70,20 @@ func InitDriver(root, language string, opt *InitOptions) error {
 		_ = f.Close()
 		return err
 	}
-	if err = f.Close(); err != nil {
+	if err := f.Close(); err != nil {
 		return err
 	}
 
-	if err = UpdateSDK(root, opt.toUpdateOpt()); err != nil {
+	if err := UpdateSDK(root, opt.toUpdateOpt()); err != nil {
 		return err
 	}
 
-	for _, file := range []string{
+	if err := gitAdd(root,
 		"Dockerfile",
 		"go.mod",
 		"go.sum",
-	} {
-		if err := gitAdd(root, file); err != nil {
-			opt.Warning.printf("%v\n", err)
-		}
+	); err != nil {
+		opt.Warning.printf("%v\n", err)
 	}
 	return nil
 }

@@ -6,6 +6,8 @@
 #
 # However, the preferred way is:
 #   go run ./build.go driver:tag
+#
+# This will regenerate all necessary files before building the driver.
 
 #==============================
 # Stage 1: Native Driver Build
