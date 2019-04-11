@@ -17,12 +17,14 @@ import (
 // This program outputs commands on the stdout - they are to be piped to sh/bash. It's a good
 // idea to inspect them before running by just reading the textual output of the program.
 // The program needs to be ran with proper commandline arguments. Example below. The cli arguments
-// are also documented if you run `./uast-diff-create-testdata --help`.
-// $ ./uast-diff-create-testdata -d ~/data/sourced/treediff/python-dataset -f smalltest.txt -o . | sh -
+// are also documented if you run `go run ./uast-diff-create-testdata --help`.
+// $ go run ./create-testdata/ -d ~/data/sourced/treediff/python-dataset -f smalltest.txt -o . | sh -
 
-var datasetPath = flag.String("d", "./", "Path to the python-dataset (unpacked flask.tar.gz)")
-var testnamesPath = flag.String("f", "./smalltest.txt", "File with testnames")
-var outPath = flag.String("o", "./", "Output directory")
+var (
+	datasetPath   = flag.String("d", "./", "Path to the python-dataset (unpacked flask.tar.gz)")
+	testnamesPath = flag.String("f", "./smalltest.txt", "File with testnames")
+	outPath       = flag.String("o", "./", "Output directory")
+)
 
 func firstFile(dirname string, fnamePattern string) string {
 	fns, err := filepath.Glob(filepath.Join(dirname, fnamePattern))
@@ -34,7 +36,7 @@ func firstFile(dirname string, fnamePattern string) string {
 
 func main() {
 	flag.Parse()
-	_, err := os.Open(*datasetPath)
+	_, err := os.Stat(*datasetPath)
 	if err != nil {
 		panic(err)
 	}
@@ -43,12 +45,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer testnames.Close()
 
 	scanner := bufio.NewScanner(testnames)
-	scanner.Split(bufio.ScanLines)
 
-	i := 0
-	for scanner.Scan() {
+	for i := 0; scanner.Scan(); i++ {
 		name := scanner.Text()
 		if name == "" {
 			continue
@@ -60,7 +61,5 @@ func main() {
 			filepath.Join(*outPath, iStr+"_src.uast"))
 		fmt.Println("bblfsh-cli -l python " + dst + " -o yaml > " +
 			filepath.Join(*outPath, iStr+"_dst.uast"))
-		i = i + 1
 	}
-
 }
