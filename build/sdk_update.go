@@ -314,8 +314,29 @@ func updateToModules(root string) error {
 	if err := modInit(root, "github.com/bblfsh/"+m.Language+"-driver"); err != nil {
 		return err
 	}
+	if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		} else if info.IsDir() || !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		data, err := ioutil.ReadFile(filepath.Join(root, path))
+		if err != nil {
+			return err
+		}
+		data = bytes.Replace(data,
+			[]byte("gopkg.in/bblfsh/sdk.v2"),
+			[]byte("github.com/bblfsh/sdk/v3"),
+			-1)
+		return ioutil.WriteFile(filepath.Join(root, path), data, info.Mode())
+	}); err != nil {
+		return err
+	}
 	if err := modTidy(root); err != nil {
 		return err
+	}
+	if err := os.RemoveAll(filepath.Join(root, "vendor")); err != nil {
+		return nil
 	}
 	if err := modVendor(root); err != nil {
 		return err
