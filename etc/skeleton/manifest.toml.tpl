@@ -17,11 +17,3 @@ features = ["ast"]
 [documentation]
 description  = """
 """
-
-[runtime]
-# go_version describes the version being use to build the driver Go code.
-go_version = "1.12"
-
-# native_version describes the version or versions being use to build and
-# execute the native code, you should define at least one. (eg.: "1.8").
-native_version = []

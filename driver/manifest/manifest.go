@@ -14,6 +14,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/bblfsh/sdk/v3/internal/buildmanifest"
+
 	"github.com/BurntSushi/toml"
 	"github.com/rogpeppe/go-internal/modfile"
 )
@@ -72,26 +74,6 @@ var statusRanks = map[DevelopmentStatus]int{
 	Mature:   6,
 }
 
-// InformationLoss in terms of which kind of code generation would they allow.
-type InformationLoss string
-
-const (
-	// Lossless no information loss converting code to AST and then back to code
-	// would. code == codegen(AST(code)).
-	Lossless InformationLoss = "lossless"
-	// FormatingLoss only superfluous formatting information is lost (e.g.
-	// whitespace, indentation). Code generated from the AST could be the same
-	// as the original code after passing a code formatter.
-	// fmt(code) == codegen(AST(code)).
-	FormatingLoss InformationLoss = "formating-loss"
-	// SyntacticSugarLoss there is information loss about syntactic sugar. Code
-	// generated from the AST could be the same as the original code after
-	// desugaring it. desugar(code) == codegen(AST(code)).
-	SyntacticSugarLoss InformationLoss = "syntactic-sugar-loss"
-	// CommentLoss comments are not present in the AST.
-	CommentLoss InformationLoss = "formating-loss"
-)
-
 // Feature describes which level of information driver can produce.
 type Feature string
 
@@ -104,46 +86,25 @@ const (
 	Roles Feature = "roles"
 )
 
-type OS string
-
-const (
-	Alpine OS = "alpine"
-	Debian OS = "debian"
-)
-
-func (os OS) AsImage() string {
-	switch os {
-	case Alpine:
-		return "alpine:3.7"
-	case Debian:
-		return "debian:jessie-slim"
-	default:
-		return ""
-	}
-}
-
 type Documentation struct {
 	Description string `toml:"description,omitempty" json:",omitempty"`
 	Caveats     string `toml:"caveats,omitempty" json:",omitempty"`
 }
 
 type Manifest struct {
-	Name            string            `toml:"name"` // human-readable name
-	Language        string            `toml:"language"`
-	Version         string            `toml:"version,omitempty" json:",omitempty"`
-	Build           *time.Time        `toml:"build,omitempty" json:",omitempty"`
-	Status          DevelopmentStatus `toml:"status"`
-	InformationLoss []InformationLoss `toml:"loss" json:",omitempty"`
-	SDKVersion      string            `toml:"-"` // do not read it from manifest.toml
-	Documentation   *Documentation    `toml:"documentation,omitempty" json:",omitempty"`
-	Runtime         struct {
-		OS             OS       `toml:"os" json:",omitempty"`
-		NativeVersion  Versions `toml:"native_version" json:",omitempty"`
-		NativeEncoding string   `toml:"native_encoding" json:",omitempty"`
-		GoVersion      string   `toml:"go_version" json:",omitempty"`
-	} `toml:"runtime"`
+	Name          string            `toml:"name"` // human-readable name
+	Language      string            `toml:"language"`
+	Version       string            `toml:"version,omitempty" json:",omitempty"`
+	Build         *time.Time        `toml:"build,omitempty" json:",omitempty"`
+	Status        DevelopmentStatus `toml:"status"`
+	SDKVersion    string            `toml:"-"` // read from go.mod
+	Documentation *Documentation    `toml:"documentation,omitempty" json:",omitempty"`
+	Runtime       struct {
+		NativeVersion string `toml:"-" json:",omitempty"`
+		GoVersion     string `toml:"-" json:",omitempty"`
+	} `toml:"-" json:"Runtimes"` // read from build.yml
 	Features    []Feature    `toml:"features" json:",omitempty"`
-	Maintainers []Maintainer `toml:"-" json:",omitempty"`
+	Maintainers []Maintainer `toml:"-" json:",omitempty"` // read from MAINTAINERS
 }
 
 // Supports checks if driver supports specified feature.
@@ -187,13 +148,7 @@ func (m Manifest) IsRecommended() bool {
 	return m.ForCurrentSDK() && m.Status.Rank() >= Beta.Rank()
 }
 
-type Versions []string
-
-func (v Versions) String() string {
-	return strings.Join(v, ":")
-}
-
-// Load reads a manifest and decode the content into a new Manifest struct
+// Load reads a manifest and decode the content into a new Manifest struct.
 func Load(path string) (*Manifest, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -211,11 +166,60 @@ func Load(path string) (*Manifest, error) {
 	if err != nil {
 		return m, err
 	}
+	if err := LoadRuntimeInfo(m, open); err != nil {
+		return m, err
+	}
 	m.Maintainers, err = Maintainers(open)
 	if err != nil {
 		return m, err
 	}
 	return m, nil
+}
+
+// extractImageVersion parses a semantic version from a Docker image name having
+// the form base:label, where label is either a version or version-tag pair.
+func extractImageVersion(s string) string {
+	if i := strings.LastIndexByte(s, ':'); i > 0 {
+		s = s[i+1:]
+	}
+	if i := strings.LastIndexByte(s, '-'); i > 0 {
+		s = s[:i]
+	}
+	return s
+}
+
+// LoadRuntimeInfo reads a build manifest file with a given open function and sets
+// runtime-related information to m.
+func LoadRuntimeInfo(m *Manifest, open OpenFunc) error {
+	f, err := open(buildmanifest.Filename)
+	if err != nil || f == nil {
+		return err
+	}
+	defer f.Close()
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	var b buildmanifest.Manifest
+	if err := b.Decode(data); err != nil {
+		return err
+	} else if b.SDK != buildmanifest.CurrentVersion {
+		return fmt.Errorf("unknown SDK version: %q", b.SDK)
+	}
+	if b.Native.Build.Image != "" {
+		// prefer image used to build the driver
+		m.Runtime.NativeVersion = extractImageVersion(b.Native.Build.Image)
+	} else if b.Native.Build.Gopath != "" {
+		// for Go the image is the same as the server runtime
+		m.Runtime.NativeVersion = extractImageVersion(b.Runtime.Version)
+	} else if b.Native.Image != "" {
+		m.Runtime.NativeVersion = extractImageVersion(b.Native.Image)
+	}
+	if b.Runtime.Version != "" {
+		m.Runtime.GoVersion = extractImageVersion(b.Runtime.Version)
+	}
+	return nil
 }
 
 // Encode encodes m in toml format and writes the restult to w

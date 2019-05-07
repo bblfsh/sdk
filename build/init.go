@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	"github.com/bblfsh/sdk/v3/assets/skeleton"
-	"github.com/bblfsh/sdk/v3/driver/manifest"
 )
 
 // InitOptions is a set of options available for the driver init.
@@ -47,31 +46,36 @@ func InitDriver(root, language string, opt *InitOptions) error {
 	if err := gitInit(root); err != nil {
 		return err
 	}
-	tpl := string(skeleton.MustAsset(manifestTpl))
 
-	t, err := template.New(manifestTpl).Funcs(funcs).Parse(tpl)
-	if err != nil {
-		return err
-	}
+	// generate manifests first, other files will use data from them
+	for _, name := range []string{
+		manifestTpl,
+		buildManifestTpl,
+	} {
+		tpl := string(skeleton.MustAsset(name))
 
-	name := fixGitFolder(manifestTpl)
-	file := filepath.Join(root, manifest.Filename)
+		t, err := template.New(name).Funcs(funcs).Parse(tpl)
+		if err != nil {
+			return err
+		}
 
-	info := mustAssetInfo(name)
+		file := filepath.Join(root, strings.TrimSuffix(name, tplExt))
+		info := mustAssetInfo(name)
 
-	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC|os.O_EXCL, info.Mode())
-	if err != nil {
-		return err
-	}
+		f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC|os.O_EXCL, info.Mode())
+		if err != nil {
+			return err
+		}
 
-	if err := t.Execute(f, map[string]string{
-		"Language": language,
-	}); err != nil {
-		_ = f.Close()
-		return err
-	}
-	if err := f.Close(); err != nil {
-		return err
+		if err := t.Execute(f, map[string]string{
+			"Language": language,
+		}); err != nil {
+			_ = f.Close()
+			return err
+		}
+		if err := f.Close(); err != nil {
+			return err
+		}
 	}
 
 	if err := UpdateSDK(root, opt.toUpdateOpt()); err != nil {

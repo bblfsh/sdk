@@ -58,6 +58,10 @@ RUN {{ . }}
 # Stage 1.1: Native Driver Tests
 #================================
 FROM native as native_test
+{{if ne .Native.Build.Gopath ""}}
+# workaround for https://github.com/golang/go/issues/28065
+ENV CGO_ENABLED=0
+{{end -}}
 
 {{- if ne (len .Native.Test.Deps) 0}}
 # install test dependencies
@@ -89,6 +93,9 @@ ADD driver $DRIVER_REPO_PATH/driver
 WORKDIR $DRIVER_REPO_PATH/
 
 ENV GO111MODULE=on GOFLAGS=-mod=vendor
+
+# workaround for https://github.com/golang/go/issues/28065
+ENV CGO_ENABLED=0
 
 # build server binary
 RUN go build -o /tmp/driver ./driver/main.go

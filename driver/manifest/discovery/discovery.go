@@ -148,12 +148,18 @@ func (d *Driver) loadSDKVersion(ctx context.Context) error {
 	return nil
 }
 
+// loadBuildInfo build-related information from repository and decodes it into object.
+func (d *Driver) loadBuildInfo(ctx context.Context, m *manifest.Manifest) error {
+	return manifest.LoadRuntimeInfo(m, d.fetchFromGithub(ctx))
+}
+
 // Options controls how drivers are being discovered and what information is fetched for them.
 type Options struct {
 	Organization  string // Github organization name
 	NamesOnly     bool   // driver manifest will only have Language field populated
 	NoMaintainers bool   // do not load maintainers list
 	NoSDKVersion  bool   // do not check SDK version
+	NoBuildInfo   bool   // do not load build info
 	NoStatic      bool   // do not use a static manifest - discover drivers
 }
 
@@ -269,6 +275,11 @@ func OfficialDrivers(ctx context.Context, opt *Options) ([]Driver, error) {
 			}
 			if !opt.NoSDKVersion {
 				if err := d.loadSDKVersion(ctx); err != nil {
+					setErr(err)
+				}
+			}
+			if !opt.NoBuildInfo {
+				if err := d.loadBuildInfo(ctx, &d.Manifest); err != nil {
 					setErr(err)
 				}
 			}

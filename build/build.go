@@ -13,15 +13,15 @@ import (
 
 	"github.com/bblfsh/sdk/v3/assets/build"
 	"github.com/bblfsh/sdk/v3/driver/manifest"
+	"github.com/bblfsh/sdk/v3/internal/buildmanifest"
 	"github.com/bblfsh/sdk/v3/internal/docker"
-	"gopkg.in/yaml.v2"
 )
 
 const releaseManifest = ".manifest.release.toml"
 
 const (
 	dockerFileName = docker.FileName
-	manifestName   = "build.yml"
+	manifestName   = buildmanifest.Filename
 	ScriptName     = dockerFileName
 )
 
@@ -51,41 +51,20 @@ func (d *Driver) path(names ...string) string {
 	)
 }
 
-type artifact struct {
-	Path string `yaml:"path"`
-	Dest string `yaml:"dest"`
-}
-
 type buildManifest struct {
-	SDK      string `yaml:"sdk"`
-	Language string `yaml:"-"`
-	Native   struct {
-		Image  string     `yaml:"image"`
-		Static []artifact `yaml:"static"`
-		Deps   []string   `yaml:"deps"` // only apt/apk
-		Build  struct {
-			Gopath    string     `yaml:"gopath"`
-			Image     string     `yaml:"image"`
-			Deps      []string   `yaml:"deps"`
-			Add       []artifact `yaml:"add"`
-			Run       []string   `yaml:"run"`
-			Artifacts []artifact `yaml:"artifacts"`
-		} `yaml:"build"`
-		Test struct {
-			Deps []string `yaml:"deps"`
-			Run  []string `yaml:"run"`
-		} `yaml:"test"`
-	} `yaml:"native"`
-	Runtime struct {
-		Version string `yaml:"version"`
-	} `yaml:"go-runtime"`
+	Language string
+	buildmanifest.Manifest
 }
 
 func (d *Driver) readBuildManifest() (*buildManifest, error) {
-	var m buildManifest
-	if err := readYML(d.path(manifestName), &m); err != nil {
+	data, err := ioutil.ReadFile(d.path(manifestName))
+	if err != nil {
 		return nil, err
-	} else if m.SDK != "2" {
+	}
+	var m buildManifest
+	if err := m.Manifest.Decode(data); err != nil {
+		return nil, err
+	} else if m.SDK != buildmanifest.CurrentVersion {
 		return nil, fmt.Errorf("unknown SDK version: %q", m.SDK)
 	}
 	if dm, err := d.readManifest(); err != nil {
@@ -193,14 +172,6 @@ func (d *Driver) ScriptChanged() (bool, error) {
 	return !bytes.Equal(data, old), nil
 }
 
-func readYML(path string, dst interface{}) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return yaml.Unmarshal(data, dst)
-}
-
 func (d *Driver) Build(imageName string) (string, error) {
 	if _, err := d.Prepare(); err != nil {
 		return "", err
@@ -295,7 +266,7 @@ func (d *Driver) FillManifest(dest string) error {
 		return err
 	}
 	m.Runtime.GoVersion = bm.Runtime.Version
-	m.Runtime.NativeVersion = []string{bm.Native.Image}
+	m.Runtime.NativeVersion = bm.Native.Image
 
 	if dest == "" {
 		dest = d.path(releaseManifest)
