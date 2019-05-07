@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -160,16 +161,16 @@ func Load(path string) (*Manifest, error) {
 		return m, err
 	}
 	dir := filepath.Dir(path)
-	open := InDir(dir)
+	read := InDir(dir)
 
-	m.SDKVersion, err = SDKVersion(open)
+	m.SDKVersion, err = SDKVersion(read)
 	if err != nil {
 		return m, err
 	}
-	if err := LoadRuntimeInfo(m, open); err != nil {
+	if err := LoadRuntimeInfo(m, read); err != nil {
 		return m, err
 	}
-	m.Maintainers, err = Maintainers(open)
+	m.Maintainers, err = Maintainers(read)
 	if err != nil {
 		return m, err
 	}
@@ -190,15 +191,9 @@ func extractImageVersion(s string) string {
 
 // LoadRuntimeInfo reads a build manifest file with a given open function and sets
 // runtime-related information to m.
-func LoadRuntimeInfo(m *Manifest, open OpenFunc) error {
-	f, err := open(buildmanifest.Filename)
-	if err != nil || f == nil {
-		return err
-	}
-	defer f.Close()
-
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
+func LoadRuntimeInfo(m *Manifest, read ReadFunc) error {
+	data, err := read(buildmanifest.Filename)
+	if err != nil || data == nil {
 		return err
 	}
 	var b buildmanifest.Manifest
@@ -261,23 +256,23 @@ func (m Maintainer) URL() string {
 	return ""
 }
 
-// OpenFunc is a function for fetching a file using a relative file path.
-// It returns an empty error an nil reader in case file does not exist.
-type OpenFunc func(path string) (io.ReadCloser, error)
+// ReadFunc is a function for fetching a file using a relative file path.
+// It returns an empty error a nil slice in case file does not exist.
+type ReadFunc func(path string) ([]byte, error)
 
 // InDir returns a function that read files in the specified directory.
-func InDir(dir string) OpenFunc {
-	return func(path string) (io.ReadCloser, error) {
+func InDir(dir string) ReadFunc {
+	return func(path string) ([]byte, error) {
 		if filepath.IsAbs(path) {
 			return nil, fmt.Errorf("expected relative path, got: %q", path)
 		}
-		f, err := os.Open(filepath.Join(dir, path))
+		data, err := ioutil.ReadFile(filepath.Join(dir, path))
 		if os.IsNotExist(err) {
 			return nil, nil
 		} else if err != nil {
 			return nil, err
 		}
-		return f, nil
+		return data, nil
 	}
 }
 
@@ -308,19 +303,18 @@ func parseMaintainers(r io.Reader) []Maintainer {
 }
 
 // Maintainers reads and parses the MAINTAINERS file using the provided function.
-func Maintainers(open OpenFunc) ([]Maintainer, error) {
-	if open == nil {
-		open = currentDir
+func Maintainers(read ReadFunc) ([]Maintainer, error) {
+	if read == nil {
+		read = currentDir
 	}
-	rc, err := open("MAINTAINERS")
+	data, err := read("MAINTAINERS")
 	if err != nil {
 		return nil, err
-	} else if rc == nil {
+	} else if data == nil {
 		return nil, nil
 	}
-	defer rc.Close()
 
-	list := parseMaintainers(rc)
+	list := parseMaintainers(bytes.NewReader(data))
 	return list, nil
 }
 
@@ -392,15 +386,8 @@ func maxVersionMod(req []*modfile.Require) string {
 }
 
 // SDKVersion detects a Babelfish SDK version of a driver. Returned format is "x[.y[.z]]".
-func SDKVersion(open OpenFunc) (string, error) {
-	if f, err := open("go.mod"); err == nil && f != nil {
-		defer f.Close()
-
-		data, err := ioutil.ReadAll(f)
-		if err != nil {
-			return "", err
-		}
-
+func SDKVersion(read ReadFunc) (string, error) {
+	if data, err := read("go.mod"); err == nil && data != nil {
 		mod, err := modfile.Parse("go.mod", data, nil)
 		if err != nil {
 			return "", err
@@ -410,11 +397,9 @@ func SDKVersion(open OpenFunc) (string, error) {
 			return max, nil
 		}
 	}
-	if f, err := open("Gopkg.lock"); err == nil && f != nil {
-		defer f.Close()
-
+	if data, err := read("Gopkg.lock"); err == nil && data != nil {
 		var m map[string]interface{}
-		_, err := toml.DecodeReader(f, &m)
+		_, err := toml.Decode(string(data), &m)
 		if err != nil {
 			return "", err
 		}
@@ -424,11 +409,9 @@ func SDKVersion(open OpenFunc) (string, error) {
 			return max, nil
 		}
 	}
-	if f, err := open("Gopkg.toml"); err == nil && f != nil {
-		defer f.Close()
-
+	if data, err := read("Gopkg.toml"); err == nil && data != nil {
 		var m map[string]interface{}
-		_, err := toml.DecodeReader(f, &m)
+		_, err := toml.Decode(string(data), &m)
 		if err != nil {
 			return "", err
 		}

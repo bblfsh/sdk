@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
@@ -108,23 +108,22 @@ func (d *Driver) loadManifest(ctx context.Context) error {
 	return nil
 }
 
-// fetchFromGithub returns a manifest.OpenFunc that is bound to context and fetches files directly from Github.
-func (d Driver) fetchFromGithub(ctx context.Context) manifest.OpenFunc {
-	return func(path string) (io.ReadCloser, error) {
+// fetchFromGithub returns a manifest.ReadFunc that is bound to context and fetches files directly from Github.
+func (d Driver) fetchFromGithub(ctx context.Context) manifest.ReadFunc {
+	return func(path string) ([]byte, error) {
 		req := newReq(ctx, d.repositoryFileURL(path))
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return nil, err
 		}
+		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusNotFound {
-			resp.Body.Close()
 			return nil, nil
 		} else if resp.StatusCode/100 != 2 {
-			resp.Body.Close()
 			return nil, fmt.Errorf("status: %v", resp.Status)
 		}
-		return resp.Body, nil
+		return ioutil.ReadAll(resp.Body)
 	}
 }
 

@@ -2,8 +2,6 @@ package manifest
 
 import (
 	"bytes"
-	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -178,12 +176,12 @@ func TestSDKVersion(t *testing.T) {
 	for _, c := range casesVersion {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			vers, err := SDKVersion(func(path string) (io.ReadCloser, error) {
+			vers, err := SDKVersion(func(path string) ([]byte, error) {
 				data, ok := c.files[path]
 				if !ok {
 					return nil, nil
 				}
-				return ioutil.NopCloser(strings.NewReader(data)), nil
+				return []byte(data), nil
 			})
 			require.NoError(t, err)
 			require.Equal(t, c.expect, vers)
