@@ -19,12 +19,6 @@ features = ["ast", "uast", "roles"]
 
 [documentation]
   description = "foo"
-
-[runtime]
-  os = "alpine"
-  native_version = ["42"]
-  native_encoding = "utf8"
-  go_version = "1.9"
 `[1:]
 
 func TestEncode(t *testing.T) {
@@ -35,10 +29,6 @@ func TestEncode(t *testing.T) {
 	m.Documentation = &Documentation{
 		Description: "foo",
 	}
-	m.Runtime.OS = Alpine
-	m.Runtime.GoVersion = "1.9"
-	m.Runtime.NativeVersion = []string{"42"}
-	m.Runtime.NativeEncoding = "utf8"
 
 	buf := bytes.NewBuffer(nil)
 	err := m.Encode(buf)
@@ -55,7 +45,6 @@ func TestDecode(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "foo", m.Language)
-	assert.Equal(t, Alpine, m.Runtime.OS)
 }
 
 func TestCurrentSDKVersion(t *testing.T) {

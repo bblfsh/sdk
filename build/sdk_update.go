@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	tplExt      = ".tpl"
-	manifestTpl = manifest.Filename + tplExt
+	tplExt           = ".tpl"
+	manifestTpl      = manifest.Filename + tplExt
+	buildManifestTpl = manifestName + tplExt
 )
 
 func genEnvBool(key string) bool {
@@ -111,6 +112,10 @@ func UpdateSDK(root string, opt *UpdateOptions) error {
 	}
 
 	m, err := manifest.Load(filepath.Join(root, manifest.Filename))
+	if err != nil {
+		return err
+	}
+	err = manifest.LoadRuntimeInfo(m, manifest.InDir(root))
 	if err != nil {
 		return err
 	}
