@@ -64,8 +64,8 @@ func (d *Driver) readBuildManifest() (*buildManifest, error) {
 	var m buildManifest
 	if err := m.Manifest.Decode(data); err != nil {
 		return nil, err
-	} else if m.SDK != buildmanifest.CurrentVersion {
-		return nil, fmt.Errorf("unknown SDK version: %q", m.SDK)
+	} else if m.Format != buildmanifest.CurrentFormat {
+		return nil, fmt.Errorf("unknown format: %q", m.Format)
 	}
 	if dm, err := d.readManifest(); err != nil {
 		return nil, err
