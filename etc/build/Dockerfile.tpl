@@ -18,10 +18,10 @@ FROM golang:{{ .Runtime.Version }} as native
 FROM {{ .Native.Build.Image }} as native
 {{- end}}
 
-{{- if ne (len .Native.Build.Add) 0}}
+{{- if ne (len .Native.Build.BuildAssets) 0}}
 
 # add dependency files
-{{range .Native.Build.Add -}}
+{{range .Native.Build.BuildAssets -}}
 ADD {{ .Path }} {{ .Dest }}
 {{end}}
 {{- end}}
@@ -50,7 +50,7 @@ WORKDIR /native
 {{- end}}
 
 # build native driver
-{{range .Native.Build.Run -}}
+{{range .Native.Build.Build -}}
 RUN {{ . }}
 {{end}}
 
@@ -70,7 +70,7 @@ RUN {{ . }}
 {{end}}
 {{- end}}
 # run native driver tests
-{{range .Native.Test.Run -}}
+{{range .Native.Test.Test -}}
 RUN {{ . }}
 {{end}}
 
@@ -116,10 +116,10 @@ LABEL maintainer="source{d}" \
 
 WORKDIR /opt/driver
 
-{{- if ne (len .Native.Static) 0}}
+{{- if ne (len .Native.ImageAssets) 0}}
 
 # copy static files from driver source directory
-{{range .Native.Static -}}
+{{range .Native.ImageAssets -}}
 ADD ./native/{{ .Path }} ./bin/{{ .Dest }}
 {{end}}
 {{- end}}

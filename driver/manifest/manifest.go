@@ -199,8 +199,8 @@ func LoadRuntimeInfo(m *Manifest, read ReadFunc) error {
 	var b buildmanifest.Manifest
 	if err := b.Decode(data); err != nil {
 		return err
-	} else if b.SDK != buildmanifest.CurrentVersion {
-		return fmt.Errorf("unknown SDK version: %q", b.SDK)
+	} else if b.Format != buildmanifest.CurrentFormat {
+		return fmt.Errorf("unknown format: %q", b.Format)
 	}
 	if b.Native.Build.Image != "" {
 		// prefer image used to build the driver
