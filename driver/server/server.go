@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -81,10 +83,13 @@ func (s *Server) initialize() error {
 	if err := s.initializeLogger(); err != nil {
 		return err
 	}
-	m, err := s.d.Manifest()
+	list, err := s.d.Languages(context.Background())
 	if err != nil {
 		return err
+	} else if len(list) != 1 {
+		return fmt.Errorf("expected exactly one manifest, got %d", len(list))
 	}
+	m := list[0]
 	if err := s.initializeTracing(m.Language + "-driver"); err != nil {
 		return err
 	}
@@ -96,7 +101,7 @@ func (s *Server) initialize() error {
 	}
 
 	build := "unknown"
-	if m.Build != nil {
+	if !m.Build.IsZero() {
 		build = m.Build.Format("2006-01-02T15:04:05Z")
 	}
 	s.Logger.Infof("%s-driver version: %s (build: %s)",

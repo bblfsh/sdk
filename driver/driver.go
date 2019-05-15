@@ -4,6 +4,7 @@ package driver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gopkg.in/src-d/go-errors.v1"
 
@@ -25,6 +26,11 @@ var (
 
 	// ErrModeNotSupported is returned if a UAST transformation mode is not supported by the driver.
 	ErrModeNotSupported = errors.NewKind("transform mode not supported")
+)
+
+const (
+	// ManifestLocation is the path of the manifest file in the driver image.
+	ManifestLocation = "/opt/driver/etc/" + manifest.Filename
 )
 
 // ErrMulti joins multiple errors.
@@ -87,13 +93,24 @@ type Driver interface {
 	// Native driver failures are indicated by ErrDriverFailure and UAST transformation are indicated by ErrTransformFailure.
 	// All other errors indicate a protocol or server failure.
 	Parse(ctx context.Context, src string, opts *ParseOptions) (nodes.Node, error)
+
+	// Version returns a version of the driver or the server, depending where is this interface is implemented.
+	Version(ctx context.Context) (Version, error)
+
+	// Languages returns a list of manifests for languages supported by this driver or the server.
+	Languages(ctx context.Context) ([]manifest.Manifest, error)
+}
+
+// Version information for driver or the server.
+type Version struct {
+	Version string    // the version label for the driver, e.g., 'v1.2.3-tag' or 'undefined'
+	Build   time.Time // the timestamp when the driver was built
 }
 
 // DriverModule is an interface for a driver instance.
 type DriverModule interface {
 	Module
 	Driver
-	Manifest() (manifest.Manifest, error)
 }
 
 // Native is a base interface of a language driver that returns a native AST.

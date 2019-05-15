@@ -257,9 +257,7 @@ func (d *Driver) FillManifest(dest string) error {
 		return err
 	}
 	m.Version = vers
-
-	now := time.Now().UTC()
-	m.Build = &now
+	m.Build = time.Now().UTC()
 
 	bm, err := d.readBuildManifest()
 	if err != nil {
