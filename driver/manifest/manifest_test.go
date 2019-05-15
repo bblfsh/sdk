@@ -12,6 +12,7 @@ import (
 var fixture = `
 name = "Foo"
 language = "foo"
+build = 0001-01-01T00:00:00Z
 status = ""
 features = ["ast", "uast", "roles"]
 

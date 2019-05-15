@@ -11,7 +11,7 @@ var DefaultDriver driver.Native = native.NewDriver("")
 var (
 	// ManifestLocation location of the manifest file. Should not override
 	// this variable unless you know what are you doing.
-	ManifestLocation = "/opt/driver/etc/" + manifest.Filename
+	ManifestLocation = driver.ManifestLocation
 )
 
 // Run is a common main function used as an entry point for drivers.

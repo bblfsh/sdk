@@ -73,7 +73,15 @@ func (d *driverImpl) Parse(rctx context.Context, src string, opts *ParseOptions)
 	return ast, err
 }
 
-// Manifest returns a driver manifest.
-func (d *driverImpl) Manifest() (manifest.Manifest, error) {
-	return *d.m, nil // TODO: clone
+// Version returns driver version.
+func (d *driverImpl) Version(ctx context.Context) (Version, error) {
+	return Version{
+		Version: d.m.Version,
+		Build:   d.m.Build,
+	}, nil
+}
+
+// Languages returns a single driver manifest for the language supported by the driver.
+func (d *driverImpl) Languages(ctx context.Context) ([]manifest.Manifest, error) {
+	return []manifest.Manifest{*d.m}, nil // TODO: clone
 }

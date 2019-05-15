@@ -95,8 +95,9 @@ type Documentation struct {
 type Manifest struct {
 	Name          string            `toml:"name"` // human-readable name
 	Language      string            `toml:"language"`
+	Aliases       []string          `toml:"aliases"` // language name aliases, see Enry/Linguist
 	Version       string            `toml:"version,omitempty" json:",omitempty"`
-	Build         *time.Time        `toml:"build,omitempty" json:",omitempty"`
+	Build         time.Time         `toml:"build,omitempty" json:",omitempty"`
 	Status        DevelopmentStatus `toml:"status"`
 	SDKVersion    string            `toml:"-"` // read from go.mod
 	Documentation *Documentation    `toml:"documentation,omitempty" json:",omitempty"`

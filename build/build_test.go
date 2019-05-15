@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/bblfsh/sdk/v3/driver"
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 	"github.com/bblfsh/sdk/v3/internal/docker"
 	"github.com/bblfsh/sdk/v3/protocol"
 	"github.com/bblfsh/sdk/v3/uast/nodes"
@@ -154,4 +155,12 @@ func (d *dockerDriver) Close() error {
 
 func (d *dockerDriver) Parse(ctx context.Context, src string, opts *driver.ParseOptions) (nodes.Node, error) {
 	return d.d.Parse(ctx, src, opts)
+}
+
+func (d *dockerDriver) Version(ctx context.Context) (driver.Version, error) {
+	return d.d.Version(ctx)
+}
+
+func (d *dockerDriver) Languages(ctx context.Context) ([]manifest.Manifest, error) {
+	return d.d.Languages(ctx)
 }

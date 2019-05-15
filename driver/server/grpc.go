@@ -58,31 +58,55 @@ func newDriverManifest(manifest *manifest.Manifest) protocol1.DriverManifest {
 	}
 }
 
+func containsLang(lang string, list []manifest.Manifest) bool {
+	for _, m := range list {
+		if m.Language == lang {
+			return true
+		}
+		for _, l := range m.Aliases {
+			if l == lang {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// SupportedLanguages implements protocol1.Service.
 func (s service) SupportedLanguages(_ *protocol1.SupportedLanguagesRequest) *protocol1.SupportedLanguagesResponse {
-	m, _ := s.d.Manifest()
-	return &protocol1.SupportedLanguagesResponse{Languages: []protocol1.DriverManifest{
-		newDriverManifest(&m),
-	}}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	list, err := s.d.Languages(ctx)
+	if err != nil {
+		return &protocol1.SupportedLanguagesResponse{Response: errResp(err)}
+	}
+	resp := &protocol1.SupportedLanguagesResponse{
+		Response: protocol1.Response{Status: protocol1.Ok},
+	}
+	for _, m := range list {
+		resp.Languages = append(resp.Languages, newDriverManifest(&m))
+	}
+	return resp
 }
 
 func (s service) parse(mode driver.Mode, req *protocol1.ParseRequest) (nodes.Node, protocol1.Response) {
 	start := time.Now()
-	m, err := s.d.Manifest()
-	if err != nil {
-		r := errResp(err)
-		r.Elapsed = time.Since(start)
-		return nil, r
-	}
-	if req.Language != m.Language {
-		r := errResp(ErrUnsupportedLanguage.New(req.Language))
-		r.Elapsed = time.Since(start)
-		return nil, r
-	}
 	ctx := context.Background()
 	if req.Timeout > 0 {
 		var cancel func()
 		ctx, cancel = context.WithTimeout(ctx, req.Timeout)
 		defer cancel()
+	}
+	list, err := s.d.Languages(ctx)
+	if err != nil {
+		r := errResp(err)
+		r.Elapsed = time.Since(start)
+		return nil, r
+	}
+	if !containsLang(req.Language, list) {
+		r := errResp(ErrUnsupportedLanguage.New(req.Language))
+		r.Elapsed = time.Since(start)
+		return nil, r
 	}
 	ast, err := s.d.Parse(ctx, req.Content, &driver.ParseOptions{
 		Mode:     mode,
@@ -100,6 +124,7 @@ func (s service) parse(mode driver.Mode, req *protocol1.ParseRequest) (nodes.Nod
 	return ast, r
 }
 
+// Parse implements protocol1.Service.
 func (s service) Parse(req *protocol1.ParseRequest) *protocol1.ParseResponse {
 	ast, resp := s.parse(driver.ModeAnnotated, req)
 	if resp.Status != protocol1.Ok {
@@ -119,6 +144,7 @@ func (s service) Parse(req *protocol1.ParseRequest) *protocol1.ParseResponse {
 	}
 }
 
+// NativeParse implements protocol1.Service.
 func (s service) NativeParse(req *protocol1.NativeParseRequest) *protocol1.NativeParseResponse {
 	ast, resp := s.parse(driver.ModeNative, (*protocol1.ParseRequest)(req))
 	if resp.Status != protocol1.Ok {
@@ -137,14 +163,17 @@ func (s service) NativeParse(req *protocol1.NativeParseRequest) *protocol1.Nativ
 	}
 }
 
+// Version implements protocol1.Service.
 func (s service) Version(req *protocol1.VersionRequest) *protocol1.VersionResponse {
-	m, _ := s.d.Manifest()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 
-	r := &protocol1.VersionResponse{
+	m, err := s.d.Version(ctx)
+	if err != nil {
+		return &protocol1.VersionResponse{Response: errResp(err)}
+	}
+	return &protocol1.VersionResponse{
 		Version: m.Version,
+		Build:   m.Build,
 	}
-	if m.Build != nil {
-		r.Build = *m.Build
-	}
-	return r
 }
