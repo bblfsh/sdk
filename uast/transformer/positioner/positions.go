@@ -41,17 +41,12 @@ func FromUTF16Offset() Positioner {
 // The transformation should be initialized with the source code by calling OnCode.
 type Positioner struct {
 	unicode bool
-	method  func(*positionIndex, *uast.Position) error
+	method  func(*Index, *uast.Position) error
 }
 
 // OnCode uses the source code to update positional information of UAST nodes.
 func (t Positioner) OnCode(code string) transformer.Transformer {
-	var idx *positionIndex
-	if t.unicode {
-		idx = newPositionIndexUnicode([]byte(code))
-	} else {
-		idx = newPositionIndex([]byte(code))
-	}
+	idx := NewIndex([]byte(code), t.unicode)
 	return transformer.TransformObjFunc(func(o nodes.Object) (nodes.Object, bool, error) {
 		pos := uast.AsPosition(o)
 		if pos == nil {
@@ -70,7 +65,7 @@ func (t Positioner) OnCode(code string) transformer.Transformer {
 	})
 }
 
-func fromLineCol(idx *positionIndex, pos *uast.Position) error {
+func fromLineCol(idx *Index, pos *uast.Position) error {
 	offset, err := idx.Offset(int(pos.Line), int(pos.Col))
 	if err != nil {
 		return err
@@ -79,7 +74,7 @@ func fromLineCol(idx *positionIndex, pos *uast.Position) error {
 	return nil
 }
 
-func fromOffset(idx *positionIndex, pos *uast.Position) error {
+func fromOffset(idx *Index, pos *uast.Position) error {
 	line, col, err := idx.LineCol(int(pos.Offset))
 	if err != nil {
 		return err
@@ -89,7 +84,7 @@ func fromOffset(idx *positionIndex, pos *uast.Position) error {
 	return nil
 }
 
-func fromUnicodeOffset(idx *positionIndex, pos *uast.Position) error {
+func fromUnicodeOffset(idx *Index, pos *uast.Position) error {
 	off, err := idx.RuneOffset(int(pos.Offset))
 	if err != nil {
 		return err
@@ -98,7 +93,7 @@ func fromUnicodeOffset(idx *positionIndex, pos *uast.Position) error {
 	return fromOffset(idx, pos)
 }
 
-func fromUTF16Offset(idx *positionIndex, pos *uast.Position) error {
+func fromUTF16Offset(idx *Index, pos *uast.Position) error {
 	off, err := idx.UTF16Offset(int(pos.Offset))
 	if err != nil {
 		return err
@@ -125,14 +120,21 @@ type runeSpan struct {
 	numRunes int // number of runes in this span
 }
 
-type positionIndex struct {
+// Index is a positional index.
+type Index struct {
 	offsetByLine []int
 	spans        []runeSpan
 	size         int
 }
 
-func newPositionIndex(data []byte) *positionIndex {
-	idx := &positionIndex{
+// NewIndex creates a new positional index.
+// Unicode flag controls if an index is build to accept UTF-8/UTF-16 rune offsets in
+// addition to byte offsets.
+func NewIndex(data []byte, unicode bool) *Index {
+	if unicode {
+		return newIndexUnicode(data)
+	}
+	idx := &Index{
 		size: len(data),
 	}
 	idx.addLineOffset(0)
@@ -144,8 +146,8 @@ func newPositionIndex(data []byte) *positionIndex {
 	return idx
 }
 
-func newPositionIndexUnicode(data []byte) *positionIndex {
-	idx := &positionIndex{
+func newIndexUnicode(data []byte) *Index {
+	idx := &Index{
 		size: len(data),
 	}
 	idx.addLineOffset(0)
@@ -200,13 +202,13 @@ func newPositionIndexUnicode(data []byte) *positionIndex {
 	return idx
 }
 
-func (idx *positionIndex) addLineOffset(offset int) {
+func (idx *Index) addLineOffset(offset int) {
 	idx.offsetByLine = append(idx.offsetByLine, offset)
 }
 
 // LineCol returns a one-based line and col given a zero-based byte offset.
 // It returns an error if the given offset is out of bounds.
-func (idx *positionIndex) LineCol(offset int) (int, int, error) {
+func (idx *Index) LineCol(offset int) (int, int, error) {
 	var (
 		minOffset = 0
 		maxOffset = idx.size
@@ -230,7 +232,7 @@ func (idx *positionIndex) LineCol(offset int) (int, int, error) {
 
 // Offset returns a zero-based byte offset given a one-based line and column.
 // It returns an error if the given line and column are out of bounds.
-func (idx *positionIndex) Offset(line, col int) (int, error) {
+func (idx *Index) Offset(line, col int) (int, error) {
 	var (
 		minLine = 1
 		maxLine = len(idx.offsetByLine)
@@ -265,7 +267,7 @@ func (idx *positionIndex) Offset(line, col int) (int, error) {
 }
 
 // RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
-func (idx *positionIndex) RuneOffset(offset int) (int, error) {
+func (idx *Index) RuneOffset(offset int) (int, error) {
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
@@ -286,7 +288,7 @@ func (idx *positionIndex) RuneOffset(offset int) (int, error) {
 }
 
 // UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code point offset.
-func (idx *positionIndex) UTF16Offset(offset int) (int, error) {
+func (idx *Index) UTF16Offset(offset int) (int, error) {
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
