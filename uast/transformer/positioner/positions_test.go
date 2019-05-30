@@ -186,6 +186,10 @@ a4`
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
+			roff, err := ind.ToRuneOffset(c.byteOff)
+			require.NoError(t, err)
+			require.Equal(t, c.runeOff, roff)
+
 			// verify that offset -> line/col conversion still works
 			line, col, err := ind.LineCol(off)
 			require.NoError(t, err)
@@ -238,6 +242,10 @@ a4`
 			off, err := ind.UTF16Offset(c.cpOff)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
+
+			roff, err := ind.ToUTF16Offset(c.byteOff)
+			require.NoError(t, err)
+			require.Equal(t, c.cpOff, roff)
 
 			// verify that offset -> line/col conversion still works
 			line, col, err := ind.LineCol(off)
