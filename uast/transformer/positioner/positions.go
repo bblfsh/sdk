@@ -278,80 +278,58 @@ func (idx *Index) Offset(line, col int) (int, error) {
 	return offset, nil
 }
 
-// RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
-func (idx *Index) RuneOffset(offset int) (int, error) {
+// unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code point offset.
+func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
 		return 0, errors.New("unicode index is disabled")
 	}
 	var last int
 	if len(idx.spans) != 0 {
 		s := idx.spans[len(idx.spans)-1]
-		last = s.firstRuneInd + s.numRunes
+		if isUTF16 {
+			last = s.firstUTF16Ind + s.numRunes*s.runeSize16
+		} else {
+			last = s.firstRuneInd + s.numRunes
+		}
 	}
 	if offset < 0 || offset > last {
-		return -1, fmt.Errorf("rune out of bounds: %d [%d, %d)", offset, 0, last)
+		str := "rune"
+		if isUTF16 {
+			str = "code point"
+		}
+		return -1, fmt.Errorf("%s out of bounds: %d [%d, %d)", str, offset, 0, last)
 	} else if offset == last {
 		// special case — EOF position
 		return idx.size, nil
 	}
-	i := sort.Search(len(idx.spans), func(i int) bool {
-		s := idx.spans[i]
-		return offset < s.firstRuneInd
-	})
+	cmp := func(i int) bool {
+		return offset < idx.spans[i].firstRuneInd
+	}
+	if isUTF16 {
+		cmp = func(i int) bool {
+			return offset < idx.spans[i].firstUTF16Ind
+		}
+	}
+	i := sort.Search(len(idx.spans), cmp)
 	s := idx.spans[i-1]
+	if isUTF16 {
+		return s.byteOff + s.runeSize8*((offset-s.firstUTF16Ind)/s.runeSize16), nil
+	}
 	return s.byteOff + s.runeSize8*(offset-s.firstRuneInd), nil
 }
 
-// ToRuneOffset returns a zero-based Unicode character offset given a zero-based byte offset.
-func (idx *Index) ToRuneOffset(offset int) (int, error) {
-	if idx.spans == nil {
-		return 0, errors.New("unicode index is disabled")
-	}
-	last := idx.size
-	if offset < 0 || offset > last {
-		return -1, fmt.Errorf("byte offset out of bounds: %d [%d, %d)", offset, 0, last)
-	} else if offset == last {
-		// special case — EOF position
-		if len(idx.spans) == 0 {
-			return 0, nil
-		}
-		s := idx.spans[len(idx.spans)-1]
-		return s.firstRuneInd + s.numRunes, nil
-	}
-	i := sort.Search(len(idx.spans), func(i int) bool {
-		s := idx.spans[i]
-		return offset < s.byteOff
-	})
-	s := idx.spans[i-1]
-	return s.firstRuneInd + (offset-s.byteOff)/s.runeSize8, nil
+// RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
+func (idx *Index) RuneOffset(offset int) (int, error) {
+	return idx.unicodeOffset(offset, false)
 }
 
 // UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code point offset.
 func (idx *Index) UTF16Offset(offset int) (int, error) {
-	if idx.spans == nil {
-		return 0, errors.New("unicode index is disabled")
-	}
-	var last int
-	if len(idx.spans) != 0 {
-		s := idx.spans[len(idx.spans)-1]
-		last = s.firstUTF16Ind + s.numRunes*s.runeSize16
-	}
-	if offset < 0 || offset > last {
-		return -1, fmt.Errorf("code point out of bounds: %d [%d, %d)", offset, 0, last)
-	} else if offset == last {
-		// special case — EOF position
-		return idx.size, nil
-	}
-	i := sort.Search(len(idx.spans), func(i int) bool {
-		s := idx.spans[i]
-		return offset < s.firstUTF16Ind
-	})
-	s := idx.spans[i-1]
-	return s.byteOff + s.runeSize8*((offset-s.firstUTF16Ind)/s.runeSize16), nil
+	return idx.unicodeOffset(offset, true)
 }
 
-// ToUTF16Offset returns a zero-based UTF-16 code point offset given a zero-based byte offset.
-func (idx *Index) ToUTF16Offset(offset int) (int, error) {
+// toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code point given a zero-based byte offset.
+func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
 		return 0, errors.New("unicode index is disabled")
 	}
@@ -364,12 +342,27 @@ func (idx *Index) ToUTF16Offset(offset int) (int, error) {
 			return 0, nil
 		}
 		s := idx.spans[len(idx.spans)-1]
-		return s.firstUTF16Ind + s.numRunes*s.runeSize16, nil
+		if isUTF16 {
+			return s.firstUTF16Ind + s.numRunes*s.runeSize16, nil
+		}
+		return s.firstRuneInd + s.numRunes, nil
 	}
 	i := sort.Search(len(idx.spans), func(i int) bool {
-		s := idx.spans[i]
-		return offset < s.byteOff
+		return offset < idx.spans[i].byteOff
 	})
 	s := idx.spans[i-1]
-	return s.firstUTF16Ind + (offset-s.byteOff)/s.runeSize16, nil
+	if isUTF16 {
+		return s.firstUTF16Ind + (offset-s.byteOff)/s.runeSize16, nil
+	}
+	return s.firstRuneInd + (offset-s.byteOff)/s.runeSize8, nil
+}
+
+// ToRuneOffset returns a zero-based Unicode character offset given a zero-based byte offset.
+func (idx *Index) ToRuneOffset(offset int) (int, error) {
+	return idx.toUnicodeOffset(offset, false)
+}
+
+// ToUTF16Offset returns a zero-based UTF-16 code point offset given a zero-based byte offset.
+func (idx *Index) ToUTF16Offset(offset int) (int, error) {
+	return idx.toUnicodeOffset(offset, true)
 }
