@@ -33,7 +33,7 @@ func FromUnicodeOffset() Positioner {
 }
 
 // FromUTF16Offset fills the Line, Col and Offset fields of all Position nodes by
-// interpreting their Offset as a 0-based UTF-16 code point index.
+// interpreting their Offset as a 0-based UTF-16 code unit index.
 func FromUTF16Offset() Positioner {
 	return Positioner{unicode: true, method: fromUTF16Offset}
 }
@@ -109,14 +109,14 @@ type runeSpan struct {
 	// byteOff >= firstUTF16Ind >= firstRuneInd
 
 	firstRuneInd  int // index of the first rune
-	firstUTF16Ind int // index of the first UTF-16 code point
+	firstUTF16Ind int // index of the first UTF-16 code unit
 	byteOff       int // bytes offset of the first rune
 
 	// size invariant:
 	// runeSize8 >= runeSize16
 
 	runeSize8  int // in bytes
-	runeSize16 int // in utf16 code points (2 = surrogate pair)
+	runeSize16 int // in utf16 code units (2 = surrogate pair)
 
 	numRunes int // number of runes in this span
 }
@@ -201,7 +201,7 @@ func newIndexUnicode(data []byte) *Index {
 			runeSize16:    1,
 		}
 		if r1, r2 := utf16.EncodeRune(r); r1 != utf8.RuneError || r2 != utf8.RuneError {
-			// surrogate pair: needs two UTF-16 code points
+			// surrogate pair: needs two UTF-16 code units
 			cur.runeSize16 = 2
 		}
 		runes++
@@ -278,7 +278,7 @@ func (idx *Index) Offset(line, col int) (int, error) {
 	return offset, nil
 }
 
-// unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code point offset.
+// unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code unit offset.
 func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
 		return 0, errors.New("unicode index is disabled")
@@ -295,7 +295,7 @@ func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if offset < 0 || offset > last {
 		str := "rune"
 		if isUTF16 {
-			str = "code point"
+			str = "code unit"
 		}
 		return -1, fmt.Errorf("%s out of bounds: %d [%d, %d)", str, offset, 0, last)
 	} else if offset == last {
@@ -323,12 +323,12 @@ func (idx *Index) RuneOffset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, false)
 }
 
-// UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code point offset.
+// UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset.
 func (idx *Index) UTF16Offset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, true)
 }
 
-// toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code point given a zero-based byte offset.
+// toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code unit given a zero-based byte offset.
 func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
 		return 0, errors.New("unicode index is disabled")
@@ -362,7 +362,7 @@ func (idx *Index) ToRuneOffset(offset int) (int, error) {
 	return idx.toUnicodeOffset(offset, false)
 }
 
-// ToUTF16Offset returns a zero-based UTF-16 code point offset given a zero-based byte offset.
+// ToUTF16Offset returns a zero-based UTF-16 code unit offset given a zero-based byte offset.
 func (idx *Index) ToUTF16Offset(offset int) (int, error) {
 	return idx.toUnicodeOffset(offset, true)
 }
