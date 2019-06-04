@@ -3,6 +3,7 @@ package positioner
 import (
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -15,6 +16,10 @@ import (
 var _ transformer.CodeTransformer = Positioner{}
 
 const cloneObj = false
+
+var (
+	errNoUnicodeIndex = errors.New("unicode index is disabled")
+)
 
 // FromLineCol fills the Offset field of all Position nodes by using their Line and Col.
 func FromLineCol() Positioner {
@@ -218,16 +223,24 @@ func (idx *Index) addLineOffset(offset int) {
 	idx.offsetByLine = append(idx.offsetByLine, offset)
 }
 
+// checkByteOffset checks if the byte offset is in bounds.
+// As a special case, it returns io.EOF if the offset equals to the size of the file.
+func (idx *Index) checkByteOffset(offset int) error {
+	last := idx.size
+	if offset < 0 || offset > last {
+		return fmt.Errorf("byte offset out of bounds: %d [%d, %d]", offset, 0, last)
+	} else if offset == last {
+		return io.EOF
+	}
+	return nil
+}
+
 // LineCol returns a one-based line and col given a zero-based byte offset.
 // It returns an error if the given offset is out of bounds.
 func (idx *Index) LineCol(offset int) (int, int, error) {
-	var (
-		minOffset = 0
-		maxOffset = idx.size
-	)
-
-	if offset < minOffset || offset > maxOffset {
-		return 0, 0, fmt.Errorf("offset out of bounds: %d [%d, %d]", offset, minOffset, maxOffset)
+	err := idx.checkByteOffset(offset)
+	if err != nil && err != io.EOF {
+		return 0, 0, err
 	}
 
 	line := sort.Search(len(idx.offsetByLine), func(i int) bool {
@@ -281,7 +294,7 @@ func (idx *Index) Offset(line, col int) (int, error) {
 // unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code unit offset.
 func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
-		return 0, errors.New("unicode index is disabled")
+		return 0, errNoUnicodeIndex
 	}
 	var last int
 	if len(idx.spans) != 0 {
@@ -331,12 +344,10 @@ func (idx *Index) UTF16Offset(offset int) (int, error) {
 // toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code unit given a zero-based byte offset.
 func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
-		return 0, errors.New("unicode index is disabled")
+		return 0, errNoUnicodeIndex
 	}
-	last := idx.size
-	if offset < 0 || offset > last {
-		return -1, fmt.Errorf("byte offset out of bounds: %d [%d, %d)", offset, 0, last)
-	} else if offset == last {
+	err := idx.checkByteOffset(offset)
+	if err == io.EOF {
 		// special case — EOF position
 		if len(idx.spans) == 0 {
 			return 0, nil
@@ -346,6 +357,8 @@ func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 			return s.firstUTF16Ind + s.numRunes*s.runeSize16, nil
 		}
 		return s.firstRuneInd + s.numRunes, nil
+	} else if err != nil {
+		return -1, err
 	}
 	i := sort.Search(len(idx.spans), func(i int) bool {
 		return offset < idx.spans[i].byteOff
