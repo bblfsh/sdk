@@ -168,30 +168,31 @@ a4`
 		runeOff   int
 		byteOff   int
 		line, col int
+		runeCol   int
 	}{
-		{runeOff: 0, byteOff: 0, line: 1, col: 1},
+		{runeOff: 0, byteOff: 0, line: 1, col: 1, runeCol: 1},
 
 		// first 4-byte rune
-		{runeOff: 6, byteOff: 6, line: 2, col: 1},
+		{runeOff: 6, byteOff: 6, line: 2, col: 1, runeCol: 1},
 		// second 4-byte rune
-		{runeOff: 7, byteOff: 10, line: 2, col: 5},
+		{runeOff: 7, byteOff: 10, line: 2, col: 5, runeCol: 2},
 		// end of the second rune
-		{runeOff: 8, byteOff: 14, line: 2, col: 9},
+		{runeOff: 8, byteOff: 14, line: 2, col: 9, runeCol: 3},
 		// EOL
-		{runeOff: 9, byteOff: 15, line: 2, col: 10},
+		{runeOff: 9, byteOff: 15, line: 2, col: 10, runeCol: 4},
 
 		// 2-byte rune
-		{runeOff: 10, byteOff: 16, line: 3, col: 1},
+		{runeOff: 10, byteOff: 16, line: 3, col: 1, runeCol: 1},
 		// end of the rune
-		{runeOff: 11, byteOff: 18, line: 3, col: 3},
+		{runeOff: 11, byteOff: 18, line: 3, col: 3, runeCol: 2},
 		// EOL
-		{runeOff: 12, byteOff: 19, line: 3, col: 4},
+		{runeOff: 12, byteOff: 19, line: 3, col: 4, runeCol: 3},
 
 		// last line with 1-byte runes
-		{runeOff: 13, byteOff: 20, line: 4, col: 1},
+		{runeOff: 13, byteOff: 20, line: 4, col: 1, runeCol: 1},
 
 		// special case — EOF position
-		{runeOff: 15, byteOff: 22, line: 4, col: 3},
+		{runeOff: 15, byteOff: 22, line: 4, col: 3, runeCol: 3},
 	}
 
 	ind := newIndexUnicode([]byte(source))
@@ -210,63 +211,76 @@ a4`
 			require.NoError(t, err)
 			require.Equal(t, c.line, line)
 			require.Equal(t, c.col, col)
+
+			// check Unicode line/col as well
+			line, col, err = ind.ToUnicodeLineCol(off)
+			require.NoError(t, err)
+			require.Equal(t, c.line, line)
+			require.Equal(t, c.runeCol, col)
 		})
 	}
 }
 
 func TestPosIndexUTF16(t *testing.T) {
-	// Verify that a UTF-16 code point offset -> byte offset conversion works.
+	// Verify that a UTF-16 code unit offset -> byte offset conversion works.
 	// Also test UTF-16 surrogate pairs.
 	const source = `line1
 𝓏𝓏2
 ё3
 a4`
 	var cases = []struct {
-		cpOff     int
+		cuOff     int
 		byteOff   int
 		line, col int
+		cuCol     int
 	}{
-		{cpOff: 0, byteOff: 0, line: 1, col: 1},
+		{cuOff: 0, byteOff: 0, line: 1, col: 1, cuCol: 1},
 
-		// first 4-byte rune (surrogate pair; 2 code points)
-		{cpOff: 6, byteOff: 6, line: 2, col: 1},
-		// second 4-byte rune (surrogate pair; 2 code points)
-		{cpOff: 8, byteOff: 10, line: 2, col: 5},
+		// first 4-byte rune (surrogate pair; 2 code units)
+		{cuOff: 6, byteOff: 6, line: 2, col: 1, cuCol: 1},
+		// second 4-byte rune (surrogate pair; 2 code units)
+		{cuOff: 8, byteOff: 10, line: 2, col: 5, cuCol: 3},
 		// end of the second rune
-		{cpOff: 10, byteOff: 14, line: 2, col: 9},
+		{cuOff: 10, byteOff: 14, line: 2, col: 9, cuCol: 5},
 		// EOL
-		{cpOff: 11, byteOff: 15, line: 2, col: 10},
+		{cuOff: 11, byteOff: 15, line: 2, col: 10, cuCol: 6},
 
 		// 2-byte rune (1 code point)
-		{cpOff: 12, byteOff: 16, line: 3, col: 1},
+		{cuOff: 12, byteOff: 16, line: 3, col: 1, cuCol: 1},
 		// end of the rune
-		{cpOff: 13, byteOff: 18, line: 3, col: 3},
+		{cuOff: 13, byteOff: 18, line: 3, col: 3, cuCol: 2},
 		// EOL
-		{cpOff: 14, byteOff: 19, line: 3, col: 4},
+		{cuOff: 14, byteOff: 19, line: 3, col: 4, cuCol: 3},
 
 		// last line with 1-byte runes
-		{cpOff: 15, byteOff: 20, line: 4, col: 1},
+		{cuOff: 15, byteOff: 20, line: 4, col: 1, cuCol: 1},
 
 		// special case — EOF position
-		{cpOff: 17, byteOff: 22, line: 4, col: 3},
+		{cuOff: 17, byteOff: 22, line: 4, col: 3, cuCol: 3},
 	}
 
 	ind := newIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			off, err := ind.UTF16Offset(c.cpOff)
+			off, err := ind.UTF16Offset(c.cuOff)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
 			roff, err := ind.ToUTF16Offset(c.byteOff)
 			require.NoError(t, err)
-			require.Equal(t, c.cpOff, roff)
+			require.Equal(t, c.cuOff, roff)
 
 			// verify that offset -> line/col conversion still works
 			line, col, err := ind.LineCol(off)
 			require.NoError(t, err)
 			require.Equal(t, c.line, line)
 			require.Equal(t, c.col, col)
+
+			// check Unicode line/col as well
+			line, col, err = ind.ToUTF16LineCol(off)
+			require.NoError(t, err)
+			require.Equal(t, c.line, line)
+			require.Equal(t, c.cuCol, col)
 		})
 	}
 }

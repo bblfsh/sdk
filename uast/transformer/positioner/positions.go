@@ -220,15 +220,30 @@ func (idx *Index) addLineOffset(offset int) {
 	idx.offsetByLine = append(idx.offsetByLine, offset)
 }
 
+// lineOffset returns a byte offset for a given line.
+// The line number must be valid, or the function will panic.
 func (idx *Index) lineOffset(line int) int {
 	return idx.offsetByLine[line-1]
 }
 
+// lineEnd returns an inclusive end byte offset for a given line.
+// The line number must be valid, or the function will panic.
 func (idx *Index) lineEnd(line int) int {
 	if line == len(idx.offsetByLine) {
 		return idx.size - 1
 	}
 	return idx.offsetByLine[line] - 1
+}
+
+// offsetToLine returns a line given a byte offset.
+func (idx *Index) offsetToLine(offset int) (int, error) {
+	line := sort.Search(len(idx.offsetByLine), func(i int) bool {
+		return offset < idx.offsetByLine[i]
+	})
+	if line <= 0 || line > len(idx.offsetByLine) {
+		return 0, fmt.Errorf("offset not found in index: %d", offset)
+	}
+	return line, nil
 }
 
 // checkByteOffset checks if the byte offset is in bounds.
@@ -251,16 +266,11 @@ func (idx *Index) LineCol(offset int) (int, int, error) {
 		return 0, 0, err
 	}
 
-	line := sort.Search(len(idx.offsetByLine), func(i int) bool {
-		return offset < idx.offsetByLine[i]
-	})
-	if line <= 0 || line > len(idx.offsetByLine) {
-		return 0, 0, fmt.Errorf("offset not found in index: %d", offset)
+	line, err := idx.offsetToLine(offset)
+	if err != nil {
+		return 0, 0, err
 	}
-
-	lineOffset := idx.offsetByLine[line-1]
-	col := offset - lineOffset + 1
-	return line, col, nil
+	return line, offset - idx.lineOffset(line) + 1, nil
 }
 
 func (idx *Index) checkLine(line int) error {
@@ -381,4 +391,67 @@ func (idx *Index) ToRuneOffset(offset int) (int, error) {
 // ToUTF16Offset returns a zero-based UTF-16 code unit offset given a zero-based byte offset.
 func (idx *Index) ToUTF16Offset(offset int) (int, error) {
 	return idx.toUnicodeOffset(offset, true)
+}
+
+// toUnicodeLineCol returns a one-based Unicode character line-col or a UTF-16 code unit line-col given a zero-based byte offset.
+func (idx *Index) toUnicodeLineCol(offset int, isUTF16 bool) (int, int, error) {
+	if idx.spans == nil {
+		return 0, 0, errNoUnicodeIndex
+	}
+	err := idx.checkByteOffset(offset)
+	if err != nil && err != io.EOF {
+		return -1, -1, err
+	}
+	line, err := idx.offsetToLine(offset)
+	if err != nil {
+		return -1, -1, err
+	}
+	spans := idx.spans
+
+	// find start span (line start)
+	lineStart := idx.lineOffset(line)
+	i := sort.Search(len(spans), func(i int) bool {
+		return lineStart < spans[i].byteOff
+	})
+	spans = spans[i-1:]
+
+	// find end span (the input offset)
+	i = sort.Search(len(spans), func(i int) bool {
+		return offset < spans[i].byteOff
+	})
+	spans = spans[:i]
+
+	// scan spans and calculate the column
+	offset -= lineStart
+	col := 0
+	for offset > 0 && len(spans) > 0 {
+		s := spans[0]
+		spans = spans[1:]
+		n := s.numRunes
+		if spanBytes := n * s.runeSize8; offset < spanBytes {
+			n = offset / s.runeSize8
+			offset = 0
+		} else {
+			offset -= spanBytes
+		}
+		if isUTF16 {
+			col += n * s.runeSize16
+		} else {
+			col += n
+		}
+	}
+	col++ // one-based
+	return line, col, nil
+}
+
+// ToUnicodeLineCol returns a one-based line and col in Unicode characters given a zero-based byte offset.
+// It returns an error if the given offset is out of bounds.
+func (idx *Index) ToUnicodeLineCol(offset int) (int, int, error) {
+	return idx.toUnicodeLineCol(offset, false)
+}
+
+// ToUTF16LineCol returns a one-based line and col in UTF-16 code units given a zero-based byte offset.
+// It returns an error if the given offset is out of bounds.
+func (idx *Index) ToUTF16LineCol(offset int) (int, int, error) {
+	return idx.toUnicodeLineCol(offset, true)
 }
