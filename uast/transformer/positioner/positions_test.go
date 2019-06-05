@@ -198,7 +198,7 @@ a4`
 	ind := newIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			off, err := ind.RuneOffset(c.runeOff)
+			off, err := ind.FromRuneOffset(c.runeOff)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
@@ -262,7 +262,7 @@ a4`
 	ind := newIndexUnicode([]byte(source))
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			off, err := ind.UTF16Offset(c.cuOff)
+			off, err := ind.FromUTF16Offset(c.cuOff)
 			require.NoError(t, err)
 			require.Equal(t, c.byteOff, off)
 
