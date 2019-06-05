@@ -91,7 +91,7 @@ func fromOffset(idx *Index, pos *uast.Position) error {
 }
 
 func fromUnicodeOffset(idx *Index, pos *uast.Position) error {
-	off, err := idx.RuneOffset(int(pos.Offset))
+	off, err := idx.FromRuneOffset(int(pos.Offset))
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func fromUnicodeOffset(idx *Index, pos *uast.Position) error {
 }
 
 func fromUTF16Offset(idx *Index, pos *uast.Position) error {
-	off, err := idx.UTF16Offset(int(pos.Offset))
+	off, err := idx.FromUTF16Offset(int(pos.Offset))
 	if err != nil {
 		return err
 	}
@@ -344,12 +344,26 @@ func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	return s.byteOff + s.runeSize8*(offset-s.firstRuneInd), nil
 }
 
+// FromRuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
+func (idx *Index) FromRuneOffset(offset int) (int, error) {
+	return idx.unicodeOffset(offset, false)
+}
+
 // RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
+//
+// Deprecated: use FromRuneOffset.
 func (idx *Index) RuneOffset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, false)
 }
 
+// FromUTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset.
+func (idx *Index) FromUTF16Offset(offset int) (int, error) {
+	return idx.unicodeOffset(offset, true)
+}
+
 // UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset.
+//
+// Deprecated: use FromUTF16Offset
 func (idx *Index) UTF16Offset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, true)
 }
