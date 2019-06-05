@@ -241,7 +241,7 @@ func (idx *Index) offsetToLine(offset int) (int, error) {
 		return offset < idx.offsetByLine[i]
 	})
 	if line <= 0 || line > len(idx.offsetByLine) {
-		return 0, fmt.Errorf("offset not found in index: %d", offset)
+		return -1, fmt.Errorf("offset not found in index: %d", offset)
 	}
 	return line, nil
 }
@@ -263,12 +263,12 @@ func (idx *Index) checkByteOffset(offset int) error {
 func (idx *Index) LineCol(offset int) (int, int, error) {
 	err := idx.checkByteOffset(offset)
 	if err != nil && err != io.EOF {
-		return 0, 0, err
+		return -1, -1, err
 	}
 
 	line, err := idx.offsetToLine(offset)
 	if err != nil {
-		return 0, 0, err
+		return -1, -1, err
 	}
 	return line, offset - idx.lineOffset(line) + 1, nil
 }
@@ -299,7 +299,7 @@ func (idx *Index) Offset(line, col int) (int, error) {
 	}
 
 	if col < minCol || (maxCol > 0 && col-1 > maxCol) {
-		return 0, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
+		return -1, fmt.Errorf("column out of bounds: %d [%d, %d]", col, minCol, maxCol)
 	}
 	return lineOffset + col - 1, nil
 }
@@ -307,7 +307,7 @@ func (idx *Index) Offset(line, col int) (int, error) {
 // unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code unit offset.
 func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
-		return 0, errNoUnicodeIndex
+		return -1, errNoUnicodeIndex
 	}
 	var last int
 	if len(idx.spans) != 0 {
@@ -357,7 +357,7 @@ func (idx *Index) UTF16Offset(offset int) (int, error) {
 // toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code unit given a zero-based byte offset.
 func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
-		return 0, errNoUnicodeIndex
+		return -1, errNoUnicodeIndex
 	}
 	err := idx.checkByteOffset(offset)
 	if err == io.EOF {
@@ -396,7 +396,7 @@ func (idx *Index) ToUTF16Offset(offset int) (int, error) {
 // toUnicodeLineCol returns a one-based Unicode character line-col or a UTF-16 code unit line-col given a zero-based byte offset.
 func (idx *Index) toUnicodeLineCol(offset int, isUTF16 bool) (int, int, error) {
 	if idx.spans == nil {
-		return 0, 0, errNoUnicodeIndex
+		return -1, -1, errNoUnicodeIndex
 	}
 	err := idx.checkByteOffset(offset)
 	if err != nil && err != io.EOF {
