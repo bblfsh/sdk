@@ -2,6 +2,7 @@ package nodes
 
 import "fmt"
 
+// Iterator over nodes.
 type Iterator interface {
 	// Next advances an iterator.
 	Next() bool
@@ -11,20 +12,34 @@ type Iterator interface {
 
 var _ Iterator = Empty{}
 
+// Empty is an empty iterator.
 type Empty struct{}
 
-func (Empty) Next() bool     { return false }
+// Next implements Iterator.
+func (Empty) Next() bool { return false }
+
+// Node implements Iterator.
 func (Empty) Node() External { return nil }
 
+// IterOrder is a tree iteration order.
 type IterOrder int
 
 const (
+	// IterAny is a native iteration order of the tree. It's the fastest iteration order that lists all nodes in the tree.
+	// The iteration order is not guaranteed to be the same for consecutive iterations over the same tree.
+	// This order is more suitable for searching for nodes in the fastest way possible.
 	IterAny = IterOrder(iota)
+	// PreOrder is a pre-order depth-first search.
 	PreOrder
+	// PostOrder is a post-order depth-first search.
 	PostOrder
+	// LevelOrder is a breadth-first search.
 	LevelOrder
+	// ChildrenOrder is similar to LevelOrder, but list only the first level.
+	ChildrenOrder
 )
 
+// NewIterator creates a new iterator with a given order.
 func NewIterator(root External, order IterOrder) Iterator {
 	if root == nil {
 		return Empty{}
@@ -43,6 +58,8 @@ func NewIterator(root External, order IterOrder) Iterator {
 		return it
 	case LevelOrder:
 		return &levelOrderIter{level: []External{root}, i: -1}
+	case ChildrenOrder:
+		return newChildrenIterator(root)
 	default:
 		panic(fmt.Errorf("unsupported iterator order: %v", order))
 	}
@@ -210,4 +227,45 @@ func (it *levelOrderIter) Node() External {
 		return nil
 	}
 	return it.level[it.i]
+}
+
+func newChildrenIterator(n External) Iterator {
+	var nodes []External
+	eachChild(n, func(v External) {
+		if v == nil || v.Kind().In(KindsValues) {
+			return
+		}
+		nodes = append(nodes, v)
+	})
+	return newFixedIterator(nodes)
+}
+
+// newFixedIterator creates a node iterator that list nodes in the given slice. It won't recurse into those nodes.
+func newFixedIterator(nodes []External) Iterator {
+	return &fixedIter{nodes: nodes, first: true}
+}
+
+type fixedIter struct {
+	nodes []External
+	first bool
+}
+
+// Next implements Iterator.
+func (it *fixedIter) Next() bool {
+	if it.first {
+		it.first = false
+		return len(it.nodes) > 0
+	} else if len(it.nodes) == 0 {
+		return false
+	}
+	it.nodes = it.nodes[1:]
+	return len(it.nodes) > 0
+}
+
+// Node implements Iterator.
+func (it *fixedIter) Node() External {
+	if len(it.nodes) == 0 {
+		return nil
+	}
+	return it.nodes[0]
 }
