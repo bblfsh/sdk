@@ -258,7 +258,7 @@ func (idx *Index) checkByteOffset(offset int) error {
 	return nil
 }
 
-// LineCol returns a one-based line and col given a zero-based byte offset.
+// LineCol returns a one-based line and one-based column offset given a zero-based byte offset within a file.
 // It returns an error if the given offset is out of bounds.
 func (idx *Index) LineCol(offset int) (int, int, error) {
 	err := idx.checkByteOffset(offset)
@@ -282,7 +282,7 @@ func (idx *Index) checkLine(line int) error {
 	return nil
 }
 
-// Offset returns a zero-based byte offset given a one-based line and column.
+// Offset returns a zero-based byte offset within a file given a one-based line and one-based column offset.
 // It returns an error if the given line and column are out of bounds.
 func (idx *Index) Offset(line, col int) (int, error) {
 	if err := idx.checkLine(line); err != nil {
@@ -304,7 +304,8 @@ func (idx *Index) Offset(line, col int) (int, error) {
 	return lineOffset + col - 1, nil
 }
 
-// unicodeOffset returns a zero-based byte offset given a zero-based Unicode character offset or UTF-16 code unit offset.
+// unicodeOffset returns a zero-based byte offset within a file given a zero-based Unicode character offset or
+// UTF-16 code unit offset within a file.
 func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
 		return -1, errNoUnicodeIndex
@@ -344,31 +345,31 @@ func (idx *Index) unicodeOffset(offset int, isUTF16 bool) (int, error) {
 	return s.byteOff + s.runeSize8*(offset-s.firstRuneInd), nil
 }
 
-// FromRuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
+// FromRuneOffset returns a zero-based byte offset given a zero-based Unicode character offset within a file.
 func (idx *Index) FromRuneOffset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, false)
 }
 
-// RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset.
+// RuneOffset returns a zero-based byte offset given a zero-based Unicode character offset within a file.
 //
 // Deprecated: use FromRuneOffset.
 func (idx *Index) RuneOffset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, false)
 }
 
-// FromUTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset.
+// FromUTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset within a file.
 func (idx *Index) FromUTF16Offset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, true)
 }
 
-// UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset.
+// UTF16Offset returns a zero-based byte offset given a zero-based UTF-16 code unit offset within a file.
 //
 // Deprecated: use FromUTF16Offset
 func (idx *Index) UTF16Offset(offset int) (int, error) {
 	return idx.unicodeOffset(offset, true)
 }
 
-// toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code unit given a zero-based byte offset.
+// toUnicodeOffset returns a zero-based Unicode character offset or a UTF-16 code unit offset given a zero-based byte offset within a file.
 func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 	if idx.spans == nil {
 		return -1, errNoUnicodeIndex
@@ -397,17 +398,18 @@ func (idx *Index) toUnicodeOffset(offset int, isUTF16 bool) (int, error) {
 	return s.firstRuneInd + (offset-s.byteOff)/s.runeSize8, nil
 }
 
-// ToRuneOffset returns a zero-based Unicode character offset given a zero-based byte offset.
+// ToRuneOffset returns a zero-based Unicode character offset given a zero-based byte offset within a file.
 func (idx *Index) ToRuneOffset(offset int) (int, error) {
 	return idx.toUnicodeOffset(offset, false)
 }
 
-// ToUTF16Offset returns a zero-based UTF-16 code unit offset given a zero-based byte offset.
+// ToUTF16Offset returns a zero-based UTF-16 code unit offset given a zero-based byte offset within a file.
 func (idx *Index) ToUTF16Offset(offset int) (int, error) {
 	return idx.toUnicodeOffset(offset, true)
 }
 
-// toUnicodeLineCol returns a one-based Unicode character line-col or a UTF-16 code unit line-col given a zero-based byte offset.
+// toUnicodeLineCol returns a one-based line and one-based column in Unicode characters or a UTF-16 code units given a
+// zero-based byte offset within a file.
 func (idx *Index) toUnicodeLineCol(offset int, isUTF16 bool) (int, int, error) {
 	if idx.spans == nil {
 		return -1, -1, errNoUnicodeIndex
@@ -458,13 +460,13 @@ func (idx *Index) toUnicodeLineCol(offset int, isUTF16 bool) (int, int, error) {
 	return line, col, nil
 }
 
-// ToUnicodeLineCol returns a one-based line and col in Unicode characters given a zero-based byte offset.
+// ToUnicodeLineCol returns a one-based line and one-based col in Unicode characters given a zero-based byte offset within a file.
 // It returns an error if the given offset is out of bounds.
 func (idx *Index) ToUnicodeLineCol(offset int) (int, int, error) {
 	return idx.toUnicodeLineCol(offset, false)
 }
 
-// ToUTF16LineCol returns a one-based line and col in UTF-16 code units given a zero-based byte offset.
+// ToUTF16LineCol returns a one-based line and one-based col in UTF-16 code units given a zero-based byte offset within a file.
 // It returns an error if the given offset is out of bounds.
 func (idx *Index) ToUTF16LineCol(offset int) (int, int, error) {
 	return idx.toUnicodeLineCol(offset, true)
