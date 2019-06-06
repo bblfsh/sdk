@@ -48,6 +48,18 @@ func init() {
 	)
 }
 
+// Type constants for internal use.
+const (
+	stringType              = NS + ":String"
+	identifierType          = NS + ":Identifier"
+	qualifiedIdentifierType = NS + ":QualifiedIdentifier"
+	aliasType               = NS + ":Alias"
+	importType              = NS + ":Import"
+	runtimeImportType       = NS + ":RuntimeImport"
+	runtimeReImportType     = NS + ":RuntimeReImport"
+	inlineImportType        = NS + ":InlineImport"
+)
+
 // Special field keys for nodes.Object
 const (
 	KeyType  = "@type"  // the type of UAST node (InternalType in v1)
@@ -530,6 +542,7 @@ type Import struct {
 	//
 	// May have a value of:
 	// - String (specifies relative or absolute module path);
+	// - Identifier (same as QualifiedIdentifier, but for one name element);
 	// - QualifiedIdentifier (specifies a canonical module name);
 	// - Alias (contains any of the above and defines a local package name within a file/scope);
 	Path Any `json:"Path"`
