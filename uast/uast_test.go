@@ -22,6 +22,29 @@ func tObj(typ, tok string) Obj {
 	return obj
 }
 
+func TestConstTypes(t *testing.T) {
+	var cases = []struct {
+		typ  string
+		node interface{}
+	}{
+		{TypePosition, Position{}},
+		{TypePositions, Positions{}},
+		{stringType, String{}},
+		{identifierType, Identifier{}},
+		{qualifiedIdentifierType, QualifiedIdentifier{}},
+		{aliasType, Alias{}},
+		{importType, Import{}},
+		{runtimeImportType, RuntimeImport{}},
+		{runtimeReImportType, RuntimeReImport{}},
+		{inlineImportType, InlineImport{}},
+	}
+	for _, c := range cases {
+		t.Run(c.typ, func(t *testing.T) {
+			require.Equal(t, c.typ, TypeOf(c.node))
+		})
+	}
+}
+
 func TestContentOf(t *testing.T) {
 	var cases = []struct {
 		name string
