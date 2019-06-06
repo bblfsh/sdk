@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/bblfsh/sdk/v3/uast/nodes"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIterPreOrder(t *testing.T) {
@@ -22,7 +23,7 @@ func TestIterPreOrder(t *testing.T) {
 		b,
 	}
 	if !nodes.Equal(nodes.Array(exp), nodes.Array(got)) {
-		t.Fatalf("wrong order: %v", got)
+		require.Equal(t, nodes.Array(exp), nodes.Array(got))
 	}
 }
 
@@ -42,7 +43,7 @@ func TestIterPostOrder(t *testing.T) {
 		root,
 	}
 	if !nodes.Equal(nodes.Array(exp), nodes.Array(got)) {
-		t.Fatalf("wrong order: %v", got)
+		require.Equal(t, nodes.Array(exp), nodes.Array(got))
 	}
 }
 
@@ -62,7 +63,7 @@ func TestIterLevelOrder(t *testing.T) {
 		nodes.Int(1), nodes.Int(2),
 	}
 	if !nodes.Equal(nodes.Array(exp), nodes.Array(got)) {
-		t.Fatalf("wrong order: %v", got)
+		require.Equal(t, nodes.Array(exp), nodes.Array(got))
 	}
 }
 
@@ -83,11 +84,9 @@ func TestIterChildren(t *testing.T) {
 	got := allNodes(it)
 	exp := []nodes.Node{a, c}
 	if !nodes.Equal(nodes.Array(exp), nodes.Array(got)) {
-		t.Fatalf("wrong order: %v", got)
+		require.Equal(t, nodes.Array(exp), nodes.Array(got))
 	}
-	if n := nodes.ChildrenCount(root); n != len(exp) {
-		t.Fatalf("incorrect number of children: %d vs %d", n, len(exp))
-	}
+	require.Equal(t, nodes.ChildrenCount(root), len(exp))
 }
 
 func allNodes(it nodes.Iterator) []nodes.Node {
