@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/bblfsh/sdk/v3/driver/manifest"
+	"github.com/blang/semver"
 	"github.com/google/go-github/github"
 )
 
@@ -150,6 +151,83 @@ func (d *Driver) loadSDKVersion(ctx context.Context) error {
 // loadBuildInfo build-related information from repository and decodes it into object.
 func (d *Driver) loadBuildInfo(ctx context.Context, m *manifest.Manifest) error {
 	return manifest.LoadRuntimeInfo(m, d.fetchFromGithub(ctx))
+}
+
+// repoName returns a user/org name and the repository name for a driver.
+func (d *Driver) repoName() (string, string) {
+	repo := d.repo.GetName()
+	owner := d.repo.GetOrganization().GetName()
+	if owner == "" {
+		owner = d.repo.GetOwner().GetLogin()
+	}
+	return owner, repo
+}
+
+// eachTag calls a given function for each tag in the driver repository.
+func (d *Driver) eachTag(ctx context.Context, fnc func(tag *github.RepositoryTag) (bool, error)) error {
+	owner, repo := d.repoName()
+	cli := github.NewClient(nil)
+
+	for page := 1; ; page++ {
+		resp, _, err := cli.Repositories.ListTags(ctx, owner, repo, &github.ListOptions{
+			Page: page, PerPage: 100,
+		})
+		if err != nil {
+			return err
+		} else if len(resp) == 0 {
+			break
+		}
+		for _, r := range resp {
+			next, err := fnc(r)
+			if err != nil {
+				return err
+			} else if !next {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+// eachVersion calls a given function for each version in the driver repository.
+func (d *Driver) eachVersion(ctx context.Context, fnc func(vers Version, tag *github.RepositoryTag) (bool, error)) error {
+	return d.eachTag(ctx, func(tag *github.RepositoryTag) (bool, error) {
+		name := tag.GetName()
+		if name == "" || name[0] != 'v' {
+			return true, nil // skip
+		}
+		vers, err := semver.Parse(name[1:])
+		if err != nil {
+			return true, nil // ignore semver parsing errors
+		}
+		return fnc(vers, tag)
+	})
+}
+
+// Version is a semantic version.
+type Version = semver.Version
+
+// LatestVersion returns a latest version of the driver. It returns an empty version if there are no releases of the driver.
+func (d *Driver) LatestVersion(ctx context.Context) (Version, error) {
+	var latest Version
+	err := d.eachVersion(ctx, func(v Version, _ *github.RepositoryTag) (bool, error) {
+		// TODO(dennwc): Github API returns versions sorted in descending order, but it's not mentioned in their docs.
+		//               So we stop after the first result. Continue iteration here if there are any issues with the sorting.
+		latest = v
+		return false, nil
+	})
+	return latest, err
+}
+
+// Versions returns a list of available driver versions sorted in descending order (first element is the latest version).
+func (d *Driver) Versions(ctx context.Context) ([]Version, error) {
+	var vers []Version
+	err := d.eachVersion(ctx, func(v Version, _ *github.RepositoryTag) (bool, error) {
+		vers = append(vers, v)
+		return true, nil
+	})
+	sort.Sort(sort.Reverse(semver.Versions(vers)))
+	return vers, err
 }
 
 // Options controls how drivers are being discovered and what information is fetched for them.
