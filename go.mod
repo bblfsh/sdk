@@ -8,6 +8,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.8 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/antchfx/xpath v0.0.0-20180922041825-3de91f3991a1
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/containerd/continuity v0.0.0-20180712174259-0377f7d76720 // indirect
 	github.com/davecgh/go-spew v1.1.0 // indirect
