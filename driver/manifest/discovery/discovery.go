@@ -7,18 +7,40 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"sync"
 
-	"github.com/bblfsh/sdk/v3/driver/manifest"
 	"github.com/blang/semver"
 	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
+
+	"github.com/bblfsh/sdk/v3/driver/manifest"
 )
 
 const (
 	GithubOrg = "bblfsh"
 )
+
+var gh struct {
+	once   sync.Once
+	client *github.Client
+}
+
+// githubClient returns a Github API client. Token can be provided with GITHUB_TOKEN environment variable.
+func githubClient() *github.Client {
+	gh.once.Do(func() {
+		hc := http.DefaultClient
+		if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+			hc = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: token},
+			))
+		}
+		gh.client = github.NewClient(hc)
+	})
+	return gh.client
+}
 
 // topics that each driver repository on Github should be annotated with
 var topics = []string{
@@ -166,7 +188,7 @@ func (d *Driver) repoName() (string, string) {
 // eachTag calls a given function for each tag in the driver repository.
 func (d *Driver) eachTag(ctx context.Context, fnc func(tag *github.RepositoryTag) (bool, error)) error {
 	owner, repo := d.repoName()
-	cli := github.NewClient(nil)
+	cli := githubClient()
 
 	for page := 1; ; page++ {
 		resp, _, err := cli.Repositories.ListTags(ctx, owner, repo, &github.ListOptions{
@@ -248,7 +270,7 @@ func isRateLimit(err error) bool {
 
 // getDriversForOrg lists all repositories for an organization and filters ones that contains topics of the driver.
 func getDriversForOrg(ctx context.Context, org string) ([]Driver, error) {
-	cli := github.NewClient(nil)
+	cli := githubClient()
 
 	var out []Driver
 	// list all repositories in organization
