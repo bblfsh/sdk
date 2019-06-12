@@ -1,4 +1,11 @@
 // Package discovery package implements helpers for clients to discover language drivers supported by Babelfish.
+//
+// The drivers discovery process uses Github API under the hood to get the most up-to-date information. This process may
+// fail in case of Github rate limiting, and the discovery will fallback to a drivers list hosted by Babelfish project,
+// which must be reasonably up-to-date.
+//
+// It is also possible to provide Github API token by setting the GITHUB_TOKEN environment variable to prevent the
+// rate limiting.
 package discovery
 
 import (
@@ -28,7 +35,9 @@ var gh struct {
 	client *github.Client
 }
 
-// githubClient returns a Github API client. Token can be provided with GITHUB_TOKEN environment variable.
+// githubClient returns a lazily-initialized singleton Github API client.
+//
+// API token can be provided with GITHUB_TOKEN environment variable. The public API rate limits will apply without it.
 func githubClient() *github.Client {
 	gh.once.Do(func() {
 		hc := http.DefaultClient
