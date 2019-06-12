@@ -1,4 +1,11 @@
 // Package discovery package implements helpers for clients to discover language drivers supported by Babelfish.
+//
+// The discovery process uses Github API under the hood to get the most up-to-date information. This process may fail
+// in case of Github rate limiting, and the discovery will fallback to a drivers list hosted by Babelfish project,
+// which must be reasonably up-to-date.
+//
+// It is also possible to provide Github API token by setting the GITHUB_TOKEN environment variable to prevent the
+// rate limiting.
 package discovery
 
 import (
