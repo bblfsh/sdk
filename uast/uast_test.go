@@ -8,6 +8,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func init() {
+	registerType("ex", ExampleNode{})
+}
+
+type ExampleExpr interface {
+	isExpr()
+}
+
+type ExampleNode struct {
+	A interface{} `json:"a"`
+	B *Identifier `json:"b"`
+	C ExampleExpr `json:"c"`
+}
+
+func (*ExampleNode) isExpr() {}
+
 type Obj = nodes.Object
 
 type Arr = nodes.Array
@@ -41,6 +57,56 @@ func TestConstTypes(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.typ, func(t *testing.T) {
 			require.Equal(t, c.typ, TypeOf(c.node))
+		})
+	}
+}
+
+func TestNodeAs(t *testing.T) {
+	var cases = []struct {
+		node interface{}
+		exp  interface{}
+	}{
+		{node: Position{Line: 1, Col: 2, Offset: 3}},
+		{node: Positions{"k": {Line: 1, Col: 2, Offset: 3}}},
+		{node: String{Value: "v"}},
+		{node: Identifier{Name: "n"}},
+		{node: QualifiedIdentifier{Names: []Identifier{
+			{Name: "a"},
+			{Name: "b"},
+		}}},
+		{
+			node: Alias{
+				Node: String{Value: "v"},
+				Name: Identifier{Name: "n"},
+			},
+			exp: Alias{
+				Node: toNode(String{Value: "v"}),
+				Name: Identifier{Name: "n"},
+			},
+		},
+		{node: Alias{
+			Node: nodes.Object{KeyType: nodes.String("ex:ExampleNode")},
+			Name: Identifier{Name: "n"},
+		}},
+		{node: ExampleNode{
+			A: Identifier{Name: "a"},
+			B: &Identifier{Name: "b"},
+			C: &ExampleNode{A: nodes.String("a2")},
+		}},
+	}
+	for _, c := range cases {
+		typ := TypeOf(c.node)
+		t.Run(typ, func(t *testing.T) {
+			nd, err := ToNode(c.node)
+			require.NoError(t, err)
+			var v interface{}
+			err = NodeAs(nd, &v)
+			require.NoError(t, err)
+			exp := c.exp
+			if exp == nil {
+				exp = c.node
+			}
+			require.Equal(t, exp, v)
 		})
 	}
 }

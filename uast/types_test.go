@@ -192,12 +192,8 @@ var casesToNode = []struct {
 				},
 			},
 			Array: []Any{
-				Identifier{Name: "a", GenNode: GenNode{
-					Positions: Positions{},
-				}},
-				String{Value: "a", GenNode: GenNode{
-					Positions: Positions{},
-				}},
+				Identifier{Name: "a"},
+				String{Value: "a"},
 			},
 		},
 		exp: nodes.Object{
