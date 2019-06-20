@@ -397,6 +397,9 @@ func structToNode(obj nodes.Object, rv reflect.Value, rt reflect.Type) error {
 
 // NodeAs loads a generic UAST node into provided Go value.
 //
+// It uses "uast" or "json" struct tags to get field names. Interface values will either be constructed from types
+// that were registered in uast package, or will be populated with raw UAST nodes.
+//
 // It returns ErrIncorrectType in case of type mismatch.
 func NodeAs(n nodes.External, dst interface{}) error {
 	var rv reflect.Value
@@ -444,7 +447,13 @@ func setAnyOrNode(dst reflect.Value, n nodes.External) (bool, error) {
 	return false, nil
 }
 
+// nodeAs loads an external UAST node to rv. It uses "uast" or "json" struct tags to get field names.
+// Interface values will either be constructed from types that were registered in uast package, or will
+// be populated with raw UAST nodes.
 func nodeAs(n nodes.External, rv reflect.Value) error {
+	if n == nil {
+		return nil
+	}
 	orv := rv
 	if rv.Kind() == reflect.Ptr {
 		if rv.CanSet() && rv.IsNil() {
@@ -457,9 +466,6 @@ func nodeAs(n nodes.External, rv reflect.Value) error {
 			return fmt.Errorf("invalid value: %#v", orv)
 		}
 		return fmt.Errorf("argument should be a pointer: %v", rv.Type())
-	}
-	if n == nil {
-		return nil
 	}
 	switch kind := n.Kind(); kind {
 	case nodes.KindNil:
@@ -487,7 +493,8 @@ func nodeAs(n nodes.External, rv reflect.Value) error {
 					return err
 				}
 			} else {
-				if rv.IsNil() {
+				wasNil := rv.IsNil()
+				if wasNil {
 					rv.Set(reflect.MakeMapWithSize(rt, obj.Size()-1))
 				}
 				for _, k := range obj.Keys() {
@@ -501,10 +508,21 @@ func nodeAs(n nodes.External, rv reflect.Value) error {
 					}
 					rv.SetMapIndex(reflect.ValueOf(k), nv)
 				}
+				if wasNil && rv.Len() == 0 {
+					rv.Set(reflect.Zero(rt))
+				}
 			}
 		case reflect.Interface:
 			if nv, err := NewValue(TypeOf(n)); err == nil {
-				return nodeAs(n, nv.Elem())
+				if err = nodeAs(n, nv); err != nil {
+					return err
+				}
+				if !nv.Type().Implements(rt) && nv.Addr().Type().Implements(rt) {
+					rv.Set(nv.Addr()) // pointer implements an interface
+				} else {
+					rv.Set(nv) // value implements an interface, or we allow it to fail
+				}
+				return nil
 			} else if !reflect.TypeOf(n).ConvertibleTo(rt) {
 				return fmt.Errorf("cannot create interface value %v for %#v", rt, n)
 			}
