@@ -14,10 +14,11 @@ import (
 	cmdutil "github.com/bblfsh/sdk/v3/cmd"
 	"github.com/bblfsh/sdk/v3/driver"
 	"gopkg.in/src-d/go-errors.v1"
+	"gopkg.in/src-d/go-log.v1"
 )
 
 var (
-	// ErrInvalidTracer is returned by the driver server when the logger configuration is wrong.
+	// ErrInvalidLogger is returned by the driver server when the logger configuration is wrong.
 	ErrInvalidLogger = errors.NewKind("invalid logger configuration")
 	// ErrInvalidTracer is returned by the driver server when the tracing configuration is wrong.
 	ErrInvalidTracer = errors.NewKind("invalid tracer configuration")
@@ -42,7 +43,7 @@ var (
 type Server struct {
 	grpc *grpc.Server
 	// Logger a logger to be used by the server.
-	Logger Logger
+	Logger log.Logger
 
 	d driver.DriverModule
 
@@ -96,7 +97,7 @@ func (s *Server) initialize() error {
 
 	grpcOpts, err := cmdutil.GRPCSizeOptions(*maxMessageSize)
 	if err != nil {
-		s.Logger.Errorf(err.Error())
+		s.Logger.Errorf(err, "cannot initialize server")
 		os.Exit(1)
 	}
 
@@ -134,14 +135,13 @@ func (s *Server) initializeFlags() {
 }
 
 func (s *Server) initializeLogger() error {
-	f := LoggerFactory{
-		Level:  *logs.level,
-		Format: *logs.format,
-		Fields: *logs.fields,
-	}
+	f := log.DefaultFactory
+	f.Level = *logs.level
+	f.Format = *logs.format
+	f.Fields = *logs.fields
 
 	var err error
-	s.Logger, err = f.New()
+	s.Logger, err = f.New(nil)
 	if err != nil {
 		return ErrInvalidLogger.Wrap(err)
 	}
