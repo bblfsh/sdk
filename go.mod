@@ -11,7 +11,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/containerd/continuity v0.0.0-20180712174259-0377f7d76720 // indirect
-	github.com/davecgh/go-spew v1.1.0 // indirect
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/fatih/color v1.7.0
@@ -40,23 +39,23 @@ require (
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/rogpeppe/go-internal v1.3.0
-	github.com/sirupsen/logrus v1.0.5
+	github.com/sirupsen/logrus v1.4.2 // indirect
+	github.com/src-d/envconfig v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/uber-go/atomic v1.3.2 // indirect
 	github.com/uber/jaeger-client-go v2.15.0+incompatible
 	github.com/uber/jaeger-lib v1.5.0 // indirect
-	github.com/x-cray/logrus-prefixed-formatter v0.5.2
+	github.com/x-cray/logrus-prefixed-formatter v0.5.2 // indirect
 	go.uber.org/atomic v1.3.2 // indirect
-	golang.org/x/crypto v0.0.0-20180621125126-a49355c7e3f8 // indirect
-	golang.org/x/net v0.0.0-20190108225652-1e06a53dbb7e
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6 // indirect
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v1.13.0
-	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/bblfsh/sdk.v1 v1.16.1
-	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/src-d/go-errors.v1 v1.0.0
+	gopkg.in/src-d/go-log.v1 v1.0.2
 	gopkg.in/yaml.v2 v2.2.1
 	gotest.tools v2.2.0+incompatible // indirect
 )
