@@ -9,7 +9,7 @@ var Preprocess = Transformers([][]Transformer{
 	{
 		// ResponseMetadata is a transform that trims response metadata from AST.
 		//
-		// https://godoc.org/github.com/bblfsh/sdk/v3/uast#ResponseMetadata
+		// https://godoc.org/github.com/bblfsh/sdk/uast/transformer#ResponseMetadata
 		ResponseMetadata{
 			TopLevelIsRootNode: false,
 		},
@@ -27,7 +27,7 @@ var Preprocessors = []Mapping{
 	// ObjectToNode defines how to normalize common fields of native AST
 	// (like node type, token, positional information).
 	//
-	// https://godoc.org/github.com/bblfsh/sdk/v3/uast#ObjectToNode
+	// https://godoc.org/github.com/bblfsh/sdk/uast/transformer#ObjectToNode
 	ObjectToNode{
 		InternalTypeKey: "...", // native AST type key name
 	}.Mapping(),
