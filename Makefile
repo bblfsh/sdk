@@ -58,6 +58,7 @@ validate-commit: bindata
 	if  [ $$? -eq 0 ] ; then \
 		git diff|cat; \
 		echo >&2 "generated bindata is out of sync"; \
+		echo >&2 "Re-run 'make bindata' and commit the upcates."; \
 		exit 2; \
 	fi
 
