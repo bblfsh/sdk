@@ -279,7 +279,7 @@ func (o Obj) ConstructObj(st *State, n nodes.Object) (nodes.Object, error) {
 // It is used for transformation optimizer to filter candidate nodes upfront
 // without running the full transformation tree.
 type FieldDesc struct {
-	// Optional indicates that field might not exists in the object.
+	// Optional indicates that field might not exist in the object.
 	Optional bool
 	// Fixed is set if a field is required to have a specific value. The value may be nil.
 	Fixed *nodes.Node
@@ -1360,7 +1360,7 @@ func CheckObj(s ObjectSel, op ObjectOp) ObjectOp {
 	// doesn't matter if check is marked as partial or not
 	// we always consider it as such
 	checks, _ := s.Fields()
-	// optional selectors doesn't make sense
+	// optional selectors don't make sense
 	for _, f := range checks.fields {
 		if f.Optional {
 			panic("optional fields are not allowed in CheckObj")
