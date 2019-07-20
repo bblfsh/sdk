@@ -10,7 +10,7 @@
 // etc/skeleton/driver/impl/impl.go (251B)
 // etc/skeleton/driver/main.go.tpl (254B)
 // etc/skeleton/driver/normalizer/annotation.go (757B)
-// etc/skeleton/driver/normalizer/normalizer.go (1.198kB)
+// etc/skeleton/driver/normalizer/normalizer.go (1.216kB)
 // etc/skeleton/driver/normalizer/transforms.go.tpl (258B)
 // etc/skeleton/driver/sdk_test.go (394B)
 // etc/skeleton/git/hooks/pre-commit (406B)
@@ -1147,7 +1147,7 @@ var Preprocess = Transformers([][]Transformer{
 	{
 		// ResponseMetadata is a transform that trims response metadata from AST.
 		//
-		// https://godoc.org/github.com/bblfsh/sdk/v3/uast#ResponseMetadata
+		// https://godoc.org/github.com/bblfsh/sdk/uast/transformer#ResponseMetadata
 		ResponseMetadata{
 			TopLevelIsRootNode: false,
 		},
@@ -1165,7 +1165,7 @@ var Preprocessors = []Mapping{
 	// ObjectToNode defines how to normalize common fields of native AST
 	// (like node type, token, positional information).
 	//
-	// https://godoc.org/github.com/bblfsh/sdk/v3/uast#ObjectToNode
+	// https://godoc.org/github.com/bblfsh/sdk/uast/transformer#ObjectToNode
 	ObjectToNode{
 		InternalTypeKey: "...", // native AST type key name
 	}.Mapping(),
@@ -1191,8 +1191,8 @@ func driverNormalizerNormalizerGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 1198, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xff, 0xe6, 0xf1, 0xa8, 0x23, 0x32, 0x30, 0x1c, 0x86, 0xd3, 0xd7, 0xd4, 0x4e, 0x96, 0x63, 0xc8, 0xfb, 0x61, 0xa5, 0x47, 0xfb, 0x6, 0xc5, 0xe8, 0x67, 0x9, 0x31, 0xce, 0x2e, 0xb6, 0x62, 0x7f}}
+	info := bindataFileInfo{name: "driver/normalizer/normalizer.go", size: 1216, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xe7, 0xf, 0x80, 0x1c, 0x8c, 0x94, 0xce, 0xe7, 0xe7, 0x3b, 0x20, 0xe2, 0x4f, 0x9, 0xb2, 0x67, 0x3c, 0x2e, 0x7e, 0x64, 0x82, 0x3e, 0x46, 0xf4, 0xce, 0xe5, 0x3e, 0xe3, 0x87, 0xcf, 0x7d, 0x89}}
 	return a, nil
 }
 
