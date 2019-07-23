@@ -51,6 +51,7 @@ var managedFiles = map[string]bool{
 	"driver/main.go" + tplExt: true,
 	"driver/sdk_test.go":      true,
 	"driver/normalizer/transforms.go" + tplExt: true,
+	"Jenkinsfile" + tplExt:                     true,
 }
 
 type updater struct {
