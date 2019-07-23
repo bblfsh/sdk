@@ -135,13 +135,15 @@ func (s *Server) initializeFlags() {
 }
 
 func (s *Server) initializeLogger() error {
-	f := log.DefaultFactory
-	f.Level = *logs.level
-	f.Format = *logs.format
-	f.Fields = *logs.fields
+	// TODO(lwsanty): fix in go-log
+	log.DefaultFactory = &log.LoggerFactory{
+		Level:  *logs.level,
+		Format: *logs.format,
+		Fields: *logs.fields,
+	}
 
 	var err error
-	s.Logger, err = f.New(nil)
+	s.Logger, err = log.DefaultFactory.New(nil)
 	if err != nil {
 		return ErrInvalidLogger.Wrap(err)
 	}

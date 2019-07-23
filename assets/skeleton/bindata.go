@@ -2,6 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore (18B)
 // etc/skeleton/.travis.yml (397B)
+// etc/skeleton/Jenkinsfile.tpl (2.481kB)
 // etc/skeleton/LICENSE (35.141kB)
 // etc/skeleton/README.md.tpl (1.981kB)
 // etc/skeleton/build.go (464B)
@@ -122,6 +123,91 @@ func TravisYml() (*asset, error) {
 
 	info := bindataFileInfo{name: ".travis.yml", size: 397, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb0, 0x16, 0xe6, 0x6, 0x16, 0xea, 0x9e, 0x38, 0x23, 0xee, 0x60, 0x5, 0xf0, 0x78, 0xeb, 0x90, 0xec, 0x9c, 0xa2, 0xef, 0x18, 0x7c, 0x5, 0x4d, 0x44, 0x0, 0xdf, 0xe4, 0xd2, 0x1a, 0x29, 0x34}}
+	return a, nil
+}
+
+var _jenkinsfileTpl = []byte(`pipeline {
+  agent {
+    kubernetes {
+      label '{{.Manifest.Language}}-driver-bblfsh-performance'
+      defaultContainer '{{.Manifest.Language}}-driver-bblfsh-performance'
+      yaml """
+spec:
+  nodeSelector:
+    srcd.host/type: jenkins-worker
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: jenkins
+            operator: In
+            values:
+            - slave
+        topologyKey: kubernetes.io/hostname
+  containers:
+  - name: {{.Manifest.Language}}-driver-bblfsh-performance
+    image: bblfsh/performance:latest
+    imagePullPolicy: Always
+    securityContext:
+      privileged: true
+    command:
+    - dockerd
+    tty: true
+"""
+    }
+  }
+  environment {
+    DRIVER_LANGUAGE = "{{.Manifest.Language}}"
+    DRIVER_REPO = "https://github.com/bblfsh/{{.Manifest.Language}}-driver.git"
+    DRIVER_SRC_FIXTURES = "${env.WORKSPACE}/fixtures"
+    BENCHMARK_FILE = "${env.WORKSPACE}/bench.log"
+    LOG_LEVEL = "debug"
+    PROM_ADDRESS = "http://prom-pushgateway-prometheus-pushgateway.monitoring.svc.cluster.local:9091"
+    PROM_JOB = "bblfsh_perfomance"
+  }
+  // TODO(lwsanty): https://github.com/src-d/infrastructure/issues/992
+  // this is polling for every 2 minutes
+  // however it's better to use trigger curl http://yourserver/jenkins/git/notifyCommit?url=<URL of the Git repository>
+  // https://kohsuke.org/2011/12/01/polling-must-die-triggering-jenkins-builds-from-a-git-hook/
+  // the problem is that it requires Jenkins to be accessible from the hook side
+  // probably Travis CI could trigger Jenkins after all unit tests have passed...
+  triggers { pollSCM('H/2 * * * *') }
+  stages {
+    stage('Run transformations benchmark') {
+      when { branch 'master' }
+      steps {
+        sh "set -o pipefail ; go test -run=NONE -bench=. ./driver/... | tee ${env.BENCHMARK_FILE}"
+      }
+    }
+    stage('Store transformations benchmark to prometheus') {
+      when { branch 'master' }
+      steps {
+        sh "/root/bblfsh-performance parse-and-store --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --storage=prom ${env.BENCHMARK_FILE}"
+      }
+    }
+    stage('Run end-to-end benchmark') {
+      when { branch 'master' }
+      steps {
+        sh "/root/bblfsh-performance end-to-end --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --docker-tag=latest --custom-driver=true --storage=prom ${env.DRIVER_SRC_FIXTURES}"
+      }
+    }
+  }
+}
+`)
+
+func jenkinsfileTplBytes() ([]byte, error) {
+	return _jenkinsfileTpl, nil
+}
+
+func jenkinsfileTpl() (*asset, error) {
+	bytes, err := jenkinsfileTplBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 2481, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xed, 0xc1, 0xa2, 0x22, 0xa6, 0x94, 0x23, 0x2b, 0x6e, 0x2d, 0x2, 0xac, 0x99, 0xd, 0x0, 0x2e, 0x48, 0xe0, 0x76, 0x11, 0x7e, 0x57, 0x2c, 0x8a, 0xd0, 0x20, 0x2b, 0x7f, 0xd4, 0xf2, 0xd9, 0x19}}
 	return a, nil
 }
 
@@ -1588,6 +1674,8 @@ var _bindata = map[string]func() (*asset, error){
 
 	".travis.yml": TravisYml,
 
+	"Jenkinsfile.tpl": jenkinsfileTpl,
+
 	"LICENSE": license,
 
 	"README.md.tpl": readmeMdTpl,
@@ -1666,12 +1754,13 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	".gitignore":    &bintree{Gitignore, map[string]*bintree{}},
-	".travis.yml":   &bintree{TravisYml, map[string]*bintree{}},
-	"LICENSE":       &bintree{license, map[string]*bintree{}},
-	"README.md.tpl": &bintree{readmeMdTpl, map[string]*bintree{}},
-	"build.go":      &bintree{buildGo, map[string]*bintree{}},
-	"build.yml.tpl": &bintree{buildYmlTpl, map[string]*bintree{}},
+	".gitignore":      &bintree{Gitignore, map[string]*bintree{}},
+	".travis.yml":     &bintree{TravisYml, map[string]*bintree{}},
+	"Jenkinsfile.tpl": &bintree{jenkinsfileTpl, map[string]*bintree{}},
+	"LICENSE":         &bintree{license, map[string]*bintree{}},
+	"README.md.tpl":   &bintree{readmeMdTpl, map[string]*bintree{}},
+	"build.go":        &bintree{buildGo, map[string]*bintree{}},
+	"build.yml.tpl":   &bintree{buildYmlTpl, map[string]*bintree{}},
 	"driver": &bintree{nil, map[string]*bintree{
 		"fixtures": &bintree{nil, map[string]*bintree{
 			"fixtures_test.go.tpl": &bintree{driverFixturesFixtures_testGoTpl, map[string]*bintree{}},
