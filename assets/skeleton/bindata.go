@@ -2,7 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore (18B)
 // etc/skeleton/.travis.yml (397B)
-// etc/skeleton/Jenkinsfile.tpl (2.481kB)
+// etc/skeleton/Jenkinsfile.tpl (2.49kB)
 // etc/skeleton/LICENSE (35.141kB)
 // etc/skeleton/README.md.tpl (1.981kB)
 // etc/skeleton/build.go (464B)
@@ -177,7 +177,7 @@ spec:
     stage('Run transformations benchmark') {
       when { branch 'master' }
       steps {
-        sh "set -o pipefail ; go test -run=NONE -bench=. ./driver/... | tee ${env.BENCHMARK_FILE}"
+        sh "set -o pipefail ; go test -run=NONE -bench=/transform ./driver/... | tee ${env.BENCHMARK_FILE}"
       }
     }
     stage('Store transformations benchmark to prometheus') {
@@ -206,8 +206,8 @@ func jenkinsfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 2481, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xed, 0xc1, 0xa2, 0x22, 0xa6, 0x94, 0x23, 0x2b, 0x6e, 0x2d, 0x2, 0xac, 0x99, 0xd, 0x0, 0x2e, 0x48, 0xe0, 0x76, 0x11, 0x7e, 0x57, 0x2c, 0x8a, 0xd0, 0x20, 0x2b, 0x7f, 0xd4, 0xf2, 0xd9, 0x19}}
+	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 2490, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb3, 0xa9, 0x2c, 0x95, 0xd6, 0xd7, 0x57, 0x5f, 0xaf, 0xf2, 0x36, 0x85, 0xc, 0x1d, 0x29, 0xe3, 0x69, 0x25, 0x80, 0xbc, 0xf0, 0xb6, 0x73, 0x5e, 0x5e, 0xe6, 0xd3, 0x10, 0x36, 0x3a, 0x52, 0x4f}}
 	return a, nil
 }
 

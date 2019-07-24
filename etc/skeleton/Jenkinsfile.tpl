@@ -49,7 +49,7 @@ spec:
     stage('Run transformations benchmark') {
       when { branch 'master' }
       steps {
-        sh "set -o pipefail ; go test -run=NONE -bench=. ./driver/... | tee ${env.BENCHMARK_FILE}"
+        sh "set -o pipefail ; go test -run=NONE -bench=/transform ./driver/... | tee ${env.BENCHMARK_FILE}"
       }
     }
     stage('Store transformations benchmark to prometheus') {
