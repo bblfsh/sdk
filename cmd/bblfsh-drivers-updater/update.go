@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/bblfsh/sdk/v3/cmd/bblfsh-drivers-updater/utils"
 	"github.com/bblfsh/sdk/v3/driver/manifest/discovery"
@@ -34,18 +35,19 @@ func main() {
 
 	var scriptText string
 	scriptData, err := ioutil.ReadFile(*scriptPathPtr)
+
 	switch {
 	case err != nil && !os.IsNotExist(err):
 		log.Errorf(err, "error")
 		os.Exit(1)
 	case os.IsNotExist(err):
 		log.Infof("script %v does not exist", *scriptPathPtr)
-		if *SDKVersionPtr == "" {
+		if strings.TrimSpace(*SDKVersionPtr) == "" {
 			log.Infof("both script and SDK version not found, exiting")
 			os.Exit(0)
 		}
 		fallthrough
-	case string(scriptData) == "" && *SDKVersionPtr == "":
+	case strings.TrimSpace(string(scriptData)) == "" && strings.TrimSpace(*SDKVersionPtr) == "":
 		log.Infof("script and SDK version are empty, nothing to do here")
 		os.Exit(0)
 	default:
@@ -71,13 +73,14 @@ func main() {
 		case tmpSDKVersion == d.SDKVersion:
 			log.Infof("driver %v: sdk %v is already installed", d.Language, tmpSDKVersion)
 			tmpSDKVersion = ""
-			if scriptText == "" {
+			if strings.TrimSpace(scriptText) == "" {
 				log.Infof("skipping driver %v: script is empty and version update is not required", d.Language)
 				continue
 			}
 			fallthrough
 		default:
-			err := utils.PrepareBranch(d, &utils.UpdateOptions{
+			githubToken := os.Getenv("GITHUB_TOKEN")
+			err := utils.PrepareBranch(d, githubToken, &utils.UpdateOptions{
 				Branch:     *branchPtr,
 				SDKVersion: tmpSDKVersion,
 				Script:     scriptText,
@@ -90,7 +93,7 @@ func main() {
 				continue
 			}
 			handleErr(err)
-			handleErr(utils.PreparePR(d, *branchPtr, *commitMsgPtr, *dryRunPtr))
+			handleErr(utils.PreparePR(d, githubToken, *branchPtr, *commitMsgPtr, *dryRunPtr))
 		}
 	}
 }
