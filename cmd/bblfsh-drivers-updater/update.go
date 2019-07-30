@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/bblfsh/sdk/v3/cmd/bblfsh-drivers-updater/utils"
 	"github.com/bblfsh/sdk/v3/driver/manifest/discovery"
@@ -22,6 +23,7 @@ func main() {
 	scriptPathPtr := flag.String("script", "", "path to the script that will be executed")
 	commitMsgPtr := flag.String("commit-msg", commitMsg, "commit message of the update")
 	dockerfilePtr := flag.Bool("dockerfile", false, "use dockerfile to create a branch")
+	dockerfileExplicitCredentialsPtr := flag.Bool("dockerfile-explicit-creds", false, "use explicit credentials inside dockerfile")
 	dryRunPtr := flag.Bool("dry-run", false, "dry run")
 	flag.Parse()
 
@@ -34,18 +36,19 @@ func main() {
 
 	var scriptText string
 	scriptData, err := ioutil.ReadFile(*scriptPathPtr)
+
 	switch {
 	case err != nil && !os.IsNotExist(err):
 		log.Errorf(err, "error")
 		os.Exit(1)
 	case os.IsNotExist(err):
 		log.Infof("script %v does not exist", *scriptPathPtr)
-		if *SDKVersionPtr == "" {
+		if strings.TrimSpace(*SDKVersionPtr) == "" {
 			log.Infof("both script and SDK version not found, exiting")
 			os.Exit(0)
 		}
 		fallthrough
-	case string(scriptData) == "" && *SDKVersionPtr == "":
+	case strings.TrimSpace(string(scriptData)) == "" && strings.TrimSpace(*SDKVersionPtr) == "":
 		log.Infof("script and SDK version are empty, nothing to do here")
 		os.Exit(0)
 	default:
@@ -71,26 +74,28 @@ func main() {
 		case tmpSDKVersion == d.SDKVersion:
 			log.Infof("driver %v: sdk %v is already installed", d.Language, tmpSDKVersion)
 			tmpSDKVersion = ""
-			if scriptText == "" {
+			if strings.TrimSpace(scriptText) == "" {
 				log.Infof("skipping driver %v: script is empty and version update is not required", d.Language)
 				continue
 			}
 			fallthrough
 		default:
-			err := utils.PrepareBranch(d, &utils.UpdateOptions{
-				Branch:     *branchPtr,
-				SDKVersion: tmpSDKVersion,
-				Script:     scriptText,
-				CommitMsg:  *commitMsgPtr,
-				Dockerfile: *dockerfilePtr,
-				DryRun:     *dryRunPtr,
+			githubToken := os.Getenv("GITHUB_TOKEN")
+			err := utils.PrepareBranch(d, githubToken, &utils.UpdateOptions{
+				Branch:                        *branchPtr,
+				SDKVersion:                    tmpSDKVersion,
+				Script:                        scriptText,
+				CommitMsg:                     *commitMsgPtr,
+				Dockerfile:                    *dockerfilePtr,
+				DockerfileExplicitCredentials: *dockerfileExplicitCredentialsPtr,
+				DryRun:                        *dryRunPtr,
 			})
 			if utils.ErrNothingToCommit.Is(err) {
 				log.Warningf("skipping driver %s: nothing to change", d.Language)
 				continue
 			}
 			handleErr(err)
-			handleErr(utils.PreparePR(d, *branchPtr, *commitMsgPtr, *dryRunPtr))
+			handleErr(utils.PreparePR(d, githubToken, *branchPtr, *commitMsgPtr, *dryRunPtr))
 		}
 	}
 }
