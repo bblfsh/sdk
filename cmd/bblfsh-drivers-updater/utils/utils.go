@@ -21,8 +21,8 @@ const (
 	org       = "bblfsh"
 	tmpFolder = "/var/lib/tmp"
 
-	gitUser = "grzegorz-brzęczyszczykiewicz"
-	gitMail = "<>"
+	gitUser = "bblfsh-release-bot"
+	gitMail = "<release-bot@bblf.sh>"
 
 	errSpecialText = "nothing to commit"
 )
@@ -51,17 +51,19 @@ type pipeLineNode struct {
 
 // UpdateOptions represents git metadata for changes and ways of execution of update script
 type UpdateOptions struct {
-	Branch     string
-	SDKVersion string
-	Script     string
-	CommitMsg  string
-	Dockerfile bool
-	DryRun     bool
+	Branch              string
+	SDKVersion          string
+	Script              string
+	CommitMsg           string
+	Dockerfile          bool
+	ExplicitCredentials bool
+	DryRun              bool
 }
 
-func newPipeLine(d discovery.Driver, o *UpdateOptions) *pipeLine {
+func newPipeLine(d discovery.Driver, githubToken string, o *UpdateOptions) *pipeLine {
 	url := d.RepositoryURL()
-	origin := getOrigin(url, o.Dockerfile)
+	processOptions(o)
+	origin := getOrigin(url, githubToken, o)
 	tmpDir := filepath.Join(tmpFolder, d.Language)
 
 	var nodes []pipeLineNode
@@ -81,7 +83,7 @@ func newPipeLine(d discovery.Driver, o *UpdateOptions) *pipeLine {
 			logArgs:   []interface{}{o.Branch},
 			command:   fmt.Sprintf("cd %s ; git checkout -b %s", shell.Quote(tmpDir), shell.Quote(o.Branch)),
 		})
-	if o.Script != "" {
+	if strings.TrimSpace(o.Script) != "" {
 		script := o.Script
 		if o.Dockerfile {
 			script = strings.Replace(script, "\n", ";", -1)
@@ -92,7 +94,7 @@ func newPipeLine(d discovery.Driver, o *UpdateOptions) *pipeLine {
 			command:   fmt.Sprintf("cd %s ; %v", shell.Quote(tmpDir), script),
 		})
 	}
-	if o.SDKVersion != "" {
+	if strings.TrimSpace(o.SDKVersion) != "" {
 		nodes = append(nodes, pipeLineNode{
 			logFormat: "updating sdk to %v",
 			logArgs:   []interface{}{o.SDKVersion},
@@ -102,7 +104,7 @@ func newPipeLine(d discovery.Driver, o *UpdateOptions) *pipeLine {
 	nodes = append(nodes, pipeLineNode{
 		logFormat: "set git user info",
 		logArgs:   []interface{}{},
-		command:   fmt.Sprintf("cd %s ; git config --global user.name %v ; git config --global user.email %v", shell.Quote(tmpDir), getEnv("GITHUB_NAME", gitUser), shell.Quote(getEnv("GITHUB_EMAIL", gitMail))),
+		command:   fmt.Sprintf("cd %s ; git config --global user.name %v ; git config --global user.email %v", shell.Quote(tmpDir), gitUser, shell.Quote(gitMail)),
 	}, pipeLineNode{
 		logFormat: "committing the changes",
 		logArgs:   []interface{}{},
@@ -151,7 +153,7 @@ ARG GITHUB_TOKEN
 	return path, nil
 }
 
-func (p *pipeLine) exec() error {
+func (p *pipeLine) exec(githubToken string) error {
 	if p.dockerfile {
 		dockerPath, err := p.createDockerfile()
 		if err != nil {
@@ -161,7 +163,7 @@ func (p *pipeLine) exec() error {
 			return nil
 		}
 		command := fmt.Sprintf("docker build --build-arg GITHUB_TOKEN=%v -t %v-driver-update %v",
-			os.Getenv("GITHUB_TOKEN"), p.driver.Language, filepath.Dir(dockerPath))
+			githubToken, p.driver.Language, filepath.Dir(dockerPath))
 		if err := ExecCmd(command); err != nil {
 			err = errFailedToPrepareBranch.New(p.driver.Language, err)
 			if strings.Contains(err.Error(), errSpecialText) {
@@ -186,7 +188,9 @@ func (p *pipeLine) exec() error {
 }
 
 func (p *pipeLine) close() {
-	os.RemoveAll(p.tmpDir)
+	if err := os.RemoveAll(p.tmpDir); err != nil {
+		log.Warningf("could not remove directory %v: %v", p.tmpDir, err)
+	}
 }
 
 // PrepareBranch does the next steps:
@@ -195,10 +199,10 @@ func (p *pipeLine) close() {
 // 3) executes custom script if it's not empty
 // 4) updates SDK version if it's not empty
 // 5) commits and pushes changes to the previously created branch
-func PrepareBranch(d discovery.Driver, o *UpdateOptions) error {
-	p := newPipeLine(d, o)
+func PrepareBranch(d discovery.Driver, githubToken string, o *UpdateOptions) error {
+	p := newPipeLine(d, githubToken, o)
 	defer p.close()
-	if err := p.exec(); err != nil {
+	if err := p.exec(githubToken); err != nil {
 		return err
 	}
 
@@ -207,23 +211,27 @@ func PrepareBranch(d discovery.Driver, o *UpdateOptions) error {
 }
 
 // PreparePR creates pull request for a given driver's branch
-func PreparePR(d discovery.Driver, branch, commitMsg string, dryRun bool) error {
+func PreparePR(d discovery.Driver, githubToken, branch, commitMsg string, dryRun bool) error {
 	ctx := context.Background()
 	client := github.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		&oauth2.Token{AccessToken: githubToken},
 	)))
 
 	log.Infof("Preparing pr %v -> master", branch)
-	if dryRun {
-		return nil
-	}
-	pr, _, err := client.PullRequests.Create(ctx, org, d.Language+"-driver", &github.NewPullRequest{
+	newPR := &github.NewPullRequest{
 		Title:               &branch,
 		Head:                &branch,
 		Base:                strPtr("master"),
 		Body:                strPtr(commitMsg),
 		MaintainerCanModify: newTrue(),
-	})
+	}
+	if dryRun {
+		log.Infof("pr to be created:\ntitle: %v\nhead: %v\nbase: %v\nbody: %v\nmaintainers can modify: %v",
+			newPR.GetTitle(), newPR.GetHead(), newPR.GetBase(), newPR.GetBody(), newPR.GetMaintainerCanModify())
+		return nil
+	}
+
+	pr, _, err := client.PullRequests.Create(ctx, org, d.Language+"-driver", newPR)
 	if err != nil {
 		return errFailedToPreparePR.New(d.Language, branch, err)
 	}
@@ -247,20 +255,18 @@ func ExecCmd(command string) error {
 	return nil
 }
 
-func getOrigin(url string, isDockerfile bool) string {
-	token := "${GITHUB_TOKEN}"
-	if !isDockerfile {
-		token = os.Getenv("GITHUB_TOKEN")
+func getOrigin(url string, githubToken string, o *UpdateOptions) string {
+	token := githubToken
+	if o.Dockerfile && !o.ExplicitCredentials {
+		token = "${GITHUB_TOKEN}"
 	}
-	return strings.Replace(url, "github.com", getEnv("GITHUB_NAME", gitUser)+":"+token+"@github.com", -1) + ".git"
+	return strings.Replace(url, "github.com", gitUser+":"+token+"@github.com", -1)
 }
 
-func getEnv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
+func processOptions(o *UpdateOptions) {
+	o.Branch = strings.TrimSpace(o.Branch)
+	o.CommitMsg = strings.TrimSpace(o.CommitMsg)
+	o.SDKVersion = strings.TrimSpace(o.SDKVersion)
 }
 
 func strPtr(s string) *string {
