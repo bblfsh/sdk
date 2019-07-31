@@ -102,18 +102,11 @@ func equalExt(n1, n2 External) bool {
 		if o1.Size() != o2.Size() {
 			return false
 		}
-		keys1, keys2 := o1.Keys(), o2.Keys()
-		m := make(map[string]struct{}, len(keys1))
-		for _, k := range keys1 {
-			m[k] = struct{}{}
-		}
-		for _, k := range keys2 {
-			if _, ok := m[k]; !ok {
-				return false
-			}
-			v1, _ := o1.ValueAt(k)
-			v2, _ := o2.ValueAt(k)
-			if !Equal(v1, v2) {
+
+		for _, k := range o1.Keys() {
+			v1, ok1 := o1.ValueAt(k)
+			v2, ok2 := o2.ValueAt(k)
+			if !ok1 || !ok2 || !Equal(v1, v2) {
 				return false
 			}
 		}

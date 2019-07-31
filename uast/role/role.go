@@ -100,7 +100,7 @@ const (
 	// Statement is some action to be carried out usually without producing a value.
 	Statement
 
-	// Equal is an eaquality predicate (i.e. `=`, `==`, etc.)
+	// Equal is an equality predicate (i.e. `=`, `==`, etc.)
 	Equal
 
 	// Not is a negation operation. It may be used to annotate a complement of an operator.
@@ -109,7 +109,7 @@ const (
 	// LessThan is a comparison predicate that checks if the lhs value is smaller than the rhs value (i. e. `<`.)
 	LessThan
 
-	// LessThanOrEqual is a comparison predicate that checks if the lhs value is smaller or equal to the rhs value (i.e. `<=`.)
+	// LessThanOrEqual is a comparison predicate that checks if the lhs value is smaller or equal than the rhs value (i.e. `<=`.)
 	LessThanOrEqual
 
 	// GreaterThan is a comparison predicate that checks if the lhs value is greater than the rhs value (i. e. `>`.)
@@ -265,7 +265,7 @@ const (
 	// Case is a clause whose expression is compared with the condition.
 	Case
 
-	// Default is a clause that is called when no other clause is matches.
+	// Default is a clause that is called when no other clause matches.
 	Default
 
 	// For is a loop with an initialization, a condition, an update and a body.
