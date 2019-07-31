@@ -102,9 +102,8 @@ func equalExt(n1, n2 External) bool {
 		if o1.Size() != o2.Size() {
 			return false
 		}
-		var keys = o1.Keys()
 
-		for _, k := range keys {
+		for _, k := range o1.Keys() {
 			v1, ok1 := o1.ValueAt(k)
 			v2, ok2 := o2.ValueAt(k)
 			if !ok1 || !ok2 || !Equal(v1, v2) {
