@@ -229,13 +229,31 @@ func (it *levelOrderIter) Node() External {
 	return it.level[it.i]
 }
 
+func addUnfoldingArrays(nodes []External, n External) []External {
+	if n == nil || n.Kind().In(KindsValues) {
+		return nodes
+	}
+	switch n.Kind() {
+	case KindArray:
+		if m, ok := n.(ExternalArray); ok {
+			sz := m.Size()
+			for i := 0; i < sz; i++ {
+				if v := m.ValueAt(i); v != nil {
+					nodes = addUnfoldingArrays(nodes, v)
+				}
+			}
+		}
+	default:
+		nodes = append(nodes, n)
+	}
+
+	return nodes
+}
+
 func newChildrenIterator(n External) Iterator {
 	var nodes []External
 	eachChild(n, func(v External) {
-		if v == nil || v.Kind().In(KindsValues) {
-			return
-		}
-		nodes = append(nodes, v)
+		nodes = addUnfoldingArrays(nodes, v)
 	})
 	return newFixedIterator(nodes)
 }
