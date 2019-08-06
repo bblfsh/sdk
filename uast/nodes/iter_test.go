@@ -73,16 +73,20 @@ func TestIterChildren(t *testing.T) {
 		"k2": nodes.Array{nodes.Int(2)},
 	}
 	b := nodes.String("v")
-	c := nodes.Array{b}
+	c := nodes.Object{
+		"k3": b,
+	}
+	d := nodes.Array{c}
 	root := nodes.Object{
 		"a": a,
 		"b": b,
 		"c": c,
+		"d": d,
 	}
 
 	it := nodes.NewIterator(root, nodes.ChildrenOrder)
 	got := allNodes(it)
-	exp := []nodes.Node{a, c}
+	exp := []nodes.Node{a,c,c}
 	if !nodes.Equal(nodes.Array(exp), nodes.Array(got)) {
 		require.Equal(t, nodes.Array(exp), nodes.Array(got))
 	}
