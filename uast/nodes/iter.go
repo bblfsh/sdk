@@ -230,9 +230,6 @@ func (it *levelOrderIter) Node() External {
 }
 
 func addUnfoldingArrays(nodes []External, n External) []External {
-	if n == nil || n.Kind().In(KindsValues) {
-		return nodes
-	}
 	switch n.Kind() {
 	case KindArray:
 		if m, ok := n.(ExternalArray); ok {
@@ -243,10 +240,9 @@ func addUnfoldingArrays(nodes []External, n External) []External {
 				}
 			}
 		}
-	default:
+	case KindObject:
 		nodes = append(nodes, n)
 	}
-
 	return nodes
 }
 
