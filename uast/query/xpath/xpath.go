@@ -40,13 +40,21 @@ type xQuery struct {
 	exp *xpath.Expr
 }
 
-func (q *xQuery) Execute(root nodes.External) (query.Iterator, error) {
+func (q *xQuery) Execute(root nodes.External) (it query.Iterator, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Error executing the xPath query, maybe wrong syntax?")
+		}
+	}()
+
 	nav := q.idx.newNavigator(root)
 	val := q.exp.Evaluate(nav)
+
 	if it, ok := val.(*xpath.NodeIterator); ok {
 		return &iterator{it: it}, nil
 	}
 	var v nodes.Value
+
 	switch val := val.(type) {
 	case bool:
 		v = nodes.Bool(val)
@@ -65,7 +73,9 @@ func (q *xQuery) Execute(root nodes.External) (query.Iterator, error) {
 	default:
 		return nil, fmt.Errorf("unsupported type: %T", val)
 	}
-	return &valIterator{val: v}, nil
+
+	it = &valIterator{val: v}
+	return
 }
 
 type valIterator struct {
