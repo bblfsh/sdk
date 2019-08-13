@@ -40,7 +40,10 @@ type xQuery struct {
 	exp *xpath.Expr
 }
 
-func (q *xQuery) Execute(root nodes.External) (it query.Iterator, err error) {
+func (q *xQuery) Execute(root nodes.External) (_ query.Iterator, err error) {
+	// This workaround should be temporary. xpath library is not
+	// managing panics correctly (it should output a nice error instead)
+	// TODO fix the xpath library instead of recovering from the panic
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("Error executing the xPath query, maybe wrong syntax?")
@@ -74,8 +77,7 @@ func (q *xQuery) Execute(root nodes.External) (it query.Iterator, err error) {
 		return nil, fmt.Errorf("unsupported type: %T", val)
 	}
 
-	it = &valIterator{val: v}
-	return
+	return &valIterator{val: v}, nil
 }
 
 type valIterator struct {
