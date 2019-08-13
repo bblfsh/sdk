@@ -84,6 +84,10 @@ func TestFilter(t *testing.T) {
 	it, err = idx.Execute(root, "//Ident[@role = 'Invalid']")
 	require.NoError(t, err)
 	expect(t, it)
+
+	// Malformed query because of the position of the last *
+	it, err = idx.Execute(root, "//*[@role='Variable']*//Name")
+	require.Error(t, err)
 }
 
 func TestFilterObject(t *testing.T) {

@@ -40,13 +40,13 @@ type xQuery struct {
 	exp *xpath.Expr
 }
 
-func (q *xQuery) Execute(root nodes.External) (_ query.Iterator, err error) {
+func (q *xQuery) Execute(root nodes.External) (_ query.Iterator, gerr error) {
 	// This workaround should be temporary. xpath library is not
 	// managing panics correctly (it should output a nice error instead)
-	// TODO fix the xpath library instead of recovering from the panic
+	// TODO(ncordon): fix the xpath library instead of recovering from the panic
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("Error executing the xPath query, maybe wrong syntax?")
+			gerr = fmt.Errorf("Error executing the xPath query, maybe wrong syntax? \nRecovered from %v", r)
 		}
 	}()
 
