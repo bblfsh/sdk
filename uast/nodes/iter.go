@@ -222,6 +222,7 @@ func (it *levelOrderIter) Next() bool {
 	it.level = next
 	return len(it.level) > 0
 }
+
 func (it *levelOrderIter) Node() External {
 	if it.i >= len(it.level) {
 		return nil
