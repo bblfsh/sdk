@@ -266,6 +266,7 @@ const (
 	Case
 
 	// Default is a clause that is called when no other clause matches.
+	// For Switch statements, the node with the Default role must also have the Case role.
 	Default
 
 	// For is a loop with an initialization, a condition, an update and a body.
