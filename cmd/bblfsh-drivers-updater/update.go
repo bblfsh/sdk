@@ -47,7 +47,6 @@ func main() {
 			log.Infof("both script and SDK version not found, exiting")
 			os.Exit(0)
 		}
-		fallthrough
 	case strings.TrimSpace(string(scriptData)) == "" && strings.TrimSpace(*SDKVersionPtr) == "":
 		log.Infof("script and SDK version are empty, nothing to do here")
 		os.Exit(0)
