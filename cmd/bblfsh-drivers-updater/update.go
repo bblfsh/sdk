@@ -36,23 +36,13 @@ func main() {
 
 	var scriptText string
 	scriptData, err := ioutil.ReadFile(*scriptPathPtr)
-
-	switch {
-	case err != nil && !os.IsNotExist(err):
+	if err != nil {
 		log.Errorf(err, "error")
-		os.Exit(1)
-	case os.IsNotExist(err):
-		log.Infof("script %v does not exist", *scriptPathPtr)
-		if strings.TrimSpace(*SDKVersionPtr) == "" {
-			log.Infof("both script and SDK version not found, exiting")
-			os.Exit(0)
-		}
-		fallthrough
-	case strings.TrimSpace(string(scriptData)) == "" && strings.TrimSpace(*SDKVersionPtr) == "":
+	}
+	scriptText = string(scriptData)
+	if strings.TrimSpace(scriptText) == "" && strings.TrimSpace(*SDKVersionPtr) == "" {
 		log.Infof("script and SDK version are empty, nothing to do here")
 		os.Exit(0)
-	default:
-		scriptText = string(scriptData)
 	}
 
 	log.Infof("getting the list of supported drivers")
