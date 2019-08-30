@@ -58,6 +58,18 @@ spec:
         sh "/root/bblfsh-performance parse-and-store --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --storage=prom ${env.BENCHMARK_FILE}"
       }
     }
+    stage('Run driver-native benchmark') {
+      when { branch 'master' }
+      steps {
+        sh "/root/bblfsh-performance driver-native --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --native=/root/utils/native-driver-performance --storage=prom ${env.DRIVER_SRC_FIXTURES}"
+      }
+    }
+    stage('Run driver benchmark') {
+      when { branch 'master' }
+      steps {
+        sh "/root/bblfsh-performance driver --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --storage=prom ${env.DRIVER_SRC_FIXTURES}"
+      }
+    }
     stage('Run end-to-end benchmark') {
       when { branch 'master' }
       steps {
