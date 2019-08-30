@@ -2,7 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore (18B)
 // etc/skeleton/.travis.yml (397B)
-// etc/skeleton/Jenkinsfile.tpl (2.49kB)
+// etc/skeleton/Jenkinsfile.tpl (3.037kB)
 // etc/skeleton/LICENSE (35.141kB)
 // etc/skeleton/README.md.tpl (1.981kB)
 // etc/skeleton/build.go (464B)
@@ -186,6 +186,18 @@ spec:
         sh "/root/bblfsh-performance parse-and-store --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --storage=prom ${env.BENCHMARK_FILE}"
       }
     }
+    stage('Run driver-native benchmark') {
+      when { branch 'master' }
+      steps {
+        sh "/root/bblfsh-performance driver-native --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --native=/root/utils/native-driver-performance --storage=prom ${env.DRIVER_SRC_FIXTURES}"
+      }
+    }
+    stage('Run driver benchmark') {
+      when { branch 'master' }
+      steps {
+        sh "/root/bblfsh-performance driver --language=${env.DRIVER_LANGUAGE} --commit=${env.GIT_COMMIT} --storage=prom ${env.DRIVER_SRC_FIXTURES}"
+      }
+    }
     stage('Run end-to-end benchmark') {
       when { branch 'master' }
       steps {
@@ -206,8 +218,8 @@ func jenkinsfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 2490, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb3, 0xa9, 0x2c, 0x95, 0xd6, 0xd7, 0x57, 0x5f, 0xaf, 0xf2, 0x36, 0x85, 0xc, 0x1d, 0x29, 0xe3, 0x69, 0x25, 0x80, 0xbc, 0xf0, 0xb6, 0x73, 0x5e, 0x5e, 0xe6, 0xd3, 0x10, 0x36, 0x3a, 0x52, 0x4f}}
+	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 3037, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6, 0xde, 0xdf, 0xaa, 0xc3, 0x35, 0x85, 0x6a, 0x9d, 0x1a, 0x58, 0x1d, 0x4b, 0xc0, 0x5, 0x39, 0x11, 0xa8, 0xe8, 0x61, 0xa7, 0x27, 0xcb, 0xdd, 0x31, 0x51, 0x30, 0x56, 0xd9, 0xd0, 0xcc, 0x80}}
 	return a, nil
 }
 
