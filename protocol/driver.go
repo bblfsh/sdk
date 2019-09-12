@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
@@ -21,6 +22,8 @@ import (
 )
 
 //go:generate protoc --proto_path=$GOPATH/src:. --gogo_out=plugins=grpc:. ./driver.proto
+// TODO(dennwc): bug in gogo protobuf generator; fix upstream
+//go:generate sed -i "s/dAtA\\[\\:m\\.Size/dAtA\\[\\:m\\.ProtoSize/g" driver.pb.go
 
 const (
 	mb = 1 << 20
@@ -95,8 +98,63 @@ func toParseErrors(err error) []*ParseError {
 	}
 }
 
+// newGRPCError creates a new gRPC error with a specified code, message and optional details.
+// The function will panic if any error details fail to encode.
+func newGRPCError(code codes.Code, cause error, details ...proto.Message) error {
+	st, err := status.New(code, cause.Error()).WithDetails(details...)
+	if err != nil {
+		panic(err)
+	}
+	return st.Err()
+}
+
 type driverServer struct {
 	d driver.Driver
+}
+
+// toGRPCError converts an error to gRPC equivalent.
+// Some errors may be silenced and added to resp instead (e.g. syntax errors).
+func toGRPCError(resp *ParseResponse, err error) error {
+	e, ok := err.(*serrors.Error)
+	if !ok {
+		return err
+	}
+	cause := e.Cause()
+	if cause == nil {
+		cause = e // if no cause is available, use error's message instead
+	}
+	switch {
+	case driver.ErrDriverFailure.Is(err):
+		return newGRPCError(codes.Internal, cause, &ErrorDetails{
+			Reason: &ErrorDetails_DriverFailure{DriverFailure: true},
+		})
+	case driver.ErrTransformFailure.Is(err):
+		return newGRPCError(codes.FailedPrecondition, cause, &ErrorDetails{
+			Reason: &ErrorDetails_TransformFailure{TransformFailure: true},
+		})
+	case driver.ErrModeNotSupported.Is(err):
+		return newGRPCError(codes.InvalidArgument, cause, &ErrorDetails{
+			Reason: &ErrorDetails_UnsupportedTransformMode{UnsupportedTransformMode: true},
+		})
+	case driver.ErrLanguageDetection.Is(err):
+		return newGRPCError(codes.NotFound, cause, &ErrorDetails{
+			Reason: &ErrorDetails_CannotDetectLanguage{CannotDetectLanguage: true},
+		})
+	case driver.ErrUnknownEncoding.Is(err):
+		return newGRPCError(codes.InvalidArgument, cause, &ErrorDetails{
+			Reason: &ErrorDetails_InvalidFileEncoding{InvalidFileEncoding: true},
+		})
+	case driver.ErrSyntax.Is(err):
+		// partial parse or syntax error; we will send an OK status code, but will fill Errors field
+		resp.Errors = toParseErrors(cause)
+		return nil
+	}
+	if e, ok := err.(*driver.ErrMissingDriver); ok {
+		return newGRPCError(codes.InvalidArgument, cause, &ErrorDetails{
+			Reason: &ErrorDetails_UnsupportedLanguage{UnsupportedLanguage: e.Language},
+		})
+	}
+	return err // unknown error
 }
 
 // Parse implements DriverServer.
@@ -112,20 +170,9 @@ func (s *driverServer) Parse(rctx context.Context, req *ParseRequest) (*ParseRes
 	var resp ParseResponse
 	n, err := s.d.Parse(ctx, req.Content, opts)
 	resp.Language = opts.Language // can be set during the call
-	if e, ok := err.(*serrors.Error); ok {
-		cause := e.Cause()
-		if driver.ErrDriverFailure.Is(err) {
-			return nil, status.Error(codes.Internal, cause.Error())
-		} else if driver.ErrTransformFailure.Is(err) {
-			return nil, status.Error(codes.FailedPrecondition, cause.Error())
-		} else if driver.ErrModeNotSupported.Is(err) {
-			return nil, status.Error(codes.InvalidArgument, cause.Error())
-		}
-		if !driver.ErrSyntax.Is(err) {
-			return nil, err // unknown error
-		}
-		// partial parse or syntax error; we will send an OK status code, but will fill Errors field
-		resp.Errors = toParseErrors(cause)
+	err = toGRPCError(&resp, err)
+	if err != nil {
+		return nil, err
 	}
 
 	dsp, _ := opentracing.StartSpanFromContext(ctx, "uast.Encode")
@@ -148,7 +195,7 @@ func (s *driverServer) ServerVersion(rctx context.Context, _ *VersionRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	vers := Version(resp)
+	vers := Version{Version: resp.Version, Build: resp.Build}
 	return &VersionResponse{Version: &vers}, nil
 }
 
@@ -173,6 +220,60 @@ type client struct {
 	h DriverHostClient
 }
 
+// fromGRPCError extract error details from gRPC error codes and error details and converts it to a native bblfsh error.
+func fromGRPCError(err error) error {
+	s, ok := status.FromError(err)
+	if !ok {
+		return err
+	}
+	// prefer detailed errors
+	for _, d := range s.Details() {
+		d, ok := d.(*ErrorDetails)
+		if !ok {
+			continue
+		}
+		switch r := d.Reason.(type) {
+		case *ErrorDetails_UnsupportedLanguage:
+			// special error type - return directly
+			return &driver.ErrMissingDriver{Language: r.UnsupportedLanguage}
+		case *ErrorDetails_InvalidFileEncoding:
+			if r.InvalidFileEncoding {
+				return driver.ErrUnknownEncoding.New()
+			}
+		case *ErrorDetails_CannotDetectLanguage:
+			if r.CannotDetectLanguage {
+				return driver.ErrLanguageDetection.New()
+			}
+		case *ErrorDetails_UnsupportedTransformMode:
+			if r.UnsupportedTransformMode {
+				return driver.ErrModeNotSupported.New()
+			}
+		case *ErrorDetails_TransformFailure:
+			if r.TransformFailure {
+				return driver.ErrTransformFailure.Wrap(errors.New(s.Message()))
+			}
+		case *ErrorDetails_DriverFailure:
+			if r.DriverFailure {
+				return driver.ErrDriverFailure.Wrap(errors.New(s.Message()))
+			}
+		}
+	}
+	// fallback to detection based on the status code
+	var kind *serrors.Kind
+	switch s.Code() {
+	case codes.Internal:
+		kind = driver.ErrDriverFailure
+	case codes.FailedPrecondition:
+		kind = driver.ErrTransformFailure
+	case codes.InvalidArgument:
+		kind = driver.ErrModeNotSupported
+	}
+	if kind != nil {
+		return kind.Wrap(errors.New(s.Message()))
+	}
+	return err
+}
+
 // Parse implements DriverClient.
 func (c *client) Parse(rctx context.Context, src string, opts *driver.ParseOptions) (nodes.Node, error) {
 	sp, ctx := opentracing.StartSpanFromContext(rctx, "bblfsh.client.Parse")
@@ -185,20 +286,7 @@ func (c *client) Parse(rctx context.Context, src string, opts *driver.ParseOptio
 		req.Filename = opts.Filename
 	}
 	resp, err := c.c.Parse(ctx, req)
-	if s, ok := status.FromError(err); ok {
-		var kind *serrors.Kind
-		switch s.Code() {
-		case codes.Internal:
-			kind = driver.ErrDriverFailure
-		case codes.FailedPrecondition:
-			kind = driver.ErrTransformFailure
-		case codes.InvalidArgument:
-			kind = driver.ErrModeNotSupported
-		}
-		if kind != nil {
-			return nil, kind.Wrap(errors.New(s.Message()))
-		}
-	}
+	err = fromGRPCError(err)
 	if err != nil {
 		return nil, err // server or network error
 	}
@@ -238,8 +326,7 @@ func (c *client) Version(rctx context.Context) (driver.Version, error) {
 	if err != nil {
 		return driver.Version{}, err
 	}
-	vers := (*driver.Version)(resp.Version)
-	return *vers, nil
+	return driver.Version{Version: resp.Version.Version, Build: resp.Version.Build}, nil
 }
 
 // Languages implements DriverHostClient.
