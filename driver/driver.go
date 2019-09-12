@@ -26,7 +26,29 @@ var (
 
 	// ErrModeNotSupported is returned if a UAST transformation mode is not supported by the driver.
 	ErrModeNotSupported = errors.NewKind("transform mode not supported")
+
+	// ErrLanguageDetection indicates that language was not detected by Enry.
+	ErrLanguageDetection = errors.NewKind("could not autodetect language")
+
+	// ErrUnknownEncoding is returned for parse requests with a file content in a non-UTF8 encoding.
+	ErrUnknownEncoding = errors.NewKind("unknown source file encoding (expected UTF-8)")
 )
+
+// ErrMissingDriver indicates that a driver image for the given language
+// can not be found.
+type ErrMissingDriver struct {
+	Language string
+}
+
+func (e *ErrMissingDriver) Error() string {
+	return fmt.Sprintf("missing driver for language %q", e.Language)
+}
+
+// IsMissingDriver checks if an error is ErrMissingDriver.
+func IsMissingDriver(err error) bool {
+	_, ok := err.(*ErrMissingDriver)
+	return ok
+}
 
 const (
 	// ManifestLocation is the path of the manifest file in the driver image.
