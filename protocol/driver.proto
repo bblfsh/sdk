@@ -9,6 +9,10 @@ option (gogoproto.sizer_all) = false;
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) =  true;
 option (gogoproto.goproto_getters_all) = false;
+
+// support for Any message used in google.rpc.Status.
+option (gogoproto.goproto_registration) = true;
+
 option go_package = "protocol";
 
 // ParseRequest is a request to parse a file and get its UAST.
@@ -105,4 +109,18 @@ service DriverHost {
     rpc ServerVersion(VersionRequest) returns (VersionResponse);
     // SupportedLanguages returns a list of languages supported by the server.
     rpc SupportedLanguages (SupportedLanguagesRequest) returns (SupportedLanguagesResponse);
+}
+
+// ErrorDetails adds bblfsh-specific information to gRPC errors (google.rpc.Status).
+message ErrorDetails {
+    // support for Any message used in google.rpc.Status.
+    option (gogoproto.messagename) = true;
+    oneof reason {
+        bool invalid_file_encoding = 1;
+        string unsupported_language = 2;
+        bool cannot_detect_language = 3;
+        bool unsupported_transform_mode = 4;
+        bool transform_failure = 5;
+        bool driver_failure = 6;
+    }
 }
