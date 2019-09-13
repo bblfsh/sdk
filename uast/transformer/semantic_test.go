@@ -32,11 +32,11 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "utf8 chars",
-			text: "// “utf8 ½Å comment”",
+			text: "// “utf8 ½Å commentÅ”",
 			exp: commentElems{
 				StartToken: "//", EndToken: "",
 				Prefix: " ", Suffix: "",
-				Text:   "“utf8 ½Å comment”",
+				Text:   "“utf8 ½Å commentÅ”",
 			},
 		},
 		{
