@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/bblfsh/sdk/v3/uast"
 	"github.com/bblfsh/sdk/v3/uast/nodes"
@@ -194,8 +195,10 @@ func (c *commentElems) Split(text string) bool {
 
 	c.Suffix = ""
 	if i >= 0 {
-		c.Suffix = text[i+1:]
-		text = text[:i+1]
+		// compute the unicode length (could be more than just one byte)
+		_, ulen := utf8.DecodeRune([]byte(text[i:]))
+		c.Suffix = text[i+ulen:]
+		text = text[:i+ulen]
 	}
 	c.Text = text
 
