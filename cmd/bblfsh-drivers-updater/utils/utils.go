@@ -108,7 +108,7 @@ func newPipeLine(d discovery.Driver, githubToken string, o *UpdateOptions) *pipe
 	}, pipeLineNode{
 		logFormat: "committing the changes",
 		logArgs:   []interface{}{},
-		command:   fmt.Sprintf("cd %s ; git add -A ; git commit --signoff -m \"%s\"", shell.Quote(tmpDir), o.CommitMsg),
+		command:   fmt.Sprintf("cd %s ; git commit -a --signoff -m \"%s\"", shell.Quote(tmpDir), o.CommitMsg),
 	}, pipeLineNode{
 		logFormat: "pushing changes",
 		logArgs:   []interface{}{},
