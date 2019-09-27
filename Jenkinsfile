@@ -33,6 +33,8 @@ spec:
     GenericTrigger(
       genericVariables: [
         [key: 'target', value: '$.target'],
+        [key: 'title', value: '$.title'],
+        [key: 'text', value: '$.text'],
         [key: 'sdk_version', value: '$.sdk_version'],
         [key: 'branch', value: '$.branch'],
         [key: 'commit_msg', value: '$.commit_msg'],
@@ -54,7 +56,7 @@ spec:
       steps {
         withCredentials([usernamePassword(credentialsId: '87b3cad8-8b12-4e91-8f47-33f3d7d45620', passwordVariable: 'token', usernameVariable: 'user')]) {
           sh 'echo ${script} > /etc/script.sh ; chmod +x /etc/script.sh'
-          sh 'GITHUB_TOKEN=${token} go run cmd/bblfsh-drivers-updater/update.go --script="/etc/script.sh" --sdk-version="${sdk_version}" --branch="${branch}" --commit-msg="${commit_msg}" --dockerfile=true'
+          sh 'GITHUB_TOKEN=${token} go run cmd/bblfsh-drivers-updater/update.go --script="/etc/script.sh" --sdk-version="${sdk_version}" --branch="${branch}" --title="${title}"  --text="${text}" --commit-msg="${commit_msg}" --dockerfile=true'
         }
       }
     }

@@ -10,7 +10,7 @@ import (
 	"github.com/bblfsh/sdk/v3/cmd/bblfsh-drivers-updater/utils"
 	"github.com/bblfsh/sdk/v3/driver/manifest/discovery"
 
-	"gopkg.in/src-d/go-log.v1"
+	log "gopkg.in/src-d/go-log.v1"
 )
 
 const (
@@ -19,6 +19,8 @@ const (
 
 func main() {
 	branchPtr := flag.String("branch", "patch-1", "branch to be created")
+	titlePtr := flag.String("title", "", "PR title")
+	textPtr := flag.String("text", "", "PR body text")
 	SDKVersionPtr := flag.String("sdk-version", "", "sdk version to update to")
 	scriptPathPtr := flag.String("script", "", "path to the script that will be executed")
 	commitMsgPtr := flag.String("commit-msg", commitMsg, "commit message of the update")
@@ -86,7 +88,15 @@ func main() {
 			}
 
 			handleErr(err)
-			handleErr(utils.PreparePR(d, githubToken, *branchPtr, *commitMsgPtr, *dryRunPtr))
+			pr := utils.PRInfo{
+				Branch: *branchPtr,
+				Title:  *titlePtr,
+				Text:   *textPtr,
+			}
+			if pr.Text == "" {
+				pr.Text = *commitMsgPtr
+			}
+			handleErr(utils.PreparePR(d, githubToken, pr, *dryRunPtr))
 		}
 	}
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/google/go-github/v27/github"
 	"golang.org/x/oauth2"
 	"gopkg.in/src-d/go-errors.v1"
-	"gopkg.in/src-d/go-log.v1"
+	log "gopkg.in/src-d/go-log.v1"
 )
 
 const (
@@ -210,19 +210,28 @@ func PrepareBranch(d discovery.Driver, githubToken string, o *UpdateOptions) err
 	return nil
 }
 
+type PRInfo struct {
+	Branch string // required
+	Title  string
+	Text   string
+}
+
 // PreparePR creates pull request for a given driver's branch
-func PreparePR(d discovery.Driver, githubToken, branch, commitMsg string, dryRun bool) error {
+func PreparePR(d discovery.Driver, githubToken string, pr PRInfo, dryRun bool) error {
 	ctx := context.Background()
 	client := github.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: githubToken},
 	)))
 
-	log.Infof("Preparing pr %v -> master", branch)
+	log.Infof("Preparing pr %v -> master", pr.Branch)
+	if pr.Title == "" {
+		pr.Title = pr.Branch
+	}
 	newPR := &github.NewPullRequest{
-		Title:               &branch,
-		Head:                &branch,
+		Title:               &pr.Title,
+		Head:                &pr.Branch,
 		Base:                strPtr("master"),
-		Body:                strPtr(commitMsg),
+		Body:                &pr.Text,
 		MaintainerCanModify: newTrue(),
 	}
 	if dryRun {
@@ -231,12 +240,12 @@ func PreparePR(d discovery.Driver, githubToken, branch, commitMsg string, dryRun
 		return nil
 	}
 
-	pr, _, err := client.PullRequests.Create(ctx, org, d.Language+"-driver", newPR)
+	p, _, err := client.PullRequests.Create(ctx, org, d.Language+"-driver", newPR)
 	if err != nil {
-		return errFailedToPreparePR.New(d.Language, branch, err)
+		return errFailedToPreparePR.New(d.Language, pr.Branch, err)
 	}
 
-	log.Infof("driver %v: pull request %v has been successfully created", d.Language, *pr.ID)
+	log.Infof("driver %v: pull request %v has been successfully created", d.Language, *p.ID)
 	return nil
 }
 
