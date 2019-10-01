@@ -145,6 +145,9 @@ type commentElems struct {
 	DoTrim     bool
 }
 
+// A tab is defined as a space, \t, \n, ...
+// or as a member of the startToken / endToken
+// for the comment
 func (c *commentElems) isTab(r rune) bool {
 	if unicode.IsSpace(r) {
 		return true
@@ -173,10 +176,12 @@ func (c *commentElems) Split(text string) bool {
 	text = strings.TrimPrefix(text, c.StartToken)
 	text = strings.TrimSuffix(text, c.EndToken)
 
-	// find prefix (if not already trimmed)
-	i := strings.IndexFunc(text, func(r rune) bool {
+	notTab := func(r rune) bool {
 		return !c.isTab(r)
-	})
+	}
+
+	// find prefix (if not already trimmed)
+	i := strings.IndexFunc(text, notTab)
 
 	c.Prefix = ""
 
@@ -189,14 +194,12 @@ func (c *commentElems) Split(text string) bool {
 	}
 
 	// find suffix
-	i = strings.LastIndexFunc(text, func(r rune) bool {
-		return !c.isTab(r)
-	})
+	i = strings.LastIndexFunc(text, notTab)
 
 	c.Suffix = ""
 	if i >= 0 {
 		// compute the unicode length (could be more than just one byte)
-		_, ulen := utf8.DecodeRune([]byte(text[i:]))
+		_, ulen := utf8.DecodeRuneInString(text[i:])
 		c.Suffix = text[i+ulen:]
 		text = text[:i+ulen]
 	}
@@ -212,9 +215,7 @@ func (c *commentElems) Split(text string) bool {
 	// first line is special, it won't contain tab
 	for i, line := range sub[1:] {
 		if i == 0 {
-			j := strings.IndexFunc(line, func(r rune) bool {
-				return !c.isTab(r)
-			})
+			j := strings.IndexFunc(line, notTab)
 
 			c.Indent = ""
 			if j >= 0 {
@@ -227,9 +228,7 @@ func (c *commentElems) Split(text string) bool {
 		if strings.HasPrefix(line, c.Indent) {
 			continue
 		}
-		j := strings.IndexFunc(line, func(r rune) bool {
-			return !c.isTab(r)
-		})
+		j := strings.IndexFunc(line, notTab)
 
 		tab := ""
 		if j >= 0 {
