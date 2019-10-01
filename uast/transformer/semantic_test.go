@@ -59,7 +59,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "multi-line new line",
-			text: `/*
+			text:
+`/*
 	some text
 */`,
 			exp: commentElems{
@@ -70,7 +71,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "multi-line",
-			text: `/*
+			text:
+`/*
 	some text
 	line two
 */`,
@@ -81,8 +83,22 @@ func TestComment(t *testing.T) {
 			},
 		},
 		{
+			name: "multi-line with initial spaces",
+			text:
+`/*    /
+	some text
+	line two
+*/`,
+			exp: commentElems{
+				StartToken: "/*", EndToken: "*/",
+				Prefix: "\n\t", Indent: "\t", Suffix: "\n",
+				Text: "/some text\nline two",
+			},
+		},
+		{
 			name: "stylistic",
-			text: `/*
+			text:
+`/*
  * some text
  * line two
  * line three
@@ -95,7 +111,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "multiple single line",
-			text: `// some text
+			text:
+`// some text
 // line two`,
 			exp: commentElems{
 				StartToken: "//", EndToken: "",
@@ -105,7 +122,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "stylistic inconsistent",
-			text: `/*
+			text:
+`/*
  * some text
  *   line two
  * line three
