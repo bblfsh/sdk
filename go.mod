@@ -21,8 +21,10 @@ require (
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/google/go-github v15.0.0+incompatible
 	github.com/google/go-github/v27 v27.0.4
+	github.com/google/pprof v0.0.0-20190930153522-6ce02741cba3 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
+	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/kevinburke/go-bindata v3.13.0+incompatible
 	github.com/mattn/go-colorable v0.1.2 // indirect
@@ -45,6 +47,7 @@ require (
 	github.com/uber/jaeger-lib v1.5.0 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
+	golang.org/x/arch v0.0.0-20190927153633-4e8777c89be4 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
