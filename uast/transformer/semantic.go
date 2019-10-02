@@ -171,32 +171,37 @@ func max(x, y int) int {
     return y
 }
 
-// Returns the first index i of runes satisfying f(runes[i]), len(runes) otherwise
+// Returns the first index i of runes satisfying f(runes[i]), -1 otherwise
 func firstIndexFunc(runes []rune, f func(r rune) bool) int {
 	for i, r := range runes {
 		if (f(r)) {
-			return i;
+			return i
 		}
 	}
-	return len(runes);
+	return -1
 }
 
 // Returns the last index i of runes satisfying f(runes[i]), -1 otherwise
 func lastIndexFunc(runes []rune, f func(r rune) bool) int {
 	for i := range runes {
 		j := len(runes) - 1 - i
-		if (f(runes[j])) {
-			return j;
+		if f(runes[j]) {
+			return j
 		}
 	}
-	return -1;
+	return -1
 }
 
 func (c *commentElems) findPrefix(f func(r rune) bool) {
 	runes := []rune(c.Text)
 	i := firstIndexFunc(runes, f)
-	c.Prefix = string(runes[:i])
-	c.Text = string(runes[i:])
+	if i != -1 {
+		c.Prefix = string(runes[:i])
+		c.Text = string(runes[i:])
+	} else {
+		c.Prefix = c.Text
+		c.Text = ""
+	}
 }
 
 func (c *commentElems) findSuffix(f func(r rune) bool) {
@@ -213,7 +218,7 @@ func commonPrefix(a []rune, b []rune) []rune {
 	i := 0
 	for ; i < len(a); i++ {
 		if (a[i] != b[i]) {
-			break;
+			break
 		}
 	}
 	return a[:i]
@@ -247,6 +252,11 @@ func (c *commentElems) Split(text string) bool {
 	for i, line := range sub[1:] {
 		runes := []rune(line)
 		j := firstIndexFunc(runes, notTab)
+		// Adjust j to take whole slice as tab in case
+		// all runes are tab runes
+		if j == -1 {
+			j = len(runes)
+		}
 		// set the initial common indentation
 		if i == 0 {
 			tab = runes[:j]
@@ -254,7 +264,7 @@ func (c *commentElems) Split(text string) bool {
 			tab = commonPrefix(tab, runes[:j])
 		}
 		if len(tab) == 0 {
-			return true; // inconsistent, no common tabs
+			return true // inconsistent, no common tabs
 		}
 	}
 
