@@ -40,6 +40,15 @@ func TestComment(t *testing.T) {
 			},
 		},
 		{
+			name: "utf8 singleton",
+			text: string(append(append([]rune("/*\t\t"), '\u0020'), []rune(" ½ */")...)),
+			exp: commentElems{
+				StartToken: "/*", EndToken: "",
+				Prefix:"\t\t  ", Suffix:" */",
+				Text:   "½",
+			},
+		},
+		{
 			name: "new line",
 			text: "// some text\n",
 			exp: commentElems{
@@ -83,19 +92,6 @@ func TestComment(t *testing.T) {
 			},
 		},
 		{
-			name: "multi-line with initial spaces",
-			text:
-`/*    /
-	some text
-	line two
-*/`,
-			exp: commentElems{
-				StartToken: "/*", EndToken: "*/",
-				Prefix: "\n\t", Indent: "\t", Suffix: "\n",
-				Text: "/some text\nline two",
-			},
-		},
-		{
 			name: "stylistic",
 			text:
 `/*
@@ -136,7 +132,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "inconsistent",
-			text: `/*
+			text:
+`/*
  * some text
    line two
  * line three

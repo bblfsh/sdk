@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/bblfsh/sdk/v3/uast"
 	"github.com/bblfsh/sdk/v3/uast/nodes"
@@ -148,7 +147,7 @@ type commentElems struct {
 // A tab is defined as a space, \t, \n, ...
 // or as a member of the startToken / endToken
 // for the comment
-func (c *commentElems) isTab(r rune) bool {
+func (c *commentElems) isTabToken(r rune) bool {
 	if unicode.IsSpace(r) {
 		return true
 	}
@@ -165,6 +164,60 @@ func (c *commentElems) isTab(r rune) bool {
 	return false
 }
 
+func max(x, y int) int {
+    if x > y {
+        return x
+    }
+    return y
+}
+
+// Returns the first index i of runes satisfying f(runes[i]), len(runes) otherwise
+func firstIndexFunc(runes []rune, f func(r rune) bool) int {
+	for i, r := range runes {
+		if (f(r)) {
+			return i;
+		}
+	}
+	return len(runes);
+}
+
+// Returns the last index i of runes satisfying f(runes[i]), -1 otherwise
+func lastIndexFunc(runes []rune, f func(r rune) bool) int {
+	for i := range runes {
+		j := len(runes) - 1 - i
+		if (f(runes[j])) {
+			return j;
+		}
+	}
+	return -1;
+}
+
+func (c *commentElems) findPrefix(f func(r rune) bool) {
+	runes := []rune(c.Text)
+	i := firstIndexFunc(runes, f)
+	c.Prefix = string(runes[:i])
+	c.Text = string(runes[i:])
+}
+
+func (c *commentElems) findSuffix(f func(r rune) bool) {
+	runes := []rune(c.Text)
+	i := lastIndexFunc(runes, f) + 1
+	c.Suffix = string(runes[i:])
+	c.Text = string(runes[:i])
+}
+
+func commonPrefix(a []rune, b []rune) []rune {
+	r := []rune{}
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if (a[i] != b[i]) {
+			break;
+		} else {
+			r = append(r, a[i])
+		}
+	}
+	return r
+}
+
 func (c *commentElems) Split(text string) bool {
 	if c.DoTrim {
 		text = strings.TrimLeftFunc(text, unicode.IsSpace)
@@ -175,84 +228,38 @@ func (c *commentElems) Split(text string) bool {
 	}
 	text = strings.TrimPrefix(text, c.StartToken)
 	text = strings.TrimSuffix(text, c.EndToken)
-
-	notTab := func(r rune) bool {
-		return !c.isTab(r)
-	}
-
-	// find prefix (if not already trimmed)
-	i := strings.IndexFunc(text, notTab)
-
-	c.Prefix = ""
-
-	if i >= 0 {
-		c.Prefix = text[:i]
-		text = text[i:]
-	} else {
-		c.Prefix = text
-		text = ""
-	}
-
-	// find suffix
-	i = strings.LastIndexFunc(text, notTab)
-
-	c.Suffix = ""
-	if i >= 0 {
-		// compute the unicode length (could be more than just one byte)
-		_, ulen := utf8.DecodeRuneInString(text[i:])
-		c.Suffix = text[i+ulen:]
-		text = text[:i+ulen]
-	}
 	c.Text = text
-
-	sub := strings.Split(text, "\n")
-	if len(sub) == 1 {
-		// fast path, no tabs
-		return true
+	c.Indent = ""
+	notTab := func(r rune) bool {
+		return !c.isTabToken(r)
 	}
+	// find prefix
+	c.findPrefix(notTab)
+	// find suffix
+	c.findSuffix(notTab)
+	sub := strings.Split(c.Text, "\n")
+	tab := []rune{}
 
 	// find minimal common prefix for other lines
 	// first line is special, it won't contain tab
+	// use runes (utf8) to compute the common prefix
 	for i, line := range sub[1:] {
+		runes := []rune(line)
+		j := firstIndexFunc(runes, notTab)
+		// set the initial common indentation
 		if i == 0 {
-			j := strings.IndexFunc(line, notTab)
-
-			c.Indent = ""
-			if j >= 0 {
-				c.Indent = line[:j]
-			} else {
-				return true // no tabs
-			}
-			continue
-		}
-		if strings.HasPrefix(line, c.Indent) {
-			continue
-		}
-		j := strings.IndexFunc(line, notTab)
-
-		tab := ""
-		if j >= 0 {
-			tab = line[:j]
+			tab = runes[:j]
 		} else {
-			return true // no tabs
+			tab = commonPrefix(tab, runes[:j])
 		}
-
-		for j := 0; j < len(c.Indent) && j < len(tab); j++ {
-			if c.Indent[j] == tab[j] {
-				continue
-			}
-			if j == 0 {
-				return true // inconsistent, no tabs
-			}
-			tab = tab[:j]
-			break
+		if len(tab) == 0 {
+			return true; // inconsistent, no common tabs
 		}
-		c.Indent = tab
 	}
+
+	// trim the common prefix from all lines and join them
+	c.Indent = string(tab)
 	for i, line := range sub {
-		if i == 0 {
-			continue
-		}
 		sub[i] = strings.TrimPrefix(line, c.Indent)
 	}
 	c.Text = strings.Join(sub, "\n")
