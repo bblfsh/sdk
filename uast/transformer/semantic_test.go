@@ -41,7 +41,7 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "utf8 singleton",
-			text: string(append(append([]rune("/*\t\t"), '\u0020'), []rune(" ½ */")...)),
+			text: "/*\t\t\u0020 ½ */",
 			exp: commentElems{
 				StartToken: "/*", EndToken: "",
 				Prefix:"\t\t  ", Suffix:" */",
