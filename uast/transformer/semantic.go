@@ -207,15 +207,16 @@ func (c *commentElems) findSuffix(f func(r rune) bool) {
 }
 
 func commonPrefix(a []rune, b []rune) []rune {
-	r := []rune{}
-	for i := 0; i < len(a) && i < len(b); i++ {
+	if (len(b) < len(a)) {
+		return commonPrefix(b, a)
+	}
+	i := 0
+	for ; i < len(a); i++ {
 		if (a[i] != b[i]) {
 			break;
-		} else {
-			r = append(r, a[i])
 		}
 	}
-	return r
+	return a[:i]
 }
 
 func (c *commentElems) Split(text string) bool {
