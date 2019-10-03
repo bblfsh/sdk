@@ -171,8 +171,9 @@ func max(x, y int) int {
     return y
 }
 
-// Returns the first index i of runes satisfying f(runes[i]), -1 otherwise
-func firstSliceFunc(runes []rune, f func(r rune) bool) []rune {
+// Returns the largest prefix slice from runes which holds that
+// f(c) is not satisfied for every c in the prefix
+func takeLeftUntil(runes []rune, f func(r rune) bool) []rune {
 	for i, r := range runes {
 		if f(r) {
 			return runes[:i]
@@ -181,8 +182,9 @@ func firstSliceFunc(runes []rune, f func(r rune) bool) []rune {
 	return runes
 }
 
-// Returns the last index i of runes satisfying f(runes[i]), -1 otherwise
-func lastSliceFunc(runes []rune, f func(r rune) bool) []rune {
+// Returns the largest suffix slice from runes which holds that
+// f(c) is not satisfied for every c in the suffix
+func takeRightUntil(runes []rune, f func(r rune) bool) []rune {
 	for i := range runes {
 		j := len(runes) - 1 - i
 		if f(runes[j]) {
@@ -194,7 +196,7 @@ func lastSliceFunc(runes []rune, f func(r rune) bool) []rune {
 
 func (c *commentElems) findPrefix(f func(r rune) bool) {
 	runes := []rune(c.Text)
-	prefix := firstSliceFunc(runes, f)
+	prefix := takeLeftUntil(runes, f)
 	i := len(prefix)
 	c.Prefix = string(prefix)
 	c.Text = string(runes[i:])
@@ -202,7 +204,7 @@ func (c *commentElems) findPrefix(f func(r rune) bool) {
 
 func (c *commentElems) findSuffix(f func(r rune) bool) {
 	runes := []rune(c.Text)
-	suffix := lastSliceFunc(runes, f)
+	suffix := takeRightUntil(runes, f)
 	c.Suffix = string(suffix)
 	i := len(runes) - len(suffix)
 	c.Suffix = string(suffix)
@@ -249,7 +251,7 @@ func (c *commentElems) Split(text string) bool {
 	// use runes (utf8) to compute the common prefix
 	for i, line := range sub[1:] {
 		runes := []rune(line)
-		current := firstSliceFunc(runes, notTab)
+		current := takeLeftUntil(runes, notTab)
 		// set the initial common indentation
 		if i == 0 {
 			tab = current
