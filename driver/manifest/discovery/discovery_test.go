@@ -38,7 +38,7 @@ func TestOfficialDrivers(t *testing.T) {
 		require.NotEmpty(t, got.Features)
 
 		if exp.Language == "go" {
-			const latest = "2.7.0"
+			const latest = "2.7.1"
 			vers, err := got.Versions(ctx)
 			require.NoError(t, err)
 			require.NotEmpty(t, vers)
