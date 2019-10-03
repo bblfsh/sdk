@@ -172,52 +172,50 @@ func max(x, y int) int {
 }
 
 // Returns the first index i of runes satisfying f(runes[i]), -1 otherwise
-func firstIndexFunc(runes []rune, f func(r rune) bool) int {
+func firstSliceFunc(runes []rune, f func(r rune) bool) []rune {
 	for i, r := range runes {
-		if (f(r)) {
-			return i
+		if f(r) {
+			return runes[:i]
 		}
 	}
-	return -1
+	return runes
 }
 
 // Returns the last index i of runes satisfying f(runes[i]), -1 otherwise
-func lastIndexFunc(runes []rune, f func(r rune) bool) int {
+func lastSliceFunc(runes []rune, f func(r rune) bool) []rune {
 	for i := range runes {
 		j := len(runes) - 1 - i
 		if f(runes[j]) {
-			return j
+			return runes[j+1:]
 		}
 	}
-	return -1
+	return runes
 }
 
 func (c *commentElems) findPrefix(f func(r rune) bool) {
 	runes := []rune(c.Text)
-	i := firstIndexFunc(runes, f)
-	if i != -1 {
-		c.Prefix = string(runes[:i])
-		c.Text = string(runes[i:])
-	} else {
-		c.Prefix = c.Text
-		c.Text = ""
-	}
+	prefix := firstSliceFunc(runes, f)
+	i := len(prefix)
+	c.Prefix = string(prefix)
+	c.Text = string(runes[i:])
 }
 
 func (c *commentElems) findSuffix(f func(r rune) bool) {
 	runes := []rune(c.Text)
-	i := lastIndexFunc(runes, f) + 1
-	c.Suffix = string(runes[i:])
+	suffix := lastSliceFunc(runes, f)
+	c.Suffix = string(suffix)
+	i := len(runes) - len(suffix)
+	c.Suffix = string(suffix)
 	c.Text = string(runes[:i])
 }
 
 func commonPrefix(a []rune, b []rune) []rune {
-	if (len(b) < len(a)) {
+	if len(b) < len(a) {
 		return commonPrefix(b, a)
 	}
 	i := 0
 	for ; i < len(a); i++ {
-		if (a[i] != b[i]) {
+		if a[i] != b[i] {
 			break
 		}
 	}
@@ -251,17 +249,12 @@ func (c *commentElems) Split(text string) bool {
 	// use runes (utf8) to compute the common prefix
 	for i, line := range sub[1:] {
 		runes := []rune(line)
-		j := firstIndexFunc(runes, notTab)
-		// Adjust j to take whole slice as tab in case
-		// all runes are tab runes
-		if j == -1 {
-			j = len(runes)
-		}
+		current := firstSliceFunc(runes, notTab)
 		// set the initial common indentation
 		if i == 0 {
-			tab = runes[:j]
+			tab = current
 		} else {
-			tab = commonPrefix(tab, runes[:j])
+			tab = commonPrefix(tab, current)
 		}
 		if len(tab) == 0 {
 			return true // inconsistent, no common tabs
