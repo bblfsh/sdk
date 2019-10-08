@@ -348,7 +348,7 @@ func updateToModules(root string) error {
 		return err
 	}
 	// next, replace Go version in the driver's manifest
-	if err = updateGo(root, "1.12"); err != nil {
+	if err = updateGo(root, "1.13"); err != nil {
 		return err
 	}
 	// remove unneeded files (from git as well)

@@ -88,7 +88,7 @@ func Gitignore() (*asset, error) {
 var _TravisYml = []byte(`language: go
 
 go:
-  - '1.12.x'
+  - '1.13.x'
 
 services:
   - docker
@@ -1037,7 +1037,7 @@ func buildGo() (*asset, error) {
 
 var _buildYmlTpl = []byte(`sdk: '2'
 go-runtime:
-  version: '1.12'
+  version: '1.13'
 native:
   # TODO: an image used as a driver runtime
   image: 'debian:latest'
