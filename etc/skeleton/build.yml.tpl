@@ -1,6 +1,6 @@
 sdk: '2'
 go-runtime:
-  version: '1.12'
+  version: '1.13'
 native:
   # TODO: an image used as a driver runtime
   image: 'debian:latest'
