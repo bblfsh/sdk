@@ -119,7 +119,7 @@ func newPipeLine(d discovery.Driver, githubToken string, o *UpdateOptions) *pipe
 }
 
 func (p *pipeLine) createDockerfile() (string, error) {
-	const header = `FROM golang:1.12
+	const header = `FROM golang:1.13
 
 ARG GITHUB_TOKEN
 

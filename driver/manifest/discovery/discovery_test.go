@@ -43,7 +43,7 @@ func TestOfficialDrivers(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, vers)
 			require.True(t, len(vers) >= 18, "versions: %d", len(vers))
-			require.True(t, semver.MustParse(latest).GTE(vers[0]))
+			require.True(t, semver.MustParse(latest).LTE(vers[0]))
 		}
 	}
 }
