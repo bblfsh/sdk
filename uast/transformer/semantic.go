@@ -144,6 +144,7 @@ type commentElems struct {
 	DoTrim     bool
 }
 
+// isTabToken checks whether a token is a tab.
 // A tab is defined as a space, \t, \n, ...
 // or as a member of the startToken / endToken
 // for the comment
@@ -171,8 +172,8 @@ func max(x, y int) int {
     return y
 }
 
-// Returns the largest prefix slice from runes which holds that
-// f(c) is not satisfied for every c in the prefix
+// takeLeftUntil returns the largest prefix slice from runes which
+// holds that f(c) is not satisfied for every c in the prefix
 func takeLeftUntil(runes []rune, f func(r rune) bool) []rune {
 	for i, r := range runes {
 		if f(r) {
@@ -182,13 +183,12 @@ func takeLeftUntil(runes []rune, f func(r rune) bool) []rune {
 	return runes
 }
 
-// Returns the largest suffix slice from runes which holds that
-// f(c) is not satisfied for every c in the suffix
+// takeRightUntil returns the largest suffix slice from runes which
+// holds that f(c) is not satisfied for every c in the suffix
 func takeRightUntil(runes []rune, f func(r rune) bool) []rune {
-	for i := range runes {
-		j := len(runes) - 1 - i
-		if f(runes[j]) {
-			return runes[j+1:]
+	for i := len(runes) - 1; i >= 0; i-- {
+		if f(runes[i]) {
+			return runes[i+1:]
 		}
 	}
 	return runes
@@ -244,7 +244,7 @@ func (c *commentElems) Split(text string) bool {
 	// find suffix
 	c.findSuffix(notTab)
 	sub := strings.Split(c.Text, "\n")
-	tab := []rune{}
+	var tab []rune
 
 	// find minimal common prefix for other lines
 	// first line is special, it won't contain tab
@@ -265,8 +265,8 @@ func (c *commentElems) Split(text string) bool {
 
 	// trim the common prefix from all lines and join them
 	c.Indent = string(tab)
-	for i, line := range sub {
-		sub[i] = strings.TrimPrefix(line, c.Indent)
+	for i := 1; i < len(sub); i++ {
+		sub[i] = strings.TrimPrefix(sub[i], c.Indent)
 	}
 	c.Text = strings.Join(sub, "\n")
 	return true
