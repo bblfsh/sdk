@@ -35,10 +35,10 @@ var gh struct {
 	client *github.Client
 }
 
-// githubClient returns a lazily-initialized singleton Github API client.
+// GithubClient returns a lazily-initialized singleton Github API client.
 //
 // API token can be provided with GITHUB_TOKEN environment variable. The public API rate limits will apply without it.
-func githubClient() *github.Client {
+func GithubClient() *github.Client {
 	gh.once.Do(func() {
 		hc := http.DefaultClient
 		if token := os.Getenv("GITHUB_TOKEN"); token != "" {
@@ -197,7 +197,7 @@ func (d *Driver) repoName() (string, string) {
 // eachTag calls a given function for each tag in the driver repository.
 func (d *Driver) eachTag(ctx context.Context, fnc func(tag *github.RepositoryTag) (bool, error)) error {
 	owner, repo := d.repoName()
-	cli := githubClient()
+	cli := GithubClient()
 
 	for page := 1; ; page++ {
 		resp, _, err := cli.Repositories.ListTags(ctx, owner, repo, &github.ListOptions{
@@ -279,7 +279,7 @@ func isRateLimit(err error) bool {
 
 // getDriversForOrg lists all repositories for an organization and filters ones that contains topics of the driver.
 func getDriversForOrg(ctx context.Context, org string) ([]Driver, error) {
-	cli := githubClient()
+	cli := GithubClient()
 
 	var out []Driver
 	// list all repositories in organization
