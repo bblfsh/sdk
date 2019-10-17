@@ -20,7 +20,7 @@ type RequestCommand struct {
 
 type ParseRequest struct {
 	Content  string `json:"content"`
-	Encoding string `json:"encoding"`
+	Encoding string `json:"Encoding"`
 }
 
 func (r *RequestCommand) Execute(args []string) error {
