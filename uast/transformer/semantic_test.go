@@ -31,6 +31,24 @@ func TestComment(t *testing.T) {
 			},
 		},
 		{
+			name: "utf8 chars",
+			text: "// “utf8 ½Å commentÅ”",
+			exp: commentElems{
+				StartToken: "//", EndToken: "",
+				Prefix: " ", Suffix: "",
+				Text:   "“utf8 ½Å commentÅ”",
+			},
+		},
+		{
+			name: "utf8 singleton",
+			text: "/*\t\t\u00a0 ½ */",
+			exp: commentElems{
+				StartToken: "/*", EndToken: "",
+				Prefix:"\t\t\u00a0 ", Suffix:" */",
+				Text:   "½",
+			},
+		},
+		{
 			name: "new line",
 			text: "// some text\n",
 			exp: commentElems{
@@ -50,7 +68,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "multi-line new line",
-			text: `/*
+			text:
+`/*
 	some text
 */`,
 			exp: commentElems{
@@ -61,7 +80,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "multi-line",
-			text: `/*
+			text:
+`/*
 	some text
 	line two
 */`,
@@ -73,7 +93,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "stylistic",
-			text: `/*
+			text:
+`/*
  * some text
  * line two
  * line three
@@ -86,7 +107,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "multiple single line",
-			text: `// some text
+			text:
+`// some text
 // line two`,
 			exp: commentElems{
 				StartToken: "//", EndToken: "",
@@ -96,7 +118,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "stylistic inconsistent",
-			text: `/*
+			text:
+`/*
  * some text
  *   line two
  * line three
@@ -109,7 +132,8 @@ func TestComment(t *testing.T) {
 		},
 		{
 			name: "inconsistent",
-			text: `/*
+			text:
+`/*
  * some text
    line two
  * line three

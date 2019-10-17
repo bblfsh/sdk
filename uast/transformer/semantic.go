@@ -144,7 +144,11 @@ type commentElems struct {
 	DoTrim     bool
 }
 
-func (c *commentElems) isTab(r rune) bool {
+// isTabToken checks whether a token is a tab.
+// A tab is defined as a space, \t, \n, ...
+// or as a member of the startToken / endToken
+// for the comment
+func (c *commentElems) isTabToken(r rune) bool {
 	if unicode.IsSpace(r) {
 		return true
 	}
@@ -161,6 +165,94 @@ func (c *commentElems) isTab(r rune) bool {
 	return false
 }
 
+func max(x, y int) int {
+    if x > y {
+        return x
+    }
+    return y
+}
+
+// takeLeftUntil returns the largest prefix slice from runes which
+// holds that f(c) is not satisfied for every c in the prefix
+func takeLeftUntil(runes []rune, f func(r rune) bool) []rune {
+	for i, r := range runes {
+		if f(r) {
+			return runes[:i]
+		}
+	}
+	return runes
+}
+
+// takeRightUntil returns the largest suffix slice from runes which
+// holds that f(c) is not satisfied for every c in the suffix
+func takeRightUntil(runes []rune, f func(r rune) bool) []rune {
+	for i := len(runes) - 1; i >= 0; i-- {
+		if f(runes[i]) {
+			return runes[i+1:]
+		}
+	}
+	return runes
+}
+
+func findPrefix(runes []rune, f func(r rune) bool) (string, []rune) {
+	prefix := takeLeftUntil(runes, f)
+	i := len(prefix)
+	return string(prefix), runes[i:]
+}
+
+func findSuffix(runes []rune, f func(r rune) bool) ([]rune, string) {
+	suffix := takeRightUntil(runes, f)
+	i := len(runes) - len(suffix)
+	return runes[:i], string(suffix)
+}
+
+func commonPrefix(a []rune, b []rune) []rune {
+	if len(b) < len(a) {
+		return commonPrefix(b, a)
+	}
+	i := 0
+	for ; i < len(a); i++ {
+		if a[i] != b[i] {
+			break
+		}
+	}
+	return a[:i]
+}
+
+func splitRunes(runes []rune, sep rune) [][]rune{
+	var result [][]rune
+	i := 0
+	
+	for j, r := range runes {
+		if r == sep {
+			result = append(result, runes[i:j])
+			i = j + 1
+		}
+	}
+
+	// If runes did not end up in a \n, we have
+	// to append the last chunk of the split
+	if i < len(runes) - 1 {
+		result = append(result, runes[i:])
+	}
+	
+	return result
+}
+
+func stripTabAndJoin(tab []rune, lines [][]rune) string {
+	var str strings.Builder
+
+	if len(lines) > 0 {
+		str.WriteString(string(lines[0]))
+	}	
+	for i := 1; i < len(lines); i++ {
+		str.WriteString("\n")
+		str.WriteString(string(lines[i][len(tab):]))
+	}
+	
+	return str.String()
+}
+
 func (c *commentElems) Split(text string) bool {
 	if c.DoTrim {
 		text = strings.TrimLeftFunc(text, unicode.IsSpace)
@@ -171,89 +263,44 @@ func (c *commentElems) Split(text string) bool {
 	}
 	text = strings.TrimPrefix(text, c.StartToken)
 	text = strings.TrimSuffix(text, c.EndToken)
-
-	// find prefix (if not already trimmed)
-	i := strings.IndexFunc(text, func(r rune) bool {
-		return !c.isTab(r)
-	})
-
-	c.Prefix = ""
-
-	if i >= 0 {
-		c.Prefix = text[:i]
-		text = text[i:]
-	} else {
-		c.Prefix = text
-		text = ""
+	notTab := func(r rune) bool {
+		return !c.isTabToken(r)
 	}
-
+	runes := []rune(text)
+	// find prefix
+	c.Prefix, runes = findPrefix(runes, notTab)
 	// find suffix
-	i = strings.LastIndexFunc(text, func(r rune) bool {
-		return !c.isTab(r)
-	})
+	runes, c.Suffix = findSuffix(runes, notTab)
 
-	c.Suffix = ""
-	if i >= 0 {
-		c.Suffix = text[i+1:]
-		text = text[:i+1]
-	}
-	c.Text = text
-
-	sub := strings.Split(text, "\n")
-	if len(sub) == 1 {
-		// fast path, no tabs
+	sub := splitRunes(runes, rune('\n'))
+	var tab []rune
+	// fast path, no tabs
+	if len(sub) == 0 {
+		c.Indent = ""
+		c.Text = string(runes)
 		return true
 	}
-
 	// find minimal common prefix for other lines
 	// first line is special, it won't contain tab
+	// use runes (utf8) to compute the common prefix
 	for i, line := range sub[1:] {
+		current := takeLeftUntil(line, notTab)
+		// set the initial common indentation
 		if i == 0 {
-			j := strings.IndexFunc(line, func(r rune) bool {
-				return !c.isTab(r)
-			})
-
-			c.Indent = ""
-			if j >= 0 {
-				c.Indent = line[:j]
-			} else {
-				return true // no tabs
-			}
-			continue
-		}
-		if strings.HasPrefix(line, c.Indent) {
-			continue
-		}
-		j := strings.IndexFunc(line, func(r rune) bool {
-			return !c.isTab(r)
-		})
-
-		tab := ""
-		if j >= 0 {
-			tab = line[:j]
+			tab = current
 		} else {
-			return true // no tabs
+			tab = commonPrefix(tab, current)
 		}
-
-		for j := 0; j < len(c.Indent) && j < len(tab); j++ {
-			if c.Indent[j] == tab[j] {
-				continue
-			}
-			if j == 0 {
-				return true // inconsistent, no tabs
-			}
-			tab = tab[:j]
-			break
+		if len(tab) == 0 {
+			c.Indent = ""
+			c.Text = string(runes)
+			return true // inconsistent, no common tabs
 		}
-		c.Indent = tab
 	}
-	for i, line := range sub {
-		if i == 0 {
-			continue
-		}
-		sub[i] = strings.TrimPrefix(line, c.Indent)
-	}
-	c.Text = strings.Join(sub, "\n")
+	
+	// trim the common prefix from all lines and join them
+	c.Indent = string(tab)
+	c.Text = stripTabAndJoin(tab, sub)
 	return true
 }
 
