@@ -2,7 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore (18B)
 // etc/skeleton/.travis.yml (397B)
-// etc/skeleton/Jenkinsfile.tpl (3.037kB)
+// etc/skeleton/Jenkinsfile.tpl (3.329kB)
 // etc/skeleton/LICENSE (35.141kB)
 // etc/skeleton/README.md.tpl (1.981kB)
 // etc/skeleton/build.go (464B)
@@ -126,7 +126,7 @@ func TravisYml() (*asset, error) {
 	return a, nil
 }
 
-var _jenkinsfileTpl = []byte(`pipeline {
+var _jenkinsfileTpl = []byte((((`pipeline {
   agent {
     kubernetes {
       label '{{.Manifest.Language}}-driver-bblfsh-performance'
@@ -205,8 +205,16 @@ spec:
       }
     }
   }
+  post {
+    success {
+      slackSend (color: '#2eb886', message: "SUCCESS: ` + "`") + (`${env.JOB_NAME}` + "`")) + ((` <${env.BUILD_URL}|build #${env.BUILD_NUMBER}>")
+    }
+    failure {
+      slackSend (color: '#b82e60', message: "FAILED: ` + "`") + (`${env.JOB_NAME}` + ("`" + ` <${env.BUILD_URL}|build #${env.BUILD_NUMBER}>")
+    }
+  }
 }
-`)
+`)))))
 
 func jenkinsfileTplBytes() ([]byte, error) {
 	return _jenkinsfileTpl, nil
@@ -218,8 +226,8 @@ func jenkinsfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 3037, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6, 0xde, 0xdf, 0xaa, 0xc3, 0x35, 0x85, 0x6a, 0x9d, 0x1a, 0x58, 0x1d, 0x4b, 0xc0, 0x5, 0x39, 0x11, 0xa8, 0xe8, 0x61, 0xa7, 0x27, 0xcb, 0xdd, 0x31, 0x51, 0x30, 0x56, 0xd9, 0xd0, 0xcc, 0x80}}
+	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 3329, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6c, 0xe2, 0xa0, 0xd8, 0x26, 0x7f, 0xb2, 0x80, 0xf7, 0x2d, 0xea, 0x8b, 0x64, 0xc8, 0xe1, 0xed, 0x87, 0xea, 0x33, 0xf8, 0xb8, 0x3c, 0xb4, 0x98, 0x83, 0xd3, 0x7d, 0xce, 0xf1, 0xad, 0xf6, 0xb3}}
 	return a, nil
 }
 
