@@ -2,7 +2,7 @@
 // sources:
 // etc/skeleton/.gitignore (18B)
 // etc/skeleton/.travis.yml (397B)
-// etc/skeleton/Jenkinsfile.tpl (3.329kB)
+// etc/skeleton/Jenkinsfile.tpl (3.162kB)
 // etc/skeleton/LICENSE (35.141kB)
 // etc/skeleton/README.md.tpl (1.981kB)
 // etc/skeleton/build.go (464B)
@@ -166,13 +166,21 @@ spec:
     PROM_ADDRESS = "http://prom-pushgateway-prometheus-pushgateway.monitoring.svc.cluster.local:9091"
     PROM_JOB = "bblfsh_perfomance"
   }
-  // TODO(lwsanty): https://github.com/src-d/infrastructure/issues/992
-  // this is polling for every 2 minutes
-  // however it's better to use trigger curl http://yourserver/jenkins/git/notifyCommit?url=<URL of the Git repository>
-  // https://kohsuke.org/2011/12/01/polling-must-die-triggering-jenkins-builds-from-a-git-hook/
-  // the problem is that it requires Jenkins to be accessible from the hook side
-  // probably Travis CI could trigger Jenkins after all unit tests have passed...
-  triggers { pollSCM('H/2 * * * *') }
+  triggers {
+    GenericTrigger(
+      genericVariables: [
+        [key: 'ref', value: '$.ref']
+      ],
+      token: '{{.Manifest.Language}}-driver',
+      causeString: 'Triggered on $ref',
+
+      printContributedVariables: true,
+      printPostContent: true,
+
+      regexpFilterText: '$ref',
+      regexpFilterExpression: 'refs/heads/' + BRANCH_NAME
+    )
+  }
   stages {
     stage('Run transformations benchmark') {
       when { branch 'master' }
@@ -226,8 +234,8 @@ func jenkinsfileTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 3329, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6c, 0xe2, 0xa0, 0xd8, 0x26, 0x7f, 0xb2, 0x80, 0xf7, 0x2d, 0xea, 0x8b, 0x64, 0xc8, 0xe1, 0xed, 0x87, 0xea, 0x33, 0xf8, 0xb8, 0x3c, 0xb4, 0x98, 0x83, 0xd3, 0x7d, 0xce, 0xf1, 0xad, 0xf6, 0xb3}}
+	info := bindataFileInfo{name: "Jenkinsfile.tpl", size: 3162, mode: os.FileMode(0644), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x5c, 0x32, 0x4b, 0xa5, 0xec, 0x85, 0xe6, 0xfd, 0x59, 0x4, 0x93, 0x4a, 0xfd, 0x35, 0xc8, 0x68, 0xc3, 0x1d, 0x31, 0x6, 0x45, 0x8e, 0xa0, 0x7b, 0x10, 0xc0, 0xe2, 0x2a, 0x69, 0x11, 0xbf, 0xbf}}
 	return a, nil
 }
 

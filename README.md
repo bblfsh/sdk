@@ -181,4 +181,3 @@ First two always run, benchmarks are only triggered by `bblfsh-sdk test --bench`
 ## License
 
 GPLv3, see [LICENSE](LICENSE)
-
