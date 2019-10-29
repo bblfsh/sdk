@@ -10,14 +10,18 @@ import (
 	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
-// NewDriver returns a new Driver instance based on the given ObjectToNode and list of transformers.
-func NewDriverFrom(d Native, m *manifest.Manifest, t Transforms) (DriverModule, error) {
-	if d == nil {
+// NewDriverFrom returns a new DriverModule instance based on
+// the given pool of native drivers, language manifest and list of transformers.
+func NewDriverFrom(ch chan Native, m *manifest.Manifest, t Transforms) (DriverModule, error) {
+	if ch == nil || len(ch) == 0 {
 		return nil, fmt.Errorf("no driver implementation")
-	} else if m == nil {
+	}
+
+	if m == nil {
 		return nil, fmt.Errorf("no manifest")
 	}
-	return &driverImpl{d: d, m: m, t: t}, nil
+
+	return &driverImpl{ch: ch, m: m, t: t}, nil
 }
 
 // Driver implements a bblfsh driver, a driver is on charge of transforming a
@@ -25,21 +29,47 @@ func NewDriverFrom(d Native, m *manifest.Manifest, t Transforms) (DriverModule, 
 // `uast.ObjectToNode`` and a series of `tranformer.Transformer` are used.
 //
 // The `Parse` and `NativeParse` requests block the driver until the request is
-// done, since the communication with the native driver is a single-channel
-// synchronous communication over stdin/stdout.
+// done. The communication with the native driver is based on a buffer channel of drivers,
+// internally it allows number of concurrent requests equal to channel's size (by default - number of CPUs).
+// Communication with single driver is synchronous and goes over stdin/stdout.
 type driverImpl struct {
-	d Native
+	ch chan Native
 
 	m *manifest.Manifest
 	t Transforms
 }
 
+// Start gets each driver from the channel, starts the process
+// and put it back to the same buffer channel.
+// If any of processes fail on start,
+// the function tries to close all running drivers and return an error.
 func (d *driverImpl) Start() error {
-	return d.d.Start()
+	for i := 0; i < len(d.ch); i++ {
+		drv := <-d.ch
+		if err := drv.Start(); err != nil {
+			d.Close()
+			return err
+		}
+		d.ch <- drv
+	}
+	return nil
 }
 
-func (d *driverImpl) Close() error {
-	return d.d.Close()
+// Close tries to close all idle drivers.
+// If any of drivers fail on Close, the function wraps an error (err) and move on.
+func (d *driverImpl) Close() (err error) {
+	for i := 0; i < len(d.ch); i++ {
+		drv := <-d.ch
+		if e := drv.Close(); e != nil {
+			// TODO(kuba--): replace following lines by errors.Wrap (after migrating to go 1.13)
+			if err != nil {
+				err = fmt.Errorf("%s, %s", err.Error(), e.Error())
+			} else {
+				err = e
+			}
+		}
+	}
+	return err
 }
 
 // Parse process a protocol.ParseRequest, calling to the native driver. It a
@@ -52,7 +82,13 @@ func (d *driverImpl) Parse(rctx context.Context, src string, opts *ParseOptions)
 	if opts == nil {
 		opts = &ParseOptions{}
 	}
-	ast, err := d.d.Parse(ctx, src)
+
+	// get a native driver or wait on available one.
+	drv := <-d.ch
+	// put the driver back, when you're done.
+	defer func() { d.ch <- drv }()
+
+	ast, err := drv.Parse(ctx, src)
 	if err != nil {
 		if !ErrDriverFailure.Is(err) {
 			// all other errors are considered syntax errors
