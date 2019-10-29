@@ -23,7 +23,11 @@ func newDriver(path string) (*service, error) {
 	if err != nil {
 		return nil, err
 	}
-	d, err := driver.NewDriverFrom(native.NewDriverAt(path, native.UTF8), m, driver.Transforms{})
+
+	ch := make(chan driver.Native, 1)
+	ch <- native.NewDriverAt(path, native.UTF8)
+
+	d, err := driver.NewDriverFrom(ch, m, driver.Transforms{})
 	if err != nil {
 		return nil, err
 	}

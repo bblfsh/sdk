@@ -10,14 +10,17 @@ import (
 	"github.com/bblfsh/sdk/v3/uast/nodes"
 )
 
-// NewDriver returns a new Driver instance based on the given ObjectToNode and list of transformers.
-func NewDriverFrom(d Native, m *manifest.Manifest, t Transforms) (DriverModule, error) {
-	if d == nil {
+// NewDriverFrom returns a new Driver instance based on the given ObjectToNode and list of transformers.
+func NewDriverFrom(ch chan Native, m *manifest.Manifest, t Transforms) (DriverModule, error) {
+	if ch == nil || len(ch) == 0 {
 		return nil, fmt.Errorf("no driver implementation")
-	} else if m == nil {
+	}
+
+	if m == nil {
 		return nil, fmt.Errorf("no manifest")
 	}
-	return &driverImpl{d: d, m: m, t: t}, nil
+
+	return &driverImpl{ch: ch, m: m, t: t}, nil
 }
 
 // Driver implements a bblfsh driver, a driver is on charge of transforming a
@@ -28,18 +31,31 @@ func NewDriverFrom(d Native, m *manifest.Manifest, t Transforms) (DriverModule, 
 // done, since the communication with the native driver is a single-channel
 // synchronous communication over stdin/stdout.
 type driverImpl struct {
-	d Native
+	ch chan Native
 
 	m *manifest.Manifest
 	t Transforms
 }
 
 func (d *driverImpl) Start() error {
-	return d.d.Start()
+	for i := 0; i < len(d.ch); i++ {
+		drv := <-d.ch
+		if err := drv.Start(); err != nil {
+			return err
+		}
+		d.ch <- drv
+	}
+	return nil
 }
 
-func (d *driverImpl) Close() error {
-	return d.d.Close()
+func (d *driverImpl) Close() (err error) {
+	for i := 0; i < len(d.ch); i++ {
+		drv := <-d.ch
+		if e := drv.Close(); e != nil {
+			err = e
+		}
+	}
+	return err
 }
 
 // Parse process a protocol.ParseRequest, calling to the native driver. It a
@@ -52,7 +68,11 @@ func (d *driverImpl) Parse(rctx context.Context, src string, opts *ParseOptions)
 	if opts == nil {
 		opts = &ParseOptions{}
 	}
-	ast, err := d.d.Parse(ctx, src)
+
+	drv := <-d.ch
+	defer func() { d.ch <- drv }()
+
+	ast, err := drv.Parse(ctx, src)
 	if err != nil {
 		if !ErrDriverFailure.Is(err) {
 			// all other errors are considered syntax errors
