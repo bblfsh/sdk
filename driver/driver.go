@@ -32,6 +32,9 @@ var (
 
 	// ErrUnknownEncoding is returned for parse requests with a file content in a non-UTF8 encoding.
 	ErrUnknownEncoding = errors.NewKind("unknown source file encoding (expected UTF-8)")
+
+	// ErrDriverClosed is returned when Parse function was called after driver was closed.
+	ErrDriverClosed = errors.NewKind("driver has been closed")
 )
 
 // ErrMissingDriver indicates that a driver image for the given language
