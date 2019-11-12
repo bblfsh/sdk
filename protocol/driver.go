@@ -79,9 +79,13 @@ func RegisterDriver(srv *grpc.Server, d driver.Driver) {
 
 // AsDriver creates a v2 driver client for a given gRPC client.
 func AsDriver(cc *grpc.ClientConn) driver.Driver {
+	return DriverFromClient(NewDriverClient(cc), NewDriverHostClient(cc))
+}
+
+func DriverFromClient(c DriverClient, h DriverHostClient) driver.Driver {
 	return &client{
-		c: NewDriverClient(cc),
-		h: NewDriverHostClient(cc),
+		c: c,
+		h: h,
 	}
 }
 
