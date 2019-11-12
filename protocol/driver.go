@@ -85,6 +85,13 @@ func AsDriver(cc *grpc.ClientConn) driver.Driver {
 	}
 }
 
+func AsDriverFromClient(c DriverClient, h DriverHostClient) driver.Driver {
+	return &client{
+		c: c,
+		h: h,
+	}
+}
+
 func toParseErrors(err error) []*ParseError {
 	if e, ok := err.(*driver.ErrMulti); ok {
 		errs := make([]*ParseError, 0, len(e.Errors))
