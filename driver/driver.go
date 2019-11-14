@@ -32,6 +32,10 @@ var (
 
 	// ErrUnknownEncoding is returned for parse requests with a file content in a non-UTF8 encoding.
 	ErrUnknownEncoding = errors.NewKind("unknown source file encoding (expected UTF-8)")
+
+	// ErrUnsupportedLanguage is returned by the language server if the language in the request
+	// is not supported by the driver.
+	ErrUnsupportedLanguage = errors.NewKind("unsupported language: %q")
 )
 
 // ErrMissingDriver indicates that a driver image for the given language

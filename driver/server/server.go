@@ -22,9 +22,6 @@ var (
 	ErrInvalidLogger = errors.NewKind("invalid logger configuration")
 	// ErrInvalidTracer is returned by the driver server when the tracing configuration is wrong.
 	ErrInvalidTracer = errors.NewKind("invalid tracer configuration")
-	// ErrUnsupportedLanguage is returned by the language server if the language in the request
-	// is not supported by the driver.
-	ErrUnsupportedLanguage = errors.NewKind("unsupported language: %q")
 )
 
 var (

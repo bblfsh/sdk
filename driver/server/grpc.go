@@ -104,7 +104,7 @@ func (s service) parse(mode driver.Mode, req *protocol1.ParseRequest) (nodes.Nod
 		return nil, r
 	}
 	if !containsLang(req.Language, list) {
-		r := errResp(ErrUnsupportedLanguage.New(req.Language))
+		r := errResp(driver.ErrUnsupportedLanguage.New(req.Language))
 		r.Elapsed = time.Since(start)
 		return nil, r
 	}
